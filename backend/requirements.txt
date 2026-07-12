@@ -1,0 +1,29 @@
+# ============================================================================
+# Core application dependencies (install normally: pip install -r requirements.txt)
+# ============================================================================
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pyotp==2.9.0
+requests==2.31.0
+pytz==2024.2
+python-dotenv==1.0.1
+apscheduler==3.11.0
+itsdangerous==2.2.0  # signed session cookies (Starlette SessionMiddleware)
+
+# WINDOWS ONLY — do NOT install on Linux/cloud hosts. Routes Python TLS through
+# the Windows certificate store so a corporate SSL-inspection root CA (Zscaler)
+# is trusted. On Linux the system CA bundle is used; this package is unnecessary.
+# The Dockerfile / Linux install intentionally skips it.
+pip-system-certs==5.3 ; sys_platform == "win32"
+
+# ----------------------------------------------------------------------------
+# fyers-apiv3 is NOT listed here on purpose. It hard-pins aiohttp==3.9.3
+# (no Python 3.13 wheel) and a bogus `asyncio` backport that breaks stdlib on
+# modern Python. Install it WITHOUT deps + compatible transitive libs instead:
+#
+#   pip install --no-deps fyers-apiv3==3.1.14
+#   pip install "aiohttp>=3.10" websocket-client aws-lambda-powertools "setuptools<81"
+#
+# (`setuptools<81` is required because fyers imports the removed `pkg_resources`.)
+# The provided install.ps1 does all of this for you.
+# ----------------------------------------------------------------------------

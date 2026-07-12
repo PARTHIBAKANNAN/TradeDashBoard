@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TradeDashboard — System Architecture Report</title>
+<style>
+  :root {
+    --bg: #09090b;
+    --bg-soft: #0e0e11;
+    --panel: #131318;
+    --panel-2: #17171d;
+    --border: #26262c;
+    --border-soft: #1d1d22;
+    --text: #e7e7ea;
+    --muted: #a1a1aa;
+    --faint: #71717a;
+    --blue: #3b82f6;
+    --blue-soft: #1e3a8a;
+    --green: #22c55e;
+    --red: #ef4444;
+    --amber: #f59e0b;
+    --violet: #8b5cf6;
+    --cyan: #22d3ee;
+    --mono: "Cascadia Code", "JetBrains Mono", Consolas, "Courier New", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(59,130,246,0.10), transparent 60%),
+      radial-gradient(900px 500px at 0% 10%, rgba(139,92,246,0.08), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  a { color: var(--blue); text-decoration: none; }
+
+  /* ---- Top nav ---- */
+  header.topbar {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(12px);
+    background: rgba(9,9,11,0.72);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar-inner {
+    max-width: 1120px; margin: 0 auto; padding: 14px 28px;
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 11px; font-weight: 700; letter-spacing: .2px; }
+  .logo {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--blue), var(--violet));
+    display: grid; place-items: center; color: white; font-weight: 800; font-size: 15px;
+    box-shadow: 0 4px 18px rgba(59,130,246,0.35);
+  }
+  nav.anchors { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+  nav.anchors a {
+    color: var(--muted); font-size: 12.5px; font-weight: 600;
+    padding: 6px 11px; border-radius: 7px; transition: .15s;
+  }
+  nav.anchors a:hover { color: var(--text); background: var(--panel-2); }
+
+  /* ---- Layout ---- */
+  main { max-width: 1120px; margin: 0 auto; padding: 0 28px 80px; }
+  section { padding: 46px 0 8px; border-top: 1px solid var(--border-soft); }
+  section:first-of-type { border-top: none; }
+
+  .hero { padding: 66px 0 30px; border: none; }
+  .hero h1 { font-size: 40px; line-height: 1.12; margin: 14px 0 10px; letter-spacing: -0.5px; }
+  .hero h1 .grad {
+    background: linear-gradient(100deg, var(--blue), var(--cyan) 55%, var(--violet));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero p.lead { font-size: 17px; color: var(--muted); max-width: 720px; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 22px 0 4px; }
+  .chip {
+    font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--panel); color: var(--muted);
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .chip .dot { width: 7px; height: 7px; border-radius: 50%; }
+
+  .eyebrow {
+    text-transform: uppercase; letter-spacing: 2px; font-size: 11.5px;
+    font-weight: 700; color: var(--blue); margin-bottom: 6px;
+  }
+  h2 { font-size: 26px; margin: 4px 0 6px; letter-spacing: -0.3px; }
+  h3 { font-size: 17px; margin: 26px 0 8px; }
+  p { color: #cfcfd6; }
+  .sub { color: var(--muted); max-width: 760px; }
+
+  /* ---- Cards ---- */
+  .grid { display: grid; gap: 16px; margin-top: 22px; }
+  .grid.c2 { grid-template-columns: repeat(2, 1fr); }
+  .grid.c3 { grid-template-columns: repeat(3, 1fr); }
+  .grid.c4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 860px) { .grid.c2, .grid.c3, .grid.c4 { grid-template-columns: 1fr; } nav.anchors { display: none; } }
+  .card {
+    background: linear-gradient(180deg, var(--panel), var(--bg-soft));
+    border: 1px solid var(--border); border-radius: 14px; padding: 18px 18px 16px;
+  }
+  .card h4 { margin: 0 0 6px; font-size: 15px; display: flex; align-items: center; gap: 9px; }
+  .card p { margin: 0; color: var(--muted); font-size: 13.5px; }
+  .ic {
+    width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center;
+    font-size: 14px; flex: none;
+  }
+
+  /* ---- Diagram (topology) ---- */
+  .topo {
+    margin-top: 24px; border: 1px solid var(--border); border-radius: 16px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.02), transparent),
+      var(--bg-soft);
+    padding: 26px; overflow-x: auto;
+  }
+  .layers { display: flex; align-items: stretch; gap: 0; min-width: 720px; }
+  .layer {
+    flex: 1; border: 1px solid var(--border); border-radius: 12px; padding: 16px;
+    background: var(--panel); position: relative;
+  }
+  .layer .tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--faint); }
+  .layer h5 { margin: 6px 0 8px; font-size: 15px; }
+  .layer ul { margin: 8px 0 0; padding-left: 16px; color: var(--muted); font-size: 12.5px; }
+  .layer li { margin: 3px 0; }
+  .flowarrow {
+    flex: none; width: 62px; display: grid; place-items: center; color: var(--blue);
+    position: relative;
+  }
+  .flowarrow span { font-size: 11px; color: var(--faint); position: absolute; top: 8px; width: 90px; text-align: center; }
+  .flowarrow .a { font-size: 26px; }
+
+  /* ---- Steps (login/data flow) ---- */
+  .steps { margin-top: 24px; position: relative; }
+  .step {
+    display: grid; grid-template-columns: 44px 1fr; gap: 16px; padding: 0 0 22px; position: relative;
+  }
+  .step:not(:last-child)::before {
+    content: ""; position: absolute; left: 21px; top: 40px; bottom: -4px; width: 2px;
+    background: linear-gradient(var(--border), transparent);
+  }
+  .step .num {
+    width: 44px; height: 44px; border-radius: 11px; flex: none;
+    display: grid; place-items: center; font-weight: 800; font-size: 16px;
+    background: linear-gradient(135deg, var(--blue-soft), #0b1b3a);
+    border: 1px solid #2b4d8a; color: #cfe0ff;
+  }
+  .step.ok .num { background: linear-gradient(135deg, #14532d, #06210f); border-color: #1f7a3d; color: #bbf7d0; }
+  .step .body { padding-top: 3px; }
+  .step .body h4 { margin: 6px 0 4px; font-size: 15.5px; }
+  .step .body p { margin: 0 0 8px; color: var(--muted); font-size: 13.5px; }
+
+  /* ---- Code ---- */
+  pre {
+    margin: 10px 0 0; background: #0b0b0f; border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px; overflow-x: auto;
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.65; color: #d4d4d8;
+  }
+  code.inline {
+    font-family: var(--mono); font-size: 12.5px; background: var(--panel-2);
+    border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; color: #e9e9ee;
+  }
+  .tok-k { color: #c084fc; } .tok-s { color: #86efac; } .tok-c { color: #6b7280; font-style: italic; }
+  .tok-f { color: #7dd3fc; } .tok-n { color: #fca5a5; }
+
+  /* ---- Tables ---- */
+  table { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 13.5px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
+  th { color: var(--faint); text-transform: uppercase; font-size: 11px; letter-spacing: 1px; }
+  td code, th code { font-family: var(--mono); font-size: 12px; }
+  tr:hover td { background: rgba(255,255,255,0.015); }
+
+  /* ---- Formula cards ---- */
+  .formula {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px 20px;
+  }
+  .formula .label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--violet); }
+  .formula h4 { margin: 4px 0 12px; font-size: 16px; }
+  .eq {
+    font-family: var(--mono); font-size: 15px; color: #f4f4f5; background: #0b0b0f;
+    border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .frac { display: inline-flex; flex-direction: column; text-align: center; vertical-align: middle; margin: 0 4px; }
+  .frac .num { border-bottom: 1.5px solid #6b7280; padding: 0 8px 2px; }
+  .frac .den { padding: 2px 8px 0; }
+  .formula .note { margin: 12px 0 0; color: var(--muted); font-size: 13px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700;
+    padding: 3px 9px; border-radius: 6px;
+  }
+  .b-green { background: rgba(34,197,94,0.12); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+  .b-red { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+
+  .callout {
+    margin-top: 18px; border-radius: 12px; padding: 14px 16px; font-size: 13.5px;
+    border: 1px solid; display: grid; grid-template-columns: 26px 1fr; gap: 12px;
+  }
+  .callout.warn { background: rgba(245,158,11,0.07); border-color: rgba(245,158,11,0.3); }
+  .callout.info { background: rgba(59,130,246,0.07); border-color: rgba(59,130,246,0.28); }
+  .callout.good { background: rgba(34,197,94,0.07); border-color: rgba(34,197,94,0.28); }
+  .callout .cico { font-size: 18px; }
+  .callout p { margin: 0; color: #d4d4d8; }
+
+  footer { color: var(--faint); font-size: 12.5px; text-align: center; padding: 40px 0 0; border-top: 1px solid var(--border-soft); margin-top: 60px; }
+  .mut { color: var(--muted); }
+  .pill-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .pill { font-family: var(--mono); font-size: 11.5px; padding: 3px 8px; border-radius: 6px; background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><div class="logo">T</div> TradeDashboard <span class="mut" style="font-weight:500;font-size:13px">· Architecture</span></div>
+    <nav class="anchors">
+      <a href="#overview">Overview</a>
+      <a href="#security">Security</a>
+      <a href="#auth">Login</a>
+      <a href="#data">Data Flow</a>
+      <a href="#math">Calculations</a>
+      <a href="#frontend">Frontend</a>
+      <a href="#lifecycle">Lifecycle</a>
+      <a href="#files">Files</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="eyebrow">System Architecture Report</div>
+    <h1>Real-time Indian stock<br /><span class="grad">breakout &amp; relative-strength</span> dashboard</h1>
+    <p class="lead">A production Backend-For-Frontend that authenticates to FYERS API v3 automatically, ingests
+      millisecond ticks, computes technical engines in memory, and streams the full watchlist to the browser once
+      per second over Server-Sent Events.</p>
+    <div class="chips">
+      <span class="chip"><span class="dot" style="background:var(--green)"></span>FYERS API v3</span>
+      <span class="chip"><span class="dot" style="background:var(--blue)"></span>FastAPI BFF</span>
+      <span class="chip"><span class="dot" style="background:var(--violet)"></span>SSE @ 1&nbsp;Hz</span>
+      <span class="chip"><span class="dot" style="background:var(--cyan)"></span>React + Canvas</span>
+      <span class="chip"><span class="dot" style="background:var(--amber)"></span>Automated TOTP login</span>
+    </div>
+  </div>
+
+  <!-- OVERVIEW -->
+  <section id="overview">
+    <div class="eyebrow">01 — Topology</div>
+    <h2>System topology &amp; data plane</h2>
+    <p class="sub">Three isolated tiers. The browser never touches the broker: all secrets and the raw broker
+      websocket live only on the backend, which throttles the firehose of ticks into a single 1-second payload.</p>
+
+    <div class="topo">
+      <div class="layers">
+        <div class="layer">
+          <div class="tag">Source</div>
+          <h5>🟢 FYERS API v3</h5>
+          <ul>
+            <li>REST: history, quotes</li>
+            <li>WebSocket: SymbolUpdate</li>
+            <li>Vagator login endpoints</li>
+            <li>Millisecond binary ticks</li>
+          </ul>
+        </div>
+        <div class="flowarrow"><span>ms ticks + REST</span><div class="a">→</div></div>
+        <div class="layer">
+          <div class="tag">Backend-For-Frontend</div>
+          <h5>🔵 Python · FastAPI</h5>
+          <ul>
+            <li>Automated TOTP login (08:45)</li>
+            <li>REST backfill (ranges, ORB)</li>
+            <li>In-memory math engines</li>
+            <li>Thread-safe state store</li>
+            <li>Market-hours gating</li>
+          </ul>
+        </div>
+        <div class="flowarrow"><span>1-sec JSON · SSE</span><div class="a">→</div></div>
+        <div class="layer">
+          <div class="tag">Client</div>
+          <h5>🟣 React · Vite · Tailwind</h5>
+          <ul>
+            <li>EventSource stream</li>
+            <li>Canvas range bars</li>
+            <li>React.memo isolated rows</li>
+            <li>Filters / sort</li>
+            <li>localStorage offline cache</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid c4">
+      <div class="card"><h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">◈</span>Zero data cost</h4><p>FYERS native 5,000-symbol websocket; the 42-symbol watchlist + NIFTY 50 benchmark stream free.</p></div>
+      <div class="card"><h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">⚡</span>Throttled delivery</h4><p>Ticks land at ms resolution; the client is fed a single batched payload exactly once per second.</p></div>
+      <div class="card"><h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">🔒</span>Secrets isolated</h4><p>Client ID, secret, TOTP seed, PIN are backend env vars — never shipped to the browser.</p></div>
+      <div class="card"><h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">↻</span>Self-healing</h4><p>Auto-reconnect websocket, token cache, and a localStorage snapshot for graceful offline/standby.</p></div>
+    </div>
+  </section>
+
+  <!-- SECURITY -->
+  <section id="security">
+    <div class="eyebrow">02 — Boundary</div>
+    <h2>Security model</h2>
+    <p class="sub">The architectural boundary is the whole point of the BFF: credentials and the broker connection are
+      quarantined server-side.</p>
+    <div class="grid c2">
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(239,68,68,0.14);color:#f87171">✕</span>Never on the frontend</h4>
+        <p>API keys · Client ID · Secret Key · TOTP seed · trading PIN · access token · the raw broker websocket.</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">✓</span>Backend-only</h4>
+        <p>Loaded from <code class="inline">.env</code> via <code class="inline">python-dotenv</code>; the daily token is cached to <code class="inline">.token_cache.json</code> (git-ignored).</p>
+      </div>
+    </div>
+    <div class="callout info"><div class="cico">🛡️</div><p><b>Corporate TLS.</b> On a network with SSL inspection, Python's bundled CA store rejects the broker's cert. <code class="inline">pip-system-certs</code> routes TLS through the Windows certificate store (which holds the corporate root CA), fixing <code class="inline">requests</code>, the FYERS SDK, and the websocket at once.</p></div>
+  </section>
+
+  <!-- AUTH -->
+  <section id="auth">
+    <div class="eyebrow">03 — Authentication</div>
+    <h2>Login method &amp; flow</h2>
+    <p class="sub">Fyers access tokens expire every 24&nbsp;hours. Rather than a manual OAuth redirect, the backend
+      drives Fyers' programmatic login using your own credentials + a TOTP seed — the standard headless algo pattern.
+      A newly created app requires a <b>one-time browser consent</b>; every day after is fully automatic.</p>
+
+    <h3>The daily automated chain</h3>
+    <div class="steps">
+      <div class="step ok">
+        <div class="num">1</div>
+        <div class="body">
+          <h4>Send login OTP challenge</h4>
+          <p><code class="inline">POST /vagator/v2/send_login_otp_v2</code> — the base64 login id opens a TOTP session.</p>
+          <pre><span class="tok-c"># api-t2.fyers.in</span>
+{ <span class="tok-s">"fy_id"</span>: base64(FY_ID), <span class="tok-s">"app_id"</span>: <span class="tok-s">"2"</span> }  <span class="tok-c">→ request_key  (sub: totp_login)</span></pre>
+        </div>
+      </div>
+      <div class="step ok">
+        <div class="num">2</div>
+        <div class="body">
+          <h4>Verify TOTP</h4>
+          <p><code class="inline">POST /vagator/v2/verify_otp</code> — code from <code class="inline">pyotp.TOTP(seed).now()</code>. Generated boundary-safe (avoids the tail of the 30s window) with a one-shot retry.</p>
+          <pre>{ <span class="tok-s">"request_key"</span>: …, <span class="tok-s">"otp"</span>: TOTP() }  <span class="tok-c">→ request_key  (sub: verify_pin)</span></pre>
+        </div>
+      </div>
+      <div class="step ok">
+        <div class="num">3</div>
+        <div class="body">
+          <h4>Verify PIN → vagator token</h4>
+          <p><code class="inline">POST /vagator/v2/verify_pin_v2</code> — the <code class="inline">_v2</code> variant is required; the base64 PIN yields a short-lived login access token.</p>
+          <pre>{ <span class="tok-s">"request_key"</span>: …, <span class="tok-s">"identity_type"</span>: <span class="tok-s">"pin"</span>, <span class="tok-s">"identifier"</span>: base64(PIN) }
+    <span class="tok-c">→ data.access_token  (the "vagator" bearer)</span></pre>
+        </div>
+      </div>
+      <div class="step ok">
+        <div class="num">4</div>
+        <div class="body">
+          <h4>Obtain the OAuth auth code</h4>
+          <p><code class="inline">POST /api/v3/token</code> with the vagator bearer. For an <b>authorized</b> app this returns a redirect URL carrying the real <code class="inline">auth_code</code> (<code class="inline">sub: auth_code</code>).</p>
+          <pre><span class="tok-c"># api-t1.fyers.in</span>
+Bearer &lt;vagator_token&gt;
+{ <span class="tok-s">"fyers_id"</span>, <span class="tok-s">"app_id"</span>, <span class="tok-s">"redirect_uri"</span>, <span class="tok-s">"appType"</span>,
+  <span class="tok-s">"response_type"</span>: <span class="tok-s">"code"</span>, <span class="tok-s">"create_cookie"</span>: <span class="tok-k">true</span> }
+    <span class="tok-c">→ Url?auth_code=…&amp;state=dashboard</span></pre>
+        </div>
+      </div>
+      <div class="step ok">
+        <div class="num">5</div>
+        <div class="body">
+          <h4>Exchange for the API access token</h4>
+          <p><code class="inline">SessionModel.generate_token()</code> POSTs to <code class="inline">/validate-authcode</code> with <code class="inline">appIdHash = SHA256("client_id:secret")</code> + the auth code.</p>
+          <pre>session.set_token(auth_code)
+token = session.generate_token()[<span class="tok-s">"access_token"</span>]  <span class="tok-c"># valid until end of day</span></pre>
+        </div>
+      </div>
+      <div class="step ok">
+        <div class="num">6</div>
+        <div class="body">
+          <h4>Cache &amp; use</h4>
+          <p>Token is date-stamped into <code class="inline">.token_cache.json</code> (survives restarts today), then powers the REST <code class="inline">FyersModel</code> and the <code class="inline">FyersDataSocket</code> feed (<code class="inline">CLIENT_ID:token</code>).</p>
+        </div>
+      </div>
+    </div>
+
+    <h3>One-time consent for a new app</h3>
+    <p class="sub">A freshly created app is not yet authorized against your account, so step&nbsp;4 returns a pre-consent
+      <code class="inline">data.auth</code> token (<code class="inline">sub: access_token</code>) with no <code class="inline">auth_code</code> — which <code class="inline">/validate-authcode</code> rejects with <code class="inline">-437</code>.
+      Running <code class="inline">manual_auth.py</code> once (browser login → <b>Allow</b> → paste the redirected URL) authorizes the
+      app permanently. After that, the chain above runs unattended.</p>
+
+    <h3>Token lifecycle</h3>
+    <div class="grid c3">
+      <div class="card"><h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">⏰</span>08:45 IST cron</h4><p>APScheduler force-refreshes a fresh token before the open — no manual step.</p></div>
+      <div class="card"><h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">💾</span>Same-day cache</h4><p>Restarts reuse the cached token; a stale (previous-day) cache triggers re-login.</p></div>
+      <div class="card"><h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">🔁</span>Graceful fallback</h4><p>If login fails, the server stays up and serves the last snapshot instead of crashing.</p></div>
+    </div>
+
+    <h3>Environment gotchas resolved</h3>
+    <table>
+      <thead><tr><th style="width:34%">Symptom</th><th style="width:33%">Root cause</th><th>Resolution</th></tr></thead>
+      <tbody>
+        <tr><td><code>CERTIFICATE_VERIFY_FAILED</code></td><td>Corporate TLS inspection; bundled CA store lacks the root CA</td><td><code>pip-system-certs</code> → Windows cert store</td></tr>
+        <tr><td>Install fails on <code>aiohttp 3.9.3</code></td><td>No Python 3.13 wheel; pinned by fyers-apiv3</td><td>Install fyers with <code>--no-deps</code> + compatible libs</td></tr>
+        <tr><td><code>No module named pkg_resources</code></td><td>Removed in setuptools ≥ 81</td><td>Pin <code>setuptools&lt;81</code></td></tr>
+        <tr><td><code>invalid totp</code> (intermittent)</td><td>Code generated at 30s window boundary</td><td>Boundary-safe generation + one retry</td></tr>
+        <tr><td><code>-437 invalid auth code</code></td><td>New app not yet authorized → pre-consent <code>data.auth</code></td><td>One-time <code>manual_auth.py</code> consent</td></tr>
+        <tr><td>Endpoint <code>-1025</code> / <code>-1006</code></td><td>Wrong endpoint variant</td><td><code>send_login_otp_v2</code>, <code>verify_pin_v2</code>; <code>verify_otp</code> stays non-v2</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- DATA FLOW -->
+  <section id="data">
+    <div class="eyebrow">04 — Data plane</div>
+    <h2>Complete data-retrieval flow</h2>
+    <p class="sub">Two ingestion paths feed one thread-safe in-memory state: a REST <b>backfill</b> at startup so no field is
+      ever blank, and the live <b>websocket</b> for streaming ticks. A per-second SSE generator packages state for the client.</p>
+
+    <h3>A · Startup REST backfill</h3>
+    <div class="grid c3">
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">1</span>Previous day</h4>
+        <p>Daily candles (<code class="inline">resolution:"D"</code>, ~12d) → last <i>completed</i> day's high / low / close for the benchmark &amp; every stock.</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">2</span>Today's ORB</h4>
+        <p>30-min candles for today → C1–C4 high/low keyed by candle start-time, plus today's running high/low.</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">3</span>Quote seed</h4>
+        <p>Batched <code class="inline">quotes()</code> (≤50/req) → an initial LTP so rows render fully before the first tick.</p>
+      </div>
+    </div>
+
+    <h3>B · Live websocket ingestion</h3>
+    <div class="topo" style="margin-top:16px">
+      <div class="layers" style="min-width:640px">
+        <div class="layer"><div class="tag">Socket</div><h5>FyersDataSocket</h5><ul><li>SymbolUpdate mode</li><li>auto-reconnect</li><li>runs on a daemon thread</li></ul></div>
+        <div class="flowarrow"><span>on_message</span><div class="a">→</div></div>
+        <div class="layer"><div class="tag">Normalize</div><h5>_handle_tick</h5><ul><li>defensive key read</li><li>NIFTY → set_nifty()</li><li>equity → process_tick</li></ul></div>
+        <div class="flowarrow"><span>under lock</span><div class="a">→</div></div>
+        <div class="layer"><div class="tag">Compute</div><h5>process_incoming_tick</h5><ul><li>LTP · today H/L</li><li>%Δ · RS · day-pos</li><li>ORB evaluation</li></ul></div>
+        <div class="flowarrow"><span>mutates</span><div class="a">→</div></div>
+        <div class="layer"><div class="tag">State</div><h5>MarketState</h5><ul><li>RLock guarded</li><li>plain dicts</li><li>market_open flag</li></ul></div>
+      </div>
+    </div>
+
+    <h3>C · Per-second SSE broadcast</h3>
+    <p class="sub">The generator snapshots state under lock, computes per-payload range coordinates, and emits one framed
+      JSON blob every second. The client consumes it via <code class="inline">EventSource</code>.</p>
+    <pre><span class="tok-k">async def</span> <span class="tok-f">event_generator</span>():
+    <span class="tok-k">while</span> <span class="tok-k">True</span>:
+        <span class="tok-k">if</span> <span class="tok-k">await</span> request.is_disconnected(): <span class="tok-k">break</span>
+        payload = build_payload()          <span class="tok-c"># { market_open, nifty, stocks[] }</span>
+        <span class="tok-k">yield</span> <span class="tok-s">f"data: {json.dumps(payload)}\n\n"</span>
+        <span class="tok-k">await</span> asyncio.sleep(<span class="tok-n">1.0</span>)         <span class="tok-c"># throttled 1 Hz</span></pre>
+
+    <table>
+      <thead><tr><th>Endpoint</th><th>Method</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>/api/stream</code></td><td>SSE</td><td>1&nbsp;Hz batched payload for all instruments</td></tr>
+        <tr><td><code>/api/snapshot</code></td><td>GET</td><td>One-shot state (initial / offline cache)</td></tr>
+        <tr><td><code>/api/health</code></td><td>GET</td><td>Liveness + market-open flag</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- MATH -->
+  <section id="math">
+    <div class="eyebrow">05 — Engines</div>
+    <h2>Mathematical calculations</h2>
+    <p class="sub">Every tick recomputes four deterministic engines in memory before the next broadcast. All functions are
+      pure and unit-tested.</p>
+
+    <div class="grid c2">
+      <div class="formula">
+        <div class="label">Engine A</div>
+        <h4>Intraday Relative Strength vs NIFTY 50</h4>
+        <div class="eq">IRS<sub>i,t</sub> = Δ%&nbsp;Stock<sub>i,t</sub> − Δ%&nbsp;Index<sub>t</sub></div>
+        <p class="note">Each side is % change vs its own previous close. The sign classifies the row:</p>
+        <div class="pill-row" style="margin-top:10px">
+          <span class="badge b-green">IRS &gt; 0 · Outperform · #22c55e</span>
+          <span class="badge b-red">IRS &lt; 0 · Underperform · #ef4444</span>
+        </div>
+      </div>
+
+      <div class="formula">
+        <div class="label">Engine D</div>
+        <h4>Day Range Position (%)</h4>
+        <div class="eq">
+          <span class="frac"><span class="num">LTP<sub>t</sub> − T<sub>L</sub></span><span class="den">T<sub>H</sub> − T<sub>L</sub></span></span> × 100
+        </div>
+        <p class="note">Where the price sits inside today's low→high band. Feeds the slider filter directly; a zero-span
+          guard returns 0 to avoid division errors.</p>
+      </div>
+
+      <div class="formula">
+        <div class="label">Engine B</div>
+        <h4>30-min Opening Range Breakout (C1–C4)</h4>
+        <div class="eq">Upper<sub>Cn</sub> = max(P)&nbsp;&nbsp;·&nbsp;&nbsp;Lower<sub>Cn</sub> = min(P)&nbsp;&nbsp;<span class="mut">over t ∈ Cn</span></div>
+        <p class="note">Candles: C1 09:15–09:45 · C2 09:45–10:15 · C3 10:15–10:45 · C4 10:45–11:15. Once a candle
+          completes, a breach of its bound triggers a signal; the <b>newest completed candle wins</b>, and repeated
+          same-state ticks don't re-fire.</p>
+        <div class="pill-row" style="margin-top:10px">
+          <span class="badge b-green">LTP &gt; Upper → Bull • Cn</span>
+          <span class="badge b-red">LTP &lt; Lower → Bear • Cn</span>
+        </div>
+      </div>
+
+      <div class="formula">
+        <div class="label">Engine C</div>
+        <h4>Normalized Dual-Range Mapper</h4>
+        <div class="eq">
+          x(P) = <span class="frac"><span class="num">P − min</span><span class="den">max − min</span></span> × 100
+        </div>
+        <p class="note">With <code class="inline">min = min(Y<sub>L</sub>, T<sub>L</sub>)</code> and <code class="inline">max = max(Y<sub>H</sub>, T<sub>H</sub>)</code>, both sessions map onto one 0–100% scale so
+          yesterday's grey bar, today's blue bar, and the LTP tick share coordinates on a single canvas element.</p>
+      </div>
+    </div>
+
+    <div class="callout good"><div class="cico">✓</div><p><b>Verified.</b> The engine suite passes its unit tests — <code class="inline">python -m tests.test_calculations</code> (pct-change, IRS, day-range, dual-range map, ORB breakout &amp; precedence).</p></div>
+  </section>
+
+  <!-- FRONTEND -->
+  <section id="frontend">
+    <div class="eyebrow">06 — Client</div>
+    <h2>Frontend rendering</h2>
+    <p class="sub">Built for a stable frame rate across 40+ live rows.</p>
+    <div class="grid c4">
+      <div class="card"><h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">🎨</span>Canvas bars</h4><p>Pre-normalized coordinates rasterized on <code class="inline">&lt;canvas&gt;</code> — no per-pixel DOM, DPR-aware.</p></div>
+      <div class="card"><h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">🧩</span>React.memo rows</h4><p>Re-renders isolated to rows whose data actually changed.</p></div>
+      <div class="card"><h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">🔎</span>Filters &amp; sort</h4><p>Signal · sector · day-range slider · multi-key sort, all client-side via <code class="inline">useMemo</code>.</p></div>
+      <div class="card"><h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">📴</span>Offline cache</h4><p>Each payload mirrored to <code class="inline">localStorage</code>; on drop/standby it renders the last snapshot with a Closed/Offline badge.</p></div>
+    </div>
+  </section>
+
+  <!-- LIFECYCLE -->
+  <section id="lifecycle">
+    <div class="eyebrow">07 — Operations</div>
+    <h2>Daily lifecycle</h2>
+    <p class="sub">APScheduler on the IST timezone; if the process boots mid-session it jumps straight to the correct state.</p>
+    <div class="steps">
+      <div class="step"><div class="num" style="background:linear-gradient(135deg,#78350f,#3a1d05);border-color:#a16207;color:#fde68a">☀</div><div class="body"><h4>08:45 — Daily token</h4><p>Force-refresh a fresh access token via the automated TOTP chain (Mon–Fri).</p></div></div>
+      <div class="step"><div class="num" style="background:linear-gradient(135deg,#14532d,#06210f);border-color:#1f7a3d;color:#bbf7d0">▶</div><div class="body"><h4>09:15 — Market open</h4><p>Backfill ranges + ORB, flip <code class="inline">market_open = true</code>, launch the websocket thread.</p></div></div>
+      <div class="step"><div class="num" style="background:linear-gradient(135deg,#1e3a8a,#0b1b3a);border-color:#2b4d8a;color:#cfe0ff">≈</div><div class="body"><h4>09:15–15:30 — Live</h4><p>Ticks stream in; SSE broadcasts the computed state once per second.</p></div></div>
+      <div class="step"><div class="num" style="background:linear-gradient(135deg,#3f0d0d,#210606);border-color:#7f1d1d;color:#fecaca">■</div><div class="body"><h4>15:30 — Standby</h4><p>Close the websocket to conserve bandwidth; UI shows Closed with the final snapshot.</p></div></div>
+    </div>
+    <div class="callout info"><div class="cico">🧪</div><p><b>Dev override.</b> <code class="inline">FORCE_MARKET_OPEN=true</code> in <code class="inline">.env</code> runs the engine regardless of the clock to exercise the full pipeline outside market hours.</p></div>
+  </section>
+
+  <!-- FILES -->
+  <section id="files">
+    <div class="eyebrow">08 — Map</div>
+    <h2>Module map</h2>
+    <table>
+      <thead><tr><th style="width:30%">File</th><th>Responsibility</th></tr></thead>
+      <tbody>
+        <tr><td><code>app/config.py</code></td><td>Env vars, watchlist (42 symbols), session timings, symbol helpers</td></tr>
+        <tr><td><code>app/state.py</code></td><td>Thread-safe in-memory <code>MarketState</code> (RLock)</td></tr>
+        <tr><td><code>app/auth.py</code></td><td>Automated TOTP login chain + token cache</td></tr>
+        <tr><td><code>app/calculations.py</code></td><td>IRS · ORB · dual-range mapper · day-range %, + tick processor</td></tr>
+        <tr><td><code>app/fyers_service.py</code></td><td>REST backfill + websocket ingestion (lifecycle-managed)</td></tr>
+        <tr><td><code>app/scheduler.py</code></td><td>08:45 login cron · 09:15 start · 15:30 standby · market-hours gate</td></tr>
+        <tr><td><code>app/main.py</code></td><td>FastAPI app: SSE stream, snapshot, health, lifespan</td></tr>
+        <tr><td><code>manual_auth.py</code></td><td>One-time browser consent for a new app</td></tr>
+        <tr><td><code>diagnose_login.py</code> · <code>check_totp.py</code></td><td>Login diagnostics (safe, credential-masked)</td></tr>
+        <tr><td><code>frontend/src/*</code></td><td>App · useMarketStream hook · Canvas range bar · watchlist row</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    TradeDashboard · FYERS API v3 · FastAPI + React · Architecture report generated 09 Jul 2026
+  </footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Secrets & runtime cache
+.env
+backend/.token_cache.json
+# FYERS SDK logs — may contain access tokens / request details
+*.log
+
+# Local Claude Code settings (personal permission allowlist)
+.claude/settings.local.json
+
+# Node / frontend
+node_modules/
+frontend/dist/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

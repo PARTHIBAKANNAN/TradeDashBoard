@@ -1,0 +1,23 @@
+# systemd unit for the venv deploy (primary path). Install to /etc/systemd/system/tradedash.service
+# Assumes: code at /opt/tradedash, venv at /opt/tradedash/backend/.venv, env at /opt/tradedash/.env
+#
+#   sudo cp deploy/tradedash.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now tradedash
+#   journalctl -u tradedash -f     # follow logs
+
+[Unit]
+Description=TradeDashboard FYERS BFF
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/tradedash/backend
+EnvironmentFile=/opt/tradedash/.env
+ExecStart=/opt/tradedash/backend/.venv/bin/python run.py
+Restart=always
+RestartSec=5
+# One instance only — FYERS allows a single websocket connection per app.
+
+[Install]
+WantedBy=multi-user.target

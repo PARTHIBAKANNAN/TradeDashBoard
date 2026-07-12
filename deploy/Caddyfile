@@ -1,0 +1,14 @@
+# Caddy reverse proxy with automatic Let's Encrypt HTTPS.
+# Replace the domain with your DuckDNS subdomain. Install Caddy, put this at
+# /etc/caddy/Caddyfile, then: sudo systemctl reload caddy
+#
+# Requires ports 80 + 443 open (Oracle VCN Security List AND the host firewall).
+
+parthitrade.duckdns.org {
+    encode zstd gzip
+
+    # SSE needs streaming (no response buffering). Caddy streams by default; make it explicit.
+    reverse_proxy 127.0.0.1:8000 {
+        flush_interval -1
+    }
+}
