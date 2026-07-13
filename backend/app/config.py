@@ -74,60 +74,107 @@ ORB_CANDLES = [
 
 BENCHMARK_SYMBOL = "NSE:NIFTY50-INDEX"
 
-# ----------------- Watchlist (40+ equities) -----------------
+# ----------------- Watchlist (curated from user-supplied CSVs) -----------------
 # Fyers symbol format: "NSE:<TICKER>-EQ". Edit freely; sector drives the UI filter.
 WATCHLIST = {
-    # IT
-    "NSE:TCS-EQ": "IT",
-    "NSE:INFY-EQ": "IT",
-    "NSE:WIPRO-EQ": "IT",
-    "NSE:HCLTECH-EQ": "IT",
-    "NSE:TECHM-EQ": "IT",
-    "NSE:PERSISTENT-EQ": "IT",
+    # Energy (Oil & Gas)
+    "NSE:RELIANCE-EQ": "Energy",
+    "NSE:ONGC-EQ": "Energy",
+    "NSE:OIL-EQ": "Energy",
+    "NSE:COALINDIA-EQ": "Energy",
+    "NSE:PETRONET-EQ": "Energy",
+    "NSE:IOC-EQ": "Energy",
+    "NSE:HINDPETRO-EQ": "Energy",
+    "NSE:IGL-EQ": "Energy",
+    # Power & Renewables
+    "NSE:JSWENERGY-EQ": "Power",
+    "NSE:ADANIENSOL-EQ": "Power",
+    "NSE:TORNTPOWER-EQ": "Power",
+    "NSE:POWERGRID-EQ": "Power",
+    "NSE:IREDA-EQ": "Power",
+    "NSE:ADANIGREEN-EQ": "Power",
+    "NSE:NHPC-EQ": "Power",
+    "NSE:NTPC-EQ": "Power",
+    "NSE:TATAPOWER-EQ": "Power",
+    "NSE:SUZLON-EQ": "Power",
+    "NSE:INOXWIND-EQ": "Power",
+    "NSE:PREMIERENE-EQ": "Power",
+    # Capital Goods / Industrials
+    "NSE:SOLARINDS-EQ": "Capital Goods",
+    "NSE:CGPOWER-EQ": "Capital Goods",
+    "NSE:POWERINDIA-EQ": "Capital Goods",
+    "NSE:BDL-EQ": "Capital Goods",
+    "NSE:CUMMINSIND-EQ": "Capital Goods",
+    "NSE:BHARATFORG-EQ": "Capital Goods",
+    "NSE:ASTRAL-EQ": "Capital Goods",
+    "NSE:MAZDOCK-EQ": "Capital Goods",
+    # Consumer Durables
+    "NSE:BLUESTARCO-EQ": "Consumer Durables",
+    "NSE:VOLTAS-EQ": "Consumer Durables",
+    # Infra / Logistics
+    "NSE:GMRAIRPORT-EQ": "Infra",
+    "NSE:CONCOR-EQ": "Infra",
+    "NSE:RVNL-EQ": "Infra",
+    # Auto
+    "NSE:ASHOKLEY-EQ": "Auto",
     # Banking
     "NSE:HDFCBANK-EQ": "Banking",
     "NSE:ICICIBANK-EQ": "Banking",
     "NSE:SBIN-EQ": "Banking",
     "NSE:AXISBANK-EQ": "Banking",
     "NSE:KOTAKBANK-EQ": "Banking",
-    "NSE:INDUSINDBK-EQ": "Banking",
-    "NSE:BANKBARODA-EQ": "Banking",
+    "NSE:FEDERALBNK-EQ": "Banking",
+    "NSE:AUBANK-EQ": "Banking",
+    "NSE:IDFCFIRSTB-EQ": "Banking",
+    # NBFC / Housing Finance
+    "NSE:HDFCAMC-EQ": "NBFC",
+    "NSE:RECLTD-EQ": "NBFC",
+    "NSE:LICHSGFIN-EQ": "NBFC",
+    "NSE:IRFC-EQ": "NBFC",
+    "NSE:PNBHOUSING-EQ": "NBFC",
+    "NSE:HUDCO-EQ": "NBFC",
+    "NSE:MUTHOOTFIN-EQ": "NBFC",
+    "NSE:SBICARD-EQ": "NBFC",
+    "NSE:BAJAJFINSV-EQ": "NBFC",
+    "NSE:JIOFIN-EQ": "NBFC",
+    "NSE:BAJFINANCE-EQ": "NBFC",
+    "NSE:IIFL-EQ": "NBFC",
+    "NSE:PFC-EQ": "NBFC",
+    "NSE:SHRIRAMFIN-EQ": "NBFC",
+    "NSE:SAMMAANCAP-EQ": "NBFC",
+    "NSE:CHOLAFIN-EQ": "NBFC",
+    # Insurance
+    "NSE:SBILIFE-EQ": "Insurance",
+    "NSE:ICICIPRULI-EQ": "Insurance",
+    "NSE:ICICIGI-EQ": "Insurance",
+    "NSE:LICI-EQ": "Insurance",
+    "NSE:HDFCLIFE-EQ": "Insurance",
+    # Capital Markets / Fintech
+    "NSE:ANGELONE-EQ": "Capital Markets",
+    "NSE:BSE-EQ": "Capital Markets",
+    "NSE:POLICYBZR-EQ": "Capital Markets",  
+    "NSE:CDSL-EQ": "Capital Markets",
+    "NSE:NUVAMA-EQ": "Capital Markets",
+    "NSE:PAYTM-EQ": "Capital Markets",
+    # Healthcare
+    "NSE:MAXHEALTH-EQ": "Healthcare",
+    "NSE:POLYMED-EQ": "Healthcare",
+    # Realty
+    "NSE:GODREJPROP-EQ": "Realty",
+    # IT
+    "NSE:PERSISTENT-EQ": "IT",
+    "NSE:MPHASIS-EQ": "IT",
+    "NSE:COFORGE-EQ": "IT",
     # Pharma
-    "NSE:SUNPHARMA-EQ": "Pharma",
-    "NSE:DRREDDY-EQ": "Pharma",
-    "NSE:CIPLA-EQ": "Pharma",
-    "NSE:DIVISLAB-EQ": "Pharma",
-    "NSE:APOLLOHOSP-EQ": "Pharma",
-    # Auto
-    "NSE:MARUTI-EQ": "Auto",
-    "NSE:M&M-EQ": "Auto",
-    "NSE:BAJAJ-AUTO-EQ": "Auto",
-    "NSE:EICHERMOT-EQ": "Auto",
-    "NSE:HEROMOTOCO-EQ": "Auto",
-    # Metals
-    "NSE:TATASTEEL-EQ": "Metals",
-    "NSE:JSWSTEEL-EQ": "Metals",
-    "NSE:HINDALCO-EQ": "Metals",
-    "NSE:COALINDIA-EQ": "Metals",
-    "NSE:VEDL-EQ": "Metals",
-    # FMCG
-    "NSE:HINDUNILVR-EQ": "FMCG",
-    "NSE:ITC-EQ": "FMCG",
-    "NSE:NESTLEIND-EQ": "FMCG",
-    "NSE:BRITANNIA-EQ": "FMCG",
-    "NSE:TATACONSUM-EQ": "FMCG",
-    # Energy / Infra
-    "NSE:RELIANCE-EQ": "Energy",
-    "NSE:ONGC-EQ": "Energy",
-    "NSE:NTPC-EQ": "Energy",
-    "NSE:POWERGRID-EQ": "Energy",
-    "NSE:LT-EQ": "Infra",
-    "NSE:ADANIPORTS-EQ": "Infra",
-    # Financials / Others
-    "NSE:BAJFINANCE-EQ": "Financials",
-    "NSE:BAJAJFINSV-EQ": "Financials",
-    "NSE:TITAN-EQ": "Consumer",
-    "NSE:ASIANPAINT-EQ": "Consumer",
+    "NSE:LUPIN-EQ": "Pharma",
+    "NSE:AUROPHARMA-EQ": "Pharma",
+    # Chemicals / Agro
+    "NSE:UPL-EQ": "Chemicals",
+    "NSE:PIIND-EQ": "Chemicals",
+    # Consumer / FMCG
+    "NSE:JUBLFOOD-EQ": "Consumer",
+    "NSE:INDHOTEL-EQ": "Consumer",
+    "NSE:PAGEIND-EQ": "Consumer",
 }
 
 
