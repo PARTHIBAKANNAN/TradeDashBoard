@@ -1,5 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useMarketStream } from "./hooks/useMarketStream.js";
+import {
+  useMarketStream,
+  useMarketMeta,
+  useSymbols,
+} from "./hooks/useMarketStream.js";
+import { marketStore } from "./store/marketStore.js";
 import WatchlistRow from "./components/WatchlistRow.jsx";
 
 const SORTS = {
@@ -146,20 +151,25 @@ function ConnectFyersBanner() {
 
 // ---------------- Dashboard ----------------
 function Dashboard({ user, onLogout }) {
-  const { data, connected } = useMarketStream();
+  useMarketStream();                    // starts/stops the singleton WS
+  const meta = useMarketMeta();
+  const symbols = useSymbols();
 
   const [selectedSignal, setSelectedSignal] = useState("All signals");
   const [selectedSector, setSelectedSector] = useState("All sectors");
   const [dayRangeThreshold, setDayRangeThreshold] = useState(0);
   const [sortKey, setSortKey] = useState("rs_desc");
 
-  const sectors = useMemo(() => {
-    const set = new Set((data.stocks || []).map((s) => s.sector));
-    return ["All sectors", ...Array.from(set).sort()];
-  }, [data.stocks]);
+  // Filter+sort re-runs when: symbol set changes, meta.lastSeq ticks (any data
+  // change), or a UI control changes. We snapshot the store synchronously here.
+  const { sectors, visibleSymbols } = useMemo(() => {
+    const rows = symbols
+      .map((s) => marketStore.getStock(s))
+      .filter(Boolean);
 
-  const filteredStocks = useMemo(() => {
-    const rows = (data.stocks || []).filter((stock) => {
+    const sectorSet = new Set(rows.map((r) => r.sector));
+
+    const filtered = rows.filter((stock) => {
       if (selectedSignal !== "All signals") {
         if (!stock.signal || !stock.signal.includes(selectedSignal)) return false;
       }
@@ -167,12 +177,18 @@ function Dashboard({ user, onLogout }) {
       if (stock.day_range_pos < dayRangeThreshold) return false;
       return true;
     });
-    return rows.sort(SORTS[sortKey].fn);
-  }, [data.stocks, selectedSignal, selectedSector, dayRangeThreshold, sortKey]);
 
-  const marketOpen = data.market_open;
-  const fyersConnected = data.fyers_connected;
-  const nifty = data.nifty || {};
+    filtered.sort(SORTS[sortKey].fn);
+    return {
+      sectors: ["All sectors", ...Array.from(sectorSet).sort()],
+      visibleSymbols: filtered.map((r) => r.symbol),
+    };
+  }, [symbols, meta.lastSeq, selectedSignal, selectedSector, dayRangeThreshold, sortKey]);
+
+  const marketOpen = meta.marketOpen;
+  const fyersConnected = meta.fyersConnected;
+  const nifty = meta.nifty || {};
+  const connected = meta.connected;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 p-6 font-sans">
@@ -199,9 +215,7 @@ function Dashboard({ user, onLogout }) {
               onChange={(e) => setSelectedSector(e.target.value)}
               className="w-full bg-zinc-850 border border-zinc-700 rounded p-2 text-sm text-white focus:outline-none"
             >
-              {sectors.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
+              {sectors.map((s) => (<option key={s}>{s}</option>))}
             </select>
           </Control>
 
@@ -212,9 +226,7 @@ function Dashboard({ user, onLogout }) {
               className="w-full bg-zinc-850 border border-zinc-700 rounded p-2 text-sm text-white focus:outline-none"
             >
               {Object.entries(SORTS).map(([key, { label }]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
+                <option key={key} value={key}>{label}</option>
               ))}
             </select>
           </Control>
@@ -240,20 +252,16 @@ function Dashboard({ user, onLogout }) {
         {/* Status / benchmark */}
         <div className="flex items-center justify-between border-b border-zinc-800 pb-4 mb-6">
           <div className="flex items-center space-x-3">
-            <span
-              className={`w-2.5 h-2.5 rounded-full ${
-                connected && marketOpen ? "bg-green-500 animate-pulse" : "bg-zinc-500"
-              }`}
-            />
+            <span className={`w-2.5 h-2.5 rounded-full ${
+              connected && marketOpen ? "bg-green-500 animate-pulse" : "bg-zinc-500"
+            }`} />
             <h1 className="text-lg font-bold tracking-tight text-white">Live Price Action Dashboard</h1>
-            <span
-              className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
-                marketOpen ? "bg-green-950 text-green-400" : "bg-zinc-800 text-zinc-400"
-              }`}
-            >
+            <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
+              marketOpen ? "bg-green-950 text-green-400" : "bg-zinc-800 text-zinc-400"
+            }`}>
               {marketOpen ? "Live" : connected ? "Closed" : "Offline"}
             </span>
-            <span className="text-xs text-zinc-500 font-mono">({filteredStocks.length} stocks)</span>
+            <span className="text-xs text-zinc-500 font-mono">({visibleSymbols.length} stocks)</span>
           </div>
           <div className="flex items-center gap-5">
             <div className="text-right">
@@ -265,17 +273,13 @@ function Dashboard({ user, onLogout }) {
                   {nifty.ltp?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}{" "}
                 </span>
                 <span className={nifty.pct_change >= 0 ? "text-green-400" : "text-red-400"}>
-                  {nifty.pct_change >= 0 ? "+" : ""}
-                  {nifty.pct_change}%
+                  {nifty.pct_change >= 0 ? "+" : ""}{nifty.pct_change}%
                 </span>
               </div>
             </div>
             <div className="text-right border-l border-zinc-800 pl-5">
               <div className="text-xs text-zinc-500">{user}</div>
-              <button
-                onClick={onLogout}
-                className="text-xs font-bold text-zinc-400 hover:text-white transition-colors"
-              >
+              <button onClick={onLogout} className="text-xs font-bold text-zinc-400 hover:text-white transition-colors">
                 Log out
               </button>
             </div>
@@ -295,12 +299,12 @@ function Dashboard({ user, onLogout }) {
               </tr>
             </thead>
             <tbody>
-              {filteredStocks.map((stock) => (
-                <WatchlistRow key={stock.symbol} stock={stock} />
+              {visibleSymbols.map((sym) => (
+                <WatchlistRow key={sym} symbol={sym} />
               ))}
             </tbody>
           </table>
-          {filteredStocks.length === 0 && (
+          {visibleSymbols.length === 0 && (
             <div className="py-10 text-center text-zinc-600 text-sm">
               No stocks match the current filters.
             </div>
