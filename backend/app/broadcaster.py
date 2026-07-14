@@ -6,10 +6,12 @@ Real-time streaming layer.
   * `build_frame`          pure differ: given previous and current snapshots,
                            returns a snapshot frame, a delta frame, or None.
 
-The `Broadcaster` class (see Task 2) drives these on a fixed cadence and fans
+The `Broadcaster` class defined below drives these on a fixed cadence and fans
 each frame out to connected WebSocket subscribers.
 """
-from typing import Optional
+import asyncio
+import json
+from typing import Callable, Optional
 
 # Every field the client needs to render a fresh row.
 SNAPSHOT_STOCK_FIELDS: tuple[str, ...] = (
@@ -104,11 +106,6 @@ def build_frame(prev: Optional[dict], curr: dict, seq: int,
     return frame
 
 
-import asyncio
-import json
-from typing import Callable
-
-
 class Broadcaster:
     """
     Ticks on a fixed interval, builds one frame per tick, and fans that
@@ -187,6 +184,9 @@ class Broadcaster:
         if needs_resync:
             # Forced snapshot always uses the current seq (either the one we
             # just bumped for the delta above, or a fresh one if there was no delta).
+            # seq is monotonic per SUBSCRIBER (each client tracks its own lastSeq).
+            # When both a delta and a forced snapshot are emitted in the same tick they
+            # may share a seq value — that's fine because no subscriber receives both.
             snap_seq = self._seq if frame is not None else next_seq
             if frame is None:
                 self._seq = snap_seq
