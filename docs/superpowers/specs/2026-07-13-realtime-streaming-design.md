@@ -71,10 +71,10 @@ Single class `Broadcaster`:
 - `_run()` — background task. Every `STREAM_INTERVAL` seconds:
     1. Snapshot `market_state` under lock (returns dict of primitives).
     2. Call `_build_frame(prev_snapshot, new_snapshot)`; returns either a
-       `snapshot` frame or a `delta` frame. Empty deltas (only `seq` and no
-       changed fields) are still emitted so clients can detect a stalled
-       server via the heartbeat interval.
-    3. Serialize once with `json.dumps`.
+       `snapshot` frame, a `delta` frame, or `None` if nothing changed
+       (nothing is sent to any subscriber in that case — WS-level pings
+       handle liveness).
+    3. If a frame was produced, serialize once with `json.dumps`.
     4. For each subscriber queue: try `put_nowait`. On `QueueFull`, drain the
        queue and put a fresh `snapshot` frame instead — this is the drop-oldest
        resync path for slow clients.
@@ -208,9 +208,9 @@ Backed by a small hand-rolled store (no external dependency) using
 - **Server restart:** client's WebSocket errors → backoff-reconnect → receives
   fresh `snapshot` with `seq=1`. No blank UI (localStorage cache still
   renders during the reconnect gap).
-- **Off-market:** broadcaster runs at 250 ms cadence but emits mostly empty
-  deltas (`seq` only). Cost is negligible. The `market_open: false` flag
-  flips once at market close.
+- **Off-market:** broadcaster still ticks at 250 ms but emits no frames
+  because nothing is changing. Only the transition frame carrying
+  `market_open: false` is sent at market close. Cost is negligible.
 - **Auth expiry mid-connection:** the session cookie is validated on
   WebSocket handshake only. If the session expires mid-stream, the stream
   keeps flowing until the client disconnects; the SPA's `/api/auth/me` poll
@@ -225,9 +225,8 @@ Backed by a small hand-rolled store (no external dependency) using
 ### Unit tests
 
 - `test_broadcaster.py`:
-    - Empty diff (identical snapshots) → delta with only `seq` and no
-      `stocks`/`nifty` keys (or an empty `stocks` list — pick one and stick
-      with it in the impl).
+    - Empty diff (identical snapshots) → `_build_frame` returns `None`; no
+      subscriber queue receives a message that tick.
     - Single stock changed → delta contains only that stock with only the
       changed fields.
     - First frame → `type == "snapshot"`, contains all stocks with all fields.
