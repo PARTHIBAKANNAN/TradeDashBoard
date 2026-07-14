@@ -118,13 +118,16 @@ function release() {
 }
 
 // ---- React hooks ----
+/**
+ * Starts the singleton WebSocket on mount and tears it down on unmount.
+ * Consumers read live state via useStock / useSymbols / useMarketMeta —
+ * this hook intentionally returns nothing.
+ */
 export function useMarketStream() {
   useEffect(() => {
     acquire();
     return () => release();
   }, []);
-  const meta = useMarketMeta();
-  return { connected: meta.connected };
 }
 
 export function useStock(symbol) {

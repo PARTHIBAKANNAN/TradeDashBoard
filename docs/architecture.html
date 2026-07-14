@@ -239,12 +239,12 @@
     <div class="eyebrow">System Architecture Report</div>
     <h1>Real-time Indian stock<br /><span class="grad">breakout &amp; relative-strength</span> dashboard</h1>
     <p class="lead">A production Backend-For-Frontend that authenticates to FYERS API v3 automatically, ingests
-      millisecond ticks, computes technical engines in memory, and streams the full watchlist to the browser once
-      per second over Server-Sent Events.</p>
+      millisecond ticks, computes technical engines in memory, and streams diffed state to the browser over a
+      WebSocket delta stream at 250 ms cadence.</p>
     <div class="chips">
       <span class="chip"><span class="dot" style="background:var(--green)"></span>FYERS API v3</span>
       <span class="chip"><span class="dot" style="background:var(--blue)"></span>FastAPI BFF</span>
-      <span class="chip"><span class="dot" style="background:var(--violet)"></span>SSE @ 1&nbsp;Hz</span>
+      <span class="chip"><span class="dot" style="background:var(--violet)"></span>WebSocket @ 250&nbsp;ms</span>
       <span class="chip"><span class="dot" style="background:var(--cyan)"></span>React + Canvas</span>
       <span class="chip"><span class="dot" style="background:var(--amber)"></span>Automated TOTP login</span>
     </div>
@@ -255,7 +255,7 @@
     <div class="eyebrow">01 — Topology</div>
     <h2>System topology &amp; data plane</h2>
     <p class="sub">Three isolated tiers. The browser never touches the broker: all secrets and the raw broker
-      websocket live only on the backend, which throttles the firehose of ticks into a single 1-second payload.</p>
+      websocket live only on the backend, which diffs each tick and fans out a minimal JSON delta to all clients.</p>
 
     <div class="topo">
       <div class="layers">
@@ -281,12 +281,12 @@
             <li>Market-hours gating</li>
           </ul>
         </div>
-        <div class="flowarrow"><span>1-sec JSON · SSE</span><div class="a">→</div></div>
+        <div class="flowarrow"><span>250 ms JSON deltas · WebSocket</span><div class="a">→</div></div>
         <div class="layer">
           <div class="tag">Client</div>
           <h5>🟣 React · Vite · Tailwind</h5>
           <ul>
-            <li>EventSource stream</li>
+            <li>WebSocket delta stream</li>
             <li>Canvas range bars</li>
             <li>React.memo isolated rows</li>
             <li>Filters / sort</li>
@@ -298,7 +298,7 @@
 
     <div class="grid c4">
       <div class="card"><h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">◈</span>Zero data cost</h4><p>FYERS native 5,000-symbol websocket; the 42-symbol watchlist + NIFTY 50 benchmark stream free.</p></div>
-      <div class="card"><h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">⚡</span>Throttled delivery</h4><p>Ticks land at ms resolution; the client is fed a single batched payload exactly once per second.</p></div>
+      <div class="card"><h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">⚡</span>Delta delivery</h4><p>Ticks land at ms resolution; the Broadcaster diffs state every 250 ms and sends only changed fields to each subscriber.</p></div>
       <div class="card"><h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">🔒</span>Secrets isolated</h4><p>Client ID, secret, TOTP seed, PIN are backend env vars — never shipped to the browser.</p></div>
       <div class="card"><h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">↻</span>Self-healing</h4><p>Auto-reconnect websocket, token cache, and a localStorage snapshot for graceful offline/standby.</p></div>
     </div>
@@ -421,7 +421,7 @@ token = session.generate_token()[<span class="tok-s">"access_token"</span>]  <sp
     <div class="eyebrow">04 — Data plane</div>
     <h2>Complete data-retrieval flow</h2>
     <p class="sub">Two ingestion paths feed one thread-safe in-memory state: a REST <b>backfill</b> at startup so no field is
-      ever blank, and the live <b>websocket</b> for streaming ticks. A per-second SSE generator packages state for the client.</p>
+      ever blank, and the live <b>websocket</b> for streaming ticks. A <code class="inline">Broadcaster</code> task diffs state every 250 ms and fans delta frames to all WebSocket subscribers.</p>
 
     <h3>A · Startup REST backfill</h3>
     <div class="grid c3">
@@ -452,21 +452,21 @@ token = session.generate_token()[<span class="tok-s">"access_token"</span>]  <sp
       </div>
     </div>
 
-    <h3>C · Per-second SSE broadcast</h3>
-    <p class="sub">The generator snapshots state under lock, computes per-payload range coordinates, and emits one framed
-      JSON blob every second. The client consumes it via <code class="inline">EventSource</code>.</p>
-    <pre><span class="tok-k">async def</span> <span class="tok-f">event_generator</span>():
-    <span class="tok-k">while</span> <span class="tok-k">True</span>:
-        <span class="tok-k">if</span> <span class="tok-k">await</span> request.is_disconnected(): <span class="tok-k">break</span>
-        payload = build_payload()          <span class="tok-c"># { market_open, nifty, stocks[] }</span>
-        <span class="tok-k">yield</span> <span class="tok-s">f"data: {json.dumps(payload)}\n\n"</span>
-        <span class="tok-k">await</span> asyncio.sleep(<span class="tok-n">1.0</span>)         <span class="tok-c"># throttled 1 Hz</span></pre>
+    <h3>C · 250 ms WebSocket broadcast</h3>
+    <p class="sub">A single <code class="inline">Broadcaster</code> task snapshots state every 250 ms, diffs it against the previous snapshot, and fans the minimal JSON delta (or a full snapshot on first connect / resync) to every subscriber via bounded <code class="inline">asyncio.Queue</code>s. The client connects via <code class="inline">WebSocket</code> and updates only changed rows.</p>
+    <pre><span class="tok-c"># Broadcaster._tick_once — runs every 250 ms</span>
+frame = build_frame(prev, curr, seq=next_seq)  <span class="tok-c"># None if nothing changed</span>
+<span class="tok-k">if</span> frame <span class="tok-k">is None</span> <span class="tok-k">and not</span> needs_resync:
+    <span class="tok-c"># emit heartbeat every ~5 s of quiet to keep client liveness timer alive</span>
+    ...
+<span class="tok-k">for</span> q <span class="tok-k">in</span> subscribers:
+    q.put_nowait(json.dumps(frame))            <span class="tok-c"># O(1) per subscriber</span></pre>
 
     <table>
       <thead><tr><th>Endpoint</th><th>Method</th><th>Purpose</th></tr></thead>
       <tbody>
-        <tr><td><code>/api/stream</code></td><td>SSE</td><td>1&nbsp;Hz batched payload for all instruments</td></tr>
-        <tr><td><code>/api/snapshot</code></td><td>GET</td><td>One-shot state (initial / offline cache)</td></tr>
+        <tr><td><code>/ws/stream</code></td><td>WebSocket</td><td>250 ms delta frames (<code>snapshot</code> on connect, <code>delta</code> on change, <code>heartbeat</code> on quiet)</td></tr>
+        <tr><td><code>/api/snapshot</code></td><td>GET</td><td>One-shot snapshot frame (same shape as WS snapshot; used to warm the store before WS connects)</td></tr>
         <tr><td><code>/api/health</code></td><td>GET</td><td>Liveness + market-open flag</td></tr>
       </tbody>
     </table>
@@ -549,7 +549,7 @@ token = session.generate_token()[<span class="tok-s">"access_token"</span>]  <sp
     <div class="steps">
       <div class="step"><div class="num" style="background:linear-gradient(135deg,#78350f,#3a1d05);border-color:#a16207;color:#fde68a">☀</div><div class="body"><h4>08:45 — Daily token</h4><p>Force-refresh a fresh access token via the automated TOTP chain (Mon–Fri).</p></div></div>
       <div class="step"><div class="num" style="background:linear-gradient(135deg,#14532d,#06210f);border-color:#1f7a3d;color:#bbf7d0">▶</div><div class="body"><h4>09:15 — Market open</h4><p>Backfill ranges + ORB, flip <code class="inline">market_open = true</code>, launch the websocket thread.</p></div></div>
-      <div class="step"><div class="num" style="background:linear-gradient(135deg,#1e3a8a,#0b1b3a);border-color:#2b4d8a;color:#cfe0ff">≈</div><div class="body"><h4>09:15–15:30 — Live</h4><p>Ticks stream in; SSE broadcasts the computed state once per second.</p></div></div>
+      <div class="step"><div class="num" style="background:linear-gradient(135deg,#1e3a8a,#0b1b3a);border-color:#2b4d8a;color:#cfe0ff">≈</div><div class="body"><h4>09:15–15:30 — Live</h4><p>Ticks stream in; the Broadcaster fans delta frames to all WebSocket subscribers every 250 ms.</p></div></div>
       <div class="step"><div class="num" style="background:linear-gradient(135deg,#3f0d0d,#210606);border-color:#7f1d1d;color:#fecaca">■</div><div class="body"><h4>15:30 — Standby</h4><p>Close the websocket to conserve bandwidth; UI shows Closed with the final snapshot.</p></div></div>
     </div>
     <div class="callout info"><div class="cico">🧪</div><p><b>Dev override.</b> <code class="inline">FORCE_MARKET_OPEN=true</code> in <code class="inline">.env</code> runs the engine regardless of the clock to exercise the full pipeline outside market hours.</p></div>
@@ -568,7 +568,7 @@ token = session.generate_token()[<span class="tok-s">"access_token"</span>]  <sp
         <tr><td><code>app/calculations.py</code></td><td>IRS · ORB · dual-range mapper · day-range %, + tick processor</td></tr>
         <tr><td><code>app/fyers_service.py</code></td><td>REST backfill + websocket ingestion (lifecycle-managed)</td></tr>
         <tr><td><code>app/scheduler.py</code></td><td>08:45 login cron · 09:15 start · 15:30 standby · market-hours gate</td></tr>
-        <tr><td><code>app/main.py</code></td><td>FastAPI app: SSE stream, snapshot, health, lifespan</td></tr>
+        <tr><td><code>app/main.py</code></td><td>FastAPI app: WebSocket stream (<code>/ws/stream</code>), snapshot, health, lifespan</td></tr>
         <tr><td><code>manual_auth.py</code></td><td>One-time browser consent for a new app</td></tr>
         <tr><td><code>diagnose_login.py</code> · <code>check_totp.py</code></td><td>Login diagnostics (safe, credential-masked)</td></tr>
         <tr><td><code>frontend/src/*</code></td><td>App · useMarketStream hook · Canvas range bar · watchlist row</td></tr>
