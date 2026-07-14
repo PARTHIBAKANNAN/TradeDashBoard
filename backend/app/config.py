@@ -28,7 +28,8 @@ CORS_ORIGINS = [
     for o in os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")
     if o.strip()
 ]
-STREAM_INTERVAL = float(os.getenv("STREAM_INTERVAL", "1.0"))
+STREAM_INTERVAL = float(os.getenv("STREAM_INTERVAL", "0.25"))
+BROADCAST_MAX_QUEUE = int(os.getenv("BROADCAST_MAX_QUEUE", "8"))
 FORCE_MARKET_OPEN = os.getenv("FORCE_MARKET_OPEN", "false").lower() == "true"
 
 # ----------------- Server / hosting -----------------
