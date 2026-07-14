@@ -98,14 +98,15 @@ function connect() {
 }
 
 function acquire() {
+  if (refCount === 0) warmFromCache();
   refCount += 1;
-  warmFromCache();
   connect();
 }
 
 function release() {
   refCount = Math.max(0, refCount - 1);
   if (refCount === 0) {
+    backoffMs = 500;
     if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
     clearInterval(heartbeatTimer);
     heartbeatTimer = null;
