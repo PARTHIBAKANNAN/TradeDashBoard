@@ -149,11 +149,10 @@ async def snapshot():
 @app.websocket("/ws/stream")
 async def ws_stream(websocket: WebSocket):
     # Auth: session cookie is exposed on websocket.session by SessionMiddleware.
+    await websocket.accept()
     if not security.is_authenticated(websocket):
         await websocket.close(code=4401)
         return
-
-    await websocket.accept()
     q = broadcaster.subscribe()
     receiver_task = asyncio.create_task(_ws_reader(websocket, q))
     try:
@@ -167,6 +166,10 @@ async def ws_stream(websocket: WebSocket):
         pass
     finally:
         receiver_task.cancel()
+        try:
+            await receiver_task
+        except (asyncio.CancelledError, Exception):
+            pass
         broadcaster.unsubscribe(q)
 
 
