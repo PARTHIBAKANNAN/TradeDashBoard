@@ -105,9 +105,19 @@ describe("marketStore.applyFrame", () => {
     const stock = vi.fn();
     marketStore.subscribeMeta(meta);
     marketStore.subscribeStock("RELIANCE", stock);
-    marketStore.setConnected(false);
+    marketStore.setConnected(true);
     expect(meta).toHaveBeenCalledTimes(1);
     expect(stock).not.toHaveBeenCalled();
-    expect(marketStore.getMeta().connected).toBe(false);
+    expect(marketStore.getMeta().connected).toBe(true);
+  });
+
+  it("unsubscribing stops future notifications", () => {
+    marketStore.applyFrame(snapshotFrame);
+    const cb = vi.fn();
+    const unsub = marketStore.subscribeStock("RELIANCE", cb);
+    unsub();
+    marketStore.applyFrame({ type: "delta", seq: 2,
+      stocks: [{ symbol: "RELIANCE", ltp: 101 }] });
+    expect(cb).not.toHaveBeenCalled();
   });
 });

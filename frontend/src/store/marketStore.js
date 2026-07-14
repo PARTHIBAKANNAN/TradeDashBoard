@@ -113,6 +113,7 @@ function createStore() {
     },
 
     setConnected(flag) {
+      if (meta.connected === flag) return;
       meta = { ...meta, connected: flag };
       notifyMeta();
     },
