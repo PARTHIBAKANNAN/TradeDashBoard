@@ -102,3 +102,122 @@ def build_frame(prev: Optional[dict], curr: dict, seq: int,
     if not frame["stocks"] and not has_meta:
         return None
     return frame
+
+
+import asyncio
+import json
+from typing import Callable
+
+
+class Broadcaster:
+    """
+    Ticks on a fixed interval, builds one frame per tick, and fans that
+    single serialized string out to every subscribed WebSocket via bounded
+    asyncio.Queues. Slow subscribers are silently resynced (drain + snapshot).
+    """
+
+    def __init__(self, snapshot_provider: Callable[[], dict],
+                 interval: float = 0.25, max_queue: int = 8):
+        self._provider = snapshot_provider
+        self._interval = interval
+        self._max_queue = max_queue
+        self._task: asyncio.Task | None = None
+        self._prev: dict | None = None
+        self._seq: int = 0
+        # Each subscriber = (queue, needs_snapshot_flag)
+        self._subs: dict[asyncio.Queue, bool] = {}
+
+    # ---- lifecycle ----
+    async def start(self) -> None:
+        if self._task is not None:
+            return
+        self._task = asyncio.create_task(self._run(), name="broadcaster")
+
+    async def stop(self) -> None:
+        if self._task is None:
+            return
+        self._task.cancel()
+        try:
+            await self._task
+        except (asyncio.CancelledError, Exception):
+            pass
+        self._task = None
+
+    # ---- subscription ----
+    def subscribe(self) -> asyncio.Queue:
+        q: asyncio.Queue = asyncio.Queue(maxsize=self._max_queue)
+        self._subs[q] = True  # needs snapshot on next frame
+        return q
+
+    def unsubscribe(self, q: asyncio.Queue) -> None:
+        self._subs.pop(q, None)
+
+    def mark_resync(self, q: asyncio.Queue) -> None:
+        if q in self._subs:
+            self._subs[q] = True
+
+    # ---- tick loop ----
+    async def _run(self) -> None:
+        try:
+            while True:
+                await self._tick_once()
+                await asyncio.sleep(self._interval)
+        except asyncio.CancelledError:
+            return
+
+    async def _tick_once(self) -> None:
+        curr = self._provider()
+        # Advance seq only when we actually emit; keep it monotonic per emission.
+        # But the frame needs the seq BEFORE we know if we'll emit — so peek.
+        next_seq = self._seq + 1
+        frame = build_frame(self._prev, curr, seq=next_seq)
+        needs_resync = [q for q, flag in self._subs.items() if flag]
+
+        # Nothing changed AND no one needs a forced snapshot → do nothing.
+        if frame is None and not needs_resync:
+            return
+
+        # Build the two possible payloads: regular delta/snapshot and forced snapshot.
+        payload: str | None = None
+        snapshot_payload: str | None = None
+        if frame is not None:
+            self._seq = next_seq
+            self._prev = curr
+            payload = json.dumps(frame, separators=(",", ":"))
+        if needs_resync:
+            # Forced snapshot always uses the current seq (either the one we
+            # just bumped for the delta above, or a fresh one if there was no delta).
+            snap_seq = self._seq if frame is not None else next_seq
+            if frame is None:
+                self._seq = snap_seq
+                self._prev = curr
+            snap_frame = build_frame(None, curr, seq=snap_seq, force_snapshot=True)
+            snapshot_payload = json.dumps(snap_frame, separators=(",", ":"))
+
+        for q, flag in list(self._subs.items()):
+            msg = snapshot_payload if flag else payload
+            if msg is None:
+                continue
+            try:
+                q.put_nowait(msg)
+                if flag:
+                    self._subs[q] = False
+            except asyncio.QueueFull:
+                # Slow client → drop everything in the queue and give it a
+                # snapshot so it re-converges silently.
+                while not q.empty():
+                    try:
+                        q.get_nowait()
+                    except asyncio.QueueEmpty:
+                        break
+                fresh = snapshot_payload or json.dumps(
+                    build_frame(None, curr, seq=self._seq, force_snapshot=True),
+                    separators=(",", ":"),
+                )
+                try:
+                    q.put_nowait(fresh)
+                    self._subs[q] = False
+                except asyncio.QueueFull:
+                    # Should be impossible right after drain; if it happens
+                    # the subscriber's consumer is truly dead — leave it.
+                    pass
