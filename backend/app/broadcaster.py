@@ -35,7 +35,7 @@ def snapshot_from_state(market_state) -> dict:
         nifty = dict(market_state.nifty)
         return {
             "market_open": market_state.market_open,
-            "fyers_connected": False,  # patched in by main.py where auth module is imported
+            "fyers_connected": False,  # patched to the live auth flag by _live_snapshot() in main.py
             "nifty": nifty,
             "stocks": stocks,
         }
@@ -114,10 +114,13 @@ class Broadcaster:
     """
 
     def __init__(self, snapshot_provider: Callable[[], dict],
-                 interval: float = 0.25, max_queue: int = 8):
+                 interval: float = 0.25, max_queue: int = 8,
+                 heartbeat_secs: float = 5.0):
         self._provider = snapshot_provider
         self._interval = interval
         self._max_queue = max_queue
+        self._heartbeat_ticks = max(1, int(heartbeat_secs / interval))
+        self._quiet_ticks: int = 0
         self._task: asyncio.Task | None = None
         self._prev: dict | None = None
         self._seq: int = 0
@@ -136,8 +139,10 @@ class Broadcaster:
         self._task.cancel()
         try:
             await self._task
-        except (asyncio.CancelledError, Exception):
+        except asyncio.CancelledError:
             pass
+        except Exception as exc:  # noqa: BLE001
+            print(f"[broadcaster] task exited abnormally: {exc!r}")
         self._task = None
 
     # ---- subscription ----
@@ -157,7 +162,10 @@ class Broadcaster:
     async def _run(self) -> None:
         try:
             while True:
-                await self._tick_once()
+                try:
+                    await self._tick_once()
+                except Exception as exc:  # noqa: BLE001
+                    print(f"[broadcaster] tick error (continuing): {exc!r}")
                 await asyncio.sleep(self._interval)
         except asyncio.CancelledError:
             return
@@ -170,9 +178,36 @@ class Broadcaster:
         frame = build_frame(self._prev, curr, seq=next_seq)
         needs_resync = [q for q, flag in self._subs.items() if flag]
 
-        # Nothing changed AND no one needs a forced snapshot → do nothing.
+        # Nothing changed AND no one needs a forced snapshot → maybe heartbeat.
         if frame is None and not needs_resync:
+            self._quiet_ticks += 1
+            if self._quiet_ticks >= self._heartbeat_ticks:
+                self._quiet_ticks = 0
+                hb_msg = json.dumps({"type": "heartbeat", "seq": self._seq},
+                                    separators=(",", ":"))
+                for q in list(self._subs):
+                    try:
+                        q.put_nowait(hb_msg)
+                    except asyncio.QueueFull:
+                        # Drain and resnapshot the slow client.
+                        while not q.empty():
+                            try:
+                                q.get_nowait()
+                            except asyncio.QueueEmpty:
+                                break
+                        fresh = json.dumps(
+                            build_frame(None, curr, seq=self._seq, force_snapshot=True),
+                            separators=(",", ":"),
+                        )
+                        try:
+                            q.put_nowait(fresh)
+                            self._subs[q] = False
+                        except asyncio.QueueFull:
+                            pass
             return
+
+        # A real frame (delta, snapshot, or forced resync) resets the quiet counter.
+        self._quiet_ticks = 0
 
         # Build the two possible payloads: regular delta/snapshot and forced snapshot.
         payload: str | None = None

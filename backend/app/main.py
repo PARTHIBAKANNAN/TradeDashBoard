@@ -8,6 +8,7 @@ ever exposed to the client. A built-in login (session cookie) gates the
 dashboard; FYERS account auth is handled separately via /callback + /api/auth/*.
 """
 import asyncio
+import json as _json
 import os
 from contextlib import asynccontextmanager
 
@@ -161,9 +162,9 @@ async def ws_stream(websocket: WebSocket):
             await websocket.send_text(msg)
     except WebSocketDisconnect:
         pass
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
         # Any send error → connection dead; fall through to cleanup.
-        pass
+        print(f"[ws] send failed: {exc}")
     finally:
         receiver_task.cancel()
         try:
@@ -177,10 +178,17 @@ async def _ws_reader(websocket: WebSocket, q):
     """Handle inbound client control messages (only 'resync' for now)."""
     try:
         while True:
-            msg = await websocket.receive_json()
+            try:
+                msg = await websocket.receive_json()
+            except (_json.JSONDecodeError, TypeError, ValueError) as exc:
+                print(f"[ws] discarding malformed inbound message: {exc}")
+                continue
             if isinstance(msg, dict) and msg.get("type") == "resync":
                 broadcaster.mark_resync(q)
-    except (WebSocketDisconnect, Exception):
+    except WebSocketDisconnect:
+        return
+    except Exception as exc:  # noqa: BLE001
+        print(f"[ws] reader exiting on unexpected error: {exc}")
         return
 
 

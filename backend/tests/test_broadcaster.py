@@ -87,6 +87,15 @@ def test_market_open_flag_flip_is_included():
     assert frame["market_open"] is False
 
 
+def test_fyers_connected_flag_flip_is_included():
+    prev = _snapshot(fyers_connected=False)
+    curr = _snapshot(fyers_connected=True)
+    frame = build_frame(prev=prev, curr=curr, seq=5)
+    assert frame is not None
+    assert frame["type"] == "delta"
+    assert frame["fyers_connected"] is True
+
+
 def test_force_snapshot_returns_snapshot_even_when_unchanged():
     s = _snapshot()
     frame = build_frame(prev=s, curr=s, seq=9, force_snapshot=True)
@@ -174,17 +183,24 @@ def test_slow_subscriber_receives_snapshot_after_overflow():
         await bc.start()
         try:
             q = bc.subscribe()
-            # Don't consume for a while → queue fills → broadcaster must
-            # drain+resnapshot to keep the client convergent.
+            # Consume the initial snapshot explicitly — this is the first-connect snapshot.
+            initial = json.loads(await asyncio.wait_for(q.get(), timeout=1.0))
+            assert initial["type"] == "snapshot", "first frame must be a snapshot"
+
+            # Now stop consuming → queue fills → broadcaster must drain+resnapshot.
             await asyncio.sleep(0.1)
-            # Drain everything currently queued; the FIRST message we now read
-            # must be either the initial snapshot or a post-overflow snapshot.
-            saw_snapshot_after_overflow = False
+
+            # The queue must NOT be empty (we just waited for ticks to pile up).
+            assert not q.empty(), "queue should have data after sleep"
+
+            # Drain everything; there must be a fresh snapshot among them
+            # (the post-overflow resnapshot that re-converges the client).
+            saw_post_overflow_snapshot = False
             while not q.empty():
                 data = json.loads(q.get_nowait())
                 if data["type"] == "snapshot":
-                    saw_snapshot_after_overflow = True
-            assert saw_snapshot_after_overflow
+                    saw_post_overflow_snapshot = True
+            assert saw_post_overflow_snapshot, "expected a post-overflow snapshot in the queue"
         finally:
             await bc.stop()
 
@@ -207,6 +223,32 @@ def test_unsubscribe_stops_delivery():
                 q.get_nowait()
             await asyncio.sleep(0.05)
             assert q.empty()
+        finally:
+            await bc.stop()
+
+    _run(scenario())
+
+
+def test_heartbeat_emitted_after_quiet():
+    # Static provider: every tick returns the same snapshot → no delta ever.
+    static = _snapshot([_stock(ltp=100.0)])
+    def provider():
+        return static
+
+    async def scenario():
+        # heartbeat_secs=0.02 with interval=0.005 → heartbeat_ticks = max(1, int(0.02/0.005)) = 4
+        bc = Broadcaster(snapshot_provider=provider, interval=0.005, heartbeat_secs=0.02)
+        await bc.start()
+        try:
+            q = bc.subscribe()
+            # Consume the initial snapshot (first-connect; not a heartbeat).
+            initial = json.loads(await asyncio.wait_for(q.get(), timeout=1.0))
+            assert initial["type"] == "snapshot"
+            # Now wait long enough for at least one heartbeat to be emitted.
+            # With heartbeat_ticks=4 and interval=5ms, a heartbeat fires every ~20ms.
+            hb = json.loads(await asyncio.wait_for(q.get(), timeout=1.0))
+            assert hb["type"] == "heartbeat", f"expected heartbeat, got {hb['type']}"
+            assert "seq" in hb
         finally:
             await bc.stop()
 
