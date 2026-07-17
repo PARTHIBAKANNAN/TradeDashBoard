@@ -50,6 +50,12 @@ def build_payload() -> dict:
                 "day_range_pos": s["day_range_pos"],
                 "signal": s["signal"],
                 "signal_time": s["signal_time"],
+                "volume": s["volume"],
+                "traded_value": round(s["ltp"] * s["volume"], 2),
+                "upper_ckt": s["upper_ckt"],
+                "lower_ckt": s["lower_ckt"],
+                "tot_buy_qty": s["tot_buy_qty"],
+                "tot_sell_qty": s["tot_sell_qty"],
                 "ranges": ranges,
             }
         )

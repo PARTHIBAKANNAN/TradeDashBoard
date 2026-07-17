@@ -9,11 +9,11 @@ const WatchlistRow = React.memo(({ stock }) => {
   const isBull = hasSignal && stock.signal.includes("Bull");
 
   return (
-    <tr className="border-b border-zinc-800 hover:bg-zinc-900 transition-colors">
+    <tr className="border-b border-subtle hover:bg-surface2 transition-colors">
       {/* Asset */}
       <td className="py-3 px-4">
-        <div className="font-bold text-white tracking-wide">{stock.symbol}</div>
-        <div className="text-xs text-zinc-500 font-semibold">{stock.sector}</div>
+        <div className="font-bold text-primary tracking-wide">{stock.symbol}</div>
+        <div className="text-xs text-faint font-semibold">{stock.sector}</div>
       </td>
 
       {/* LTP */}
@@ -30,12 +30,12 @@ const WatchlistRow = React.memo(({ stock }) => {
       {/* Range bar */}
       <td className="py-3 px-4 text-center">
         <div className="flex flex-col items-center">
-          <div className="flex justify-between w-[160px] text-[10px] text-zinc-500 font-mono mb-1">
+          <div className="flex justify-between w-[160px] text-[10px] text-faint font-mono mb-1">
             <span>{stock.ranges?.yesterday?.raw_low}</span>
             <span>{stock.ranges?.yesterday?.raw_high}</span>
           </div>
           {stock.ranges && <OverlappingRangeBar ranges={stock.ranges} />}
-          <div className="text-[10px] text-zinc-600 font-mono mt-1">
+          <div className="text-[10px] text-faint font-mono mt-1">
             {stock.day_range_pos}% of day range
           </div>
         </div>
@@ -52,10 +52,10 @@ const WatchlistRow = React.memo(({ stock }) => {
             }`}
           >
             <span>{isBull ? "▲ " : "▼ "}{stock.signal}</span>
-            <span className="text-[10px] font-semibold text-zinc-400 mt-0.5">{stock.signal_time}</span>
+            <span className="text-[10px] font-semibold text-muted mt-0.5">{stock.signal_time}</span>
           </div>
         ) : (
-          <span className="text-zinc-600 font-semibold text-xs">—</span>
+          <span className="text-faint font-semibold text-xs">—</span>
         )}
       </td>
 
@@ -65,7 +65,7 @@ const WatchlistRow = React.memo(({ stock }) => {
           {isRsPositive ? "+" : ""}
           {stock.relative_strength}
         </span>
-        <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">
+        <div className="text-[10px] font-bold text-faint uppercase tracking-widest mt-0.5">
           {isRsPositive ? "Outperform" : "Underperform"}
         </div>
       </td>

@@ -99,7 +99,9 @@ def evaluate_orb(orb_bounds: dict, ltp: float, now_ist: datetime, current_signal
 
 # ---------- Tick processor (the single mutation point) ----------
 def process_incoming_tick(state, short_sym: str, ltp: float, high: float, low: float,
-                          prev_close: float = 0.0):
+                          prev_close: float = 0.0, volume: int = 0,
+                          upper_ckt: float = 0.0, lower_ckt: float = 0.0,
+                          tot_buy_qty: int = 0, tot_sell_qty: int = 0):
     """
     Update one stock's derived fields from a raw tick. `state` is the
     MarketState singleton; caller holds no lock — we take it here.
@@ -107,6 +109,14 @@ def process_incoming_tick(state, short_sym: str, ltp: float, high: float, low: f
     `prev_close` lets the websocket feed supply the previous close (SymbolUpdate
     carries `prev_close_price`), so %change / RS / ranges work even when the REST
     backfill is unavailable (e.g. blocked by a corporate proxy).
+
+    `volume` is today's cumulative traded quantity (SymbolUpdate's
+    `vol_traded_today`), used for the treemap's traded-value sizing.
+
+    `upper_ckt`/`lower_ckt` are the exchange circuit limits and `tot_buy_qty`/
+    `tot_sell_qty` the aggregate outstanding order quantities — both carried
+    directly on SymbolUpdate ticks, used by the circuit-proximity and
+    buy/sell-pressure Insights widgets.
     """
     with state.lock():
         stock = state.get_stock(short_sym)
@@ -116,6 +126,16 @@ def process_incoming_tick(state, short_sym: str, ltp: float, high: float, low: f
         if prev_close and not stock["prev_close"]:
             stock["prev_close"] = prev_close
         stock["ltp"] = ltp
+        if volume:
+            stock["volume"] = volume
+        if upper_ckt:
+            stock["upper_ckt"] = upper_ckt
+        if lower_ckt:
+            stock["lower_ckt"] = lower_ckt
+        if tot_buy_qty:
+            stock["tot_buy_qty"] = tot_buy_qty
+        if tot_sell_qty:
+            stock["tot_sell_qty"] = tot_sell_qty
         # Guard against zeroed backfill: only expand today's range once seeded.
         if high:
             stock["today_high"] = max(stock["today_high"] or high, high)

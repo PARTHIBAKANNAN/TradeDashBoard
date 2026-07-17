@@ -225,6 +225,11 @@ class DataEngine:
                         ltp,
                         v.get("high_price", 0) or 0,
                         v.get("low_price", 0) or 0,
+                        volume=v.get("volume") or v.get("vol_traded_today") or 0,
+                        upper_ckt=v.get("upper_ckt") or 0,
+                        lower_ckt=v.get("lower_ckt") or 0,
+                        tot_buy_qty=v.get("tot_buy_qty") or 0,
+                        tot_sell_qty=v.get("tot_sell_qty") or 0,
                     )
             except Exception as exc:  # noqa: BLE001
                 print(f"[backfill] quotes batch failed: {exc}")
@@ -290,11 +295,19 @@ class DataEngine:
         high = msg.get("high_price") or msg.get("high") or 0
         low = msg.get("low_price") or msg.get("low") or 0
         prev_close = msg.get("prev_close_price") or msg.get("prev_close") or 0
+        volume = msg.get("vol_traded_today") or msg.get("volume") or 0
+        upper_ckt = msg.get("upper_ckt") or 0
+        lower_ckt = msg.get("lower_ckt") or 0
+        tot_buy_qty = msg.get("tot_buy_qty") or 0
+        tot_sell_qty = msg.get("tot_sell_qty") or 0
 
         if fy_symbol == BENCHMARK_SYMBOL:
             market_state.set_nifty(ltp=ltp, prev_close=prev_close or None)
             return
-        process_incoming_tick(market_state, short_symbol(fy_symbol), ltp, high, low, prev_close)
+        process_incoming_tick(
+            market_state, short_symbol(fy_symbol), ltp, high, low, prev_close, volume,
+            upper_ckt, lower_ckt, tot_buy_qty, tot_sell_qty,
+        )
 
 
 data_engine = DataEngine()

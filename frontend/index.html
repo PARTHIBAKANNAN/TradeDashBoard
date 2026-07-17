@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Live Price Action Dashboard</title>
+    <script>
+      // Set the theme class before React/CSS paint anything, to avoid a
+      // flash of the wrong theme on load. Must stay in sync with the
+      // ThemeContext default ("dark") and localStorage key ("td-theme").
+      (function () {
+        var saved = localStorage.getItem("td-theme");
+        var theme = saved === "light" ? "light" : "dark";
+        document.documentElement.classList.add(theme);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

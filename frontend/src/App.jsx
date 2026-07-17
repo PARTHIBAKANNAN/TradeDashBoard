@@ -1,6 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useMarketStream } from "./hooks/useMarketStream.js";
+import { useTheme } from "./contexts/ThemeContext.jsx";
 import WatchlistRow from "./components/WatchlistRow.jsx";
+import Treemap from "./components/Treemap.jsx";
+import Insights from "./components/insights/Insights.jsx";
+import RankingScreen from "./screens/RankingScreen.jsx";
+import HeatmapScreen from "./screens/HeatmapScreen.jsx";
+import InsightsScreen from "./screens/InsightsScreen.jsx";
+import WatchlistScreen from "./screens/WatchlistScreen.jsx";
 
 const SORTS = {
   rs_desc: { label: "RS ▼ (strongest)", fn: (a, b) => b.relative_strength - a.relative_strength },
@@ -40,9 +47,23 @@ export default function App() {
 
 function Splash() {
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-500 grid place-items-center font-sans">
+    <div className="min-h-screen bg-surface text-faint grid place-items-center font-sans">
       Loading…
     </div>
+  );
+}
+
+// ---------------- Theme toggle ----------------
+function ThemeToggle() {
+  const { theme, toggleTheme } = useTheme();
+  return (
+    <button
+      onClick={toggleTheme}
+      title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+      className="w-8 h-8 grid place-items-center rounded-md border border-subtle bg-surface3 hover:bg-surface2 transition-colors text-muted hover:text-primary"
+    >
+      {theme === "dark" ? "☀" : "☾"}
+    </button>
   );
 }
 
@@ -77,39 +98,44 @@ function Login({ onSuccess }) {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 grid place-items-center p-6 font-sans">
+    <div className="min-h-screen bg-surface text-primary grid place-items-center p-6 font-sans relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <form
         onSubmit={submit}
-        className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-xl p-7 shadow-2xl"
+        className="w-full max-w-sm bg-surface2/80 backdrop-blur-xl border border-subtle rounded-xl p-7 shadow-glow"
       >
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-violet-500 grid place-items-center font-extrabold">
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-accent-blue to-accent-violet grid place-items-center font-extrabold text-white">
             T
           </div>
           <div>
-            <h1 className="text-lg font-bold tracking-tight">Live Price Action</h1>
-            <p className="text-xs text-zinc-500">Sign in to continue</p>
+            <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-accent-violet to-accent-blue bg-clip-text text-transparent">
+              Live Price Action
+            </h1>
+            <p className="text-xs text-faint">Sign in to continue</p>
           </div>
         </div>
-        <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">Username</label>
+        <label className="block text-xs font-bold text-muted uppercase mb-2">Username</label>
         <input
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           autoFocus
-          className="w-full bg-zinc-850 border border-zinc-700 rounded p-2.5 text-sm mb-4 focus:outline-none focus:border-blue-500"
+          className="w-full bg-surface3 border border-strong rounded p-2.5 text-sm mb-4 focus:outline-none focus:border-accent-blue"
         />
-        <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">Password</label>
+        <label className="block text-xs font-bold text-muted uppercase mb-2">Password</label>
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full bg-zinc-850 border border-zinc-700 rounded p-2.5 text-sm mb-5 focus:outline-none focus:border-blue-500"
+          className="w-full bg-surface3 border border-strong rounded p-2.5 text-sm mb-5 focus:outline-none focus:border-accent-blue"
         />
         {error && <p className="text-red-400 text-xs mb-4">{error}</p>}
         <button
           type="submit"
           disabled={busy}
-          className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-60 rounded p-2.5 text-sm font-bold transition-colors"
+          className="w-full bg-gradient-to-r from-accent-blue to-accent-violet hover:opacity-90 disabled:opacity-60 rounded p-2.5 text-sm font-bold text-white transition-opacity shadow-glow-sm"
         >
           {busy ? "Signing in…" : "Sign in"}
         </button>
@@ -144,178 +170,133 @@ function ConnectFyersBanner() {
   );
 }
 
-// ---------------- Dashboard ----------------
+// -------- Dashboard --------
 function Dashboard({ user, onLogout }) {
   const { data, connected } = useMarketStream();
-
-  const [selectedSignal, setSelectedSignal] = useState("All signals");
-  const [selectedSector, setSelectedSector] = useState("All sectors");
-  const [dayRangeThreshold, setDayRangeThreshold] = useState(0);
-  const [sortKey, setSortKey] = useState("rs_desc");
-
-  const sectors = useMemo(() => {
-    const set = new Set((data.stocks || []).map((s) => s.sector));
-    return ["All sectors", ...Array.from(set).sort()];
-  }, [data.stocks]);
-
-  const filteredStocks = useMemo(() => {
-    const rows = (data.stocks || []).filter((stock) => {
-      if (selectedSignal !== "All signals") {
-        if (!stock.signal || !stock.signal.includes(selectedSignal)) return false;
-      }
-      if (selectedSector !== "All sectors" && stock.sector !== selectedSector) return false;
-      if (stock.day_range_pos < dayRangeThreshold) return false;
-      return true;
-    });
-    return rows.sort(SORTS[sortKey].fn);
-  }, [data.stocks, selectedSignal, selectedSector, dayRangeThreshold, sortKey]);
+  const [activeTab, setActiveTab] = useState("ranking");
 
   const marketOpen = data.market_open;
   const fyersConnected = data.fyers_connected;
   const nifty = data.nifty || {};
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 p-6 font-sans">
-      <div className="max-w-6xl mx-auto bg-zinc-900 border border-zinc-800 rounded-lg p-6 shadow-2xl">
-        {fyersConnected === false && <ConnectFyersBanner />}
+    <div className="min-h-screen bg-surface text-primary font-sans flex flex-col">
+      {/* Top Navbar */}
+      <TopNavbar
+        user={user}
+        onLogout={onLogout}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        nifty={nifty}
+        marketOpen={marketOpen}
+        connected={connected}
+      />
 
-        {/* Controls */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Control label="Breakout Signal">
-            <select
-              value={selectedSignal}
-              onChange={(e) => setSelectedSignal(e.target.value)}
-              className="w-full bg-zinc-850 border border-zinc-700 rounded p-2 text-sm text-white focus:outline-none"
-            >
-              <option>All signals</option>
-              <option value="Bull">Bull</option>
-              <option value="Bear">Bear</option>
-            </select>
-          </Control>
-
-          <Control label="Sector">
-            <select
-              value={selectedSector}
-              onChange={(e) => setSelectedSector(e.target.value)}
-              className="w-full bg-zinc-850 border border-zinc-700 rounded p-2 text-sm text-white focus:outline-none"
-            >
-              {sectors.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
-          </Control>
-
-          <Control label="Sort by">
-            <select
-              value={sortKey}
-              onChange={(e) => setSortKey(e.target.value)}
-              className="w-full bg-zinc-850 border border-zinc-700 rounded p-2 text-sm text-white focus:outline-none"
-            >
-              {Object.entries(SORTS).map(([key, { label }]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </Control>
-
-          <div>
-            <div className="flex justify-between">
-              <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">
-                Day Range Position ≥
-              </label>
-              <span className="text-xs font-bold text-blue-400">{dayRangeThreshold}%</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={dayRangeThreshold}
-              onChange={(e) => setDayRangeThreshold(Number(e.target.value))}
-              className="w-full h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-500 mt-3"
-            />
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto">
+        {fyersConnected === false && (
+          <div className="mx-auto max-w-7xl px-6 pt-6">
+            <ConnectFyersBanner />
           </div>
-        </div>
+        )}
 
-        {/* Status / benchmark */}
-        <div className="flex items-center justify-between border-b border-zinc-800 pb-4 mb-6">
-          <div className="flex items-center space-x-3">
-            <span
-              className={`w-2.5 h-2.5 rounded-full ${
-                connected && marketOpen ? "bg-green-500 animate-pulse" : "bg-zinc-500"
-              }`}
-            />
-            <h1 className="text-lg font-bold tracking-tight text-white">Live Price Action Dashboard</h1>
-            <span
-              className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
-                marketOpen ? "bg-green-950 text-green-400" : "bg-zinc-800 text-zinc-400"
-              }`}
-            >
-              {marketOpen ? "Live" : connected ? "Closed" : "Offline"}
-            </span>
-            <span className="text-xs text-zinc-500 font-mono">({filteredStocks.length} stocks)</span>
-          </div>
-          <div className="flex items-center gap-5">
-            <div className="text-right">
-              <div className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-0.5">
-                Benchmark: NIFTY 50
-              </div>
-              <div className="font-mono text-sm">
-                <span className="text-white font-bold">
-                  {nifty.ltp?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}{" "}
-                </span>
-                <span className={nifty.pct_change >= 0 ? "text-green-400" : "text-red-400"}>
-                  {nifty.pct_change >= 0 ? "+" : ""}
-                  {nifty.pct_change}%
-                </span>
-              </div>
-            </div>
-            <div className="text-right border-l border-zinc-800 pl-5">
-              <div className="text-xs text-zinc-500">{user}</div>
-              <button
-                onClick={onLogout}
-                className="text-xs font-bold text-zinc-400 hover:text-white transition-colors"
-              >
-                Log out
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="overflow-x-auto rounded border border-zinc-800">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-zinc-850/50 border-b border-zinc-800 text-[10px] uppercase font-bold text-zinc-400 tracking-wider">
-                <th className="py-3 px-4">Stock</th>
-                <th className="py-3 px-4 text-right">LTP</th>
-                <th className="py-3 px-4 text-center">Price Range (Today vs Prev Day)</th>
-                <th className="py-3 px-4 text-center">Signal</th>
-                <th className="py-3 px-4 text-right">RS vs Nifty</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredStocks.map((stock) => (
-                <WatchlistRow key={stock.symbol} stock={stock} />
-              ))}
-            </tbody>
-          </table>
-          {filteredStocks.length === 0 && (
-            <div className="py-10 text-center text-zinc-600 text-sm">
-              No stocks match the current filters.
-            </div>
-          )}
-        </div>
+        {activeTab === "ranking" && <RankingScreen stocks={data.stocks || []} />}
+        {activeTab === "heatmap" && <HeatmapScreen stocks={data.stocks || []} />}
+        {activeTab === "insights" && <InsightsScreen stocks={data.stocks || []} />}
+        {activeTab === "watchlist" && <WatchlistScreen stocks={data.stocks || []} />}
       </div>
     </div>
   );
 }
 
-function Control({ label, children }) {
+// -------- Top Navbar --------
+function TopNavbar({ user, onLogout, activeTab, onTabChange, nifty, marketOpen, connected }) {
+  const tabs = [
+    { key: "ranking", label: "Ranking", icon: "📊" },
+    { key: "heatmap", label: "Heatmap", icon: "🔥" },
+    { key: "insights", label: "Insights", icon: "💡" },
+    { key: "watchlist", label: "Watchlist", icon: "⭐" },
+  ];
+
   return (
-    <div>
-      <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">{label}</label>
-      {children}
-    </div>
+    <nav className="sticky top-0 z-50 border-b border-subtle bg-surface2/95 backdrop-blur-xl shadow-sm">
+      <div className="mx-auto max-w-full px-6 py-4">
+        <div className="flex items-center justify-between gap-6 mb-4">
+          {/* Logo & Status */}
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-blue to-accent-violet grid place-items-center font-bold text-white text-sm">
+              T
+            </div>
+            <div>
+              <h1 className="text-sm font-bold tracking-tight bg-gradient-to-r from-accent-violet to-accent-blue bg-clip-text text-transparent">
+                Live Price Action
+              </h1>
+            </div>
+            <div className="flex items-center gap-2 ml-4 pl-4 border-l border-subtle">
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  connected && marketOpen ? "bg-green-500 animate-pulse" : "bg-faint"
+                }`}
+              />
+              <span
+                className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${
+                  marketOpen ? "bg-green-950 text-green-400" : "bg-surface3 text-muted"
+                }`}
+              >
+                {marketOpen ? "Live" : connected ? "Closed" : "Offline"}
+              </span>
+            </div>
+          </div>
+
+          {/* Right side: Benchmark & User */}
+          <div className="flex items-center gap-6">
+            <div className="text-right">
+              <div className="text-[10px] text-faint font-bold uppercase">NIFTY 50</div>
+              <div className="font-mono text-sm font-bold">
+                <span className="text-primary">
+                  {nifty.ltp?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                </span>
+                <span className={`ml-2 ${nifty.pct_change >= 0 ? "text-green-400" : "text-red-400"}`}>
+                  {nifty.pct_change >= 0 ? "+" : ""}
+                  {nifty.pct_change}%
+                </span>
+              </div>
+            </div>
+
+            <div className="border-l border-subtle pl-6 flex items-center gap-4">
+              <div className="text-right">
+                <div className="text-xs text-faint">{user}</div>
+                <button
+                  onClick={onLogout}
+                  className="text-xs font-bold text-muted hover:text-primary transition-colors"
+                >
+                  Log out
+                </button>
+              </div>
+              <ThemeToggle />
+            </div>
+          </div>
+        </div>
+
+        {/* Horizontal Tabs */}
+        <div className="flex gap-0.5">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => onTabChange(tab.key)}
+              className={`px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 ${
+                activeTab === tab.key
+                  ? "border-accent-blue text-accent-blue bg-surface3/40"
+                  : "border-transparent text-muted hover:text-primary hover:bg-surface3/20"
+              }`}
+            >
+              <span className="mr-2">{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </nav>
   );
 }
+

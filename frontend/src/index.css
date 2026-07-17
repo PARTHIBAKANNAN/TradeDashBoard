@@ -8,7 +8,72 @@ body,
   height: 100%;
 }
 
+/* ---------------------------------------------------------------------
+   Theme tokens. Values are RGB CHANNEL TRIPLETS (no commas, no wrapper) —
+   Tailwind's colors map (tailwind.config.js) wraps them in rgb(... / <alpha>)
+   so opacity modifiers like bg-surface/50 work.
+
+   :root carries the dark values as the default/fallback (matches this app's
+   "default dark" decision even before JS applies a class). .light overrides
+   the same variable names — flipping one class flips the whole palette.
+
+   IMPORTANT for safe migration: the dark values below are BYTE-IDENTICAL to
+   the zinc hex this app already used before theming existed (zinc-950 =
+   #09090b = "9 9 11", zinc-900 = #18181b = "24 24 27", etc.) — so a component
+   that's been migrated to e.g. bg-surface2 and one still on literal
+   bg-zinc-900 render pixel-identical output in dark mode, regardless of
+   migration order or interruption.
+   --------------------------------------------------------------------- */
+:root,
+.dark {
+  --surface: 9 9 11; /* zinc-950 */
+  --surface2: 24 24 27; /* zinc-900 */
+  --surface3: 31 31 35; /* zinc-850 */
+  --border-subtle: 39 39 42; /* zinc-800 */
+  --border-strong: 63 63 70; /* zinc-700 */
+  --text-primary: 255 255 255; /* white */
+  --text-muted: 161 161 170; /* zinc-400 */
+  --text-faint: 113 113 122; /* zinc-500 */
+  --accent-violet: 167 139 250; /* violet-400 */
+  --accent-blue: 96 165 250; /* blue-400 */
+  --glow-violet: 139 92 246; /* violet-500 */
+
+  /* Canvas-only: full color strings (Canvas 2D can't consume channel
+     triplets directly), kept separate from the Tailwind-facing tokens above. */
+  --canvas-prev-range: #374151;
+  --canvas-today-range: #3b82f6;
+  --canvas-ltp-tick: #ffffff;
+}
+
+.light {
+  --surface: 248 247 251; /* soft lavender-white */
+  --surface2: 255 255 255;
+  --surface3: 241 240 245;
+  --border-subtle: 229 227 237;
+  --border-strong: 212 209 224;
+  --text-primary: 24 24 27; /* near-black */
+  --text-muted: 82 82 91;
+  --text-faint: 113 113 122;
+  --accent-violet: 124 58 237; /* violet-600, more saturated for contrast on light */
+  --accent-blue: 37 99 235; /* blue-600 */
+  --glow-violet: 139 92 246;
+
+  --canvas-prev-range: #d1d5db;
+  --canvas-today-range: #2563eb;
+  --canvas-ltp-tick: #18181b; /* dark tick — fixes the invisible-white-on-light bug */
+}
+
 body {
   margin: 0;
-  background: #09090b; /* zinc-950 */
+  background: rgb(var(--surface));
+  transition: background-color 0.2s ease;
+}
+
+/* Subtle ambient glow behind the page in dark mode — minimized in light mode
+   per the "heavy glows read as muddy on light backgrounds" design call. */
+.dark body {
+  background-image:
+    radial-gradient(ellipse 900px 500px at 15% -10%, rgb(139 92 246 / 0.10), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 100% 10%, rgb(96 165 250 / 0.08), transparent 55%);
+  background-attachment: fixed;
 }

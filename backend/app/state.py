@@ -40,6 +40,11 @@ class MarketState:
                 "today_high": 0.0,
                 "ltp": 0.0,
                 "pct_change": 0.0,
+                "volume": 0,
+                "upper_ckt": 0.0,
+                "lower_ckt": 0.0,
+                "tot_buy_qty": 0,
+                "tot_sell_qty": 0,
                 "day_range_pos": 0.0,
                 "relative_strength": 0.0,
                 # ORB candle boundaries, filled by REST backfill / live aggregation.
