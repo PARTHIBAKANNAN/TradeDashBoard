@@ -75,8 +75,9 @@ def check_security():
     ]
 
     for path in python_paths:
-        if Path(path / "requirements.txt").exists():
-            run_command(f"safety check --file {path}/requirements.txt --json > security-report.json 2>/dev/null", cwd=REPO_ROOT)
+        req_file = Path(path) / "requirements.txt"
+        if req_file.exists():
+            run_command(f"safety check --file {req_file} --json > security-report.json 2>/dev/null", cwd=REPO_ROOT)
 
 def check_dependencies():
     """Check and update dependencies."""
