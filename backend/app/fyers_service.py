@@ -44,11 +44,19 @@ class DataEngine:
         return self._running
 
     # ---------------- REST helper (retry/backoff for rate limits) ----------------
+    # Error codes that will never succeed on retry — bail immediately instead of
+    # burning the rate limit on every symbol (a permission error on one call means
+    # every subsequent call fails identically; retrying 170x3 times starved out a
+    # perfectly good quotes() call that ran right after and rate-limited it too).
+    _NON_RETRYABLE_CODES = {-403}
+
     def _history_retry(self, params: dict, retries: int = 2):
         for attempt in range(retries + 1):
             try:
                 resp = self.rest.history(params)
                 if isinstance(resp, dict) and resp.get("s") == "ok":
+                    return resp
+                if isinstance(resp, dict) and resp.get("code") in self._NON_RETRYABLE_CODES:
                     return resp
                 if attempt < retries:
                     time.sleep(0.5 * (attempt + 1))
@@ -118,6 +126,7 @@ class DataEngine:
         today = datetime.now(IST).date()
         rng_from = (today - timedelta(days=12)).strftime("%Y-%m-%d")
         rng_to = today.strftime("%Y-%m-%d")
+        warned = False
 
         for fy_symbol in ALL_SYMBOLS:
             try:
@@ -132,6 +141,12 @@ class DataEngine:
                         "cont_flag": "1",
                     }
                 )
+                if isinstance(resp, dict) and resp.get("s") == "error":
+                    if not warned:
+                        print(f"[backfill] prev-day history() error (will repeat per-symbol, "
+                              f"only logging once): {resp}")
+                        warned = True
+                    continue
                 candles = resp.get("candles", []) if isinstance(resp, dict) else []
                 if not candles:
                     continue
@@ -174,6 +189,7 @@ class DataEngine:
         day = today.strftime("%Y-%m-%d")
         # Map candle start-time -> ORB name for quick lookup.
         start_to_name = {start: name for name, start, _end in ORB_CANDLES}
+        warned = False
 
         for fy_symbol in WATCHLIST:  # ORB only applies to equities, not the index
             try:
@@ -188,6 +204,12 @@ class DataEngine:
                         "cont_flag": "1",
                     }
                 )
+                if isinstance(resp, dict) and resp.get("s") == "error":
+                    if not warned:
+                        print(f"[backfill] ORB history() error (will repeat per-symbol, "
+                              f"only logging once): {resp}")
+                        warned = True
+                    continue
                 candles = resp.get("candles", []) if isinstance(resp, dict) else []
                 if not candles:
                     continue
@@ -218,6 +240,9 @@ class DataEngine:
             batch = symbols[i : i + 50]
             try:
                 resp = self.rest.quotes({"symbols": ",".join(batch)})
+                if isinstance(resp, dict) and resp.get("s") == "error":
+                    print(f"[backfill] quotes batch error: {resp}")
+                    continue
                 for entry in resp.get("d", []):
                     v = entry.get("v", {})
                     fy_symbol = entry.get("n") or v.get("symbol", "")
