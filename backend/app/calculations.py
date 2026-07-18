@@ -68,6 +68,29 @@ def day_range_position(ltp: float, t_low: float, t_high: float) -> float:
 
 
 # ---------- B. Opening Range Breakout engine ----------
+def orb_quality(candles: list) -> bool:
+    """
+    The 3-condition breakout-quality gate, given the six 9:15-9:45 5-min
+    candles (each `[ts, open, high, low, close, ...]`, FYERS' raw shape,
+    already filtered/sorted to just that window):
+
+      2. None of candles 2-6 may print a low below candle 1's low.
+      3. At least one red (close < open) and one green (close > open) candle.
+
+    (Condition 1 — the 30-min breakout itself — is evaluated live against the
+    C1 boundary in evaluate_orb(); this only gates whether that signal counts.)
+
+    Returns False if fewer than 6 candles are given (incomplete data).
+    """
+    if len(candles) < 6:
+        return False
+    first_low = candles[0][3]
+    low_intact = all(c[3] >= first_low for c in candles[1:])
+    has_red = any(c[4] < c[1] for c in candles)
+    has_green = any(c[4] > c[1] for c in candles)
+    return low_intact and has_red and has_green
+
+
 def completed_candles(now: dt_time) -> list[str]:
     """Names of ORB candles whose window has fully elapsed by `now`."""
     return [name for name, _start, end in ORB_CANDLES if now >= end]
@@ -161,6 +184,11 @@ def process_incoming_tick(
 
         now_ist = datetime.now(IST)
         signal, signal_time = evaluate_orb(stock["orb"], ltp, now_ist, stock["signal"])
+        # The 3 breakout-quality rules (low-intact + two-sided 9:15-9:45 range)
+        # apply specifically to the 30-min opening-range breakout, not later
+        # C2-C4 structural breaks or bearish signals.
+        if signal == "Bull • C1" and not stock["orb_qualified"]:
+            signal, signal_time = None, None
         if signal:
             stock["signal"] = signal
             stock["signal_time"] = signal_time

@@ -11,12 +11,13 @@ FYERS data plane:
 
 import time
 from datetime import datetime, timedelta
+from datetime import time as dt_time
 
 from fyers_apiv3 import fyersModel
 from fyers_apiv3.FyersWebsocket import data_ws
 
 from . import config
-from .calculations import process_incoming_tick
+from .calculations import orb_quality, process_incoming_tick
 from .config import (ALL_SYMBOLS, BENCHMARK_SYMBOL, IST, ORB_CANDLES,
                      WATCHLIST, short_symbol)
 from .state import market_state
@@ -118,6 +119,7 @@ class DataEngine:
         self.validate_symbols()
         self._backfill_prev_day()
         self._backfill_today_orb()
+        self._backfill_orb_quality()
         self._backfill_quotes()
         print("[backfill] Done.")
 
@@ -241,6 +243,53 @@ class DataEngine:
                         stock["today_low"] = day_low
             except Exception as exc:  # noqa: BLE001
                 print(f"[backfill] ORB failed for {fy_symbol}: {exc}")
+
+    def _backfill_orb_quality(self):
+        """
+        Evaluate the 3 breakout-quality rules against 9:15-9:45 5-min candles,
+        run once the opening range has fully elapsed (scheduled ~09:46 IST):
+          1. 30-min breakout itself is evaluated live in calculations.evaluate_orb.
+          2. None of candles 2-6 may print a low below candle 1's low.
+          3. At least one red and one green candle among the six.
+        Sets stock["orb_qualified"], which gates the "Bull • C1" signal so the
+        Ranking screen's breakout filter only ever shows qualifying stocks.
+        """
+        now = datetime.now(IST)
+        if now.weekday() >= 5:
+            print("[backfill] Weekend — skipping ORB quality check (no session data exists).")
+            return
+        day = now.date().strftime("%Y-%m-%d")
+        c1_start, c1_end = ORB_CANDLES[0][1], ORB_CANDLES[0][2]
+
+        for fy_symbol in WATCHLIST:
+            try:
+                time.sleep(0.05)  # gentle pacing against REST rate limits
+                resp = self._history_retry(
+                    {
+                        "symbol": fy_symbol,
+                        "resolution": "5",
+                        "date_format": "1",
+                        "range_from": day,
+                        "range_to": day,
+                        "cont_flag": "1",
+                    }
+                )
+                if isinstance(resp, dict) and resp.get("code") in self._NON_RETRYABLE_CODES:
+                    print(f"[backfill] ORB-quality history() unavailable, aborting rest of pass: {resp}")
+                    return
+                candles = resp.get("candles", []) if isinstance(resp, dict) else []
+                opening = sorted(
+                    (c for c in candles if c1_start <= datetime.fromtimestamp(c[0], IST).time() < c1_end),
+                    key=lambda c: c[0],
+                )
+
+                sym = short_symbol(fy_symbol)
+                with market_state.lock():
+                    stock = market_state.get_stock(sym)
+                    if stock:
+                        stock["orb_qualified"] = orb_quality(opening)
+            except Exception as exc:  # noqa: BLE001
+                print(f"[backfill] ORB-quality failed for {fy_symbol}: {exc}")
 
     def _backfill_quotes(self):
         """Seed a current LTP snapshot in batches so rows aren't blank pre-tick."""

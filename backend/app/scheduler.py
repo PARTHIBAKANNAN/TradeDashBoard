@@ -68,6 +68,21 @@ def ensure_engine_running():
         _start_engine()
 
 
+def _refresh_opening_range():
+    """
+    09:46 IST: the 9:15-9:45 opening range has now fully printed. If the engine
+    booted right at market-open, _backfill_today_orb()/_backfill_orb_quality()
+    ran against a still-forming candle and found nothing — re-run them now that
+    real data exists, so the C1 breakout signal and its quality gate are live
+    for the rest of the day.
+    """
+    if not config.DATA_ENGINE_ENABLED or not data_engine.rest:
+        return
+    data_engine._backfill_today_orb()
+    data_engine._backfill_orb_quality()
+    print("[scheduler] Opening-range (9:15-9:45) data refreshed.")
+
+
 def _stop_engine():
     data_engine.stop_websocket()
     market_state.market_open = False
@@ -105,6 +120,13 @@ def init_scheduler():
         _start_engine,
         CronTrigger(day_of_week="mon-fri", hour=9, minute=15, timezone=IST),
         id="market_open",
+        replace_existing=True,
+    )
+    # 09:46 opening range (9:15-9:45) complete -> refresh C1 ORB + breakout-quality gate
+    scheduler.add_job(
+        _refresh_opening_range,
+        CronTrigger(day_of_week="mon-fri", hour=9, minute=46, timezone=IST),
+        id="opening_range_refresh",
         replace_existing=True,
     )
     # 15:30 market close -> standby

@@ -50,6 +50,9 @@ class MarketState:
                 "relative_strength": 0.0,
                 # ORB candle boundaries, filled by REST backfill / live aggregation.
                 "orb": {},  # {"C1": {"high": .., "low": ..}, ...}
+                # Whether the 9:15-9:45 opening range passes the 3 breakout-quality
+                # rules (see fyers_service._backfill_orb_quality); gates "Bull • C1".
+                "orb_qualified": False,
                 "signal": "None",
                 "signal_time": "",
             }
