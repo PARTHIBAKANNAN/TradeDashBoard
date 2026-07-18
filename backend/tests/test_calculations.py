@@ -7,8 +7,8 @@ Standalone checks for the math engines. Run from backend/:
 from datetime import datetime
 
 from app.calculations import (day_range_position, evaluate_orb,
-                              intraday_relative_strength, orb_quality,
-                              pct_change, range_map)
+                              first_candle_extreme_intact, has_two_sided_range,
+                              intraday_relative_strength, pct_change, range_map)
 from app.config import IST
 
 
@@ -67,30 +67,37 @@ def test_orb_precedence():
     assert sig == "Bull • C2"
 
 
-def test_orb_quality():
-    # Candles: [ts, open, high, low, close, volume]. Needs >=1 red, >=1 green,
-    # and no candle after the first with a lower low than the first.
+def test_has_two_sided_range():
+    # Candles: [ts, open, high, low, close, volume]. Needs >=1 red and >=1 green.
     good = [
-        [0, 100, 102, 99, 101, 0],  # green, sets the low bar at 99
+        [0, 100, 102, 99, 101, 0],  # green
         [1, 101, 103, 100, 99.5, 0],  # red
         [2, 99.5, 104, 99.2, 103, 0],  # green
         [3, 103, 105, 101, 102, 0],  # red
         [4, 102, 106, 100.5, 105, 0],  # green
         [5, 105, 107, 103, 106, 0],  # green
     ]
-    assert orb_quality(good) is True
+    assert has_two_sided_range(good) is True
 
     # Fewer than 6 candles -> incomplete data, not qualified.
-    assert orb_quality(good[:5]) is False
+    assert has_two_sided_range(good[:5]) is False
 
-    # A later candle prints a low below the first candle's low -> fails rule 2.
-    broken_low = [list(c) for c in good]
-    broken_low[3][3] = 98.0  # first candle's low was 99
-    assert orb_quality(broken_low) is False
-
-    # All-green candles (no red at all) -> fails rule 3.
+    # All-green candles (no red at all) -> fails.
     all_green = [[i, 100 + i, 101 + i, 99 + i, 100.5 + i, 0] for i in range(6)]
-    assert orb_quality(all_green) is False
+    assert has_two_sided_range(all_green) is False
+
+
+def test_first_candle_extreme_intact():
+    # Bullish: candle-1 low (99) must still be the day's low so far.
+    assert first_candle_extreme_intact(True, 102.0, 99.0, today_high=110.0, today_low=99.0) is True
+    assert first_candle_extreme_intact(True, 102.0, 99.0, today_high=110.0, today_low=97.0) is False
+    # No candle-1 data backfilled yet -> fails closed.
+    assert first_candle_extreme_intact(True, 0.0, 0.0, today_high=110.0, today_low=99.0) is False
+
+    # Bearish: candle-1 high (102) must still be the day's high so far.
+    assert first_candle_extreme_intact(False, 102.0, 99.0, today_high=102.0, today_low=95.0) is True
+    assert first_candle_extreme_intact(False, 102.0, 99.0, today_high=105.0, today_low=95.0) is False
+    assert first_candle_extreme_intact(False, 0.0, 0.0, today_high=102.0, today_low=95.0) is False
 
 
 def run_all():

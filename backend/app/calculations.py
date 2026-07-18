@@ -68,27 +68,39 @@ def day_range_position(ltp: float, t_low: float, t_high: float) -> float:
 
 
 # ---------- B. Opening Range Breakout engine ----------
-def orb_quality(candles: list) -> bool:
+def has_two_sided_range(candles: list) -> bool:
     """
-    The 3-condition breakout-quality gate, given the six 9:15-9:45 5-min
-    candles (each `[ts, open, high, low, close, ...]`, FYERS' raw shape,
-    already filtered/sorted to just that window):
-
-      2. None of candles 2-6 may print a low below candle 1's low.
-      3. At least one red (close < open) and one green (close > open) candle.
-
-    (Condition 1 — the 30-min breakout itself — is evaluated live against the
-    C1 boundary in evaluate_orb(); this only gates whether that signal counts.)
+    Breakout-quality rule: given the six 9:15-9:45 5-min candles (each
+    `[ts, open, high, low, close, ...]`, FYERS' raw shape, already
+    filtered/sorted to just that window), at least one must be red
+    (close < open) and one green (close > open) — rules out a stock that
+    just ran straight up/down with no two-sided trade at all.
 
     Returns False if fewer than 6 candles are given (incomplete data).
     """
     if len(candles) < 6:
         return False
-    first_low = candles[0][3]
-    low_intact = all(c[3] >= first_low for c in candles[1:])
     has_red = any(c[4] < c[1] for c in candles)
     has_green = any(c[4] > c[1] for c in candles)
-    return low_intact and has_red and has_green
+    return has_red and has_green
+
+
+def first_candle_extreme_intact(
+    bullish: bool, candle1_high: float, candle1_low: float, today_high: float, today_low: float
+) -> bool:
+    """
+    "First candle made the extreme" trend-cleanliness rule, checked live
+    against the whole day so far (not just the opening 30 min):
+      - Bullish: candle-1's low must still be the day's low so far (never
+        undercut by any later candle/tick).
+      - Bearish: candle-1's high must still be the day's high so far (never
+        overtaken).
+    Fails closed (False) if candle-1's reference value hasn't been backfilled
+    yet (still at its 0.0 default) — no data means not qualified.
+    """
+    if bullish:
+        return bool(candle1_low) and today_low >= candle1_low
+    return bool(candle1_high) and today_high <= candle1_high
 
 
 def completed_candles(now: dt_time) -> list[str]:
@@ -184,11 +196,21 @@ def process_incoming_tick(
 
         now_ist = datetime.now(IST)
         signal, signal_time = evaluate_orb(stock["orb"], ltp, now_ist, stock["signal"])
-        # The 3 breakout-quality rules (low-intact + two-sided 9:15-9:45 range)
-        # apply specifically to the 30-min opening-range breakout, not later
-        # C2-C4 structural breaks or bearish signals.
-        if signal == "Bull • C1" and not stock["orb_qualified"]:
-            signal, signal_time = None, None
+        # The breakout-quality rules apply specifically to the 30-min opening-
+        # range breakout (both directions), not later C2-C4 structural breaks:
+        #   Filter 1: candle-1's low (bull) / high (bear) still the day's
+        #             extreme so far.
+        #   Rule 3:   at least one red and one green candle in the opening range.
+        if signal in ("Bull • C1", "Bear • C1"):
+            qualified = stock["two_sided_ok"] and first_candle_extreme_intact(
+                signal == "Bull • C1",
+                stock["candle1_high"],
+                stock["candle1_low"],
+                stock["today_high"],
+                stock["today_low"],
+            )
+            if not qualified:
+                signal, signal_time = None, None
         if signal:
             stock["signal"] = signal
             stock["signal_time"] = signal_time

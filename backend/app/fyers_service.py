@@ -17,7 +17,7 @@ from fyers_apiv3 import fyersModel
 from fyers_apiv3.FyersWebsocket import data_ws
 
 from . import config
-from .calculations import orb_quality, process_incoming_tick
+from .calculations import has_two_sided_range, process_incoming_tick
 from .config import (ALL_SYMBOLS, BENCHMARK_SYMBOL, IST, ORB_CANDLES,
                      WATCHLIST, short_symbol)
 from .state import market_state
@@ -246,12 +246,12 @@ class DataEngine:
 
     def _backfill_orb_quality(self):
         """
-        Evaluate the 3 breakout-quality rules against 9:15-9:45 5-min candles,
+        Seed the breakout-quality reference data from 9:15-9:45 5-min candles,
         run once the opening range has fully elapsed (scheduled ~09:46 IST):
-          1. 30-min breakout itself is evaluated live in calculations.evaluate_orb.
-          2. None of candles 2-6 may print a low below candle 1's low.
-          3. At least one red and one green candle among the six.
-        Sets stock["orb_qualified"], which gates the "Bull • C1" signal so the
+          - candle1_high/candle1_low: the day's-extreme reference used live by
+            calculations.first_candle_extreme_intact() on every subsequent tick.
+          - two_sided_ok: calculations.has_two_sided_range() over the six candles.
+        Together with the live day-high/low these gate "Bull/Bear • C1" so the
         Ranking screen's breakout filter only ever shows qualifying stocks.
         """
         now = datetime.now(IST)
@@ -287,7 +287,10 @@ class DataEngine:
                 with market_state.lock():
                     stock = market_state.get_stock(sym)
                     if stock:
-                        stock["orb_qualified"] = orb_quality(opening)
+                        stock["two_sided_ok"] = has_two_sided_range(opening)
+                        if opening:
+                            stock["candle1_high"] = opening[0][2]
+                            stock["candle1_low"] = opening[0][3]
             except Exception as exc:  # noqa: BLE001
                 print(f"[backfill] ORB-quality failed for {fy_symbol}: {exc}")
 

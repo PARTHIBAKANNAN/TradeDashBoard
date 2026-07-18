@@ -50,9 +50,14 @@ class MarketState:
                 "relative_strength": 0.0,
                 # ORB candle boundaries, filled by REST backfill / live aggregation.
                 "orb": {},  # {"C1": {"high": .., "low": ..}, ...}
-                # Whether the 9:15-9:45 opening range passes the 3 breakout-quality
-                # rules (see fyers_service._backfill_orb_quality); gates "Bull • C1".
-                "orb_qualified": False,
+                # First 5-min candle (9:15-9:20) high/low — the day's-extreme
+                # reference for calculations.first_candle_extreme_intact().
+                "candle1_high": 0.0,
+                "candle1_low": 0.0,
+                # Whether the 9:15-9:45 opening range has both a red and green
+                # candle (calculations.has_two_sided_range); gates "Bull/Bear • C1"
+                # together with first_candle_extreme_intact().
+                "two_sided_ok": False,
                 "signal": "None",
                 "signal_time": "",
             }
