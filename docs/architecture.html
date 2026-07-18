@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>TradeDashboard — System Architecture Report</title>
+<title>TradeDashboard — Complete Project Documentation</title>
 <style>
   :root {
     --bg: #09090b;
@@ -40,7 +40,6 @@
   }
   a { color: var(--blue); text-decoration: none; }
 
-  /* ---- Top nav ---- */
   header.topbar {
     position: sticky; top: 0; z-index: 50;
     backdrop-filter: blur(12px);
@@ -58,25 +57,24 @@
     display: grid; place-items: center; color: white; font-weight: 800; font-size: 15px;
     box-shadow: 0 4px 18px rgba(59,130,246,0.35);
   }
-  nav.anchors { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+  nav.anchors { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
   nav.anchors a {
-    color: var(--muted); font-size: 12.5px; font-weight: 600;
-    padding: 6px 11px; border-radius: 7px; transition: .15s;
+    color: var(--muted); font-size: 12px; font-weight: 600;
+    padding: 6px 9px; border-radius: 7px; transition: .15s;
   }
   nav.anchors a:hover { color: var(--text); background: var(--panel-2); }
 
-  /* ---- Layout ---- */
   main { max-width: 1120px; margin: 0 auto; padding: 0 28px 80px; }
   section { padding: 46px 0 8px; border-top: 1px solid var(--border-soft); }
   section:first-of-type { border-top: none; }
 
   .hero { padding: 66px 0 30px; border: none; }
-  .hero h1 { font-size: 40px; line-height: 1.12; margin: 14px 0 10px; letter-spacing: -0.5px; }
+  .hero h1 { font-size: 38px; line-height: 1.14; margin: 14px 0 10px; letter-spacing: -0.5px; }
   .hero h1 .grad {
     background: linear-gradient(100deg, var(--blue), var(--cyan) 55%, var(--violet));
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
-  .hero p.lead { font-size: 17px; color: var(--muted); max-width: 720px; }
+  .hero p.lead { font-size: 17px; color: var(--muted); max-width: 760px; }
   .chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 22px 0 4px; }
   .chip {
     font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 999px;
@@ -89,12 +87,12 @@
     text-transform: uppercase; letter-spacing: 2px; font-size: 11.5px;
     font-weight: 700; color: var(--blue); margin-bottom: 6px;
   }
-  h2 { font-size: 26px; margin: 4px 0 6px; letter-spacing: -0.3px; }
-  h3 { font-size: 17px; margin: 26px 0 8px; }
+  h2 { font-size: 25px; margin: 4px 0 6px; letter-spacing: -0.3px; }
+  h3 { font-size: 16.5px; margin: 26px 0 8px; }
+  h4.sub-h { font-size: 14.5px; margin: 20px 0 6px; color: var(--text); }
   p { color: #cfcfd6; }
-  .sub { color: var(--muted); max-width: 760px; }
+  .sub { color: var(--muted); max-width: 780px; }
 
-  /* ---- Cards ---- */
   .grid { display: grid; gap: 16px; margin-top: 22px; }
   .grid.c2 { grid-template-columns: repeat(2, 1fr); }
   .grid.c3 { grid-template-columns: repeat(3, 1fr); }
@@ -111,7 +109,6 @@
     font-size: 14px; flex: none;
   }
 
-  /* ---- Diagram (topology) ---- */
   .topo {
     margin-top: 24px; border: 1px solid var(--border); border-radius: 16px;
     background:
@@ -135,7 +132,6 @@
   .flowarrow span { font-size: 11px; color: var(--faint); position: absolute; top: 8px; width: 90px; text-align: center; }
   .flowarrow .a { font-size: 26px; }
 
-  /* ---- Steps (login/data flow) ---- */
   .steps { margin-top: 24px; position: relative; }
   .step {
     display: grid; grid-template-columns: 44px 1fr; gap: 16px; padding: 0 0 22px; position: relative;
@@ -151,11 +147,11 @@
     border: 1px solid #2b4d8a; color: #cfe0ff;
   }
   .step.ok .num { background: linear-gradient(135deg, #14532d, #06210f); border-color: #1f7a3d; color: #bbf7d0; }
+  .step.violet .num { background: linear-gradient(135deg, #4c1d95, #1e0a3c); border-color: #6d28d9; color: #ddd6fe; }
   .step .body { padding-top: 3px; }
   .step .body h4 { margin: 6px 0 4px; font-size: 15.5px; }
   .step .body p { margin: 0 0 8px; color: var(--muted); font-size: 13.5px; }
 
-  /* ---- Code ---- */
   pre {
     margin: 10px 0 0; background: #0b0b0f; border: 1px solid var(--border);
     border-radius: 10px; padding: 14px 16px; overflow-x: auto;
@@ -168,14 +164,12 @@
   .tok-k { color: #c084fc; } .tok-s { color: #86efac; } .tok-c { color: #6b7280; font-style: italic; }
   .tok-f { color: #7dd3fc; } .tok-n { color: #fca5a5; }
 
-  /* ---- Tables ---- */
   table { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 13.5px; }
   th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
   th { color: var(--faint); text-transform: uppercase; font-size: 11px; letter-spacing: 1px; }
   td code, th code { font-family: var(--mono); font-size: 12px; }
   tr:hover td { background: rgba(255,255,255,0.015); }
 
-  /* ---- Formula cards ---- */
   .formula {
     background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
     padding: 18px 20px;
@@ -197,6 +191,8 @@
   }
   .b-green { background: rgba(34,197,94,0.12); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
   .b-red { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+  .b-blue { background: rgba(59,130,246,0.12); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+  .b-violet { background: rgba(139,92,246,0.12); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
 
   .callout {
     margin-top: 18px; border-radius: 12px; padding: 14px 16px; font-size: 13.5px;
@@ -212,21 +208,40 @@
   .mut { color: var(--muted); }
   .pill-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
   .pill { font-family: var(--mono); font-size: 11.5px; padding: 3px 8px; border-radius: 6px; background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); }
+
+  .widget-card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px 20px; margin-top: 16px;
+  }
+  .widget-card h4 { margin: 0 0 4px; font-size: 15.5px; display: flex; align-items: center; gap: 8px; }
+  .widget-card .path { font-size: 11px; color: var(--faint); font-family: var(--mono); margin-bottom: 10px; }
+  .widget-card p { font-size: 13.5px; margin: 6px 0; }
+  .tabbar { display: flex; gap: 6px; margin-top: 20px; flex-wrap: wrap; }
+  .tab-pill {
+    font-size: 12.5px; font-weight: 700; padding: 6px 14px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--panel-2); color: var(--muted);
+  }
+  .tab-pill.active { background: linear-gradient(135deg, var(--blue-soft), #2b0f52); border-color: var(--violet); color: #e9e2ff; }
 </style>
 </head>
 <body>
 
 <header class="topbar">
   <div class="topbar-inner">
-    <div class="brand"><div class="logo">T</div> TradeDashboard <span class="mut" style="font-weight:500;font-size:13px">· Architecture</span></div>
+    <div class="brand"><div class="logo">T</div> TradeDashboard <span class="mut" style="font-weight:500;font-size:13px">· Full Documentation</span></div>
     <nav class="anchors">
       <a href="#overview">Overview</a>
+      <a href="#stack">Stack</a>
       <a href="#security">Security</a>
-      <a href="#auth">Login</a>
+      <a href="#login">Login</a>
       <a href="#data">Data Flow</a>
-      <a href="#math">Calculations</a>
+      <a href="#calculations">Calculations</a>
+      <a href="#dashboard">Dashboard</a>
+      <a href="#heatmap">Heatmap</a>
+      <a href="#insights">Insights</a>
       <a href="#frontend">Frontend</a>
       <a href="#lifecycle">Lifecycle</a>
+      <a href="#deploy">Deploy</a>
       <a href="#files">Files</a>
     </nav>
   </div>
@@ -236,17 +251,19 @@
 
   <!-- HERO -->
   <div class="hero">
-    <div class="eyebrow">System Architecture Report</div>
+    <div class="eyebrow">Complete Project Documentation</div>
     <h1>Real-time Indian stock<br /><span class="grad">breakout &amp; relative-strength</span> dashboard</h1>
     <p class="lead">A production Backend-For-Frontend that authenticates to FYERS API v3 automatically, ingests
-      millisecond ticks, computes technical engines in memory, and streams the full watchlist to the browser once
-      per second over Server-Sent Events.</p>
+      millisecond ticks, computes technical engines in memory, and streams the full 169-stock watchlist to the
+      browser once per second over Server-Sent Events — behind its own Supabase-backed login, deployed on a
+      self-hosted VM with automatic CI/CD on every push to <code class="inline">main</code>.</p>
     <div class="chips">
       <span class="chip"><span class="dot" style="background:var(--green)"></span>FYERS API v3</span>
       <span class="chip"><span class="dot" style="background:var(--blue)"></span>FastAPI BFF</span>
       <span class="chip"><span class="dot" style="background:var(--violet)"></span>SSE @ 1&nbsp;Hz</span>
-      <span class="chip"><span class="dot" style="background:var(--cyan)"></span>React + Canvas</span>
-      <span class="chip"><span class="dot" style="background:var(--amber)"></span>Automated TOTP login</span>
+      <span class="chip"><span class="dot" style="background:var(--cyan)"></span>React + Canvas + D3</span>
+      <span class="chip"><span class="dot" style="background:var(--amber)"></span>Supabase Auth</span>
+      <span class="chip"><span class="dot" style="background:#f472b6"></span>GitHub Actions CI/CD</span>
     </div>
   </div>
 
@@ -255,83 +272,184 @@
     <div class="eyebrow">01 — Topology</div>
     <h2>System topology &amp; data plane</h2>
     <p class="sub">Three isolated tiers. The browser never touches the broker: all secrets and the raw broker
-      websocket live only on the backend, which throttles the firehose of ticks into a single 1-second payload.</p>
+      websocket live only on the backend, which throttles the firehose of ticks into a single 1-second payload.
+      A fourth tier — Supabase — handles who's allowed to open the dashboard at all, independent of the FYERS
+      broker connection.</p>
 
     <div class="topo">
       <div class="layers">
         <div class="layer">
-          <div class="tag">Source</div>
-          <h5>🟢 FYERS API v3</h5>
+          <div class="tag">Sources</div>
+          <h5>🟢 FYERS API v3 · 🟠 Supabase</h5>
           <ul>
-            <li>REST: history, quotes</li>
-            <li>WebSocket: SymbolUpdate</li>
-            <li>Vagator login endpoints</li>
-            <li>Millisecond binary ticks</li>
+            <li>FYERS: REST history/quotes</li>
+            <li>FYERS: WebSocket SymbolUpdate</li>
+            <li>Supabase: Auth (email/password)</li>
+            <li>Supabase: public JWKS endpoint</li>
           </ul>
         </div>
-        <div class="flowarrow"><span>ms ticks + REST</span><div class="a">→</div></div>
+        <div class="flowarrow"><span>ms ticks + REST + JWT</span><div class="a">→</div></div>
         <div class="layer">
           <div class="tag">Backend-For-Frontend</div>
           <h5>🔵 Python · FastAPI</h5>
           <ul>
             <li>Automated TOTP login (08:45)</li>
-            <li>REST backfill (ranges, ORB)</li>
+            <li>REST backfill (ranges, ORB, breakout-quality)</li>
             <li>In-memory math engines</li>
             <li>Thread-safe state store</li>
-            <li>Market-hours gating</li>
+            <li>Session-cookie gate (Supabase-verified)</li>
           </ul>
         </div>
         <div class="flowarrow"><span>1-sec JSON · SSE</span><div class="a">→</div></div>
         <div class="layer">
           <div class="tag">Client</div>
-          <h5>🟣 React · Vite · Tailwind</h5>
+          <h5>🟣 React · Vite · Tailwind · D3</h5>
           <ul>
             <li>EventSource stream</li>
-            <li>Canvas range bars</li>
-            <li>React.memo isolated rows</li>
-            <li>Filters / sort</li>
-            <li>localStorage offline cache</li>
+            <li>4 tabs: Ranking / Heatmap / Insights / Watchlist</li>
+            <li>Canvas range bars + D3 treemap</li>
+            <li>Light/dark theme, localStorage cache</li>
           </ul>
         </div>
       </div>
     </div>
 
     <div class="grid c4">
-      <div class="card"><h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">◈</span>Zero data cost</h4><p>FYERS native 5,000-symbol websocket; the 42-symbol watchlist + NIFTY 50 benchmark stream free.</p></div>
+      <div class="card"><h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">◈</span>Zero data cost</h4><p>FYERS native websocket; the 169-stock watchlist (21 sectors) + NIFTY 50 benchmark stream free.</p></div>
       <div class="card"><h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">⚡</span>Throttled delivery</h4><p>Ticks land at ms resolution; the client is fed a single batched payload exactly once per second.</p></div>
-      <div class="card"><h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">🔒</span>Secrets isolated</h4><p>Client ID, secret, TOTP seed, PIN are backend env vars — never shipped to the browser.</p></div>
-      <div class="card"><h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">↻</span>Self-healing</h4><p>Auto-reconnect websocket, token cache, and a localStorage snapshot for graceful offline/standby.</p></div>
+      <div class="card"><h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">🔒</span>Secrets isolated</h4><p>FYERS credentials and the Supabase JWKS check are backend-only — never shipped to the browser.</p></div>
+      <div class="card"><h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">↻</span>Self-healing</h4><p>Auto-reconnect websocket, atomic token cache writes, and a localStorage snapshot for graceful offline/standby.</p></div>
+    </div>
+  </section>
+
+  <!-- TECH STACK -->
+  <section id="stack">
+    <div class="eyebrow">02 — Stack</div>
+    <h2>Tech stack</h2>
+    <p class="sub">Deliberately small: no ORM, no database, no message queue. Market state lives entirely in one
+      Python process's memory; every dependency below earns its place.</p>
+
+    <div class="grid c2">
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">🐍</span>Backend</h4>
+        <p>
+          <b>FastAPI</b> 0.115 · <b>Uvicorn</b> (ASGI server) · <b>APScheduler</b> (IST-timezone cron jobs) ·
+          <b>fyers-apiv3</b> (broker REST + websocket SDK) · <b>PyJWT + cryptography</b> (ES256 Supabase JWT
+          verification) · <b>pyotp</b> (TOTP codes) · <b>itsdangerous</b> (signed session cookies via Starlette's
+          <code class="inline">SessionMiddleware</code>) · <b>python-dotenv</b> · <b>pytz</b>.
+        </p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">⚛️</span>Frontend</h4>
+        <p>
+          <b>React 18</b> · <b>Vite 6</b> (dev server + build) · <b>Tailwind CSS 3</b> (semantic CSS-variable
+          tokens for light/dark theming) · <b>d3-hierarchy</b> (squarified treemap layout for the Heatmap) ·
+          <b>@supabase/supabase-js</b> (client-side auth) · native <b>EventSource</b> (SSE) and <b>Canvas 2D</b>
+          (range bars) — no charting library.
+        </p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">🔑</span>Auth</h4>
+        <p>
+          <b>Supabase Auth</b> gates the dashboard itself (real user accounts, email/password). <b>FYERS OAuth v3</b>
+          (+ a TOTP-driven headless variant) gates the live market-data connection. The two are independent layers.
+        </p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">☁️</span>Infra</h4>
+        <p>
+          <b>Oracle Cloud VM</b> (Ubuntu, Mumbai region) · <b>Caddy</b> (reverse proxy + automatic HTTPS via
+          Let's Encrypt) · <b>systemd</b> (backend process supervision, auto-restart) · <b>DuckDNS</b> (free
+          domain) · <b>GitHub Actions</b> (CI/CD, SSH deploy on every push to <code class="inline">main</code>).
+        </p>
+      </div>
     </div>
   </section>
 
   <!-- SECURITY -->
   <section id="security">
-    <div class="eyebrow">02 — Boundary</div>
+    <div class="eyebrow">03 — Boundary</div>
     <h2>Security model</h2>
     <p class="sub">The architectural boundary is the whole point of the BFF: credentials and the broker connection are
-      quarantined server-side.</p>
+      quarantined server-side, and no shared secret is needed to verify the dashboard's own login either.</p>
     <div class="grid c2">
       <div class="card">
         <h4><span class="ic" style="background:rgba(239,68,68,0.14);color:#f87171">✕</span>Never on the frontend</h4>
-        <p>API keys · Client ID · Secret Key · TOTP seed · trading PIN · access token · the raw broker websocket.</p>
+        <p>FYERS Client ID · Secret Key · TOTP seed · trading PIN · access token · the raw broker websocket · any
+          Supabase JWT secret (there isn't one — see below).</p>
       </div>
       <div class="card">
         <h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">✓</span>Backend-only</h4>
-        <p>Loaded from <code class="inline">.env</code> via <code class="inline">python-dotenv</code>; the daily token is cached to <code class="inline">.token_cache.json</code> (git-ignored).</p>
+        <p>Loaded from <code class="inline">.env</code> via <code class="inline">python-dotenv</code>; the daily
+          FYERS token is cached to <code class="inline">.token_cache.json</code> (git-ignored, atomic write).</p>
       </div>
     </div>
-    <div class="callout info"><div class="cico">🛡️</div><p><b>Corporate TLS.</b> On a network with SSL inspection, Python's bundled CA store rejects the broker's cert. <code class="inline">pip-system-certs</code> routes TLS through the Windows certificate store (which holds the corporate root CA), fixing <code class="inline">requests</code>, the FYERS SDK, and the websocket at once.</p></div>
+    <div class="callout info"><div class="cico">🛡️</div><p><b>Corporate TLS.</b> On a network with SSL inspection, Python's bundled CA store rejects the broker's cert. <code class="inline">pip-system-certs</code> routes TLS through the Windows certificate store (which holds the corporate root CA), fixing <code class="inline">requests</code>, the FYERS SDK, and the websocket at once. This is a Windows-dev-only dependency — the Linux VM deploy skips it entirely.</p></div>
+    <div class="callout good"><div class="cico">🔐</div><p><b>No shared JWT secret.</b> The backend verifies Supabase session tokens against the project's public JWKS endpoint (<code class="inline">/auth/v1/.well-known/jwks.json</code>, ES256 asymmetric keys) via <code class="inline">app/supabase_auth.py</code> — there is nothing sensitive to leak even if that verification code were exposed.</p></div>
   </section>
 
-  <!-- AUTH -->
-  <section id="auth">
-    <div class="eyebrow">03 — Authentication</div>
-    <h2>Login method &amp; flow</h2>
-    <p class="sub">Fyers access tokens expire every 24&nbsp;hours. Rather than a manual OAuth redirect, the backend
-      drives Fyers' programmatic login using your own credentials + a TOTP seed — the standard headless algo pattern.
-      A newly created app requires a <b>one-time browser consent</b>; every day after is fully automatic.</p>
+  <!-- LOGIN -->
+  <section id="login">
+    <div class="eyebrow">04 — Authentication</div>
+    <h2>Login: two independent layers</h2>
+    <p class="sub">"Logging in" actually means two separate things here, and mixing them up is the most common source
+      of confusion. <b>Layer 1</b> decides who may open the dashboard at all. <b>Layer 2</b> decides whether the
+      dashboard has a live connection to your FYERS trading account. A user can be logged into Layer 1 with FYERS
+      completely disconnected (Layer 2 shows an amber "Connect FYERS" banner) — they're unrelated.</p>
 
-    <h3>The daily automated chain</h3>
+    <h3>Layer 1 — Dashboard login (Supabase Auth)</h3>
+    <div class="steps">
+      <div class="step ok">
+        <div class="num">1</div>
+        <div class="body">
+          <h4>Frontend authenticates against Supabase directly</h4>
+          <p>The Login form (<code class="inline">frontend/src/App.jsx</code>) calls
+            <code class="inline">supabase.auth.signInWithPassword({ email, password })</code> using
+            <code class="inline">@supabase/supabase-js</code>, initialized in
+            <code class="inline">frontend/src/lib/supabaseClient.js</code> with the project URL + public
+            (<i>publishable</i>) anon key — safe to ship to the browser by design.</p>
+        </div>
+      </div>
+      <div class="step ok">
+        <div class="num">2</div>
+        <div class="body">
+          <h4>Session JWT is exchanged for our own cookie</h4>
+          <p>On success, the frontend POSTs <code class="inline">{ access_token }</code> to
+            <code class="inline">/api/auth/login</code>. The backend verifies that JWT's signature via Supabase's
+            JWKS endpoint (no secret needed) and, if valid, sets <code class="inline">request.session["user"]</code>
+            — a signed cookie (Starlette <code class="inline">SessionMiddleware</code> + <code class="inline">itsdangerous</code>).</p>
+        </div>
+      </div>
+      <div class="step ok">
+        <div class="num">3</div>
+        <div class="body">
+          <h4>Why a cookie, not just the JWT?</h4>
+          <p>The live price stream (<code class="inline">/api/stream</code>) uses the browser's native
+            <code class="inline">EventSource</code>, which <b>cannot send custom headers</b> — so an
+            <code class="inline">Authorization: Bearer</code> token can't reach it. Bridging Supabase's identity
+            check into a same-origin session cookie means <i>every</i> route, including SSE, stays gated with zero
+            special-casing.</p>
+        </div>
+      </div>
+      <div class="step ok">
+        <div class="num">4</div>
+        <div class="body">
+          <h4>Every request re-checks the cookie</h4>
+          <p><code class="inline">security.is_authenticated(request)</code> gates every non-public route via the
+            <code class="inline">require_login</code> FastAPI dependency. The gate is skipped entirely (dev mode)
+            when <code class="inline">SUPABASE_URL</code> is unset.</p>
+        </div>
+      </div>
+    </div>
+    <div class="callout warn"><div class="cico">⚠️</div><p><b>No public sign-up.</b> The app only ever calls <code class="inline">signInWithPassword</code> — there is no sign-up form. New users are created manually in the Supabase dashboard (Authentication → Users → Add user), and "Allow new users to sign up" should stay disabled there.</p></div>
+
+    <h3>Layer 2 — FYERS broker connection</h3>
+    <p class="sub">Fyers access tokens expire every 24&nbsp;hours. Rather than a manual OAuth redirect every day, the
+      backend drives Fyers' programmatic login using your own credentials + a TOTP seed — the standard headless
+      algo-trading pattern. A newly created FYERS app (or one whose permissions just changed) requires a
+      <b>one-time browser consent</b>; every day after runs unattended.</p>
+
+    <h4 class="sub-h">The daily automated chain</h4>
     <div class="steps">
       <div class="step ok">
         <div class="num">1</div>
@@ -383,34 +501,43 @@ token = session.generate_token()[<span class="tok-s">"access_token"</span>]  <sp
       <div class="step ok">
         <div class="num">6</div>
         <div class="body">
-          <h4>Cache &amp; use</h4>
-          <p>Token is date-stamped into <code class="inline">.token_cache.json</code> (survives restarts today), then powers the REST <code class="inline">FyersModel</code> and the <code class="inline">FyersDataSocket</code> feed (<code class="inline">CLIENT_ID:token</code>).</p>
+          <h4>Cache atomically &amp; use</h4>
+          <p>Token is date-stamped and written to a temp file then <code class="inline">os.replace()</code>'d into
+            <code class="inline">.token_cache.json</code> — atomic, so a mid-write process kill can never corrupt it.
+            Powers the REST <code class="inline">FyersModel</code> and the <code class="inline">FyersDataSocket</code>
+            feed (<code class="inline">CLIENT_ID:token</code>).</p>
         </div>
       </div>
     </div>
 
-    <h3>One-time consent for a new app</h3>
-    <p class="sub">A freshly created app is not yet authorized against your account, so step&nbsp;4 returns a pre-consent
-      <code class="inline">data.auth</code> token (<code class="inline">sub: access_token</code>) with no <code class="inline">auth_code</code> — which <code class="inline">/validate-authcode</code> rejects with <code class="inline">-437</code>.
-      Running <code class="inline">manual_auth.py</code> once (browser login → <b>Allow</b> → paste the redirected URL) authorizes the
-      app permanently. After that, the chain above runs unattended.</p>
+    <h4 class="sub-h">One-time browser consent</h4>
+    <p class="sub">A freshly created (or newly re-permissioned) app isn't authorized against your account yet, so
+      step&nbsp;4 returns a pre-consent <code class="inline">data.auth</code> token with no real <code class="inline">auth_code</code>
+      — which <code class="inline">/validate-authcode</code> rejects (<code class="inline">-437 invalid auth code</code>).
+      Running <code class="inline">manual_auth.py</code> once (prints the FYERS authorize URL → open in a browser →
+      log in → <b>Allow</b> → paste the redirected URL back into the terminal) exchanges a real, consented
+      <code class="inline">auth_code</code> and caches the resulting token. After that, the chain above runs
+      unattended — until FYERS-side permissions change again (see the gotchas table below).</p>
 
-    <h3>Token lifecycle</h3>
-    <div class="grid c3">
-      <div class="card"><h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">⏰</span>08:45 IST cron</h4><p>APScheduler force-refreshes a fresh token before the open — no manual step.</p></div>
-      <div class="card"><h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">💾</span>Same-day cache</h4><p>Restarts reuse the cached token; a stale (previous-day) cache triggers re-login.</p></div>
-      <div class="card"><h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">🔁</span>Graceful fallback</h4><p>If login fails, the server stays up and serves the last snapshot instead of crashing.</p></div>
-    </div>
+    <h4 class="sub-h">In-app "Connect FYERS" (alternative to the CLI script)</h4>
+    <p class="sub">The dashboard also exposes a browser-based path: an amber banner + <b>Connect FYERS</b> button
+      (visible whenever <code class="inline">fyers_connected: false</code>) opens
+      <code class="inline">auth.build_login_url()</code> in a new tab. FYERS redirects back to
+      <code class="inline">GET /callback?auth_code=…</code>, which the backend exchanges and caches the same way —
+      no SSH access required. Caddy explicitly proxies the bare <code class="inline">/callback</code> path (outside
+      <code class="inline">/api/*</code>) to the backend for this to reach FastAPI instead of the SPA's
+      <code class="inline">index.html</code> fallback.</p>
 
-    <h3>Environment gotchas resolved</h3>
     <table>
       <thead><tr><th style="width:34%">Symptom</th><th style="width:33%">Root cause</th><th>Resolution</th></tr></thead>
       <tbody>
-        <tr><td><code>CERTIFICATE_VERIFY_FAILED</code></td><td>Corporate TLS inspection; bundled CA store lacks the root CA</td><td><code>pip-system-certs</code> → Windows cert store</td></tr>
+        <tr><td><code>CERTIFICATE_VERIFY_FAILED</code></td><td>Corporate TLS inspection; bundled CA store lacks the root CA</td><td><code>pip-system-certs</code> → Windows cert store (Windows dev only)</td></tr>
         <tr><td>Install fails on <code>aiohttp 3.9.3</code></td><td>No Python 3.13 wheel; pinned by fyers-apiv3</td><td>Install fyers with <code>--no-deps</code> + compatible libs</td></tr>
         <tr><td><code>No module named pkg_resources</code></td><td>Removed in setuptools ≥ 81</td><td>Pin <code>setuptools&lt;81</code></td></tr>
         <tr><td><code>invalid totp</code> (intermittent)</td><td>Code generated at 30s window boundary</td><td>Boundary-safe generation + one retry</td></tr>
-        <tr><td><code>-437 invalid auth code</code></td><td>New app not yet authorized → pre-consent <code>data.auth</code></td><td>One-time <code>manual_auth.py</code> consent</td></tr>
+        <tr><td><code>-437 invalid auth code</code></td><td>New/re-permissioned app not yet authorized → pre-consent token</td><td>One-time <code>manual_auth.py</code> consent</td></tr>
+        <tr><td><code>-403 Additional permission required</code> on <code>history()</code></td><td>FYERS app missing the "Historical Data" API scope on the token</td><td>Enable the permission on myapi.fyers.in, then re-run <code>manual_auth.py</code> to bake it into a fresh token</td></tr>
+        <tr><td>All prices show <code>0.00</code></td><td>Retrying a non-retryable permission error 3× per symbol × 170 symbols exhausts FYERS' rate limit before the (working) <code>quotes()</code> call gets a turn</td><td><code>_history_retry()</code> recognizes non-retryable codes and aborts the whole pass on the first occurrence</td></tr>
         <tr><td>Endpoint <code>-1025</code> / <code>-1006</code></td><td>Wrong endpoint variant</td><td><code>send_login_otp_v2</code>, <code>verify_pin_v2</code>; <code>verify_otp</code> stays non-v2</td></tr>
       </tbody>
     </table>
@@ -418,12 +545,12 @@ token = session.generate_token()[<span class="tok-s">"access_token"</span>]  <sp
 
   <!-- DATA FLOW -->
   <section id="data">
-    <div class="eyebrow">04 — Data plane</div>
+    <div class="eyebrow">05 — Data plane</div>
     <h2>Complete data-retrieval flow</h2>
     <p class="sub">Two ingestion paths feed one thread-safe in-memory state: a REST <b>backfill</b> at startup so no field is
       ever blank, and the live <b>websocket</b> for streaming ticks. A per-second SSE generator packages state for the client.</p>
 
-    <h3>A · Startup REST backfill</h3>
+    <h3>A · Startup REST backfill (<code class="inline">DataEngine.backfill()</code>)</h3>
     <div class="grid c3">
       <div class="card">
         <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">1</span>Previous day</h4>
@@ -434,8 +561,20 @@ token = session.generate_token()[<span class="tok-s">"access_token"</span>]  <sp
         <p>30-min candles for today → C1–C4 high/low keyed by candle start-time, plus today's running high/low.</p>
       </div>
       <div class="card">
-        <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">3</span>Quote seed</h4>
+        <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">3</span>Breakout-quality seed</h4>
+        <p>5-min candles for 9:15–9:45 → candle-1 high/low reference + whether the range is two-sided (see Calculations).</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">4</span>Quote seed</h4>
         <p>Batched <code class="inline">quotes()</code> (≤50/req) → an initial LTP so rows render fully before the first tick.</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">⏱</span>Weekend / no-data guard</h4>
+        <p>Steps 2–3 skip themselves entirely on Sat/Sun (no session data could possibly exist) instead of wasting the rate-limit budget on 170 guaranteed failures.</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(239,68,68,0.14);color:#f87171">⛔</span>Non-retryable abort</h4>
+        <p>A permission-level error (e.g. <code class="inline">-403</code>) is app-wide, not per-symbol — the whole history pass aborts on the <i>first</i> occurrence rather than repeating the failure 170×.</p>
       </div>
     </div>
 
@@ -446,7 +585,7 @@ token = session.generate_token()[<span class="tok-s">"access_token"</span>]  <sp
         <div class="flowarrow"><span>on_message</span><div class="a">→</div></div>
         <div class="layer"><div class="tag">Normalize</div><h5>_handle_tick</h5><ul><li>defensive key read</li><li>NIFTY → set_nifty()</li><li>equity → process_tick</li></ul></div>
         <div class="flowarrow"><span>under lock</span><div class="a">→</div></div>
-        <div class="layer"><div class="tag">Compute</div><h5>process_incoming_tick</h5><ul><li>LTP · today H/L</li><li>%Δ · RS · day-pos</li><li>ORB evaluation</li></ul></div>
+        <div class="layer"><div class="tag">Compute</div><h5>process_incoming_tick</h5><ul><li>LTP · today H/L</li><li>%Δ · RS · day-pos</li><li>ORB evaluation + quality gate</li></ul></div>
         <div class="flowarrow"><span>mutates</span><div class="a">→</div></div>
         <div class="layer"><div class="tag">State</div><h5>MarketState</h5><ul><li>RLock guarded</li><li>plain dicts</li><li>market_open flag</li></ul></div>
       </div>
@@ -454,30 +593,36 @@ token = session.generate_token()[<span class="tok-s">"access_token"</span>]  <sp
 
     <h3>C · Per-second SSE broadcast</h3>
     <p class="sub">The generator snapshots state under lock, computes per-payload range coordinates, and emits one framed
-      JSON blob every second. The client consumes it via <code class="inline">EventSource</code>.</p>
+      JSON blob every second. The client consumes it via <code class="inline">EventSource</code> (gated by the Layer-1
+      session cookie described above).</p>
     <pre><span class="tok-k">async def</span> <span class="tok-f">event_generator</span>():
     <span class="tok-k">while</span> <span class="tok-k">True</span>:
         <span class="tok-k">if</span> <span class="tok-k">await</span> request.is_disconnected(): <span class="tok-k">break</span>
-        payload = build_payload()          <span class="tok-c"># { market_open, nifty, stocks[] }</span>
+        payload = build_payload()          <span class="tok-c"># { market_open, fyers_connected, nifty, stocks[] }</span>
         <span class="tok-k">yield</span> <span class="tok-s">f"data: {json.dumps(payload)}\n\n"</span>
         <span class="tok-k">await</span> asyncio.sleep(<span class="tok-n">1.0</span>)         <span class="tok-c"># throttled 1 Hz</span></pre>
 
     <table>
-      <thead><tr><th>Endpoint</th><th>Method</th><th>Purpose</th></tr></thead>
+      <thead><tr><th>Endpoint</th><th>Method</th><th>Auth</th><th>Purpose</th></tr></thead>
       <tbody>
-        <tr><td><code>/api/stream</code></td><td>SSE</td><td>1&nbsp;Hz batched payload for all instruments</td></tr>
-        <tr><td><code>/api/snapshot</code></td><td>GET</td><td>One-shot state (initial / offline cache)</td></tr>
-        <tr><td><code>/api/health</code></td><td>GET</td><td>Liveness + market-open flag</td></tr>
+        <tr><td><code>/api/stream</code></td><td>SSE</td><td>Session cookie</td><td>1&nbsp;Hz batched payload for all instruments</td></tr>
+        <tr><td><code>/api/snapshot</code></td><td>GET</td><td>Session cookie</td><td>One-shot state (initial / offline cache)</td></tr>
+        <tr><td><code>/api/health</code></td><td>GET</td><td>Public</td><td>Liveness + market-open + FYERS auth status</td></tr>
+        <tr><td><code>/api/auth/login</code></td><td>POST</td><td>Public</td><td>Exchange a Supabase access_token for the dashboard session cookie</td></tr>
+        <tr><td><code>/api/auth/logout</code></td><td>POST</td><td>Session cookie</td><td>Clear the session</td></tr>
+        <tr><td><code>/api/auth/me</code></td><td>GET</td><td>Public</td><td>Lets the SPA decide whether to show the login screen</td></tr>
+        <tr><td><code>/api/auth/login-url</code></td><td>GET</td><td>Session cookie</td><td>Returns the FYERS OAuth authorize URL for "Connect FYERS"</td></tr>
+        <tr><td><code>/callback</code></td><td>GET</td><td>Public</td><td>FYERS OAuth redirect target; exchanges &amp; caches the broker token</td></tr>
       </tbody>
     </table>
   </section>
 
-  <!-- MATH -->
-  <section id="math">
-    <div class="eyebrow">05 — Engines</div>
+  <!-- CALCULATIONS -->
+  <section id="calculations">
+    <div class="eyebrow">06 — Engines</div>
     <h2>Mathematical calculations</h2>
-    <p class="sub">Every tick recomputes four deterministic engines in memory before the next broadcast. All functions are
-      pure and unit-tested.</p>
+    <p class="sub">Every tick recomputes these deterministic engines in memory before the next broadcast. All are
+      pure functions, unit-tested in <code class="inline">backend/tests/test_calculations.py</code>.</p>
 
     <div class="grid c2">
       <div class="formula">
@@ -497,21 +642,8 @@ token = session.generate_token()[<span class="tok-s">"access_token"</span>]  <sp
         <div class="eq">
           <span class="frac"><span class="num">LTP<sub>t</sub> − T<sub>L</sub></span><span class="den">T<sub>H</sub> − T<sub>L</sub></span></span> × 100
         </div>
-        <p class="note">Where the price sits inside today's low→high band. Feeds the slider filter directly; a zero-span
-          guard returns 0 to avoid division errors.</p>
-      </div>
-
-      <div class="formula">
-        <div class="label">Engine B</div>
-        <h4>30-min Opening Range Breakout (C1–C4)</h4>
-        <div class="eq">Upper<sub>Cn</sub> = max(P)&nbsp;&nbsp;·&nbsp;&nbsp;Lower<sub>Cn</sub> = min(P)&nbsp;&nbsp;<span class="mut">over t ∈ Cn</span></div>
-        <p class="note">Candles: C1 09:15–09:45 · C2 09:45–10:15 · C3 10:15–10:45 · C4 10:45–11:15. Once a candle
-          completes, a breach of its bound triggers a signal; the <b>newest completed candle wins</b>, and repeated
-          same-state ticks don't re-fire.</p>
-        <div class="pill-row" style="margin-top:10px">
-          <span class="badge b-green">LTP &gt; Upper → Bull • Cn</span>
-          <span class="badge b-red">LTP &lt; Lower → Bear • Cn</span>
-        </div>
+        <p class="note">Where the price sits inside today's low→high band. Feeds the Ranking slider filter and the
+          Insights "New Highs/Lows" widget directly; a zero-span guard returns 0 to avoid division errors.</p>
       </div>
 
       <div class="formula">
@@ -523,61 +655,351 @@ token = session.generate_token()[<span class="tok-s">"access_token"</span>]  <sp
         <p class="note">With <code class="inline">min = min(Y<sub>L</sub>, T<sub>L</sub>)</code> and <code class="inline">max = max(Y<sub>H</sub>, T<sub>H</sub>)</code>, both sessions map onto one 0–100% scale so
           yesterday's grey bar, today's blue bar, and the LTP tick share coordinates on a single canvas element.</p>
       </div>
+
+      <div class="formula">
+        <div class="label">Engine B (part 1)</div>
+        <h4>30-min Opening Range Breakout (C1–C4)</h4>
+        <div class="eq">Upper<sub>Cn</sub> = max(P)&nbsp;&nbsp;·&nbsp;&nbsp;Lower<sub>Cn</sub> = min(P)&nbsp;&nbsp;<span class="mut">over t ∈ Cn</span></div>
+        <p class="note">Candles: C1 09:15–09:45 · C2 09:45–10:15 · C3 10:15–10:45 · C4 10:45–11:15. Once a candle
+          completes, a breach of its bound is a candidate signal; the <b>newest completed candle wins</b>, and
+          repeated same-state ticks don't re-fire. (<code class="inline">evaluate_orb()</code>)</p>
+        <div class="pill-row" style="margin-top:10px">
+          <span class="badge b-green">LTP &gt; Upper → Bull • Cn</span>
+          <span class="badge b-red">LTP &lt; Lower → Bear • Cn</span>
+        </div>
+      </div>
     </div>
 
-    <div class="callout good"><div class="cico">✓</div><p><b>Verified.</b> The engine suite passes its unit tests — <code class="inline">python -m tests.test_calculations</code> (pct-change, IRS, day-range, dual-range map, ORB breakout &amp; precedence).</p></div>
+    <h3>Engine B (part 2) — the breakout-quality gate</h3>
+    <p class="sub">A raw C1 boundary breach isn't shown as a Bull/Bear signal by itself — three additional rules must
+      <i>all</i> hold, gating <code class="inline">"Bull • C1"</code> / <code class="inline">"Bear • C1"</code>
+      specifically (C2–C4 structural breaks are unaffected). Evaluated live on every tick inside
+      <code class="inline">process_incoming_tick()</code>.</p>
+
+    <div class="grid c3">
+      <div class="formula">
+        <div class="label">Rule 1</div>
+        <h4>Opening-range breakout</h4>
+        <p class="note">Price is beyond the 30-min (C1) range — this <i>is</i> Engine B part 1 above. Bull needs
+          <code class="inline">LTP &gt; C1 high</code>; Bear needs <code class="inline">LTP &lt; C1 low</code>.</p>
+      </div>
+      <div class="formula">
+        <div class="label">Rule 2</div>
+        <h4>First-candle extreme intact</h4>
+        <p class="note"><code class="inline">first_candle_extreme_intact()</code> — the very first 5-min candle
+          (09:15–09:20)'s low (bullish) / high (bearish) must <b>still be the day's extreme so far</b>, checked
+          continuously against the live <code class="inline">today_low</code>/<code class="inline">today_high</code>
+          — not just within the opening 30 minutes, but for the whole day up to now. Fails closed if the candle-1
+          reference hasn't backfilled yet.</p>
+        <div class="eq" style="font-size:13px">bull: today_low ≥ candle1_low<br/>bear: today_high ≤ candle1_high</div>
+      </div>
+      <div class="formula">
+        <div class="label">Rule 3</div>
+        <h4>Two-sided range</h4>
+        <p class="note"><code class="inline">has_two_sided_range()</code> — among the six 5-min candles spanning
+          09:15–09:45, at least one must close red (<code class="inline">close &lt; open</code>) and one green
+          (<code class="inline">close &gt; open</code>). Rules out a stock that just ran straight up/down with no
+          two-sided trade at all. Returns <code class="inline">False</code> if fewer than six candles are available.</p>
+      </div>
+    </div>
+    <div class="callout info"><div class="cico">🗓️</div><p><b>Scheduling.</b> The 5-min candles needed for Rules 2–3 don't exist until 09:45 has actually elapsed. A dedicated <code class="inline">09:46 IST</code> cron job (<code class="inline">_refresh_opening_range()</code>) re-runs the ORB + quality backfill once real data exists, correcting anything that booted right at market-open before the window had printed.</p></div>
+
+    <div class="callout good"><div class="cico">✓</div><p><b>Verified.</b> 8/8 unit tests pass — <code class="inline">python -m tests.test_calculations</code> (pct-change, IRS, day-range, dual-range map, ORB breakout &amp; precedence, two-sided-range, first-candle-extreme-intact).</p></div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section id="dashboard">
+    <div class="eyebrow">07 — Client app</div>
+    <h2>Dashboard: 4 tabs, 1 shared data stream</h2>
+    <p class="sub">One <code class="inline">useMarketStream()</code> hook opens a single SSE connection; all four tabs
+      below re-render from that same in-memory <code class="inline">stocks[]</code> array — no per-tab fetching.</p>
+
+    <div class="tabbar">
+      <span class="tab-pill active">📊 Ranking</span>
+      <span class="tab-pill">🔥 Heatmap</span>
+      <span class="tab-pill">💡 Insights</span>
+      <span class="tab-pill">⭐ Watchlist</span>
+    </div>
+
+    <div class="widget-card">
+      <h4>📊 Ranking <span class="badge b-blue">RankingScreen.jsx</span></h4>
+      <p>The primary sortable/filterable table (<code class="inline">WatchlistRow</code> per stock): Stock · LTP ·
+        Price Range (Canvas dual-range bar) · Signal · RS vs NIFTY. Client-side filters (all via
+        <code class="inline">useMemo</code>, no re-fetch):</p>
+      <p><b>Breakout Signal</b> — All / Bull / Bear, matched against the <code class="inline">signal</code> string
+        (which is already server-gated by the 3-rule breakout-quality check above — the filter itself needs no
+        extra logic). <b>Sector</b> — exact match against the raw watchlist sector. <b>Sort</b> — RS ▼/▲, %Change ▼,
+        Day-range % ▼, Symbol A-Z. <b>Day Range Position ≥ N%</b> slider — hides stocks not yet near their daily high.</p>
+    </div>
+
+    <div class="widget-card">
+      <h4>⭐ Watchlist <span class="badge b-blue">WatchlistScreen.jsx</span></h4>
+      <p>A personal shortlist stored in <code class="inline">localStorage</code> (key <code class="inline">"watchlist"</code>,
+        an array of symbol strings — no backend persistence). A star toggle adds/removes a symbol from a browseable
+        "all stocks" list (sorted by <code class="inline">|pct_change|</code> descending, top 20 shown) into the
+        starred table above it, which renders the same <code class="inline">WatchlistRow</code> component as Ranking.</p>
+    </div>
+
+    <p class="sub" style="margin-top:20px">Heatmap and Insights are large enough to get their own sections below.</p>
+  </section>
+
+  <!-- HEATMAP -->
+  <section id="heatmap">
+    <div class="eyebrow">08 — Heatmap</div>
+    <h2>Heatmap: two-level treemap</h2>
+    <p class="sub"><code class="inline">HeatmapScreen.jsx</code> + <code class="inline">Treemap.jsx</code>. Squarified
+      treemap layout via <code class="inline">d3-hierarchy</code>'s <code class="inline">treemapSquarify</code> tiling
+      — sized rectangles that always stay close to square, unlike a naive slice-and-dice layout. Fully
+      <code class="inline">ResizeObserver</code>-responsive.</p>
+
+    <h3>Level 1 — sector overview (default view)</h3>
+    <div class="grid c2">
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">📐</span>Tile size</h4>
+        <p>Each tile is one NIFTY-style sector group (via <code class="inline">sectorGroups.js</code>'s
+          <code class="inline">niftyGroup()</code> mapping — e.g. both "Energy" and "Power" watchlist sectors fold
+          into <code class="inline">NIFTY ENERGY</code>). Size = <b>sum of traded value</b>
+          (<code class="inline">ltp × volume</code>) across all members of that group.</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">🎨</span>Tile color</h4>
+        <p>Color = that group's <b>traded-value-weighted mean</b> %change
+          (<code class="inline">sectorAggregates.js</code>'s <code class="inline">aggregate()</code>) — a
+          heavy-volume stock legitimately dominates the sector's color, unlike the Sector Leaderboard widget which
+          deliberately uses a simple (unweighted) mean instead.</p>
+      </div>
+    </div>
+
+    <h3>Level 2 — stock drill-down (click any sector tile)</h3>
+    <div class="grid c2">
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">📐</span>Tile size</h4>
+        <p>One tile per stock in the clicked sector group. Size = that stock's individual
+          <code class="inline">traded_value</code>.</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">🎨</span>Tile color</h4>
+        <p>Color = that individual stock's own %change (no aggregation at this level).</p>
+      </div>
+    </div>
+
+    <h3>Color function (shared by both levels)</h3>
+    <pre><span class="tok-k">function</span> <span class="tok-f">colorFor</span>(pctChange) {
+  <span class="tok-c">// capped at ±5% so a couple of extreme movers don't wash out the rest of the map</span>
+  <span class="tok-k">const</span> capped = Math.max(-<span class="tok-n">5</span>, Math.min(<span class="tok-n">5</span>, pctChange));
+  <span class="tok-k">const</span> intensity = Math.abs(capped) / <span class="tok-n">5</span>;          <span class="tok-c">// 0..1</span>
+  <span class="tok-k">return</span> capped &gt;= <span class="tok-n">0</span>
+    ? <span class="tok-s">`hsl(142, 71%, ${14 + intensity * 28}%)`</span>   <span class="tok-c">// green, darker→brighter</span>
+    : <span class="tok-s">`hsl(0, 72%, ${14 + intensity * 26}%)`</span>;    <span class="tok-c">// red,   darker→brighter</span>
+}</pre>
+    <p class="sub">Tile fills are intentionally theme-invariant (same hsl() regardless of light/dark mode) — a
+      Finviz-style convention where the heat color itself is the whole point of the widget.</p>
+  </section>
+
+  <!-- INSIGHTS -->
+  <section id="insights">
+    <div class="eyebrow">09 — Insights</div>
+    <h2>Insights tab: 8 widgets, each a pure derivation of the same stream</h2>
+    <p class="sub"><code class="inline">Insights.jsx</code> composes all eight below; none of them fetch anything —
+      every calculation is a <code class="inline">useMemo</code> over the exact same <code class="inline">stocks[]</code>
+      array the Ranking table renders.</p>
+
+    <div class="widget-card">
+      <h4>📶 Market Breadth <span class="badge b-blue">MarketBreadth.jsx</span></h4>
+      <div class="path">Slim single-row banner</div>
+      <p>Counts stocks with <code class="inline">pct_change &gt; 0</code> (Up) / <code class="inline">&lt; 0</code>
+        (Down) / <code class="inline">== 0</code> (Flat), rendered as one proportionally-segmented bar
+        (green/grey/red) plus raw counts. A one-glance "is today a green day or a red day" gauge.</p>
+    </div>
+
+    <div class="widget-card">
+      <h4>⚖️ Buy/Sell Pressure <span class="badge b-blue">BuySellPressure.jsx</span></h4>
+      <div class="path">Slim single-row banner · needs backend-captured tick fields</div>
+      <p>Aggregates <code class="inline">tot_buy_qty</code> / <code class="inline">tot_sell_qty</code> (outstanding
+        order quantities, carried directly on FYERS <code class="inline">SymbolUpdate</code> ticks) across the
+        <i>entire</i> watchlist. <code class="inline">buyPct = buyQty / (buyQty + sellQty) × 100</code> (and the
+        complement for sell) — a market-wide order-flow imbalance gauge, not a per-stock one.</p>
+    </div>
+
+    <div class="widget-card">
+      <h4>🏆 Sector Performance <span class="badge b-blue">SectorLeaderboard.jsx</span></h4>
+      <div class="path">Horizontal bar chart, ranked</div>
+      <p>Ranks every NIFTY sector group by <b>simple (unweighted) mean</b> %change across its member stocks —
+        deliberately <i>not</i> traded-value-weighted, so one heavy-volume stock can't dominate the leaderboard read
+        the way it intentionally does on the Heatmap. Bar width ∝ <code class="inline">|mean| / max(|mean|)</code>
+        across all groups; direction (green bar growing right / red bar growing left from center) matches sign.</p>
+    </div>
+
+    <div class="widget-card">
+      <h4>🚀 Breakout Signals <span class="badge b-blue">BreakoutLeaderboard.jsx</span></h4>
+      <div class="path">Live list, sorted by signal time</div>
+      <p>Every stock whose <code class="inline">signal</code> field is currently set (i.e. passed all 3
+        breakout-quality rules from the Calculations section) — sorted newest-first by
+        <code class="inline">signal_time</code>. Bull rows get a green ▲, Bear rows a red ▼.</p>
+    </div>
+
+    <div class="widget-card">
+      <h4>🔄 Sector Rotation <span class="badge b-blue">SectorRotationChart.jsx</span></h4>
+      <div class="path">Hand-rolled scatter chart (no chart library) · absolute-positioned divs</div>
+      <p>One dot per sector group: <b>x</b> = mean %change today, <b>y</b> = mean relative-strength vs NIFTY. Both
+        axes use a symmetric linear scale (<code class="inline">±max(|value|) × 1.15</code>) with the origin at
+        center, splitting the chart into four labeled quadrants:</p>
+      <div class="pill-row" style="margin-top:8px">
+        <span class="pill">↖ Improving (RS+, %chg−)</span>
+        <span class="pill">↗ Leading (RS+, %chg+)</span>
+        <span class="pill">↙ Lagging (RS−, %chg−)</span>
+        <span class="pill">↘ Weakening (RS−, %chg+)</span>
+      </div>
+      <p>Dot diameter scales mildly with member count (<code class="inline">10 + min(10, count/2)</code> px) so
+        larger sectors read as visually heavier without dominating the plot.</p>
+    </div>
+
+    <div class="widget-card">
+      <h4>⚡ Circuit Proximity <span class="badge b-blue">CircuitProximity.jsx</span></h4>
+      <div class="path">List, sorted by distance · needs backend-captured tick fields · threshold: 2%</div>
+      <p>Flags stocks trading within 2% of their exchange circuit limit — a high-signal event in Indian markets.
+        Uses <code class="inline">upper_ckt</code>/<code class="inline">lower_ckt</code> (also carried directly on
+        FYERS ticks). <code class="inline">distPct = (upper_ckt − ltp) / upper_ckt × 100</code> for the upper side
+        (mirrored for lower); flagged when <code class="inline">0 ≤ distPct ≤ 2</code>. These fields are frequently
+        absent/zero on certain tick types, so this widget shows "no data received yet" more often than the others —
+        that's expected, not a bug.</p>
+    </div>
+
+    <div class="widget-card">
+      <h4>📈 New Highs / Lows <span class="badge b-blue">NewHighsLows.jsx</span></h4>
+      <div class="path">Two side-by-side lists · pure frontend, no new backend field</div>
+      <p>Derived entirely from <code class="inline">day_range_pos</code> (Engine D above): stocks at
+        <code class="inline">≥ 95%</code> of today's range are "near day-high", <code class="inline">≤ 5%</code>
+        are "near day-low". No separate 52-week or all-time high tracking — purely an intraday-range read.</p>
+    </div>
+
+    <div class="widget-card">
+      <h4>📋 Ranked Movers <span class="badge b-blue">RankedMovers.jsx</span></h4>
+      <div class="path">4 mini-lists sharing one layout component, top 8 each</div>
+      <p><b>Top Gainers</b> / <b>Top Losers</b> — sorted by <code class="inline">pct_change</code>.
+        <b>Most Active (Value)</b> — sorted by <code class="inline">traded_value</code>
+        (<code class="inline">ltp × volume</code>), formatted in ₹ Cr/L. <b>RS vs Nifty</b> — sorted by
+        <code class="inline">relative_strength</code> (Engine A). All four are pure client-side sorts of the same
+        array, no extra backend field required.</p>
+    </div>
   </section>
 
   <!-- FRONTEND -->
   <section id="frontend">
-    <div class="eyebrow">06 — Client</div>
+    <div class="eyebrow">10 — Client internals</div>
     <h2>Frontend rendering</h2>
-    <p class="sub">Built for a stable frame rate across 40+ live rows.</p>
+    <p class="sub">Built for a stable frame rate across 169 live rows, with a full light/dark theme system layered on
+      after the fact without touching per-component logic.</p>
     <div class="grid c4">
       <div class="card"><h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">🎨</span>Canvas bars</h4><p>Pre-normalized coordinates rasterized on <code class="inline">&lt;canvas&gt;</code> — no per-pixel DOM, DPR-aware.</p></div>
-      <div class="card"><h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">🧩</span>React.memo rows</h4><p>Re-renders isolated to rows whose data actually changed.</p></div>
+      <div class="card"><h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">🧩</span>React.memo rows</h4><p>Re-renders isolated to rows/tiles whose data actually changed.</p></div>
       <div class="card"><h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">🔎</span>Filters &amp; sort</h4><p>Signal · sector · day-range slider · multi-key sort, all client-side via <code class="inline">useMemo</code>.</p></div>
       <div class="card"><h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">📴</span>Offline cache</h4><p>Each payload mirrored to <code class="inline">localStorage</code>; on drop/standby it renders the last snapshot with a Closed/Offline badge.</p></div>
     </div>
+    <h3>Light/dark theme system</h3>
+    <p class="sub">CSS-variable tokens (<code class="inline">tailwind.config.js</code> maps semantic names like
+      <code class="inline">surface</code>/<code class="inline">primary</code>/<code class="inline">accent-blue</code>
+      to <code class="inline">rgb(var(--token) / &lt;alpha-value&gt;)</code>) instead of a <code class="inline">dark:</code>
+      variant on every className — the codebase already leaned on computed ternary strings, so doubling every one
+      of them would have been far more invasive. <code class="inline">ThemeContext.jsx</code> persists the choice to
+      <code class="inline">localStorage</code> ("td-theme"); an inline script in <code class="inline">index.html</code>
+      applies it synchronously before React mounts to avoid a flash-of-wrong-theme. The one non-CSS exception is
+      <code class="inline">OverlappingRangeBar.jsx</code>'s Canvas 2D context, which reads the active theme's colors
+      via <code class="inline">getComputedStyle()</code> since <code class="inline">ctx.fillStyle</code> can't consume
+      Tailwind classes.</p>
   </section>
 
   <!-- LIFECYCLE -->
   <section id="lifecycle">
-    <div class="eyebrow">07 — Operations</div>
+    <div class="eyebrow">11 — Operations</div>
     <h2>Daily lifecycle</h2>
     <p class="sub">APScheduler on the IST timezone; if the process boots mid-session it jumps straight to the correct state.</p>
     <div class="steps">
-      <div class="step"><div class="num" style="background:linear-gradient(135deg,#78350f,#3a1d05);border-color:#a16207;color:#fde68a">☀</div><div class="body"><h4>08:45 — Daily token</h4><p>Force-refresh a fresh access token via the automated TOTP chain (Mon–Fri).</p></div></div>
-      <div class="step"><div class="num" style="background:linear-gradient(135deg,#14532d,#06210f);border-color:#1f7a3d;color:#bbf7d0">▶</div><div class="body"><h4>09:15 — Market open</h4><p>Backfill ranges + ORB, flip <code class="inline">market_open = true</code>, launch the websocket thread.</p></div></div>
+      <div class="step"><div class="num" style="background:linear-gradient(135deg,#78350f,#3a1d05);border-color:#a16207;color:#fde68a">☀</div><div class="body"><h4>08:45 — Daily token</h4><p>Force-refresh a fresh FYERS access token via the automated TOTP chain (Mon–Fri).</p></div></div>
+      <div class="step"><div class="num" style="background:linear-gradient(135deg,#14532d,#06210f);border-color:#1f7a3d;color:#bbf7d0">▶</div><div class="body"><h4>09:15 — Market open</h4><p>Backfill ranges + ORB + breakout-quality seed, flip <code class="inline">market_open = true</code>, launch the websocket thread.</p></div></div>
+      <div class="step violet"><div class="num">⟲</div><div class="body"><h4>09:46 — Opening-range refresh</h4><p>The 9:15–9:45 window has now fully printed; re-run the C1 ORB + breakout-quality backfill so a market-open-time boot (which saw a still-forming candle) picks up real data.</p></div></div>
       <div class="step"><div class="num" style="background:linear-gradient(135deg,#1e3a8a,#0b1b3a);border-color:#2b4d8a;color:#cfe0ff">≈</div><div class="body"><h4>09:15–15:30 — Live</h4><p>Ticks stream in; SSE broadcasts the computed state once per second.</p></div></div>
       <div class="step"><div class="num" style="background:linear-gradient(135deg,#3f0d0d,#210606);border-color:#7f1d1d;color:#fecaca">■</div><div class="body"><h4>15:30 — Standby</h4><p>Close the websocket to conserve bandwidth; UI shows Closed with the final snapshot.</p></div></div>
     </div>
     <div class="callout info"><div class="cico">🧪</div><p><b>Dev override.</b> <code class="inline">FORCE_MARKET_OPEN=true</code> in <code class="inline">.env</code> runs the engine regardless of the clock to exercise the full pipeline outside market hours.</p></div>
   </section>
 
+  <!-- DEPLOY -->
+  <section id="deploy">
+    <div class="eyebrow">12 — Deployment &amp; CI/CD</div>
+    <h2>From push to production</h2>
+    <p class="sub">A single Oracle Cloud VM runs everything; GitHub Actions makes every push to
+      <code class="inline">main</code> land there automatically.</p>
+
+    <div class="grid c3">
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">🌐</span>Caddy</h4>
+        <p>Reverse proxy + automatic HTTPS (Let's Encrypt) for the DuckDNS domain. Routes <code class="inline">/api/*</code> and the bare <code class="inline">/callback</code> to the backend on <code class="inline">localhost:8000</code>; everything else serves the built React SPA with a static-file/<code class="inline">try_files</code> fallback to <code class="inline">index.html</code>.</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">⚙️</span>systemd</h4>
+        <p><code class="inline">tradedashboard-backend.service</code> supervises the FastAPI process (<code class="inline">Restart=always</code>, unbuffered <code class="inline">python -u</code> so logs reach <code class="inline">journalctl</code> in real time) — replaced an earlier fragile <code class="inline">nohup</code>-in-a-terminal setup that died whenever the SSH session closed.</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">🚀</span>GitHub Actions</h4>
+        <p><code class="inline">.github/workflows/deploy.yml</code> triggers on every push to <code class="inline">main</code>, SSHes in with a repo secret key, and runs <code class="inline">deploy/deploy.sh</code>: <code class="inline">git reset --hard origin/main</code> → reinstall backend deps → <code class="inline">npm ci &amp;&amp; npm run build</code> → restart the systemd service → reload Caddy.</p>
+      </div>
+    </div>
+    <div class="callout warn"><div class="cico">🤖</div><p><b>A second, unrelated automation exists.</b> <code class="inline">.github/workflows/daily-improvements.yml</code> runs daily at 09:00 UTC, applies <code class="inline">black</code>/<code class="inline">isort</code>/<code class="inline">prettier</code>/<code class="inline">safety</code> across the whole repo, and pushes straight to <code class="inline">main</code>. Always <code class="inline">git pull</code> before pushing new work — a same-day conflict with this bot is almost always pure formatting noise, not a real collision.</p></div>
+  </section>
+
   <!-- FILES -->
   <section id="files">
-    <div class="eyebrow">08 — Map</div>
+    <div class="eyebrow">13 — Map</div>
     <h2>Module map</h2>
+    <h3>Backend (<code class="inline">backend/app/</code>)</h3>
     <table>
       <thead><tr><th style="width:30%">File</th><th>Responsibility</th></tr></thead>
       <tbody>
-        <tr><td><code>app/config.py</code></td><td>Env vars, watchlist (42 symbols), session timings, symbol helpers</td></tr>
-        <tr><td><code>app/state.py</code></td><td>Thread-safe in-memory <code>MarketState</code> (RLock)</td></tr>
-        <tr><td><code>app/auth.py</code></td><td>Automated TOTP login chain + token cache</td></tr>
-        <tr><td><code>app/calculations.py</code></td><td>IRS · ORB · dual-range mapper · day-range %, + tick processor</td></tr>
-        <tr><td><code>app/fyers_service.py</code></td><td>REST backfill + websocket ingestion (lifecycle-managed)</td></tr>
-        <tr><td><code>app/scheduler.py</code></td><td>08:45 login cron · 09:15 start · 15:30 standby · market-hours gate</td></tr>
-        <tr><td><code>app/main.py</code></td><td>FastAPI app: SSE stream, snapshot, health, lifespan</td></tr>
-        <tr><td><code>manual_auth.py</code></td><td>One-time browser consent for a new app</td></tr>
-        <tr><td><code>diagnose_login.py</code> · <code>check_totp.py</code></td><td>Login diagnostics (safe, credential-masked)</td></tr>
-        <tr><td><code>frontend/src/*</code></td><td>App · useMarketStream hook · Canvas range bar · watchlist row</td></tr>
+        <tr><td><code>config.py</code></td><td>Env vars, watchlist (169 symbols / 21 sectors), session timings, symbol helpers</td></tr>
+        <tr><td><code>state.py</code></td><td>Thread-safe in-memory <code>MarketState</code> (RLock); per-stock field schema</td></tr>
+        <tr><td><code>auth.py</code></td><td>Automated FYERS TOTP login chain + atomic token cache</td></tr>
+        <tr><td><code>security.py</code></td><td>Dashboard login gate: verifies a Supabase JWT, manages the session cookie</td></tr>
+        <tr><td><code>supabase_auth.py</code></td><td>Verifies Supabase session JWTs via the project's public JWKS endpoint</td></tr>
+        <tr><td><code>calculations.py</code></td><td>IRS · ORB · breakout-quality gate · dual-range mapper · day-range %, + tick processor</td></tr>
+        <tr><td><code>fyers_service.py</code></td><td>REST backfill + websocket ingestion (lifecycle-managed)</td></tr>
+        <tr><td><code>scheduler.py</code></td><td>08:45 login · 09:15 start · 09:46 opening-range refresh · 15:30 standby</td></tr>
+        <tr><td><code>main.py</code></td><td>FastAPI app: auth routes, SSE stream, snapshot, health, lifespan, SPA fallback</td></tr>
+        <tr><td><code>manual_auth.py</code></td><td>One-time browser consent for a new/re-permissioned FYERS app</td></tr>
+        <tr><td><code>diagnose_login.py</code> · <code>check_totp.py</code> · <code>diagnose_data.py</code></td><td>Login/data diagnostics (safe, credential-masked)</td></tr>
+        <tr><td><code>tests/test_calculations.py</code></td><td>Unit tests for every pure function in <code>calculations.py</code></td></tr>
+      </tbody>
+    </table>
+    <h3>Frontend (<code class="inline">frontend/src/</code>)</h3>
+    <table>
+      <thead><tr><th style="width:30%">File</th><th>Responsibility</th></tr></thead>
+      <tbody>
+        <tr><td><code>App.jsx</code></td><td>Auth gate, Login screen, top navbar, tab routing</td></tr>
+        <tr><td><code>hooks/useMarketStream.js</code></td><td>Single SSE connection + localStorage offline cache</td></tr>
+        <tr><td><code>lib/supabaseClient.js</code></td><td>Supabase JS client init (project URL + public anon key)</td></tr>
+        <tr><td><code>contexts/ThemeContext.jsx</code></td><td>Light/dark theme state + persistence</td></tr>
+        <tr><td><code>screens/*.jsx</code></td><td>RankingScreen · HeatmapScreen · InsightsScreen · WatchlistScreen (the 4 tabs)</td></tr>
+        <tr><td><code>components/Treemap.jsx</code></td><td>Two-level D3 squarified treemap (Heatmap tab)</td></tr>
+        <tr><td><code>components/WatchlistRow.jsx</code> · <code>OverlappingRangeBar.jsx</code></td><td>Shared table row + its Canvas dual-range bar</td></tr>
+        <tr><td><code>components/insights/*.jsx</code></td><td>All 8 Insights widgets (see Insights section)</td></tr>
+        <tr><td><code>utils/sectorAggregates.js</code> · <code>sectorGroups.js</code></td><td>Sector grouping/aggregation shared by the Heatmap and 3 Insights widgets</td></tr>
+      </tbody>
+    </table>
+    <h3>Deployment (<code class="inline">deploy/</code>, <code class="inline">.github/workflows/</code>)</h3>
+    <table>
+      <thead><tr><th style="width:30%">File</th><th>Responsibility</th></tr></thead>
+      <tbody>
+        <tr><td><code>deploy/deploy.sh</code></td><td>Canonical redeploy script, run on the VM by the CI/CD workflow (or by hand)</td></tr>
+        <tr><td><code>deploy/tradedash.service</code></td><td>systemd unit template for the backend</td></tr>
+        <tr><td><code>deploy/Caddyfile</code> · <code>deploy/README.md</code></td><td>Reverse-proxy config + full VM provisioning guide</td></tr>
+        <tr><td><code>.github/workflows/deploy.yml</code></td><td>CI/CD: SSH + run deploy.sh on every push to main</td></tr>
+        <tr><td><code>.github/workflows/daily-improvements.yml</code></td><td>Unrelated daily auto-formatting/security-scan bot</td></tr>
       </tbody>
     </table>
   </section>
 
   <footer>
-    TradeDashboard · FYERS API v3 · FastAPI + React · Architecture report generated 09 Jul 2026
+    TradeDashboard · FYERS API v3 + Supabase Auth · FastAPI + React · Deployed via GitHub Actions CI/CD
   </footer>
 </main>
 </body>
