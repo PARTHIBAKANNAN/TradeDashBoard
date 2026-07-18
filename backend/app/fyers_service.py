@@ -141,6 +141,12 @@ class DataEngine:
                         "cont_flag": "1",
                     }
                 )
+                if isinstance(resp, dict) and resp.get("code") in self._NON_RETRYABLE_CODES:
+                    # App-level (not symbol-level) error — every remaining symbol
+                    # would fail identically, so stop instead of wasting the rest
+                    # of the rate-limit budget on calls that can't succeed.
+                    print(f"[backfill] prev-day history() unavailable, aborting rest of pass: {resp}")
+                    return
                 if isinstance(resp, dict) and resp.get("s") == "error":
                     if not warned:
                         print(f"[backfill] prev-day history() error (will repeat per-symbol, "
@@ -204,6 +210,9 @@ class DataEngine:
                         "cont_flag": "1",
                     }
                 )
+                if isinstance(resp, dict) and resp.get("code") in self._NON_RETRYABLE_CODES:
+                    print(f"[backfill] ORB history() unavailable, aborting rest of pass: {resp}")
+                    return
                 if isinstance(resp, dict) and resp.get("s") == "error":
                     if not warned:
                         print(f"[backfill] ORB history() error (will repeat per-symbol, "
