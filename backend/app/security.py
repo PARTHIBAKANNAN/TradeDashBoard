@@ -6,6 +6,7 @@ It is deliberately structured so a future subscription model (e.g. Razorpay) can
 replace `authenticate()` with a real user/subscription lookup without touching
 the request-handling code.
 """
+
 import secrets
 
 from . import config

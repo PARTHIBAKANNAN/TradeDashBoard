@@ -25,14 +25,19 @@ function median(values) {
 // heavy-volume stock shouldn't dominate the leaderboard read.
 export function aggregate(members) {
   const pctChanges = members.map((s) => s.pct_change || 0);
-  const totalTradedValue = members.reduce((sum, s) => sum + (s.traded_value || 0), 0);
-  const mean = pctChanges.length ? pctChanges.reduce((a, b) => a + b, 0) / pctChanges.length : 0;
+  const totalTradedValue = members.reduce(
+    (sum, s) => sum + (s.traded_value || 0),
+    0,
+  );
+  const mean = pctChanges.length
+    ? pctChanges.reduce((a, b) => a + b, 0) / pctChanges.length
+    : 0;
 
   let weightedMean = mean; // fall back to simple mean when there's no traded value yet
   if (totalTradedValue > 0) {
     const weightedSum = members.reduce(
       (sum, s) => sum + (s.pct_change || 0) * (s.traded_value || 0),
-      0
+      0,
     );
     weightedMean = weightedSum / totalTradedValue;
   }

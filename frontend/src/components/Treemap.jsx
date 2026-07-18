@@ -77,7 +77,11 @@ const Treemap = React.memo(({ stocks, drilldownSector, onSelectSector }) => {
   }, [stocks, size.width, size.height, drilldownSector]);
 
   return (
-    <div ref={containerRef} className="relative w-full" style={{ height: size.height }}>
+    <div
+      ref={containerRef}
+      className="relative w-full"
+      style={{ height: size.height }}
+    >
       {layout &&
         layout.leaves().map((node) => {
           const w = node.x1 - node.x0;
@@ -95,7 +99,9 @@ const Treemap = React.memo(({ stocks, drilldownSector, onSelectSector }) => {
                   ? `${node.data.name}  ${pct >= 0 ? "+" : ""}${pct}%  LTP ${node.data.ltp}`
                   : `${node.data.name}  ${node.data.count} stocks  avg ${pct >= 0 ? "+" : ""}${pct}%`
               }
-              onClick={clickable ? () => onSelectSector(node.data.name) : undefined}
+              onClick={
+                clickable ? () => onSelectSector(node.data.name) : undefined
+              }
               className={`absolute flex flex-col items-center justify-center text-white overflow-hidden border border-black/20 transition-opacity ${
                 clickable ? "cursor-pointer hover:opacity-80" : ""
               }`}
@@ -109,13 +115,17 @@ const Treemap = React.memo(({ stocks, drilldownSector, onSelectSector }) => {
             >
               {showText && (
                 <>
-                  <span className="text-[11px] font-bold truncate px-1">{node.data.name}</span>
+                  <span className="text-[11px] font-bold truncate px-1">
+                    {node.data.name}
+                  </span>
                   <span className="text-[10px] font-mono opacity-90">
                     {pct >= 0 ? "+" : ""}
                     {pct}%
                   </span>
                   {!drilldownSector && (
-                    <span className="text-[9px] font-mono opacity-70">{node.data.count} stocks</span>
+                    <span className="text-[9px] font-mono opacity-70">
+                      {node.data.count} stocks
+                    </span>
                   )}
                 </>
               )}

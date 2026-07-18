@@ -25,9 +25,15 @@ export default function MarketBreadth({ stocks }) {
         Market Breadth
       </span>
       <div className="flex-1 h-2.5 rounded-full overflow-hidden flex bg-surface3">
-        {upPct > 0 && <div style={{ width: `${upPct}%` }} className="bg-green-500" />}
-        {flatPct > 0 && <div style={{ width: `${flatPct}%` }} className="bg-faint" />}
-        {downPct > 0 && <div style={{ width: `${downPct}%` }} className="bg-red-500" />}
+        {upPct > 0 && (
+          <div style={{ width: `${upPct}%` }} className="bg-green-500" />
+        )}
+        {flatPct > 0 && (
+          <div style={{ width: `${flatPct}%` }} className="bg-faint" />
+        )}
+        {downPct > 0 && (
+          <div style={{ width: `${downPct}%` }} className="bg-red-500" />
+        )}
       </div>
       <div className="flex items-center gap-4 text-xs font-mono whitespace-nowrap">
         <span className="text-green-400 font-bold">{up} Up</span>

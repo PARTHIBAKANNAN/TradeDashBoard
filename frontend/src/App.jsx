@@ -10,16 +10,29 @@ import InsightsScreen from "./screens/InsightsScreen.jsx";
 import WatchlistScreen from "./screens/WatchlistScreen.jsx";
 
 const SORTS = {
-  rs_desc: { label: "RS ▼ (strongest)", fn: (a, b) => b.relative_strength - a.relative_strength },
-  rs_asc: { label: "RS ▲ (weakest)", fn: (a, b) => a.relative_strength - b.relative_strength },
+  rs_desc: {
+    label: "RS ▼ (strongest)",
+    fn: (a, b) => b.relative_strength - a.relative_strength,
+  },
+  rs_asc: {
+    label: "RS ▲ (weakest)",
+    fn: (a, b) => a.relative_strength - b.relative_strength,
+  },
   chg_desc: { label: "% Change ▼", fn: (a, b) => b.pct_change - a.pct_change },
-  pos_desc: { label: "Day range % ▼", fn: (a, b) => b.day_range_pos - a.day_range_pos },
+  pos_desc: {
+    label: "Day range % ▼",
+    fn: (a, b) => b.day_range_pos - a.day_range_pos,
+  },
   sym: { label: "Symbol A-Z", fn: (a, b) => a.symbol.localeCompare(b.symbol) },
 };
 
 // ---------------- Auth gate ----------------
 export default function App() {
-  const [auth, setAuth] = useState({ loading: true, authenticated: false, user: null });
+  const [auth, setAuth] = useState({
+    loading: true,
+    authenticated: false,
+    user: null,
+  });
 
   const check = async () => {
     try {
@@ -117,14 +130,18 @@ function Login({ onSuccess }) {
             <p className="text-xs text-faint">Sign in to continue</p>
           </div>
         </div>
-        <label className="block text-xs font-bold text-muted uppercase mb-2">Username</label>
+        <label className="block text-xs font-bold text-muted uppercase mb-2">
+          Username
+        </label>
         <input
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           autoFocus
           className="w-full bg-surface3 border border-strong rounded p-2.5 text-sm mb-4 focus:outline-none focus:border-accent-blue"
         />
-        <label className="block text-xs font-bold text-muted uppercase mb-2">Password</label>
+        <label className="block text-xs font-bold text-muted uppercase mb-2">
+          Password
+        </label>
         <input
           type="password"
           value={password}
@@ -158,7 +175,8 @@ function ConnectFyersBanner() {
   return (
     <div className="mb-5 flex items-center justify-between gap-4 rounded-lg border border-amber-800/40 bg-amber-950/30 px-4 py-3">
       <div className="text-sm text-amber-300">
-        <b>FYERS not connected.</b> Live data is paused until you authorize the broker account.
+        <b>FYERS not connected.</b> Live data is paused until you authorize the
+        broker account.
       </div>
       <button
         onClick={connect}
@@ -200,17 +218,33 @@ function Dashboard({ user, onLogout }) {
           </div>
         )}
 
-        {activeTab === "ranking" && <RankingScreen stocks={data.stocks || []} />}
-        {activeTab === "heatmap" && <HeatmapScreen stocks={data.stocks || []} />}
-        {activeTab === "insights" && <InsightsScreen stocks={data.stocks || []} />}
-        {activeTab === "watchlist" && <WatchlistScreen stocks={data.stocks || []} />}
+        {activeTab === "ranking" && (
+          <RankingScreen stocks={data.stocks || []} />
+        )}
+        {activeTab === "heatmap" && (
+          <HeatmapScreen stocks={data.stocks || []} />
+        )}
+        {activeTab === "insights" && (
+          <InsightsScreen stocks={data.stocks || []} />
+        )}
+        {activeTab === "watchlist" && (
+          <WatchlistScreen stocks={data.stocks || []} />
+        )}
       </div>
     </div>
   );
 }
 
 // -------- Top Navbar --------
-function TopNavbar({ user, onLogout, activeTab, onTabChange, nifty, marketOpen, connected }) {
+function TopNavbar({
+  user,
+  onLogout,
+  activeTab,
+  onTabChange,
+  nifty,
+  marketOpen,
+  connected,
+}) {
   const tabs = [
     { key: "ranking", label: "Ranking", icon: "📊" },
     { key: "heatmap", label: "Heatmap", icon: "🔥" },
@@ -235,12 +269,16 @@ function TopNavbar({ user, onLogout, activeTab, onTabChange, nifty, marketOpen, 
             <div className="flex items-center gap-2 ml-4 pl-4 border-l border-subtle">
               <span
                 className={`w-2 h-2 rounded-full ${
-                  connected && marketOpen ? "bg-green-500 animate-pulse" : "bg-faint"
+                  connected && marketOpen
+                    ? "bg-green-500 animate-pulse"
+                    : "bg-faint"
                 }`}
               />
               <span
                 className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${
-                  marketOpen ? "bg-green-950 text-green-400" : "bg-surface3 text-muted"
+                  marketOpen
+                    ? "bg-green-950 text-green-400"
+                    : "bg-surface3 text-muted"
                 }`}
               >
                 {marketOpen ? "Live" : connected ? "Closed" : "Offline"}
@@ -251,12 +289,18 @@ function TopNavbar({ user, onLogout, activeTab, onTabChange, nifty, marketOpen, 
           {/* Right side: Benchmark & User */}
           <div className="flex items-center gap-6">
             <div className="text-right">
-              <div className="text-[10px] text-faint font-bold uppercase">NIFTY 50</div>
+              <div className="text-[10px] text-faint font-bold uppercase">
+                NIFTY 50
+              </div>
               <div className="font-mono text-sm font-bold">
                 <span className="text-primary">
-                  {nifty.ltp?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  {nifty.ltp?.toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                  })}
                 </span>
-                <span className={`ml-2 ${nifty.pct_change >= 0 ? "text-green-400" : "text-red-400"}`}>
+                <span
+                  className={`ml-2 ${nifty.pct_change >= 0 ? "text-green-400" : "text-red-400"}`}
+                >
                   {nifty.pct_change >= 0 ? "+" : ""}
                   {nifty.pct_change}%
                 </span>
@@ -299,4 +343,3 @@ function TopNavbar({ user, onLogout, activeTab, onTabChange, nifty, marketOpen, 
     </nav>
   );
 }
-

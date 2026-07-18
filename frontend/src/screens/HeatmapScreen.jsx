@@ -11,17 +11,29 @@ export default function HeatmapScreen({ stocks }) {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h2 className="text-lg font-bold text-primary mb-2">Market Heatmap</h2>
+              <h2 className="text-lg font-bold text-primary mb-2">
+                Market Heatmap
+              </h2>
               <p className="text-xs text-faint">
                 {drilldownSector ? (
                   <>
-                    <span className="text-muted font-semibold">{drilldownSector}</span>
-                    <span className="text-faint"> stocks · size = traded value · color = % change</span>
+                    <span className="text-muted font-semibold">
+                      {drilldownSector}
+                    </span>
+                    <span className="text-faint">
+                      {" "}
+                      stocks · size = traded value · color = % change
+                    </span>
                   </>
                 ) : (
                   <>
-                    <span className="text-muted font-semibold">All sectors</span>
-                    <span className="text-faint"> · size = total traded value · color = sector avg % change</span>
+                    <span className="text-muted font-semibold">
+                      All sectors
+                    </span>
+                    <span className="text-faint">
+                      {" "}
+                      · size = total traded value · color = sector avg % change
+                    </span>
                   </>
                 )}
               </p>
@@ -48,19 +60,27 @@ export default function HeatmapScreen({ stocks }) {
 
         {/* Legend */}
         <div className="mt-6 bg-surface2/80 backdrop-blur-xl border border-subtle rounded-lg p-4">
-          <h3 className="text-sm font-bold text-primary mb-3">How to read this</h3>
+          <h3 className="text-sm font-bold text-primary mb-3">
+            How to read this
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
             <div>
               <span className="inline-block w-3 h-3 rounded mr-2 bg-green-500"></span>
-              <span className="text-muted">Positive change (green) indicates bullish momentum</span>
+              <span className="text-muted">
+                Positive change (green) indicates bullish momentum
+              </span>
             </div>
             <div>
               <span className="inline-block w-3 h-3 rounded mr-2 bg-red-500"></span>
-              <span className="text-muted">Negative change (red) indicates bearish momentum</span>
+              <span className="text-muted">
+                Negative change (red) indicates bearish momentum
+              </span>
             </div>
             <div>
               <span className="inline-block w-3 h-3 rounded mr-2 bg-gray-500"></span>
-              <span className="text-muted">Larger tiles = higher trading volume and value</span>
+              <span className="text-muted">
+                Larger tiles = higher trading volume and value
+              </span>
             </div>
           </div>
         </div>

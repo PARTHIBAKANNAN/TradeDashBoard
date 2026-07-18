@@ -6,8 +6,8 @@ save, so the two connections kick each other and trigger a reconnect storm.
 Restart manually after code changes. (Set reload=True only if you disable the
 data engine.)
 """
-import uvicorn
 
+import uvicorn
 from app import config
 
 if __name__ == "__main__":

@@ -10,7 +10,9 @@ Every function here is deterministic and side-effect free so it can be unit
 tested in isolation. `process_incoming_tick` is the one place that mutates the
 shared state, and it delegates all arithmetic to these helpers.
 """
-from datetime import datetime, time as dt_time
+
+from datetime import datetime
+from datetime import time as dt_time
 
 from .config import IST, ORB_CANDLES
 
@@ -98,10 +100,19 @@ def evaluate_orb(orb_bounds: dict, ltp: float, now_ist: datetime, current_signal
 
 
 # ---------- Tick processor (the single mutation point) ----------
-def process_incoming_tick(state, short_sym: str, ltp: float, high: float, low: float,
-                          prev_close: float = 0.0, volume: int = 0,
-                          upper_ckt: float = 0.0, lower_ckt: float = 0.0,
-                          tot_buy_qty: int = 0, tot_sell_qty: int = 0):
+def process_incoming_tick(
+    state,
+    short_sym: str,
+    ltp: float,
+    high: float,
+    low: float,
+    prev_close: float = 0.0,
+    volume: int = 0,
+    upper_ckt: float = 0.0,
+    lower_ckt: float = 0.0,
+    tot_buy_qty: int = 0,
+    tot_sell_qty: int = 0,
+):
     """
     Update one stock's derived fields from a raw tick. `state` is the
     MarketState singleton; caller holds no lock — we take it here.

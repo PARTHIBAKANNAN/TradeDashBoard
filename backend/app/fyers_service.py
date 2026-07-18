@@ -8,6 +8,7 @@ FYERS data plane:
                      engine. Lifecycle (start/stop) is controlled by the
                      scheduler for market-hours gating.
 """
+
 import time
 from datetime import datetime, timedelta
 
@@ -16,7 +17,8 @@ from fyers_apiv3.FyersWebsocket import data_ws
 
 from . import config
 from .calculations import process_incoming_tick
-from .config import ALL_SYMBOLS, BENCHMARK_SYMBOL, IST, ORB_CANDLES, WATCHLIST, short_symbol
+from .config import (ALL_SYMBOLS, BENCHMARK_SYMBOL, IST, ORB_CANDLES,
+                     WATCHLIST, short_symbol)
 from .state import market_state
 
 
@@ -305,8 +307,17 @@ class DataEngine:
             market_state.set_nifty(ltp=ltp, prev_close=prev_close or None)
             return
         process_incoming_tick(
-            market_state, short_symbol(fy_symbol), ltp, high, low, prev_close, volume,
-            upper_ckt, lower_ckt, tot_buy_qty, tot_sell_qty,
+            market_state,
+            short_symbol(fy_symbol),
+            ltp,
+            high,
+            low,
+            prev_close,
+            volume,
+            upper_ckt,
+            lower_ckt,
+            tot_buy_qty,
+            tot_sell_qty,
         )
 
 

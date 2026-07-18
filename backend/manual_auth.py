@@ -10,6 +10,7 @@ browser was redirected to (it will contain ?auth_code=...). We exchange that for
 the API access token and cache it, so the dashboard works immediately today and
 the automated daily login works from tomorrow.
 """
+
 from urllib.parse import parse_qs, urlparse
 
 from app import auth, config

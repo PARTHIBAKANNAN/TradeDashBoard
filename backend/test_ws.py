@@ -9,9 +9,9 @@ is stable on this network/token, separate from the app.
   * If it only prints "connection lost" -> the network (Zscaler) or a duplicate
     session is killing the socket; try a personal network / fully kill other runs.
 """
-from fyers_apiv3.FyersWebsocket import data_ws
 
 from app import auth, config
+from fyers_apiv3.FyersWebsocket import data_ws
 
 token = auth._load_cached_token()
 print("Cached token present:", bool(token))

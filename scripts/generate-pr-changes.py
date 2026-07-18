@@ -4,21 +4,25 @@ Generate meaningful daily code improvements using Jules API and code formatting 
 This script runs various code quality tools and integrates with Jules API for smart suggestions.
 """
 
+import json
 import os
 import subprocess
-import json
-import requests
 from datetime import datetime
 from pathlib import Path
+
+import requests
 
 JULES_API_KEY = os.getenv("JULES_API_KEY")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 REPO_ROOT = Path(__file__).parent.parent
 
+
 def run_command(cmd, cwd=None):
     """Run a shell command and return success status."""
     try:
-        result = subprocess.run(cmd, shell=True, cwd=cwd or REPO_ROOT, capture_output=True, text=True)
+        result = subprocess.run(
+            cmd, shell=True, cwd=cwd or REPO_ROOT, capture_output=True, text=True
+        )
         if result.stdout:
             print(f"✓ {cmd}")
             print(result.stdout[:500])  # Print first 500 chars
@@ -27,6 +31,7 @@ def run_command(cmd, cwd=None):
         print(f"✗ Error running: {cmd}")
         print(f"  {e}")
         return False
+
 
 def format_python_code():
     """Format Python code with Black."""
@@ -41,6 +46,7 @@ def format_python_code():
             run_command(f"black {path} --line-length 100")
             run_command(f"isort {path}")
 
+
 def format_javascript_code():
     """Format JavaScript/React code with Prettier."""
     print("\n📝 Formatting JavaScript code with Prettier...")
@@ -51,6 +57,7 @@ def format_javascript_code():
     for path in js_paths:
         if Path(path).exists():
             run_command(f"prettier {path} --write --ignore-unknown")
+
 
 def run_python_linting():
     """Run flake8 linting and try to fix issues."""
@@ -63,6 +70,7 @@ def run_python_linting():
     for path in python_paths:
         if Path(path).exists():
             run_command(f"flake8 {path} --max-line-length=100 --extend-ignore=E501,W503")
+
 
 def check_security():
     """Check for security vulnerabilities."""
@@ -77,7 +85,11 @@ def check_security():
     for path in python_paths:
         req_file = Path(path) / "requirements.txt"
         if req_file.exists():
-            run_command(f"safety check --file {req_file} --json > security-report.json 2>/dev/null", cwd=REPO_ROOT)
+            run_command(
+                f"safety check --file {req_file} --json > security-report.json 2>/dev/null",
+                cwd=REPO_ROOT,
+            )
+
 
 def check_dependencies():
     """Check and update dependencies."""
@@ -93,6 +105,7 @@ def check_dependencies():
     if package_json.exists():
         print("  📦 Node.js dependencies found")
 
+
 def call_jules_api():
     """Call Jules API to get code improvement suggestions."""
     print("\n🔮 Calling Jules API for smart suggestions...")
@@ -102,10 +115,7 @@ def call_jules_api():
         return
 
     try:
-        headers = {
-            "Authorization": f"Bearer {JULES_API_KEY}",
-            "Content-Type": "application/json"
-        }
+        headers = {"Authorization": f"Bearer {JULES_API_KEY}", "Content-Type": "application/json"}
 
         # Jules API endpoint for code analysis
         # Note: Adjust endpoint based on Jules API documentation
@@ -115,7 +125,7 @@ def call_jules_api():
             "repo_path": str(REPO_ROOT),
             "analysis_types": ["refactoring", "security", "performance", "best_practices"],
             "languages": ["python", "javascript"],
-            "create_suggestions": True
+            "create_suggestions": True,
         }
 
         response = requests.post(url, headers=headers, json=payload, timeout=30)
@@ -132,14 +142,16 @@ def call_jules_api():
     except Exception as e:
         print(f"  ⚠️  Jules API call failed: {e}")
 
+
 def apply_jules_suggestions(suggestions):
     """Apply suggestions from Jules API."""
     print("  📝 Applying Jules suggestions...")
 
-    for suggestion in suggestions.get('suggestions', [])[:5]:  # Apply top 5 suggestions
-        file_path = suggestion.get('file_path')
-        change_type = suggestion.get('type')
+    for suggestion in suggestions.get("suggestions", [])[:5]:  # Apply top 5 suggestions
+        file_path = suggestion.get("file_path")
+        change_type = suggestion.get("type")
         print(f"    • {change_type}: {file_path}")
+
 
 def update_documentation():
     """Update documentation based on changes."""
@@ -153,11 +165,12 @@ def update_documentation():
     if docs_dir.exists():
         print(f"  📖 Found {len(list(docs_dir.glob('*.md')))} documentation files")
 
+
 def generate_summary():
     """Generate a summary of changes made."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("📊 Daily Improvement Summary")
-    print("="*60)
+    print("=" * 60)
     print(f"Timestamp: {datetime.now().isoformat()}")
     print(f"Repository: TradeDashBoard")
     print(f"Technologies: Python + React")
@@ -167,7 +180,8 @@ def generate_summary():
     print("  ✓ Security audit")
     print("  ✓ Dependency checks")
     print("  ✓ Jules API analysis")
-    print("="*60)
+    print("=" * 60)
+
 
 def main():
     """Run all improvement tasks."""
@@ -186,6 +200,7 @@ def main():
 
     print("\n✅ Daily improvements complete!")
     print("If changes were made, they will be committed and a PR will be created.")
+
 
 if __name__ == "__main__":
     main()
