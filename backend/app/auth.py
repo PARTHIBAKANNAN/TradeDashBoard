@@ -15,6 +15,7 @@ mid-day server restart does not force a fresh login.
 import base64
 import hashlib
 import json
+import os
 import time
 from datetime import datetime
 
@@ -182,8 +183,12 @@ def _save_cached_token(access_token: str, refresh_token: str | None = None) -> N
     # Preserve an existing refresh token if this call didn't supply a new one.
     if refresh_token:
         cached["refresh_token"] = refresh_token
-    with open(config.TOKEN_CACHE_FILE, "w") as f:
+    # Write to a temp file + atomic rename so a mid-write kill (e.g. systemd
+    # SIGKILL on a slow shutdown) can never leave a truncated/corrupt cache file.
+    tmp_path = f"{config.TOKEN_CACHE_FILE}.tmp"
+    with open(tmp_path, "w") as f:
         json.dump(cached, f)
+    os.replace(tmp_path, config.TOKEN_CACHE_FILE)
 
 
 # ----------------- refresh-token flow (avoids the daily TOTP dance) -----------------
