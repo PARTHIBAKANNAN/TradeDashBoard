@@ -164,7 +164,13 @@ class DataEngine:
 
     def _backfill_today_orb(self):
         """30-min candles for today -> C1..C4 high/low boundaries + today's range."""
-        today = datetime.now(IST).date()
+        now = datetime.now(IST)
+        if now.weekday() >= 5:
+            # Weekend: no session happened "today" — every symbol would fail every
+            # retry for nothing, turning startup into a multi-minute wait.
+            print("[backfill] Weekend — skipping today's ORB backfill (no session data exists).")
+            return
+        today = now.date()
         day = today.strftime("%Y-%m-%d")
         # Map candle start-time -> ORB name for quick lookup.
         start_to_name = {start: name for name, start, _end in ORB_CANDLES}
