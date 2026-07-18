@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useMarketStream } from "./hooks/useMarketStream.js";
 import { useTheme } from "./contexts/ThemeContext.jsx";
+import { supabase } from "./lib/supabaseClient.js";
 import WatchlistRow from "./components/WatchlistRow.jsx";
 import Treemap from "./components/Treemap.jsx";
 import Insights from "./components/insights/Insights.jsx";
@@ -36,6 +37,7 @@ export default function App() {
   }, []);
 
   const logout = async () => {
+    await supabase.auth.signOut();
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
     check();
   };
@@ -69,7 +71,7 @@ function ThemeToggle() {
 
 // ---------------- Login screen ----------------
 function Login({ onSuccess }) {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -79,16 +81,21 @@ function Login({ onSuccess }) {
     setBusy(true);
     setError("");
     try {
+      const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+      if (authError || !data.session) {
+        setError("Invalid email or password.");
+        return;
+      }
       const r = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ access_token: data.session.access_token }),
       });
       if (r.ok) {
         onSuccess();
       } else {
-        setError("Invalid username or password.");
+        setError("Could not establish a dashboard session.");
       }
     } catch {
       setError("Could not reach the server.");
@@ -117,10 +124,11 @@ function Login({ onSuccess }) {
             <p className="text-xs text-faint">Sign in to continue</p>
           </div>
         </div>
-        <label className="block text-xs font-bold text-muted uppercase mb-2">Username</label>
+        <label className="block text-xs font-bold text-muted uppercase mb-2">Email</label>
         <input
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           autoFocus
           className="w-full bg-surface3 border border-strong rounded p-2.5 text-sm mb-4 focus:outline-none focus:border-accent-blue"
         />

@@ -44,10 +44,11 @@ FRONTEND_DIST = os.getenv(
 DATA_ENGINE_ENABLED = os.getenv("DATA_ENGINE_ENABLED", "true").lower() == "true"
 INSTANCE_NAME = os.getenv("INSTANCE_NAME", "local")
 
-# ----------------- Dashboard login (built-in; future: Razorpay subscriptions) -----------------
-ADMIN_USER = os.getenv("ADMIN_USER", "Admin")
-ADMIN_PASS = os.getenv("ADMIN_PASS", "")  # set in .env; empty disables the login gate (dev)
+# ----------------- Dashboard login (Supabase Auth; session cookie bridges to SSE) -----------------
 SESSION_SECRET = os.getenv("SESSION_SECRET", "dev-insecure-change-me")
+# Project URL only — credential verification uses Supabase's public JWKS endpoint,
+# no shared secret needed. Empty disables the login gate (dev).
+SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
 
 # ----------------- Token cache & refresh -----------------
 # Location where the daily access token is cached (env-configurable → mount a volume when hosted).

@@ -1,31 +1,25 @@
 """
 Dashboard access control — a small, pluggable auth layer.
 
-For now it authenticates a single hardcoded admin from env (ADMIN_USER/ADMIN_PASS).
-It is deliberately structured so a future subscription model (e.g. Razorpay) can
-replace `authenticate()` with a real user/subscription lookup without touching
-the request-handling code.
+Credentials are verified by Supabase Auth on the frontend (email/password against
+the user's own Supabase project). This module only verifies the resulting session
+JWT and manages our own session cookie, which keeps the SSE stream (native
+EventSource can't send an Authorization header) working unchanged.
 """
-import secrets
-
-from . import config
+from . import config, supabase_auth
 
 
 def login_required() -> bool:
-    """The gate is active only when an admin password is configured (off in dev)."""
-    return bool(config.ADMIN_PASS)
+    """The gate is active only when Supabase is configured (off in dev)."""
+    return bool(config.SUPABASE_URL)
 
 
-def authenticate(username: str, password: str) -> bool:
-    """
-    Validate dashboard credentials. Constant-time comparison to avoid timing leaks.
-    FUTURE: look the user up in a store and verify an active subscription here.
-    """
+def authenticate(access_token: str) -> str | None:
+    """Verify a Supabase session JWT; return the user's email if valid, else None."""
     if not login_required():
-        return True
-    user_ok = secrets.compare_digest((username or "").strip(), config.ADMIN_USER)
-    pass_ok = secrets.compare_digest(password or "", config.ADMIN_PASS)
-    return user_ok and pass_ok
+        return "dev"
+    claims = supabase_auth.verify_token(access_token)
+    return claims.get("email") if claims else None
 
 
 def is_authenticated(request) -> bool:

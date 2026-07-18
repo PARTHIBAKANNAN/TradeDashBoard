@@ -95,18 +95,18 @@ def require_login(request: Request):
         raise HTTPException(status_code=401, detail="login required")
 
 
-# ----------------- dashboard login (built-in; future: subscriptions) -----------------
+# ----------------- dashboard login (Supabase-verified; session cookie) -----------------
 class Credentials(BaseModel):
-    username: str
-    password: str
+    access_token: str
 
 
 @app.post("/api/auth/login")
 async def login(creds: Credentials, request: Request):
-    if not security.authenticate(creds.username, creds.password):
+    user = security.authenticate(creds.access_token)
+    if not user:
         raise HTTPException(status_code=401, detail="invalid credentials")
-    request.session["user"] = creds.username
-    return {"authenticated": True, "user": creds.username}
+    request.session["user"] = user
+    return {"authenticated": True, "user": user}
 
 
 @app.post("/api/auth/logout")
