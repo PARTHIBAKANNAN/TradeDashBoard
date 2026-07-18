@@ -1,0 +1,64 @@
+name: Daily Code Improvements
+
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  improve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install tools
+        run: |
+          pip install black flake8 isort safety requests
+          npm install -g prettier eslint
+
+      - name: Run improvements
+        run: python scripts/generate-pr-changes.py
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+
+      - name: Check changes
+        id: git-check
+        run: |
+          if git diff --quiet; then
+            echo "changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit
+        if: steps.git-check.outputs.changes == 'true'
+        run: |
+          git config user.email "bot@example.com"
+          git config user.name "Daily Bot"
+          git add -A
+          git commit -m "chore: daily improvements"
+          git push
+
+      - name: Create PR
+        if: steps.git-check.outputs.changes == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: daily-improvements-pr
+          title: "Daily Code Improvements"
+          body: "Automated daily code improvements and maintenance"
+          labels: "automated"
