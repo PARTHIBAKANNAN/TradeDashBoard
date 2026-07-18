@@ -1,22 +1,26 @@
-# systemd unit for the venv deploy (primary path). Install to /etc/systemd/system/tradedash.service
-# Assumes: code at /opt/tradedash, venv at /opt/tradedash/backend/.venv, env at /opt/tradedash/.env
+# systemd unit for the venv deploy. Install to /etc/systemd/system/tradedashboard-backend.service
+# Assumes: code at /home/ubuntu/app, venv at /home/ubuntu/app/backend/venv (python-dotenv
+# loads /home/ubuntu/app/backend/.env itself — no EnvironmentFile needed).
 #
-#   sudo cp deploy/tradedash.service /etc/systemd/system/
-#   sudo systemctl daemon-reload && sudo systemctl enable --now tradedash
-#   journalctl -u tradedash -f     # follow logs
+#   sudo cp deploy/tradedash.service /etc/systemd/system/tradedashboard-backend.service
+#   sudo systemctl daemon-reload && sudo systemctl enable --now tradedashboard-backend
+#   journalctl -u tradedashboard-backend -f     # follow logs
 
 [Unit]
-Description=TradeDashboard FYERS BFF
-After=network-online.target
-Wants=network-online.target
+Description=TradeDashBoard FastAPI backend
+After=network.target network-online.target
+Requires=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/tradedash/backend
-EnvironmentFile=/opt/tradedash/.env
-ExecStart=/opt/tradedash/backend/.venv/bin/python run.py
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/app/backend
+ExecStart=/home/ubuntu/app/backend/venv/bin/python /home/ubuntu/app/backend/run.py
 Restart=always
 RestartSec=5
+StandardOutput=journal
+StandardError=journal
 # One instance only — FYERS allows a single websocket connection per app.
 
 [Install]

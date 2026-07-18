@@ -75,11 +75,20 @@ DATA_ENGINE_ENABLED=true
 INSTANCE_NAME=oracle-mumbai
 TOKEN_CACHE_FILE=/data/.token_cache.json
 FRONTEND_DIST=/opt/tradedash/frontend/dist
-ADMIN_USER=Admin
-ADMIN_PASS=<your-admin-password>
 SESSION_SECRET=<long-random-string>
+# Dashboard login is Supabase Auth (see frontend/.env below) — verification uses
+# Supabase's public JWKS endpoint, so only the project URL is needed here, no secret.
+SUPABASE_URL=https://<your-project-ref>.supabase.co
 ```
 > `chmod 600 /opt/tradedash/.env` — never commit it.
+
+Also create **`frontend/.env`** (gitignored, read at build time by Vite):
+```
+VITE_SUPABASE_URL=https://<your-project-ref>.supabase.co
+VITE_SUPABASE_ANON_KEY=<your-publishable-key>
+```
+Create the actual user you'll log in as under Supabase → **Authentication → Users → Add user**
+(and disable "Allow new users to sign up" — this app only ever calls `signInWithPassword`).
 
 ## Phase 4 — DNS + HTTPS (DuckDNS + Caddy)
 
@@ -116,4 +125,7 @@ Run **one replica only** (single FYERS websocket per app). Front it with the sam
   the two would fight over the single FYERS websocket. Local dev: set `DATA_ENGINE_ENABLED=false`.
 - Token auto-renews daily (refresh-token flow at 08:45 IST; falls back to TOTP; then to a manual
   "Connect FYERS" click if both fail). The dashboard shows a banner when FYERS is disconnected.
-- Update: `git pull && (cd frontend && npm ci && npm run build) && sudo systemctl restart tradedash`.
+- **Deploys are automatic**: pushing to `main` triggers `.github/workflows/deploy.yml`, which SSHes
+  into the VM and runs `deploy/deploy.sh` (git reset --hard to origin/main, reinstall deps, rebuild
+  frontend, restart the `tradedashboard-backend` service). Manual redeploy: `bash ~/app/deploy.sh`
+  on the VM, or re-run the workflow from the Actions tab (`workflow_dispatch`).
