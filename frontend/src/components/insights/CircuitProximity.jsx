@@ -27,22 +27,31 @@ export default function CircuitProximity({ stocks }) {
     return rows.sort((a, b) => a.distPct - b.distPct);
   }, [stocks]);
 
-  const anyCircuitDataAtAll = (stocks || []).some((s) => s.upper_ckt > 0 || s.lower_ckt > 0);
+  const anyCircuitDataAtAll = (stocks || []).some(
+    (s) => s.upper_ckt > 0 || s.lower_ckt > 0,
+  );
 
   return (
     <div className="bg-surface2/80 backdrop-blur-xl border border-subtle rounded-lg p-4 h-full shadow-glow-sm">
       <h3 className="text-xs font-bold text-muted uppercase tracking-wider mb-3">
-        Circuit Proximity <span className="text-faint">(within {PROXIMITY_THRESHOLD_PCT}%)</span>
+        Circuit Proximity{" "}
+        <span className="text-faint">(within {PROXIMITY_THRESHOLD_PCT}%)</span>
       </h3>
       <div className="space-y-1.5">
         {near.map((s) => (
-          <div key={`${s.symbol}-${s.side}`} className="flex items-center justify-between text-xs py-1">
+          <div
+            key={`${s.symbol}-${s.side}`}
+            className="flex items-center justify-between text-xs py-1"
+          >
             <div>
               <span className="font-bold text-primary">{s.symbol}</span>
               <span className="text-faint ml-2">{s.sector}</span>
             </div>
-            <span className={`font-mono font-bold ${s.side === "upper" ? "text-green-400" : "text-red-400"}`}>
-              {s.side === "upper" ? "▲ upper" : "▼ lower"} · {s.distPct.toFixed(2)}%
+            <span
+              className={`font-mono font-bold ${s.side === "upper" ? "text-green-400" : "text-red-400"}`}
+            >
+              {s.side === "upper" ? "▲ upper" : "▼ lower"} ·{" "}
+              {s.distPct.toFixed(2)}%
             </span>
           </div>
         ))}

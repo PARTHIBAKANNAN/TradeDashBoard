@@ -5,13 +5,13 @@ Uses the cached access token (no re-login) to call the exact REST endpoints the
 backfill uses, and prints the RAW responses so we can see their real structure
 and any permission/error messages.
 """
+
 import json
 from datetime import datetime, timedelta
 
-from fyers_apiv3 import fyersModel
-
 from app import auth, config
 from app.config import IST
+from fyers_apiv3 import fyersModel
 
 
 def dump(label, obj):
@@ -42,8 +42,10 @@ if token:
     now = int(datetime.now(IST).timestamp())
     print(f"  cached token: iss={claims.get('iss')} sub={claims.get('sub')}")
     if exp:
-        print(f"  exp={datetime.fromtimestamp(exp, IST):%Y-%m-%d %H:%M:%S} IST  "
-              f"({'EXPIRED' if exp < now else 'valid'}; now={datetime.fromtimestamp(now, IST):%H:%M:%S})")
+        print(
+            f"  exp={datetime.fromtimestamp(exp, IST):%Y-%m-%d %H:%M:%S} IST  "
+            f"({'EXPIRED' if exp < now else 'valid'}; now={datetime.fromtimestamp(now, IST):%H:%M:%S})"
+        )
 
 print("\n>>> Forcing a FRESH automated login (consent is done, so this should work) ...")
 fresh = auth.get_access_token(force_refresh=True)
@@ -51,7 +53,9 @@ print("Fresh token obtained:", bool(fresh))
 if fresh:
     fc = decode_jwt(fresh)
     if fc.get("exp"):
-        print(f"  fresh token exp={datetime.fromtimestamp(fc['exp'], IST):%Y-%m-%d %H:%M:%S} IST  sub={fc.get('sub')}")
+        print(
+            f"  fresh token exp={datetime.fromtimestamp(fc['exp'], IST):%Y-%m-%d %H:%M:%S} IST  sub={fc.get('sub')}"
+        )
 
 token = fresh or token
 rest = fyersModel.FyersModel(client_id=config.CLIENT_ID, token=token, is_async=False, log_path="")
@@ -68,28 +72,34 @@ print("\nIST 'today' as seen by the server process:", today, "weekday", today.we
 # 1) Daily history (previous-day range/close)
 dump(
     "history DAILY NSE:TCS-EQ (last 12 days)",
-    rest.history({
-        "symbol": "NSE:TCS-EQ",
-        "resolution": "D",
-        "date_format": "1",
-        "range_from": (today - timedelta(days=12)).strftime("%Y-%m-%d"),
-        "range_to": today.strftime("%Y-%m-%d"),
-        "cont_flag": "1",
-    }),
+    rest.history(
+        {
+            "symbol": "NSE:TCS-EQ",
+            "resolution": "D",
+            "date_format": "1",
+            "range_from": (today - timedelta(days=12)).strftime("%Y-%m-%d"),
+            "range_to": today.strftime("%Y-%m-%d"),
+            "cont_flag": "1",
+        }
+    ),
 )
 
 # 2) 30-min history today (ORB)
 dump(
     "history 30-min NSE:TCS-EQ (today)",
-    rest.history({
-        "symbol": "NSE:TCS-EQ",
-        "resolution": "30",
-        "date_format": "1",
-        "range_from": today.strftime("%Y-%m-%d"),
-        "range_to": today.strftime("%Y-%m-%d"),
-        "cont_flag": "1",
-    }),
+    rest.history(
+        {
+            "symbol": "NSE:TCS-EQ",
+            "resolution": "30",
+            "date_format": "1",
+            "range_from": today.strftime("%Y-%m-%d"),
+            "range_to": today.strftime("%Y-%m-%d"),
+            "cont_flag": "1",
+        }
+    ),
 )
 
 # 3) Quotes (LTP snapshot)
-dump("quotes NSE:TCS-EQ,NSE:NIFTY50-INDEX", rest.quotes({"symbols": "NSE:TCS-EQ,NSE:NIFTY50-INDEX"}))
+dump(
+    "quotes NSE:TCS-EQ,NSE:NIFTY50-INDEX", rest.quotes({"symbols": "NSE:TCS-EQ,NSE:NIFTY50-INDEX"})
+)

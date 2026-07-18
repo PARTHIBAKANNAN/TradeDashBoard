@@ -21,11 +21,16 @@ export default function SectorLeaderboard({ stocks }) {
           const widthPct = (Math.abs(r.mean) / maxAbs) * 100;
           return (
             <div key={r.group} className="flex items-center gap-2 text-xs">
-              <span className="w-32 truncate text-muted font-medium">{r.group}</span>
+              <span className="w-32 truncate text-muted font-medium">
+                {r.group}
+              </span>
               <div className="flex-1 h-4 bg-surface3 rounded-sm relative overflow-hidden">
                 <div
                   className={`h-full ${isUp ? "bg-green-500/70" : "bg-red-500/70"}`}
-                  style={{ width: `${widthPct}%`, marginLeft: isUp ? "0" : "auto" }}
+                  style={{
+                    width: `${widthPct}%`,
+                    marginLeft: isUp ? "0" : "auto",
+                  }}
                 />
               </div>
               <span
@@ -39,7 +44,9 @@ export default function SectorLeaderboard({ stocks }) {
             </div>
           );
         })}
-        {ranked.length === 0 && <p className="text-xs text-faint">No data yet.</p>}
+        {ranked.length === 0 && (
+          <p className="text-xs text-faint">No data yet.</p>
+        )}
       </div>
     </div>
   );

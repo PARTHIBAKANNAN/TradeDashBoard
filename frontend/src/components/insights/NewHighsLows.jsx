@@ -7,10 +7,15 @@ const TOP_N = 8;
 function MiniList({ title, rows }) {
   return (
     <div className="bg-surface2/80 backdrop-blur-xl border border-subtle rounded-lg p-4 shadow-glow-sm">
-      <h3 className="text-xs font-bold text-muted uppercase tracking-wider mb-3">{title}</h3>
+      <h3 className="text-xs font-bold text-muted uppercase tracking-wider mb-3">
+        {title}
+      </h3>
       <div className="space-y-1">
         {rows.map((s) => (
-          <div key={s.symbol} className="flex items-center justify-between text-xs py-1">
+          <div
+            key={s.symbol}
+            className="flex items-center justify-between text-xs py-1"
+          >
             <span className="font-bold text-primary truncate">{s.symbol}</span>
             <span className="font-mono text-faint">{s.day_range_pos}%</span>
           </div>
@@ -41,8 +46,14 @@ export default function NewHighsLows({ stocks }) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <MiniList title={`New Highs (≥${NEAR_HIGH_THRESHOLD}% of day range)`} rows={nearHigh} />
-      <MiniList title={`New Lows (≤${NEAR_LOW_THRESHOLD}% of day range)`} rows={nearLow} />
+      <MiniList
+        title={`New Highs (≥${NEAR_HIGH_THRESHOLD}% of day range)`}
+        rows={nearHigh}
+      />
+      <MiniList
+        title={`New Lows (≤${NEAR_LOW_THRESHOLD}% of day range)`}
+        rows={nearLow}
+      />
     </div>
   );
 }

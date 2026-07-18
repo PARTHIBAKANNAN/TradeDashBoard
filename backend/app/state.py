@@ -5,6 +5,7 @@ The Fyers websocket callback runs on a background thread while the SSE
 generator reads on the asyncio loop, so every mutation / snapshot is guarded
 by a single lock. State is intentionally plain dicts for cheap JSON packaging.
 """
+
 import threading
 from typing import Optional
 

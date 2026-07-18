@@ -3,6 +3,7 @@ Central configuration: environment variables, session timings, and the
 watchlist definition. No secrets are ever sent to the frontend — they are
 read here from the process environment only.
 """
+
 import os
 from datetime import time as dt_time
 
@@ -177,7 +178,7 @@ WATCHLIST = {
     # Capital Markets / Fintech
     "NSE:ANGELONE-EQ": "Capital Markets",
     "NSE:BSE-EQ": "Capital Markets",
-    "NSE:POLICYBZR-EQ": "Capital Markets",  
+    "NSE:POLICYBZR-EQ": "Capital Markets",
     "NSE:CDSL-EQ": "Capital Markets",
     "NSE:NUVAMA-EQ": "Capital Markets",
     "NSE:PAYTM-EQ": "Capital Markets",

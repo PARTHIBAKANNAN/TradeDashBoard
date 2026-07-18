@@ -24,13 +24,23 @@ export default function BuySellPressure({ stocks }) {
         Buy/Sell Pressure
       </span>
       <div className="flex-1 h-2.5 rounded-full overflow-hidden flex bg-surface3">
-        {buyPct > 0 && <div style={{ width: `${buyPct}%` }} className="bg-green-500" />}
-        {sellPct > 0 && <div style={{ width: `${sellPct}%` }} className="bg-red-500" />}
+        {buyPct > 0 && (
+          <div style={{ width: `${buyPct}%` }} className="bg-green-500" />
+        )}
+        {sellPct > 0 && (
+          <div style={{ width: `${sellPct}%` }} className="bg-red-500" />
+        )}
       </div>
       <div className="flex items-center gap-4 text-xs font-mono whitespace-nowrap">
-        <span className="text-green-400 font-bold">{buyPct.toFixed(1)}% Buy</span>
-        <span className="text-red-400 font-bold">{sellPct.toFixed(1)}% Sell</span>
-        {total === 0 && <span className="text-faint">(no order-flow data yet)</span>}
+        <span className="text-green-400 font-bold">
+          {buyPct.toFixed(1)}% Buy
+        </span>
+        <span className="text-red-400 font-bold">
+          {sellPct.toFixed(1)}% Sell
+        </span>
+        {total === 0 && (
+          <span className="text-faint">(no order-flow data yet)</span>
+        )}
       </div>
     </div>
   );

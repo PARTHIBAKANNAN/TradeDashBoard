@@ -2,10 +2,19 @@ import React, { useMemo, useState } from "react";
 import WatchlistRow from "../components/WatchlistRow.jsx";
 
 const SORTS = {
-  rs_desc: { label: "RS ▼ (strongest)", fn: (a, b) => b.relative_strength - a.relative_strength },
-  rs_asc: { label: "RS ▲ (weakest)", fn: (a, b) => a.relative_strength - b.relative_strength },
+  rs_desc: {
+    label: "RS ▼ (strongest)",
+    fn: (a, b) => b.relative_strength - a.relative_strength,
+  },
+  rs_asc: {
+    label: "RS ▲ (weakest)",
+    fn: (a, b) => a.relative_strength - b.relative_strength,
+  },
   chg_desc: { label: "% Change ▼", fn: (a, b) => b.pct_change - a.pct_change },
-  pos_desc: { label: "Day range % ▼", fn: (a, b) => b.day_range_pos - a.day_range_pos },
+  pos_desc: {
+    label: "Day range % ▼",
+    fn: (a, b) => b.day_range_pos - a.day_range_pos,
+  },
   sym: { label: "Symbol A-Z", fn: (a, b) => a.symbol.localeCompare(b.symbol) },
 };
 
@@ -24,9 +33,11 @@ export default function RankingScreen({ stocks }) {
   const filteredStocks = useMemo(() => {
     const rows = (stocks || []).filter((stock) => {
       if (selectedSignal !== "All signals") {
-        if (!stock.signal || !stock.signal.includes(selectedSignal)) return false;
+        if (!stock.signal || !stock.signal.includes(selectedSignal))
+          return false;
       }
-      if (selectedSector !== "All sectors" && stock.sector !== selectedSector) return false;
+      if (selectedSector !== "All sectors" && stock.sector !== selectedSector)
+        return false;
       if (stock.day_range_pos < dayRangeThreshold) return false;
       return true;
     });
@@ -89,16 +100,22 @@ export default function RankingScreen({ stocks }) {
                   </select>
                 </FilterGroup>
 
-                <FilterGroup label={`Day Range Position ≥ ${dayRangeThreshold}%`}>
+                <FilterGroup
+                  label={`Day Range Position ≥ ${dayRangeThreshold}%`}
+                >
                   <input
                     type="range"
                     min="0"
                     max="100"
                     value={dayRangeThreshold}
-                    onChange={(e) => setDayRangeThreshold(Number(e.target.value))}
+                    onChange={(e) =>
+                      setDayRangeThreshold(Number(e.target.value))
+                    }
                     className="w-full h-2 bg-surface3 rounded-lg appearance-none cursor-pointer accent-blue-500"
                   />
-                  <div className="text-xs text-faint mt-2 text-center">{dayRangeThreshold}%</div>
+                  <div className="text-xs text-faint mt-2 text-center">
+                    {dayRangeThreshold}%
+                  </div>
                 </FilterGroup>
 
                 <button
@@ -129,7 +146,11 @@ export default function RankingScreen({ stocks }) {
               </button>
             )}
             <div className="text-xs text-faint ml-auto">
-              Showing <span className="font-bold text-primary">{filteredStocks.length}</span> stocks
+              Showing{" "}
+              <span className="font-bold text-primary">
+                {filteredStocks.length}
+              </span>{" "}
+              stocks
             </div>
           </div>
 
@@ -139,11 +160,21 @@ export default function RankingScreen({ stocks }) {
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-surface3/50 border-b border-subtle">
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider">Stock</th>
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-right">LTP</th>
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-center">Price Range</th>
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-center">Signal</th>
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-right">RS vs NIFTY</th>
+                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider">
+                      Stock
+                    </th>
+                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-right">
+                      LTP
+                    </th>
+                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-center">
+                      Price Range
+                    </th>
+                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-center">
+                      Signal
+                    </th>
+                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-right">
+                      RS vs NIFTY
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -155,7 +186,8 @@ export default function RankingScreen({ stocks }) {
             </div>
             {filteredStocks.length === 0 && (
               <div className="py-12 text-center text-faint text-sm">
-                No stocks match the current filters. Try adjusting your criteria.
+                No stocks match the current filters. Try adjusting your
+                criteria.
               </div>
             )}
           </div>
@@ -168,7 +200,9 @@ export default function RankingScreen({ stocks }) {
 function FilterGroup({ label, children }) {
   return (
     <div>
-      <label className="block text-xs font-semibold text-muted uppercase mb-2">{label}</label>
+      <label className="block text-xs font-semibold text-muted uppercase mb-2">
+        {label}
+      </label>
       {children}
     </div>
   );

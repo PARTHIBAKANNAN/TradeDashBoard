@@ -6,10 +6,10 @@ Prints the code your .env seed generates right now. Open your Fyers
 authenticator app on your phone and compare: if the 6 digits differ, your
 FYERS_TOTP_SECRET is the wrong seed (that is why login says 'invalid totp').
 """
+
 import time
 
 import pyotp
-
 from app import config
 
 raw = config.TOTP_SECRET or ""

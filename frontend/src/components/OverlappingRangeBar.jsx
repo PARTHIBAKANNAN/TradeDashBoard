@@ -28,9 +28,12 @@ const OverlappingRangeBar = React.memo(({ ranges }) => {
     // (These are full color strings, e.g. "#ffffff", not the channel-triplet
     // tokens Tailwind uses, since Canvas needs a value it can assign as-is.)
     const styles = getComputedStyle(document.documentElement);
-    const prevRangeColor = styles.getPropertyValue("--canvas-prev-range").trim() || "#374151";
-    const todayRangeColor = styles.getPropertyValue("--canvas-today-range").trim() || "#3b82f6";
-    const ltpTickColor = styles.getPropertyValue("--canvas-ltp-tick").trim() || "#ffffff";
+    const prevRangeColor =
+      styles.getPropertyValue("--canvas-prev-range").trim() || "#374151";
+    const todayRangeColor =
+      styles.getPropertyValue("--canvas-today-range").trim() || "#3b82f6";
+    const ltpTickColor =
+      styles.getPropertyValue("--canvas-ltp-tick").trim() || "#ffffff";
 
     const pct = (v) => (Math.max(0, Math.min(100, v)) / 100) * W;
 
@@ -56,7 +59,9 @@ const OverlappingRangeBar = React.memo(({ ranges }) => {
     ctx.stroke();
   }, [ranges, theme]); // theme included: canvas must repaint when the toggle flips
 
-  return <canvas ref={canvasRef} style={{ width: `${W}px`, height: `${H}px` }} />;
+  return (
+    <canvas ref={canvasRef} style={{ width: `${W}px`, height: `${H}px` }} />
+  );
 });
 
 function roundRect(ctx, x, y, w, h, r) {

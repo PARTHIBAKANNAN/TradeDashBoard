@@ -8,6 +8,7 @@ Time-aware orchestration:
 Uses APScheduler on the IST timezone. On startup, if the process boots
 mid-session, the engine is brought straight to the correct state.
 """
+
 import threading
 from datetime import datetime
 
@@ -36,16 +37,20 @@ def _launch_ws_thread():
 def _start_engine():
     """Authenticate (if needed), backfill, and launch the websocket thread."""
     if not config.DATA_ENGINE_ENABLED:
-        print(f"[scheduler] DATA_ENGINE_ENABLED=false on '{config.INSTANCE_NAME}'; "
-              "not opening the FYERS websocket (single-WS-per-app safety).")
+        print(
+            f"[scheduler] DATA_ENGINE_ENABLED=false on '{config.INSTANCE_NAME}'; "
+            "not opening the FYERS websocket (single-WS-per-app safety)."
+        )
         return
     if not data_engine.access_token:
         token = auth.get_access_token()
         if token:
             data_engine.set_token(token)
     if not data_engine.access_token:
-        print("[scheduler] No valid FYERS token — engine idle until you connect "
-              "(dashboard → 'Connect FYERS').")
+        print(
+            "[scheduler] No valid FYERS token — engine idle until you connect "
+            "(dashboard → 'Connect FYERS')."
+        )
         return
 
     data_engine.backfill()
@@ -110,11 +115,15 @@ def init_scheduler():
         replace_existing=True,
     )
     scheduler.start()
-    print(f"[scheduler] Instance '{config.INSTANCE_NAME}', "
-          f"data_engine={'ON' if config.DATA_ENGINE_ENABLED else 'OFF'}.")
+    print(
+        f"[scheduler] Instance '{config.INSTANCE_NAME}', "
+        f"data_engine={'ON' if config.DATA_ENGINE_ENABLED else 'OFF'}."
+    )
 
     if not config.DATA_ENGINE_ENABLED:
-        print("[scheduler] Data engine disabled on this instance; serving cached/empty snapshot only.")
+        print(
+            "[scheduler] Data engine disabled on this instance; serving cached/empty snapshot only."
+        )
         return
 
     # Boot straight into the right state depending on when we started.

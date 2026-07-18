@@ -12,16 +12,28 @@ const WatchlistRow = React.memo(({ stock }) => {
     <tr className="border-b border-subtle hover:bg-surface2 transition-colors">
       {/* Asset */}
       <td className="py-3 px-4">
-        <div className="font-bold text-primary tracking-wide">{stock.symbol}</div>
+        <div className="font-bold text-primary tracking-wide">
+          {stock.symbol}
+        </div>
         <div className="text-xs text-faint font-semibold">{stock.sector}</div>
       </td>
 
       {/* LTP */}
       <td className="py-3 px-4 font-mono text-right">
-        <span className={isPositive ? "text-green-400 font-semibold" : "text-red-400 font-semibold"}>
-          {Number(stock.ltp).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+        <span
+          className={
+            isPositive
+              ? "text-green-400 font-semibold"
+              : "text-red-400 font-semibold"
+          }
+        >
+          {Number(stock.ltp).toLocaleString("en-IN", {
+            minimumFractionDigits: 2,
+          })}
         </span>
-        <div className={`text-xs ${isPositive ? "text-green-500" : "text-red-500"}`}>
+        <div
+          className={`text-xs ${isPositive ? "text-green-500" : "text-red-500"}`}
+        >
           {isPositive ? "+" : ""}
           {stock.pct_change}%
         </div>
@@ -51,8 +63,13 @@ const WatchlistRow = React.memo(({ stock }) => {
                 : "bg-red-950/50 text-red-400 border border-red-800/30"
             }`}
           >
-            <span>{isBull ? "▲ " : "▼ "}{stock.signal}</span>
-            <span className="text-[10px] font-semibold text-muted mt-0.5">{stock.signal_time}</span>
+            <span>
+              {isBull ? "▲ " : "▼ "}
+              {stock.signal}
+            </span>
+            <span className="text-[10px] font-semibold text-muted mt-0.5">
+              {stock.signal_time}
+            </span>
           </div>
         ) : (
           <span className="text-faint font-semibold text-xs">—</span>
@@ -61,7 +78,9 @@ const WatchlistRow = React.memo(({ stock }) => {
 
       {/* Relative Strength vs Nifty */}
       <td className="py-3 px-4 font-mono text-right">
-        <span className={`font-bold ${isRsPositive ? "text-green-400" : "text-red-400"}`}>
+        <span
+          className={`font-bold ${isRsPositive ? "text-green-400" : "text-red-400"}`}
+        >
           {isRsPositive ? "+" : ""}
           {stock.relative_strength}
         </span>

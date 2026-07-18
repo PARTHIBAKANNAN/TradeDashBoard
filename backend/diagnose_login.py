@@ -5,11 +5,11 @@ Reads your .env, then walks the Fyers programmatic login step by step, printing
 the HTTP status and response body at each stage so we can see exactly which
 call fyers rejects and why. Credentials are NEVER printed (only masked lengths).
 """
+
 import base64
 
 import pyotp
 import requests
-
 from app import config
 
 
@@ -41,7 +41,9 @@ placeholders = {
 }
 still_placeholder = [name for name, (ph, val) in placeholders.items() if val == ph]
 if still_placeholder:
-    issues.append("These .env values are STILL the example placeholders: " + ", ".join(still_placeholder))
+    issues.append(
+        "These .env values are STILL the example placeholders: " + ", ".join(still_placeholder)
+    )
 
 if config.CLIENT_ID and "-" not in config.CLIENT_ID:
     issues.append("CLIENT_ID has no '-' (expected APPID-TYPE, e.g. XXXX-100)")
@@ -99,11 +101,15 @@ def _fresh_totp():
     return pyotp.TOTP(config.TOTP_SECRET).now()
 
 
-r = requests.post(f"{BASE}/verify_otp", json={"request_key": request_key, "otp": _fresh_totp()}, timeout=15)
+r = requests.post(
+    f"{BASE}/verify_otp", json={"request_key": request_key, "otp": _fresh_totp()}, timeout=15
+)
 if r.status_code != 200:
     print(f"  first attempt HTTP {r.status_code}; retrying with a fresh code ...")
     _time.sleep(1)
-    r = requests.post(f"{BASE}/verify_otp", json={"request_key": request_key, "otp": _fresh_totp()}, timeout=15)
+    r = requests.post(
+        f"{BASE}/verify_otp", json={"request_key": request_key, "otp": _fresh_totp()}, timeout=15
+    )
 show("verify_otp", r)
 if r.status_code != 200:
     print("[FAIL] verify_otp failed twice. If it says 'invalid totp' but check_totp.py")
@@ -116,7 +122,11 @@ vagator_token = None
 for ep in ("verify_pin", "verify_pin_v2"):
     r = requests.post(
         f"{BASE}/{ep}",
-        json={"request_key": request_key, "identity_type": "pin", "identifier": b64(config.USER_PIN)},
+        json={
+            "request_key": request_key,
+            "identity_type": "pin",
+            "identifier": b64(config.USER_PIN),
+        },
         timeout=15,
     )
     show(ep, r)
@@ -191,15 +201,22 @@ print("\n=== Step 4: obtaining an auth_code ===")
 final_token = None
 
 # First get data.auth (the intermediate authorization access token).
-r = requests.post("https://api-t1.fyers.in/api/v3/token", headers=headers, json=base_body(True), timeout=15)
+r = requests.post(
+    "https://api-t1.fyers.in/api/v3/token", headers=headers, json=base_body(True), timeout=15
+)
 dataA = r.json()
 auth_access = (dataA.get("data") or {}).get("auth")
-print(f"  data.auth obtained: {mask(auth_access)}  sub={jwt_sub(auth_access) if auth_access else None}")
+print(
+    f"  data.auth obtained: {mask(auth_access)}  sub={jwt_sub(auth_access) if auth_access else None}"
+)
 
 sess = fyersModel.SessionModel(
-    client_id=config.CLIENT_ID, secret_key=config.SECRET_KEY,
-    redirect_uri=config.REDIRECT_URI, response_type="code",
-    grant_type="authorization_code", state="dashboard",
+    client_id=config.CLIENT_ID,
+    secret_key=config.SECRET_KEY,
+    redirect_uri=config.REDIRECT_URI,
+    response_type="code",
+    grant_type="authorization_code",
+    state="dashboard",
 )
 authorize_url = sess.generate_authcode()
 
@@ -227,8 +244,12 @@ def extract_code_from_response(resp):
 
 # Method D: GET generate-authcode with Bearer = data.auth
 print("\n-- Method D: GET generate-authcode, Bearer=data.auth --")
-r = requests.get(authorize_url, headers={"authorization": f"Bearer {auth_access}"},
-                 allow_redirects=False, timeout=15)
+r = requests.get(
+    authorize_url,
+    headers={"authorization": f"Bearer {auth_access}"},
+    allow_redirects=False,
+    timeout=15,
+)
 codeD, howD = extract_code_from_response(r)
 print(f"  HTTP {r.status_code}; source: {howD}")
 if codeD:
@@ -239,7 +260,9 @@ final_token = try_exchange("D", codeD) or final_token
 if not final_token:
     print("\n-- Method E: cookie session (token -> generate-authcode) --")
     s = requests.Session()
-    s.post("https://api-t1.fyers.in/api/v3/token", headers=headers, json=base_body(True), timeout=15)
+    s.post(
+        "https://api-t1.fyers.in/api/v3/token", headers=headers, json=base_body(True), timeout=15
+    )
     print(f"  cookies after token POST: {list(s.cookies.keys())}")
     r = s.get(authorize_url, allow_redirects=False, timeout=15)
     codeE, howE = extract_code_from_response(r)
@@ -254,4 +277,3 @@ if final_token:
     print("         I'll lock that path into auth.py.")
 else:
     print("[FAIL] Neither method produced a working token. Share all output above.")
-

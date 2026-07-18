@@ -3,15 +3,12 @@ Standalone checks for the math engines. Run from backend/:
 
     python -m tests.test_calculations
 """
+
 from datetime import datetime
 
-from app.calculations import (
-    day_range_position,
-    evaluate_orb,
-    intraday_relative_strength,
-    pct_change,
-    range_map,
-)
+from app.calculations import (day_range_position, evaluate_orb,
+                              intraday_relative_strength, pct_change,
+                              range_map)
 from app.config import IST
 
 
@@ -39,8 +36,8 @@ def test_day_range_position():
 def test_range_map():
     # yesterday 3580-3690, today 3600-3700, ltp 3690
     r = range_map(3580, 3690, 3600, 3700, 3690)
-    assert approx(r["yesterday"]["low"], 0.0)      # global min
-    assert approx(r["today"]["high"], 100.0)       # global max
+    assert approx(r["yesterday"]["low"], 0.0)  # global min
+    assert approx(r["today"]["high"], 100.0)  # global max
     assert 0 <= r["ltp_pos"] <= 100
     assert r["yesterday"]["raw_high"] == 3690
 

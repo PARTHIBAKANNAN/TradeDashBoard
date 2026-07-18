@@ -11,6 +11,7 @@ against their own account:
 The resulting API access token is cached to disk (valid until end of day) so a
 mid-day server restart does not force a fresh login.
 """
+
 import base64
 import hashlib
 import json
@@ -59,14 +60,20 @@ def _fetch_auth_code() -> str:
         # TOTP can land on a boundary; retry once with a freshly minted code.
         time.sleep(1)
         totp = pyotp.TOTP(config.TOTP_SECRET).now()
-        r = requests.post(URL_VERIFY_OTP, json={"request_key": request_key, "otp": totp}, timeout=15)
+        r = requests.post(
+            URL_VERIFY_OTP, json={"request_key": request_key, "otp": totp}, timeout=15
+        )
     r.raise_for_status()
     request_key = r.json()["request_key"]
 
     # 3) verify the trading PIN -> yields a short-lived vagator access token
     r = requests.post(
         URL_VERIFY_PIN,
-        json={"request_key": request_key, "identity_type": "pin", "identifier": _b64(config.USER_PIN)},
+        json={
+            "request_key": request_key,
+            "identity_type": "pin",
+            "identifier": _b64(config.USER_PIN),
+        },
         timeout=15,
     )
     r.raise_for_status()
@@ -269,13 +276,19 @@ def get_access_token(force_refresh: bool = False) -> str | None:
     if token:
         return token
 
-    if not all([config.CLIENT_ID, config.SECRET_KEY, config.FY_ID, config.USER_PIN, config.TOTP_SECRET]):
-        print("[auth] No valid token and no way to refresh — MANUAL LOGIN required "
-              "(open the dashboard and click 'Connect FYERS').")
+    if not all(
+        [config.CLIENT_ID, config.SECRET_KEY, config.FY_ID, config.USER_PIN, config.TOTP_SECRET]
+    ):
+        print(
+            "[auth] No valid token and no way to refresh — MANUAL LOGIN required "
+            "(open the dashboard and click 'Connect FYERS')."
+        )
         return None
 
     try:
-        print(f"[auth] Generating fresh access token at {datetime.now(config.IST):%H:%M:%S} IST ...")
+        print(
+            f"[auth] Generating fresh access token at {datetime.now(config.IST):%H:%M:%S} IST ..."
+        )
         auth_code = _fetch_auth_code()
         access_token, refresh_token = _exchange_auth_code(auth_code)
         _save_cached_token(access_token, refresh_token)

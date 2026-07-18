@@ -3,7 +3,7 @@ import WatchlistRow from "../components/WatchlistRow.jsx";
 
 export default function WatchlistScreen({ stocks }) {
   const [watchlist, setWatchlist] = useState(
-    JSON.parse(localStorage.getItem("watchlist") || "[]")
+    JSON.parse(localStorage.getItem("watchlist") || "[]"),
   );
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -11,7 +11,7 @@ export default function WatchlistScreen({ stocks }) {
     return (stocks || []).filter(
       (stock) =>
         watchlist.includes(stock.symbol) &&
-        stock.symbol.toLowerCase().includes(searchTerm.toLowerCase())
+        stock.symbol.toLowerCase().includes(searchTerm.toLowerCase()),
     );
   }, [stocks, watchlist, searchTerm]);
 
@@ -51,16 +51,29 @@ export default function WatchlistScreen({ stocks }) {
                 <thead>
                   <tr className="bg-surface3/50 border-b border-subtle">
                     <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider w-8"></th>
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider">Stock</th>
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-right">LTP</th>
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-center">Price Range</th>
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-center">Signal</th>
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-right">RS vs NIFTY</th>
+                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider">
+                      Stock
+                    </th>
+                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-right">
+                      LTP
+                    </th>
+                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-center">
+                      Price Range
+                    </th>
+                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-center">
+                      Signal
+                    </th>
+                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-right">
+                      RS vs NIFTY
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {watchlistStocks.map((stock) => (
-                    <tr key={stock.symbol} className="border-b border-subtle/50 hover:bg-surface3/20 transition-colors">
+                    <tr
+                      key={stock.symbol}
+                      className="border-b border-subtle/50 hover:bg-surface3/20 transition-colors"
+                    >
                       <td className="py-3 px-4">
                         <button
                           onClick={() => toggleWatchlist(stock.symbol)}
@@ -91,21 +104,31 @@ export default function WatchlistScreen({ stocks }) {
 
         {/* All Stocks - Add to Watchlist */}
         <div className="mt-8">
-          <h3 className="text-sm font-bold text-primary mb-4">Add stocks to your watchlist</h3>
+          <h3 className="text-sm font-bold text-primary mb-4">
+            Add stocks to your watchlist
+          </h3>
           <div className="bg-surface2/80 backdrop-blur-xl border border-subtle rounded-lg overflow-hidden">
             <div className="overflow-x-auto max-h-96">
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-surface3/50 border-b border-subtle">
                     <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider w-8"></th>
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider">Stock</th>
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-right">LTP</th>
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-center">Change %</th>
+                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider">
+                      Stock
+                    </th>
+                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-right">
+                      LTP
+                    </th>
+                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-center">
+                      Change %
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {(stocks || [])
-                    .sort((a, b) => Math.abs(b.pct_change) - Math.abs(a.pct_change))
+                    .sort(
+                      (a, b) => Math.abs(b.pct_change) - Math.abs(a.pct_change),
+                    )
                     .slice(0, 20)
                     .map((stock) => (
                       <tr
@@ -130,18 +153,27 @@ export default function WatchlistScreen({ stocks }) {
                           </button>
                         </td>
                         <td className="py-3 px-4">
-                          <div className="text-sm font-semibold text-primary">{stock.symbol}</div>
-                          <div className="text-xs text-faint">{stock.sector}</div>
+                          <div className="text-sm font-semibold text-primary">
+                            {stock.symbol}
+                          </div>
+                          <div className="text-xs text-faint">
+                            {stock.sector}
+                          </div>
                         </td>
                         <td className="py-3 px-4 text-right">
                           <div className="text-sm font-mono text-primary">
-                            ₹{stock.ltp?.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                            ₹
+                            {stock.ltp?.toLocaleString("en-IN", {
+                              maximumFractionDigits: 2,
+                            })}
                           </div>
                         </td>
                         <td className="py-3 px-4 text-center">
                           <span
                             className={`text-sm font-semibold ${
-                              stock.pct_change >= 0 ? "text-green-400" : "text-red-400"
+                              stock.pct_change >= 0
+                                ? "text-green-400"
+                                : "text-red-400"
                             }`}
                           >
                             {stock.pct_change >= 0 ? "+" : ""}

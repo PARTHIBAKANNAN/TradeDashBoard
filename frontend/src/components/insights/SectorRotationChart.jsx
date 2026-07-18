@@ -26,7 +26,8 @@ export default function SectorRotationChart({ stocks }) {
     return Array.from(groups.entries()).map(([group, members]) => {
       const n = members.length || 1;
       const meanPct = members.reduce((a, s) => a + (s.pct_change || 0), 0) / n;
-      const meanRs = members.reduce((a, s) => a + (s.relative_strength || 0), 0) / n;
+      const meanRs =
+        members.reduce((a, s) => a + (s.relative_strength || 0), 0) / n;
       return { group, x: meanPct, y: meanRs, count: members.length };
     });
   }, [stocks]);
@@ -43,8 +44,10 @@ export default function SectorRotationChart({ stocks }) {
 
   const w = Math.max(0, size.width - PADDING * 2);
   const h = size.height - PADDING * 2;
-  const scaleX = (v) => PADDING + ((v - xDomain[0]) / (xDomain[1] - xDomain[0])) * w;
-  const scaleY = (v) => PADDING + h - ((v - yDomain[0]) / (yDomain[1] - yDomain[0])) * h;
+  const scaleX = (v) =>
+    PADDING + ((v - xDomain[0]) / (xDomain[1] - xDomain[0])) * w;
+  const scaleY = (v) =>
+    PADDING + h - ((v - yDomain[0]) / (yDomain[1] - yDomain[0])) * h;
   const zeroX = scaleX(0);
   const zeroY = scaleY(0);
 
@@ -56,34 +59,66 @@ export default function SectorRotationChart({ stocks }) {
       <p className="text-[10px] text-faint mb-2">
         x = today's %change · y = RS vs Nifty · one dot per sector
       </p>
-      <div ref={containerRef} className="relative w-full" style={{ height: size.height }}>
+      <div
+        ref={containerRef}
+        className="relative w-full"
+        style={{ height: size.height }}
+      >
         {size.width > 0 && (
           <>
             {/* Quadrant tints */}
             <div
               className="absolute bg-green-500/5"
-              style={{ left: zeroX, top: PADDING, width: w - (zeroX - PADDING), height: zeroY - PADDING }}
+              style={{
+                left: zeroX,
+                top: PADDING,
+                width: w - (zeroX - PADDING),
+                height: zeroY - PADDING,
+              }}
               title="Leading: rising today + outperforming"
             />
             <div
               className="absolute bg-red-500/5"
-              style={{ left: PADDING, top: zeroY, width: zeroX - PADDING, height: PADDING + h - zeroY }}
+              style={{
+                left: PADDING,
+                top: zeroY,
+                width: zeroX - PADDING,
+                height: PADDING + h - zeroY,
+              }}
               title="Lagging: falling today + underperforming"
             />
             {/* Axes */}
-            <div className="absolute border-t border-subtle" style={{ left: PADDING, top: zeroY, width: w }} />
-            <div className="absolute border-l border-subtle" style={{ left: zeroX, top: PADDING, height: h }} />
+            <div
+              className="absolute border-t border-subtle"
+              style={{ left: PADDING, top: zeroY, width: w }}
+            />
+            <div
+              className="absolute border-l border-subtle"
+              style={{ left: zeroX, top: PADDING, height: h }}
+            />
             {/* Quadrant labels */}
-            <span className="absolute text-[9px] text-faint" style={{ left: PADDING + 4, top: PADDING + 2 }}>
+            <span
+              className="absolute text-[9px] text-faint"
+              style={{ left: PADDING + 4, top: PADDING + 2 }}
+            >
               Improving
             </span>
-            <span className="absolute text-[9px] text-faint" style={{ right: 4, top: PADDING + 2 }}>
+            <span
+              className="absolute text-[9px] text-faint"
+              style={{ right: 4, top: PADDING + 2 }}
+            >
               Leading
             </span>
-            <span className="absolute text-[9px] text-faint" style={{ left: PADDING + 4, bottom: 4 }}>
+            <span
+              className="absolute text-[9px] text-faint"
+              style={{ left: PADDING + 4, bottom: 4 }}
+            >
               Lagging
             </span>
-            <span className="absolute text-[9px] text-faint" style={{ right: 4, bottom: 4 }}>
+            <span
+              className="absolute text-[9px] text-faint"
+              style={{ right: 4, bottom: 4 }}
+            >
               Weakening
             </span>
             {/* Dots */}
