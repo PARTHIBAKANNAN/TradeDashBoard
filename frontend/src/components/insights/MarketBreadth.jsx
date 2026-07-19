@@ -1,4 +1,6 @@
 import React, { useMemo } from "react";
+import { Activity } from "lucide-react";
+import SplitBar from "../ui/SplitBar.jsx";
 
 // Slim single-row banner: how many stocks are up / down / unchanged today.
 export default function MarketBreadth({ stocks }) {
@@ -20,25 +22,22 @@ export default function MarketBreadth({ stocks }) {
   const flatPct = total ? (flat / total) * 100 : 0;
 
   return (
-    <div className="bg-surface2/80 backdrop-blur-xl border border-subtle rounded-lg px-5 py-3 flex items-center gap-5 shadow-glow-sm">
-      <span className="text-xs font-bold text-muted uppercase tracking-wider whitespace-nowrap">
+    <div className="rounded-xl border border-subtle bg-surface2/70 backdrop-blur-xl shadow-card px-5 py-3.5 flex items-center gap-5">
+      <span className="flex items-center gap-1.5 text-xs font-bold text-muted uppercase tracking-wider whitespace-nowrap">
+        <Activity size={13} className="text-accent-blue" />
         Market Breadth
       </span>
-      <div className="flex-1 h-2.5 rounded-full overflow-hidden flex bg-surface3">
-        {upPct > 0 && (
-          <div style={{ width: `${upPct}%` }} className="bg-green-500" />
-        )}
-        {flatPct > 0 && (
-          <div style={{ width: `${flatPct}%` }} className="bg-faint" />
-        )}
-        {downPct > 0 && (
-          <div style={{ width: `${downPct}%` }} className="bg-red-500" />
-        )}
-      </div>
-      <div className="flex items-center gap-4 text-xs font-mono whitespace-nowrap">
-        <span className="text-green-400 font-bold">{up} Up</span>
+      <SplitBar
+        segments={[
+          { pct: upPct, className: "bg-bull" },
+          { pct: flatPct, className: "bg-faint" },
+          { pct: downPct, className: "bg-bear" },
+        ]}
+      />
+      <div className="flex items-center gap-4 text-xs font-mono whitespace-nowrap tabular-nums">
+        <span className="text-bull font-bold">{up} Up</span>
         <span className="text-faint font-bold">{flat} Flat</span>
-        <span className="text-red-400 font-bold">{down} Down</span>
+        <span className="text-bear font-bold">{down} Down</span>
         <span className="text-faint">({total} total)</span>
       </div>
     </div>

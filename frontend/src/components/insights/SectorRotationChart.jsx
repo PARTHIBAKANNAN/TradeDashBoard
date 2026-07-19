@@ -1,5 +1,7 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
+import { Compass } from "lucide-react";
 import { groupBySector } from "../../utils/sectorAggregates.js";
+import Card from "../ui/Card.jsx";
 
 const PADDING = 40;
 
@@ -52,13 +54,11 @@ export default function SectorRotationChart({ stocks }) {
   const zeroY = scaleY(0);
 
   return (
-    <div className="bg-surface2/80 backdrop-blur-xl border border-subtle rounded-lg p-4 shadow-glow-sm">
-      <h3 className="text-xs font-bold text-muted uppercase tracking-wider mb-1">
-        Sector Rotation
-      </h3>
-      <p className="text-[10px] text-faint mb-2">
-        x = today's %change · y = RS vs Nifty · one dot per sector
-      </p>
+    <Card
+      title="Sector Rotation"
+      subtitle="x = today's %change · y = RS vs Nifty · one dot per sector"
+      icon={Compass}
+    >
       <div
         ref={containerRef}
         className="relative w-full"
@@ -68,7 +68,7 @@ export default function SectorRotationChart({ stocks }) {
           <>
             {/* Quadrant tints */}
             <div
-              className="absolute bg-green-500/5"
+              className="absolute bg-bull/5"
               style={{
                 left: zeroX,
                 top: PADDING,
@@ -78,7 +78,7 @@ export default function SectorRotationChart({ stocks }) {
               title="Leading: rising today + outperforming"
             />
             <div
-              className="absolute bg-red-500/5"
+              className="absolute bg-bear/5"
               style={{
                 left: PADDING,
                 top: zeroY,
@@ -126,8 +126,8 @@ export default function SectorRotationChart({ stocks }) {
               <div
                 key={p.group}
                 title={`${p.group}: ${p.x >= 0 ? "+" : ""}${p.x.toFixed(2)}% change, RS ${p.y.toFixed(2)} (${p.count} stocks)`}
-                className={`absolute rounded-full -translate-x-1/2 -translate-y-1/2 flex items-center justify-center ${
-                  p.x >= 0 ? "bg-green-500" : "bg-red-500"
+                className={`absolute rounded-full -translate-x-1/2 -translate-y-1/2 flex items-center justify-center ring-2 ${
+                  p.x >= 0 ? "bg-bull ring-bull/25" : "bg-bear ring-bear/25"
                 }`}
                 style={{
                   left: scaleX(p.x),
@@ -147,6 +147,6 @@ export default function SectorRotationChart({ stocks }) {
           </>
         )}
       </div>
-    </div>
+    </Card>
   );
 }

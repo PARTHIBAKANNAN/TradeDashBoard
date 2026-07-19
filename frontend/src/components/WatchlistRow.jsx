@@ -1,41 +1,48 @@
 import React from "react";
+import { motion } from "framer-motion";
+import { ArrowUp, ArrowDown } from "lucide-react";
 import OverlappingRangeBar from "./OverlappingRangeBar.jsx";
 
 // React.memo isolates re-renders to rows whose stock object actually changed.
-const WatchlistRow = React.memo(({ stock }) => {
+// `leading` renders an optional extra cell (e.g. a watchlist star toggle)
+// as the row's first <td> — kept inside this single <tr>, since nesting a
+// second <tr> inside a wrapping <td> (the old WatchlistScreen approach) is
+// invalid HTML that browsers silently reflow via foster parenting.
+const WatchlistRow = React.memo(({ stock, index = 0, leading }) => {
   const isPositive = stock.pct_change >= 0;
   const isRsPositive = stock.relative_strength >= 0;
   const hasSignal = stock.signal && stock.signal !== "None";
   const isBull = hasSignal && stock.signal.includes("Bull");
 
   return (
-    <tr className="border-b border-subtle hover:bg-surface2 transition-colors">
+    <motion.tr
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.2, delay: Math.min(index, 20) * 0.012 }}
+      className="group border-b border-subtle/70 hover:bg-surface3/40 transition-colors"
+    >
+      {leading && <td className="py-3 px-4 w-8">{leading}</td>}
+
       {/* Asset */}
       <td className="py-3 px-4">
-        <div className="font-bold text-primary tracking-wide">
+        <div className="font-bold text-primary tracking-wide group-hover:text-accent-blue transition-colors">
           {stock.symbol}
         </div>
-        <div className="text-xs text-faint font-semibold">{stock.sector}</div>
+        <div className="text-[11px] text-faint font-semibold">{stock.sector}</div>
       </td>
 
       {/* LTP */}
-      <td className="py-3 px-4 font-mono text-right">
-        <span
-          className={
-            isPositive
-              ? "text-green-400 font-semibold"
-              : "text-red-400 font-semibold"
-          }
-        >
-          {Number(stock.ltp).toLocaleString("en-IN", {
-            minimumFractionDigits: 2,
-          })}
+      <td className="py-3 px-4 font-mono text-right tabular-nums">
+        <span className={isPositive ? "text-bull font-semibold" : "text-bear font-semibold"}>
+          {Number(stock.ltp).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
         </span>
         <div
-          className={`text-xs ${isPositive ? "text-green-500" : "text-red-500"}`}
+          className={`text-[11px] flex items-center justify-end gap-0.5 ${
+            isPositive ? "text-bull/80" : "text-bear/80"
+          }`}
         >
-          {isPositive ? "+" : ""}
-          {stock.pct_change}%
+          {isPositive ? <ArrowUp size={9} /> : <ArrowDown size={9} />}
+          {Math.abs(stock.pct_change)}%
         </div>
       </td>
 
@@ -57,17 +64,17 @@ const WatchlistRow = React.memo(({ stock }) => {
       <td className="py-3 px-4 text-center">
         {hasSignal ? (
           <div
-            className={`inline-flex flex-col items-center px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${
+            className={`inline-flex flex-col items-center px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider border ${
               isBull
-                ? "bg-green-950/50 text-green-400 border border-green-800/30"
-                : "bg-red-950/50 text-red-400 border border-red-800/30"
+                ? "bg-bull/10 text-bull border-bull/30"
+                : "bg-bear/10 text-bear border-bear/30"
             }`}
           >
-            <span>
-              {isBull ? "▲ " : "▼ "}
+            <span className="flex items-center gap-1">
+              {isBull ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
               {stock.signal}
             </span>
-            <span className="text-[10px] font-semibold text-muted mt-0.5">
+            <span className="text-[10px] font-semibold text-muted mt-0.5 font-mono">
               {stock.signal_time}
             </span>
           </div>
@@ -77,10 +84,8 @@ const WatchlistRow = React.memo(({ stock }) => {
       </td>
 
       {/* Relative Strength vs Nifty */}
-      <td className="py-3 px-4 font-mono text-right">
-        <span
-          className={`font-bold ${isRsPositive ? "text-green-400" : "text-red-400"}`}
-        >
+      <td className="py-3 px-4 font-mono text-right tabular-nums">
+        <span className={`font-bold ${isRsPositive ? "text-bull" : "text-bear"}`}>
           {isRsPositive ? "+" : ""}
           {stock.relative_strength}
         </span>
@@ -88,7 +93,7 @@ const WatchlistRow = React.memo(({ stock }) => {
           {isRsPositive ? "Outperform" : "Underperform"}
         </div>
       </td>
-    </tr>
+    </motion.tr>
   );
 });
 

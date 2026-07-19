@@ -28,14 +28,17 @@ const OverlappingRangeBar = React.memo(({ ranges }) => {
     // (These are full color strings, e.g. "#ffffff", not the channel-triplet
     // tokens Tailwind uses, since Canvas needs a value it can assign as-is.)
     const styles = getComputedStyle(document.documentElement);
-    const prevRangeColor =
-      styles.getPropertyValue("--canvas-prev-range").trim() || "#374151";
-    const todayRangeColor =
-      styles.getPropertyValue("--canvas-today-range").trim() || "#3b82f6";
-    const ltpTickColor =
-      styles.getPropertyValue("--canvas-ltp-tick").trim() || "#ffffff";
+    const prevRangeColor = styles.getPropertyValue("--canvas-prev-range").trim() || "#3a3f52";
+    const todayA = styles.getPropertyValue("--canvas-today-range-a").trim() || "#60a5fa";
+    const todayB = styles.getPropertyValue("--canvas-today-range-b").trim() || "#a78bfa";
+    const ltpTickColor = styles.getPropertyValue("--canvas-ltp-tick").trim() || "#f4f6fb";
+    const ltpGlow = styles.getPropertyValue("--canvas-ltp-glow").trim() || "rgba(167,139,250,0.55)";
 
     const pct = (v) => (Math.max(0, Math.min(100, v)) / 100) * W;
+
+    // Track baseline
+    ctx.fillStyle = "rgba(127,127,127,0.08)";
+    roundRect(ctx, 0, H / 2 - 2, W, 4, 2);
 
     // Previous day range
     const pL = pct(ranges.yesterday.low);
@@ -43,20 +46,33 @@ const OverlappingRangeBar = React.memo(({ ranges }) => {
     ctx.fillStyle = prevRangeColor;
     roundRect(ctx, pL, H / 2 - 2, Math.max(2, pR - pL), 4, 2);
 
-    // Today's range
+    // Today's range — gradient fill, blue -> violet
     const tL = pct(ranges.today.low);
     const tR = pct(ranges.today.high);
-    ctx.fillStyle = todayRangeColor;
+    const grad = ctx.createLinearGradient(tL, 0, Math.max(tL + 1, tR), 0);
+    grad.addColorStop(0, todayA);
+    grad.addColorStop(1, todayB);
+    ctx.fillStyle = grad;
     roundRect(ctx, tL, H / 2 - 4, Math.max(2, tR - tL), 8, 3);
 
-    // LTP marker tick
+    // LTP marker tick, with a soft glow behind it
     const tick = pct(ranges.ltp_pos);
+    ctx.save();
+    ctx.shadowColor = ltpGlow;
+    ctx.shadowBlur = 6;
     ctx.strokeStyle = ltpTickColor;
     ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.moveTo(tick, 1);
-    ctx.lineTo(tick, H - 1);
+    ctx.moveTo(tick, 0.5);
+    ctx.lineTo(tick, H - 0.5);
     ctx.stroke();
+    ctx.restore();
+
+    // Tiny dot cap on the tick for a more deliberate "marker" feel
+    ctx.fillStyle = ltpTickColor;
+    ctx.beginPath();
+    ctx.arc(tick, H / 2, 2.2, 0, Math.PI * 2);
+    ctx.fill();
   }, [ranges, theme]); // theme included: canvas must repaint when the toggle flips
 
   return (

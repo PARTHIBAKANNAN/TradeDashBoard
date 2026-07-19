@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { Search, Star, PlusCircle } from "lucide-react";
 import WatchlistRow from "../components/WatchlistRow.jsx";
 
 export default function WatchlistScreen({ stocks }) {
@@ -28,29 +29,37 @@ export default function WatchlistScreen({ stocks }) {
       <div className="mx-auto max-w-7xl px-6 py-6">
         {/* Header */}
         <div className="mb-6">
-          <h2 className="text-lg font-bold text-primary mb-4">My Watchlist</h2>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="grid place-items-center w-9 h-9 rounded-lg bg-accent-blue/10 text-accent-blue border border-accent-blue/20">
+              <Star size={17} />
+            </span>
+            <h2 className="text-lg font-bold text-primary font-display">My Watchlist</h2>
+          </div>
           <div className="flex items-center gap-4">
-            <input
-              type="text"
-              placeholder="Search watchlist..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 bg-surface2/80 border border-subtle rounded-lg px-4 py-2.5 text-sm text-primary placeholder-faint focus:outline-none focus:border-accent-blue"
-            />
-            <div className="text-sm font-semibold text-muted">
+            <div className="relative flex-1">
+              <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-faint" />
+              <input
+                type="text"
+                placeholder="Search watchlist..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-surface2/70 backdrop-blur-xl border border-subtle rounded-lg pl-9 pr-4 py-2.5 text-sm text-primary placeholder-faint focus:outline-none focus:border-accent-blue transition-colors"
+              />
+            </div>
+            <div className="text-sm font-semibold text-muted whitespace-nowrap">
               {watchlistStocks.length} stocks
             </div>
           </div>
         </div>
 
         {/* Watchlist Table */}
-        <div className="bg-surface2/80 backdrop-blur-xl border border-subtle rounded-lg overflow-hidden">
+        <div className="bg-surface2/70 backdrop-blur-xl border border-subtle rounded-xl overflow-hidden shadow-card">
           {watchlistStocks.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full text-left">
+              <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-surface3/50 border-b border-subtle">
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider w-8"></th>
+                  <tr className="bg-surface3/60 border-b border-subtle">
+                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider w-8" />
                     <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider">
                       Stock
                     </th>
@@ -58,7 +67,7 @@ export default function WatchlistScreen({ stocks }) {
                       LTP
                     </th>
                     <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-center">
-                      Price Range
+                      Day Range
                     </th>
                     <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-center">
                       Signal
@@ -69,34 +78,31 @@ export default function WatchlistScreen({ stocks }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {watchlistStocks.map((stock) => (
-                    <tr
+                  {watchlistStocks.map((stock, i) => (
+                    <WatchlistRow
                       key={stock.symbol}
-                      className="border-b border-subtle/50 hover:bg-surface3/20 transition-colors"
-                    >
-                      <td className="py-3 px-4">
+                      stock={stock}
+                      index={i}
+                      leading={
                         <button
                           onClick={() => toggleWatchlist(stock.symbol)}
-                          className="text-lg transition-colors hover:scale-110"
+                          className="text-accent-amber hover:scale-110 transition-transform"
                           title="Remove from watchlist"
                         >
-                          ⭐
+                          <Star size={16} fill="currentColor" />
                         </button>
-                      </td>
-                      <td colSpan="5">
-                        <WatchlistRow stock={stock} />
-                      </td>
-                    </tr>
+                      }
+                    />
                   ))}
                 </tbody>
               </table>
             </div>
           ) : (
-            <div className="py-12 text-center">
-              <div className="text-4xl mb-3">⭐</div>
-              <p className="text-faint text-sm mb-3">Your watchlist is empty</p>
+            <div className="py-14 text-center">
+              <Star size={32} className="mx-auto mb-3 text-faint" />
+              <p className="text-faint text-sm mb-1">Your watchlist is empty</p>
               <p className="text-faint text-xs">
-                Go to Ranking or Heatmap and add stocks to your watchlist
+                Add stocks below, or from the Ranking / Heatmap tabs
               </p>
             </div>
           )}
@@ -104,15 +110,16 @@ export default function WatchlistScreen({ stocks }) {
 
         {/* All Stocks - Add to Watchlist */}
         <div className="mt-8">
-          <h3 className="text-sm font-bold text-primary mb-4">
+          <h3 className="flex items-center gap-2 text-sm font-bold text-primary mb-4">
+            <PlusCircle size={14} className="text-accent-blue" />
             Add stocks to your watchlist
           </h3>
-          <div className="bg-surface2/80 backdrop-blur-xl border border-subtle rounded-lg overflow-hidden">
+          <div className="bg-surface2/70 backdrop-blur-xl border border-subtle rounded-xl overflow-hidden shadow-card">
             <div className="overflow-x-auto max-h-96">
-              <table className="w-full text-left">
+              <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-surface3/50 border-b border-subtle">
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider w-8"></th>
+                  <tr className="bg-surface3/60 border-b border-subtle sticky top-0">
+                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider w-8" />
                     <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider">
                       Stock
                     </th>
@@ -126,62 +133,50 @@ export default function WatchlistScreen({ stocks }) {
                 </thead>
                 <tbody>
                   {(stocks || [])
-                    .sort(
-                      (a, b) => Math.abs(b.pct_change) - Math.abs(a.pct_change),
-                    )
+                    .slice()
+                    .sort((a, b) => Math.abs(b.pct_change) - Math.abs(a.pct_change))
                     .slice(0, 20)
-                    .map((stock) => (
-                      <tr
-                        key={stock.symbol}
-                        className="border-b border-subtle/50 hover:bg-surface3/20 transition-colors"
-                      >
-                        <td className="py-3 px-4">
-                          <button
-                            onClick={() => toggleWatchlist(stock.symbol)}
-                            className={`text-lg transition-colors hover:scale-110 ${
-                              watchlist.includes(stock.symbol)
-                                ? "opacity-100"
-                                : "opacity-40 hover:opacity-70"
-                            }`}
-                            title={
-                              watchlist.includes(stock.symbol)
-                                ? "Remove from watchlist"
-                                : "Add to watchlist"
-                            }
-                          >
-                            ⭐
-                          </button>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="text-sm font-semibold text-primary">
-                            {stock.symbol}
-                          </div>
-                          <div className="text-xs text-faint">
-                            {stock.sector}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <div className="text-sm font-mono text-primary">
-                            ₹
-                            {stock.ltp?.toLocaleString("en-IN", {
-                              maximumFractionDigits: 2,
-                            })}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          <span
-                            className={`text-sm font-semibold ${
-                              stock.pct_change >= 0
-                                ? "text-green-400"
-                                : "text-red-400"
-                            }`}
-                          >
-                            {stock.pct_change >= 0 ? "+" : ""}
-                            {stock.pct_change}%
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    .map((stock) => {
+                      const isWatched = watchlist.includes(stock.symbol);
+                      const isPositive = stock.pct_change >= 0;
+                      return (
+                        <tr
+                          key={stock.symbol}
+                          className="border-b border-subtle/70 hover:bg-surface3/40 transition-colors"
+                        >
+                          <td className="py-3 px-4">
+                            <button
+                              onClick={() => toggleWatchlist(stock.symbol)}
+                              className={`transition-all hover:scale-110 ${
+                                isWatched ? "text-accent-amber" : "text-faint hover:text-accent-amber"
+                              }`}
+                              title={isWatched ? "Remove from watchlist" : "Add to watchlist"}
+                            >
+                              <Star size={16} fill={isWatched ? "currentColor" : "none"} />
+                            </button>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="text-sm font-semibold text-primary">{stock.symbol}</div>
+                            <div className="text-xs text-faint">{stock.sector}</div>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="text-sm font-mono text-primary tabular-nums">
+                              ₹{stock.ltp?.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span
+                              className={`text-sm font-semibold tabular-nums ${
+                                isPositive ? "text-bull" : "text-bear"
+                              }`}
+                            >
+                              {isPositive ? "+" : ""}
+                              {stock.pct_change}%
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>

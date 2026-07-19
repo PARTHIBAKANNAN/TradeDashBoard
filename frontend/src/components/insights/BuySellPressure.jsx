@@ -1,4 +1,6 @@
 import React, { useMemo } from "react";
+import { Scale } from "lucide-react";
+import SplitBar from "../ui/SplitBar.jsx";
 
 // Aggregate market-wide order-flow imbalance across the whole watchlist,
 // using tot_buy_qty/tot_sell_qty already carried on FYERS ticks (captured in
@@ -19,28 +21,21 @@ export default function BuySellPressure({ stocks }) {
   const sellPct = total ? (sellQty / total) * 100 : 50;
 
   return (
-    <div className="bg-surface2/80 backdrop-blur-xl border border-subtle rounded-lg px-5 py-3 flex items-center gap-5 shadow-glow-sm">
-      <span className="text-xs font-bold text-muted uppercase tracking-wider whitespace-nowrap">
+    <div className="rounded-xl border border-subtle bg-surface2/70 backdrop-blur-xl shadow-card px-5 py-3.5 flex items-center gap-5">
+      <span className="flex items-center gap-1.5 text-xs font-bold text-muted uppercase tracking-wider whitespace-nowrap">
+        <Scale size={13} className="text-accent-blue" />
         Buy/Sell Pressure
       </span>
-      <div className="flex-1 h-2.5 rounded-full overflow-hidden flex bg-surface3">
-        {buyPct > 0 && (
-          <div style={{ width: `${buyPct}%` }} className="bg-green-500" />
-        )}
-        {sellPct > 0 && (
-          <div style={{ width: `${sellPct}%` }} className="bg-red-500" />
-        )}
-      </div>
-      <div className="flex items-center gap-4 text-xs font-mono whitespace-nowrap">
-        <span className="text-green-400 font-bold">
-          {buyPct.toFixed(1)}% Buy
-        </span>
-        <span className="text-red-400 font-bold">
-          {sellPct.toFixed(1)}% Sell
-        </span>
-        {total === 0 && (
-          <span className="text-faint">(no order-flow data yet)</span>
-        )}
+      <SplitBar
+        segments={[
+          { pct: buyPct, className: "bg-bull" },
+          { pct: sellPct, className: "bg-bear" },
+        ]}
+      />
+      <div className="flex items-center gap-4 text-xs font-mono whitespace-nowrap tabular-nums">
+        <span className="text-bull font-bold">{buyPct.toFixed(1)}% Buy</span>
+        <span className="text-bear font-bold">{sellPct.toFixed(1)}% Sell</span>
+        {total === 0 && <span className="text-faint">(no order-flow data yet)</span>}
       </div>
     </div>
   );

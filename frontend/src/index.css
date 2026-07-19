@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -11,77 +13,204 @@ body,
 /* ---------------------------------------------------------------------
    Theme tokens. Values are RGB CHANNEL TRIPLETS (no commas, no wrapper) —
    Tailwind's colors map (tailwind.config.js) wraps them in rgb(... / <alpha>)
-   so opacity modifiers like bg-surface/50 work.
+   so opacity modifiers like bg-surface/50 work correctly.
 
    :root carries the dark values as the default/fallback (matches this app's
    "default dark" decision even before JS applies a class). .light overrides
    the same variable names — flipping one class flips the whole palette.
-
-   IMPORTANT for safe migration: the dark values below are BYTE-IDENTICAL to
-   the zinc hex this app already used before theming existed (zinc-950 =
-   #09090b = "9 9 11", zinc-900 = #18181b = "24 24 27", etc.) — so a component
-   that's been migrated to e.g. bg-surface2 and one still on literal
-   bg-zinc-900 render pixel-identical output in dark mode, regardless of
-   migration order or interruption.
    --------------------------------------------------------------------- */
 :root,
 .dark {
-  --surface: 9 9 11; /* zinc-950 */
-  --surface2: 24 24 27; /* zinc-900 */
-  --surface3: 31 31 35; /* zinc-850 */
-  --border-subtle: 39 39 42; /* zinc-800 */
-  --border-strong: 63 63 70; /* zinc-700 */
-  --text-primary: 255 255 255; /* white */
-  --text-muted: 161 161 170; /* zinc-400 */
-  --text-faint: 113 113 122; /* zinc-500 */
+  --surface: 6 7 12; /* near-black terminal base */
+  --surface2: 13 15 23; /* raised panel */
+  --surface3: 20 23 34; /* raised-most / inputs */
+  --surface4: 27 31 45; /* hover state on surface3 */
+  --border-subtle: 30 34 48;
+  --border-strong: 48 54 74;
+  --text-primary: 244 246 251;
+  --text-muted: 148 156 178;
+  --text-faint: 96 103 125;
+
   --accent-violet: 167 139 250; /* violet-400 */
   --accent-blue: 96 165 250; /* blue-400 */
-  --glow-violet: 139 92 246; /* violet-500 */
+  --accent-cyan: 45 212 191; /* teal-400, secondary accent */
+  --accent-amber: 251 191 36; /* amber-400, warning/highlight */
+  --glow-violet: 139 92 246;
+
+  --bull: 52 211 153; /* emerald-400 */
+  --bull-strong: 16 185 129;
+  --bear: 251 113 133; /* rose-400 */
+  --bear-strong: 244 63 94;
 
   /* Canvas-only: full color strings (Canvas 2D can't consume channel
      triplets directly), kept separate from the Tailwind-facing tokens above. */
-  --canvas-prev-range: #374151;
-  --canvas-today-range: #3b82f6;
-  --canvas-ltp-tick: #ffffff;
+  --canvas-prev-range: #3a3f52;
+  --canvas-today-range-a: #60a5fa;
+  --canvas-today-range-b: #a78bfa;
+  --canvas-ltp-tick: #f4f6fb;
+  --canvas-ltp-glow: rgba(167, 139, 250, 0.55);
 }
 
 .light {
-  --surface: 248 247 251; /* soft lavender-white */
+  --surface: 246 247 250;
   --surface2: 255 255 255;
-  --surface3: 241 240 245;
-  --border-subtle: 229 227 237;
-  --border-strong: 212 209 224;
-  --text-primary: 24 24 27; /* near-black */
-  --text-muted: 82 82 91;
-  --text-faint: 113 113 122;
-  --accent-violet: 124 58 237; /* violet-600, more saturated for contrast on light */
-  --accent-blue: 37 99 235; /* blue-600 */
+  --surface3: 240 241 246;
+  --surface4: 231 233 240;
+  --border-subtle: 226 228 236;
+  --border-strong: 206 209 222;
+  --text-primary: 17 19 28;
+  --text-muted: 82 88 107;
+  --text-faint: 122 128 145;
+
+  --accent-violet: 124 58 237;
+  --accent-blue: 37 99 235;
+  --accent-cyan: 13 148 136;
+  --accent-amber: 217 119 6;
   --glow-violet: 139 92 246;
 
-  --canvas-prev-range: #d1d5db;
-  --canvas-today-range: #2563eb;
-  --canvas-ltp-tick: #18181b; /* dark tick — fixes the invisible-white-on-light bug */
+  --bull: 5 150 105;
+  --bull-strong: 4 120 87;
+  --bear: 225 29 72;
+  --bear-strong: 190 18 60;
+
+  --canvas-prev-range: #d4d7e0;
+  --canvas-today-range-a: #2563eb;
+  --canvas-today-range-b: #7c3aed;
+  --canvas-ltp-tick: #11131c;
+  --canvas-ltp-glow: rgba(124, 58, 237, 0.35);
 }
 
 body {
   margin: 0;
   background: rgb(var(--surface));
   transition: background-color 0.2s ease;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
-/* Subtle ambient glow behind the page in dark mode — minimized in light mode
-   per the "heavy glows read as muddy on light backgrounds" design call. */
+/* Ambient depth glow behind the page — a quiet trading-terminal backdrop,
+   restrained further in light mode per the "heavy glows read as muddy on
+   light backgrounds" design call. */
 .dark body {
   background-image:
     radial-gradient(
-      ellipse 900px 500px at 15% -10%,
-      rgb(139 92 246 / 0.1),
+      ellipse 1000px 560px at 12% -8%,
+      rgb(139 92 246 / 0.12),
       transparent 60%
     ),
     radial-gradient(
-      ellipse 700px 500px at 100% 10%,
-      rgb(96 165 250 / 0.08),
+      ellipse 800px 560px at 100% 0%,
+      rgb(45 212 191 / 0.07),
       transparent 55%
+    ),
+    radial-gradient(
+      ellipse 900px 700px at 50% 120%,
+      rgb(96 165 250 / 0.06),
+      transparent 60%
     );
   background-attachment: fixed;
+}
+
+.light body {
+  background-image:
+    radial-gradient(
+      ellipse 900px 500px at 15% -10%,
+      rgb(124 58 237 / 0.05),
+      transparent 60%
+    ),
+    radial-gradient(ellipse 700px 500px at 100% 10%, rgb(37 99 235 / 0.04), transparent 55%);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: rgb(var(--accent-violet) / 0.35);
+}
+
+/* Slim, unobtrusive scrollbars fit the terminal aesthetic better than the
+   platform default. */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--border-strong));
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--text-faint));
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.animate-shimmer {
+  background-size: 200% 100%;
+  animation: shimmer 2.4s linear infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgb(var(--bull) / 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 8px rgb(var(--bull) / 0);
+  }
+}
+.animate-pulse-ring {
+  animation: pulse-ring 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.font-display {
+  font-feature-settings: "ss01", "ss02";
+  letter-spacing: -0.01em;
+}
+
+/* Premium stepped range input (used by the intraday signal-time filter). */
+.slider-premium {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgb(var(--accent-blue)) 0%,
+    rgb(var(--accent-violet)) var(--slider-fill, 0%),
+    rgb(var(--surface3)) var(--slider-fill, 0%)
+  );
+  outline: none;
+}
+.slider-premium::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: rgb(var(--text-primary));
+  border: 3px solid rgb(var(--accent-violet));
+  box-shadow: 0 0 0 4px rgb(var(--accent-violet) / 0.2), 0 2px 6px rgb(0 0 0 / 0.5);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.slider-premium::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+.slider-premium::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: rgb(var(--text-primary));
+  border: 3px solid rgb(var(--accent-violet));
+  box-shadow: 0 0 0 4px rgb(var(--accent-violet) / 0.2), 0 2px 6px rgb(0 0 0 / 0.5);
+  cursor: pointer;
+}
+.slider-premium::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: transparent;
 }
