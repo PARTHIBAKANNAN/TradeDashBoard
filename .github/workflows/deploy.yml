@@ -72,6 +72,11 @@ jobs:
             set -euo pipefail
             cd /home/ubuntu/app
             echo "==> syncing repo (deploy/deploy.sh must be the freshly-pulled version before we run it)"
+            # Captured BEFORE the reset below moves HEAD, and handed to
+            # deploy.sh explicitly — deploy.sh can no longer derive its own
+            # "previous commit" via `git rev-parse HEAD` once we've already
+            # reset it here, which would make rollback a no-op.
+            PREV_SHA=$(git rev-parse HEAD)
             git fetch origin main
             git reset --hard origin/main
-            bash deploy/deploy.sh
+            PREV_SHA="$PREV_SHA" bash deploy/deploy.sh

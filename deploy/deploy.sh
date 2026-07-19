@@ -93,7 +93,12 @@ on_unexpected_error() {
 trap 'on_unexpected_error $LINENO' ERR
 
 # ---- 0. Snapshot current state, for both rollback and the FYERS-continuity check ----
-PREV_SHA=$(git rev-parse HEAD)
+# PREV_SHA may already be set by the caller (the GitHub Actions workflow
+# passes it in, captured before its own git reset moved HEAD — see
+# .github/workflows/deploy.yml). Falls back to the working tree's current
+# HEAD for a standalone/manual run, where this script's own reset below
+# hasn't happened yet either.
+PREV_SHA="${PREV_SHA:-$(git rev-parse HEAD)}"
 log "current commit: $PREV_SHA"
 
 PRE_HEALTH=$(health_snapshot)
