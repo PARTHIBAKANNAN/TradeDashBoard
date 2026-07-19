@@ -125,7 +125,14 @@ Run **one replica only** (single FYERS websocket per app). Front it with the sam
   the two would fight over the single FYERS websocket. Local dev: set `DATA_ENGINE_ENABLED=false`.
 - Token auto-renews daily (refresh-token flow at 08:45 IST; falls back to TOTP; then to a manual
   "Connect FYERS" click if both fail). The dashboard shows a banner when FYERS is disconnected.
-- **Deploys are automatic**: pushing to `main` triggers `.github/workflows/deploy.yml`, which SSHes
-  into the VM and runs `deploy/deploy.sh` (git reset --hard to origin/main, reinstall deps, rebuild
-  frontend, restart the `tradedashboard-backend` service). Manual redeploy: `bash ~/app/deploy.sh`
-  on the VM, or re-run the workflow from the Actions tab (`workflow_dispatch`).
+- **Deploys are automatic and self-validating**: pushing to `main` runs a `validate` job on GitHub's
+  runner first (frontend build, backend import check, backend unit tests) — if that fails, the VM is
+  never touched. Only then does the `deploy` job SSH in and run `deploy/deploy.sh`, which re-validates
+  on the VM itself (same checks, against the real venv), does an atomic frontend build swap (old build
+  kept as `dist.prev` until the new one is confirmed healthy), restarts the `tradedashboard-backend`
+  service, and polls `/api/health` until it responds. It also compares FYERS auth status before/after
+  the restart — if the session was connected before the deploy and drops after, that's treated as a
+  failure. Any failure past the validation step triggers an automatic rollback (previous commit,
+  previous backend deps, previous frontend build, service restarted again) and the Actions run shows
+  red. Manual redeploy: `bash deploy/deploy.sh` on the VM (from `/home/ubuntu/app`), or re-run the
+  workflow from the Actions tab (`workflow_dispatch`).
