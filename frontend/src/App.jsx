@@ -98,7 +98,9 @@ function Login({ onSuccess }) {
     setBusy(true);
     setError("");
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error: authError } = await supabase.auth.signInWithPassword(
+        { email, password },
+      );
       if (authError || !data.session) {
         setError("Invalid email or password.");
         return;
@@ -202,8 +204,8 @@ function ConnectFyersBanner() {
       <div className="flex items-center gap-3 text-sm text-accent-amber">
         <AlertTriangle size={16} className="flex-shrink-0" />
         <span>
-          <b>FYERS not connected.</b> Live data is paused until you authorize the
-          broker account.
+          <b>FYERS not connected.</b> Live data is paused until you authorize
+          the broker account.
         </span>
       </div>
       <button
@@ -253,10 +255,18 @@ function Dashboard({ user, onLogout }) {
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
           >
-            {activeTab === "ranking" && <RankingScreen stocks={data.stocks || []} />}
-            {activeTab === "heatmap" && <HeatmapScreen stocks={data.stocks || []} />}
-            {activeTab === "insights" && <InsightsScreen stocks={data.stocks || []} />}
-            {activeTab === "watchlist" && <WatchlistScreen stocks={data.stocks || []} />}
+            {activeTab === "ranking" && (
+              <RankingScreen stocks={data.stocks || []} />
+            )}
+            {activeTab === "heatmap" && (
+              <HeatmapScreen stocks={data.stocks || []} />
+            )}
+            {activeTab === "insights" && (
+              <InsightsScreen stocks={data.stocks || []} />
+            )}
+            {activeTab === "watchlist" && (
+              <WatchlistScreen stocks={data.stocks || []} />
+            )}
           </motion.div>
         </AnimatePresence>
       </div>
@@ -272,7 +282,15 @@ const TABS = [
   { key: "watchlist", label: "Watchlist", icon: Star },
 ];
 
-function TopNavbar({ user, onLogout, activeTab, onTabChange, nifty, marketOpen, connected }) {
+function TopNavbar({
+  user,
+  onLogout,
+  activeTab,
+  onTabChange,
+  nifty,
+  marketOpen,
+  connected,
+}) {
   const niftyUp = (nifty.pct_change ?? 0) >= 0;
 
   return (
@@ -319,7 +337,9 @@ function TopNavbar({ user, onLogout, activeTab, onTabChange, nifty, marketOpen, 
               </div>
               <div className="font-mono text-sm font-bold tabular-nums">
                 <span className="text-primary">
-                  {nifty.ltp?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  {nifty.ltp?.toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                  })}
                 </span>
                 <span className={`ml-2 ${niftyUp ? "text-bull" : "text-bear"}`}>
                   {niftyUp ? "+" : ""}
@@ -354,7 +374,9 @@ function TopNavbar({ user, onLogout, activeTab, onTabChange, nifty, marketOpen, 
                 key={tab.key}
                 onClick={() => onTabChange(tab.key)}
                 className={`relative px-4 py-2 text-sm font-semibold transition-colors flex items-center gap-2 rounded-lg ${
-                  isActive ? "text-primary" : "text-muted hover:text-primary hover:bg-surface3/40"
+                  isActive
+                    ? "text-primary"
+                    : "text-muted hover:text-primary hover:bg-surface3/40"
                 }`}
               >
                 {isActive && (

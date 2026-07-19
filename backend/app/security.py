@@ -6,6 +6,7 @@ the user's own Supabase project). This module only verifies the resulting sessio
 JWT and manages our own session cookie, which keeps the SSE stream (native
 EventSource can't send an Authorization header) working unchanged.
 """
+
 from . import config, supabase_auth
 
 

@@ -33,11 +33,16 @@ export default function WatchlistScreen({ stocks }) {
             <span className="grid place-items-center w-9 h-9 rounded-lg bg-accent-blue/10 text-accent-blue border border-accent-blue/20">
               <Star size={17} />
             </span>
-            <h2 className="text-lg font-bold text-primary font-display">My Watchlist</h2>
+            <h2 className="text-lg font-bold text-primary font-display">
+              My Watchlist
+            </h2>
           </div>
           <div className="flex items-center gap-4">
             <div className="relative flex-1">
-              <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-faint" />
+              <Search
+                size={14}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-faint"
+              />
               <input
                 type="text"
                 placeholder="Search watchlist..."
@@ -134,7 +139,9 @@ export default function WatchlistScreen({ stocks }) {
                 <tbody>
                   {(stocks || [])
                     .slice()
-                    .sort((a, b) => Math.abs(b.pct_change) - Math.abs(a.pct_change))
+                    .sort(
+                      (a, b) => Math.abs(b.pct_change) - Math.abs(a.pct_change),
+                    )
                     .slice(0, 20)
                     .map((stock) => {
                       const isWatched = watchlist.includes(stock.symbol);
@@ -148,20 +155,36 @@ export default function WatchlistScreen({ stocks }) {
                             <button
                               onClick={() => toggleWatchlist(stock.symbol)}
                               className={`transition-all hover:scale-110 ${
-                                isWatched ? "text-accent-amber" : "text-faint hover:text-accent-amber"
+                                isWatched
+                                  ? "text-accent-amber"
+                                  : "text-faint hover:text-accent-amber"
                               }`}
-                              title={isWatched ? "Remove from watchlist" : "Add to watchlist"}
+                              title={
+                                isWatched
+                                  ? "Remove from watchlist"
+                                  : "Add to watchlist"
+                              }
                             >
-                              <Star size={16} fill={isWatched ? "currentColor" : "none"} />
+                              <Star
+                                size={16}
+                                fill={isWatched ? "currentColor" : "none"}
+                              />
                             </button>
                           </td>
                           <td className="py-3 px-4">
-                            <div className="text-sm font-semibold text-primary">{stock.symbol}</div>
-                            <div className="text-xs text-faint">{stock.sector}</div>
+                            <div className="text-sm font-semibold text-primary">
+                              {stock.symbol}
+                            </div>
+                            <div className="text-xs text-faint">
+                              {stock.sector}
+                            </div>
                           </td>
                           <td className="py-3 px-4 text-right">
                             <div className="text-sm font-mono text-primary tabular-nums">
-                              ₹{stock.ltp?.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                              ₹
+                              {stock.ltp?.toLocaleString("en-IN", {
+                                maximumFractionDigits: 2,
+                              })}
                             </div>
                           </td>
                           <td className="py-3 px-4 text-center">

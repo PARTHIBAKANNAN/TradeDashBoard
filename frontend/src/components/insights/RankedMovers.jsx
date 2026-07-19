@@ -9,12 +9,18 @@ export default function RankedMovers({ stocks }) {
   const { gainers, losers, mostActive, rsLeaders } = useMemo(() => {
     const list = stocks || [];
     return {
-      gainers: [...list].sort((a, b) => b.pct_change - a.pct_change).slice(0, TOP_N),
-      losers: [...list].sort((a, b) => a.pct_change - b.pct_change).slice(0, TOP_N),
+      gainers: [...list]
+        .sort((a, b) => b.pct_change - a.pct_change)
+        .slice(0, TOP_N),
+      losers: [...list]
+        .sort((a, b) => a.pct_change - b.pct_change)
+        .slice(0, TOP_N),
       mostActive: [...list]
         .sort((a, b) => (b.traded_value || 0) - (a.traded_value || 0))
         .slice(0, TOP_N),
-      rsLeaders: [...list].sort((a, b) => b.relative_strength - a.relative_strength).slice(0, TOP_N),
+      rsLeaders: [...list]
+        .sort((a, b) => b.relative_strength - a.relative_strength)
+        .slice(0, TOP_N),
     };
   }, [stocks]);
 
@@ -39,7 +45,11 @@ export default function RankedMovers({ stocks }) {
         icon={BarChart2}
         rows={mostActive}
         showRank
-        renderValue={(s) => <span className="text-accent-blue">{formatValue(s.traded_value)}</span>}
+        renderValue={(s) => (
+          <span className="text-accent-blue">
+            {formatValue(s.traded_value)}
+          </span>
+        )}
       />
       <MiniList
         title="RS vs Nifty"
@@ -47,7 +57,9 @@ export default function RankedMovers({ stocks }) {
         rows={rsLeaders}
         showRank
         renderValue={(s) => (
-          <span className={s.relative_strength >= 0 ? "text-bull" : "text-bear"}>
+          <span
+            className={s.relative_strength >= 0 ? "text-bull" : "text-bear"}
+          >
             {s.relative_strength >= 0 ? "+" : ""}
             {s.relative_strength}
           </span>

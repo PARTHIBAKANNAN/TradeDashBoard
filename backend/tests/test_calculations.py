@@ -8,7 +8,8 @@ from datetime import datetime
 
 from app.calculations import (day_range_position, evaluate_orb,
                               first_candle_extreme_intact, has_two_sided_range,
-                              intraday_relative_strength, pct_change, range_map)
+                              intraday_relative_strength, pct_change,
+                              range_map)
 from app.config import IST
 
 
@@ -96,7 +97,9 @@ def test_first_candle_extreme_intact():
 
     # Bearish: candle-1 high (102) must still be the day's high so far.
     assert first_candle_extreme_intact(False, 102.0, 99.0, today_high=102.0, today_low=95.0) is True
-    assert first_candle_extreme_intact(False, 102.0, 99.0, today_high=105.0, today_low=95.0) is False
+    assert (
+        first_candle_extreme_intact(False, 102.0, 99.0, today_high=105.0, today_low=95.0) is False
+    )
     assert first_candle_extreme_intact(False, 0.0, 0.0, today_high=102.0, today_low=95.0) is False
 
 

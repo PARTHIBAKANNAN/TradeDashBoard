@@ -12,8 +12,12 @@ export default function InsightsScreen({ stocks }) {
             <Lightbulb size={17} />
           </span>
           <div>
-            <h2 className="text-lg font-bold text-primary font-display">Market Insights</h2>
-            <p className="text-xs text-faint">Real-time analytics and market breadth indicators</p>
+            <h2 className="text-lg font-bold text-primary font-display">
+              Market Insights
+            </h2>
+            <p className="text-xs text-faint">
+              Real-time analytics and market breadth indicators
+            </p>
           </div>
         </div>
 

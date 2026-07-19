@@ -45,7 +45,9 @@ export default function BreakoutLeaderboard({ stocks }) {
           );
         })}
         {signals.length === 0 && (
-          <p className="text-xs text-faint">No active breakout signals right now.</p>
+          <p className="text-xs text-faint">
+            No active breakout signals right now.
+          </p>
         )}
       </div>
     </Card>

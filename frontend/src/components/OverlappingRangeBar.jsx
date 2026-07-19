@@ -28,11 +28,17 @@ const OverlappingRangeBar = React.memo(({ ranges }) => {
     // (These are full color strings, e.g. "#ffffff", not the channel-triplet
     // tokens Tailwind uses, since Canvas needs a value it can assign as-is.)
     const styles = getComputedStyle(document.documentElement);
-    const prevRangeColor = styles.getPropertyValue("--canvas-prev-range").trim() || "#3a3f52";
-    const todayA = styles.getPropertyValue("--canvas-today-range-a").trim() || "#60a5fa";
-    const todayB = styles.getPropertyValue("--canvas-today-range-b").trim() || "#a78bfa";
-    const ltpTickColor = styles.getPropertyValue("--canvas-ltp-tick").trim() || "#f4f6fb";
-    const ltpGlow = styles.getPropertyValue("--canvas-ltp-glow").trim() || "rgba(167,139,250,0.55)";
+    const prevRangeColor =
+      styles.getPropertyValue("--canvas-prev-range").trim() || "#3a3f52";
+    const todayA =
+      styles.getPropertyValue("--canvas-today-range-a").trim() || "#60a5fa";
+    const todayB =
+      styles.getPropertyValue("--canvas-today-range-b").trim() || "#a78bfa";
+    const ltpTickColor =
+      styles.getPropertyValue("--canvas-ltp-tick").trim() || "#f4f6fb";
+    const ltpGlow =
+      styles.getPropertyValue("--canvas-ltp-glow").trim() ||
+      "rgba(167,139,250,0.55)";
 
     const pct = (v) => (Math.max(0, Math.min(100, v)) / 100) * W;
 

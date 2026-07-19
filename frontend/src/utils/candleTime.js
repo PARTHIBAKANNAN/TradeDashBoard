@@ -23,6 +23,7 @@ export const CANDLE_MARKS = (() => {
 export function timeStrToMinutes(hhmm) {
   if (!hhmm) return null;
   const parts = hhmm.split(":").map(Number);
-  if (parts.length < 2 || Number.isNaN(parts[0]) || Number.isNaN(parts[1])) return null;
+  if (parts.length < 2 || Number.isNaN(parts[0]) || Number.isNaN(parts[1]))
+    return null;
   return parts[0] * 60 + parts[1];
 }

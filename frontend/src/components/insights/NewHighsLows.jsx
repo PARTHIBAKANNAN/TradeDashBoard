@@ -30,13 +30,17 @@ export default function NewHighsLows({ stocks }) {
         title={`New Highs (≥${NEAR_HIGH_THRESHOLD}% of day range)`}
         icon={ArrowUpCircle}
         rows={nearHigh}
-        renderValue={(s) => <span className="text-bull">{s.day_range_pos}%</span>}
+        renderValue={(s) => (
+          <span className="text-bull">{s.day_range_pos}%</span>
+        )}
       />
       <MiniList
         title={`New Lows (≤${NEAR_LOW_THRESHOLD}% of day range)`}
         icon={ArrowDownCircle}
         rows={nearLow}
-        renderValue={(s) => <span className="text-bear">{s.day_range_pos}%</span>}
+        renderValue={(s) => (
+          <span className="text-bear">{s.day_range_pos}%</span>
+        )}
       />
     </div>
   );

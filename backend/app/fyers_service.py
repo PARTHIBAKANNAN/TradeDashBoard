@@ -10,8 +10,9 @@ FYERS data plane:
 """
 
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from datetime import time as dt_time
+from datetime import timedelta
 
 from fyers_apiv3 import fyersModel
 from fyers_apiv3.FyersWebsocket import data_ws
@@ -147,12 +148,16 @@ class DataEngine:
                     # App-level (not symbol-level) error — every remaining symbol
                     # would fail identically, so stop instead of wasting the rest
                     # of the rate-limit budget on calls that can't succeed.
-                    print(f"[backfill] prev-day history() unavailable, aborting rest of pass: {resp}")
+                    print(
+                        f"[backfill] prev-day history() unavailable, aborting rest of pass: {resp}"
+                    )
                     return
                 if isinstance(resp, dict) and resp.get("s") == "error":
                     if not warned:
-                        print(f"[backfill] prev-day history() error (will repeat per-symbol, "
-                              f"only logging once): {resp}")
+                        print(
+                            f"[backfill] prev-day history() error (will repeat per-symbol, "
+                            f"only logging once): {resp}"
+                        )
                         warned = True
                     continue
                 candles = resp.get("candles", []) if isinstance(resp, dict) else []
@@ -217,8 +222,10 @@ class DataEngine:
                     return
                 if isinstance(resp, dict) and resp.get("s") == "error":
                     if not warned:
-                        print(f"[backfill] ORB history() error (will repeat per-symbol, "
-                              f"only logging once): {resp}")
+                        print(
+                            f"[backfill] ORB history() error (will repeat per-symbol, "
+                            f"only logging once): {resp}"
+                        )
                         warned = True
                     continue
                 candles = resp.get("candles", []) if isinstance(resp, dict) else []
@@ -275,11 +282,17 @@ class DataEngine:
                     }
                 )
                 if isinstance(resp, dict) and resp.get("code") in self._NON_RETRYABLE_CODES:
-                    print(f"[backfill] ORB-quality history() unavailable, aborting rest of pass: {resp}")
+                    print(
+                        f"[backfill] ORB-quality history() unavailable, aborting rest of pass: {resp}"
+                    )
                     return
                 candles = resp.get("candles", []) if isinstance(resp, dict) else []
                 opening = sorted(
-                    (c for c in candles if c1_start <= datetime.fromtimestamp(c[0], IST).time() < c1_end),
+                    (
+                        c
+                        for c in candles
+                        if c1_start <= datetime.fromtimestamp(c[0], IST).time() < c1_end
+                    ),
                     key=lambda c: c[0],
                 )
 

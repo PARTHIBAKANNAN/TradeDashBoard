@@ -17,7 +17,9 @@ export default function HeatmapScreen({ stocks }) {
               <Flame size={17} />
             </span>
             <div>
-              <h2 className="text-lg font-bold text-primary font-display">Market Heatmap</h2>
+              <h2 className="text-lg font-bold text-primary font-display">
+                Market Heatmap
+              </h2>
               <AnimatePresence mode="wait">
                 <motion.p
                   key={drilldownSector || "all"}
@@ -28,13 +30,24 @@ export default function HeatmapScreen({ stocks }) {
                 >
                   {drilldownSector ? (
                     <>
-                      <span className="text-muted font-semibold">{drilldownSector}</span>
-                      <span className="text-faint"> stocks · size = traded value · color = % change</span>
+                      <span className="text-muted font-semibold">
+                        {drilldownSector}
+                      </span>
+                      <span className="text-faint">
+                        {" "}
+                        stocks · size = traded value · color = % change
+                      </span>
                     </>
                   ) : (
                     <>
-                      <span className="text-muted font-semibold">All sectors</span>
-                      <span className="text-faint"> · size = total traded value · color = sector avg % change</span>
+                      <span className="text-muted font-semibold">
+                        All sectors
+                      </span>
+                      <span className="text-faint">
+                        {" "}
+                        · size = total traded value · color = sector avg %
+                        change
+                      </span>
                     </>
                   )}
                 </motion.p>
@@ -66,15 +79,21 @@ export default function HeatmapScreen({ stocks }) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
             <div className="flex items-center gap-2">
               <span className="inline-block w-3 h-3 rounded-sm bg-bull" />
-              <span className="text-muted">Positive change (green) indicates bullish momentum</span>
+              <span className="text-muted">
+                Positive change (green) indicates bullish momentum
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <span className="inline-block w-3 h-3 rounded-sm bg-bear" />
-              <span className="text-muted">Negative change (red) indicates bearish momentum</span>
+              <span className="text-muted">
+                Negative change (red) indicates bearish momentum
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <span className="inline-block w-3 h-3 rounded-sm bg-faint" />
-              <span className="text-muted">Larger tiles = higher trading volume and value</span>
+              <span className="text-muted">
+                Larger tiles = higher trading volume and value
+              </span>
             </div>
           </div>
         </Card>

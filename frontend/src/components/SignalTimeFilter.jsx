@@ -43,7 +43,9 @@ export default function SignalTimeFilter({ value, onChange }) {
               </span>
             </>
           ) : (
-            <span className="text-sm font-bold text-faint">All day · no time filter</span>
+            <span className="text-sm font-bold text-faint">
+              All day · no time filter
+            </span>
           )}
         </div>
 
@@ -60,11 +62,13 @@ export default function SignalTimeFilter({ value, onChange }) {
         />
 
         <div className="flex justify-between mt-2">
-          {["09:15", "10:15", "11:15", "12:15", "13:15", "14:15", "15:15"].map((t) => (
-            <span key={t} className="text-[9px] font-mono text-faint">
-              {t}
-            </span>
-          ))}
+          {["09:15", "10:15", "11:15", "12:15", "13:15", "14:15", "15:15"].map(
+            (t) => (
+              <span key={t} className="text-[9px] font-mono text-faint">
+                {t}
+              </span>
+            ),
+          )}
         </div>
 
         <p className="text-[10px] text-faint mt-2 leading-relaxed">

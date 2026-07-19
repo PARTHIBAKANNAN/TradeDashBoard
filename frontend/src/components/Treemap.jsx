@@ -79,7 +79,11 @@ const Treemap = React.memo(({ stocks, drilldownSector, onSelectSector }) => {
   }, [stocks, size.width, size.height, drilldownSector]);
 
   return (
-    <div ref={containerRef} className="relative w-full" style={{ height: size.height }}>
+    <div
+      ref={containerRef}
+      className="relative w-full"
+      style={{ height: size.height }}
+    >
       <AnimatePresence mode="popLayout">
         {layout &&
           layout.leaves().map((node) => {
@@ -99,13 +103,17 @@ const Treemap = React.memo(({ stocks, drilldownSector, onSelectSector }) => {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.94 }}
                 transition={{ duration: 0.22, ease: "easeOut" }}
-                whileHover={clickable ? { scale: 1.015, zIndex: 10 } : { zIndex: 10 }}
+                whileHover={
+                  clickable ? { scale: 1.015, zIndex: 10 } : { zIndex: 10 }
+                }
                 title={
                   drilldownSector
                     ? `${node.data.name}  ${pct >= 0 ? "+" : ""}${pct}%  LTP ${node.data.ltp}`
                     : `${node.data.name}  ${node.data.count} stocks  avg ${pct >= 0 ? "+" : ""}${pct}%`
                 }
-                onClick={clickable ? () => onSelectSector(node.data.name) : undefined}
+                onClick={
+                  clickable ? () => onSelectSector(node.data.name) : undefined
+                }
                 className={`absolute flex flex-col items-center justify-center text-white overflow-hidden rounded-md border border-black/25 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] ${
                   clickable ? "cursor-pointer" : ""
                 }`}

@@ -117,7 +117,11 @@ body {
       rgb(124 58 237 / 0.05),
       transparent 60%
     ),
-    radial-gradient(ellipse 700px 500px at 100% 10%, rgb(37 99 235 / 0.04), transparent 55%);
+    radial-gradient(
+      ellipse 700px 500px at 100% 10%,
+      rgb(37 99 235 / 0.04),
+      transparent 55%
+    );
   background-attachment: fixed;
 }
 
@@ -193,7 +197,9 @@ body {
   border-radius: 999px;
   background: rgb(var(--text-primary));
   border: 3px solid rgb(var(--accent-violet));
-  box-shadow: 0 0 0 4px rgb(var(--accent-violet) / 0.2), 0 2px 6px rgb(0 0 0 / 0.5);
+  box-shadow:
+    0 0 0 4px rgb(var(--accent-violet) / 0.2),
+    0 2px 6px rgb(0 0 0 / 0.5);
   cursor: pointer;
   transition: transform 0.15s ease;
 }
@@ -206,7 +212,9 @@ body {
   border-radius: 999px;
   background: rgb(var(--text-primary));
   border: 3px solid rgb(var(--accent-violet));
-  box-shadow: 0 0 0 4px rgb(var(--accent-violet) / 0.2), 0 2px 6px rgb(0 0 0 / 0.5);
+  box-shadow:
+    0 0 0 4px rgb(var(--accent-violet) / 0.2),
+    0 2px 6px rgb(0 0 0 / 0.5);
   cursor: pointer;
 }
 .slider-premium::-moz-range-track {

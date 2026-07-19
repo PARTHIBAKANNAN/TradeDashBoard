@@ -28,13 +28,21 @@ const WatchlistRow = React.memo(({ stock, index = 0, leading }) => {
         <div className="font-bold text-primary tracking-wide group-hover:text-accent-blue transition-colors">
           {stock.symbol}
         </div>
-        <div className="text-[11px] text-faint font-semibold">{stock.sector}</div>
+        <div className="text-[11px] text-faint font-semibold">
+          {stock.sector}
+        </div>
       </td>
 
       {/* LTP */}
       <td className="py-3 px-4 font-mono text-right tabular-nums">
-        <span className={isPositive ? "text-bull font-semibold" : "text-bear font-semibold"}>
-          {Number(stock.ltp).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+        <span
+          className={
+            isPositive ? "text-bull font-semibold" : "text-bear font-semibold"
+          }
+        >
+          {Number(stock.ltp).toLocaleString("en-IN", {
+            minimumFractionDigits: 2,
+          })}
         </span>
         <div
           className={`text-[11px] flex items-center justify-end gap-0.5 ${
@@ -85,7 +93,9 @@ const WatchlistRow = React.memo(({ stock, index = 0, leading }) => {
 
       {/* Relative Strength vs Nifty */}
       <td className="py-3 px-4 font-mono text-right tabular-nums">
-        <span className={`font-bold ${isRsPositive ? "text-bull" : "text-bear"}`}>
+        <span
+          className={`font-bold ${isRsPositive ? "text-bull" : "text-bear"}`}
+        >
           {isRsPositive ? "+" : ""}
           {stock.relative_strength}
         </span>

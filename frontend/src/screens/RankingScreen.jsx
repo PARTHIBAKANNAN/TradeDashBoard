@@ -1,15 +1,32 @@
 import React, { useMemo, useState } from "react";
-import { SlidersHorizontal, X, RotateCcw, TrendingUp, Building2, ArrowUpDown, Zap } from "lucide-react";
+import {
+  SlidersHorizontal,
+  X,
+  RotateCcw,
+  TrendingUp,
+  Building2,
+  ArrowUpDown,
+  Zap,
+} from "lucide-react";
 import WatchlistRow from "../components/WatchlistRow.jsx";
 import SignalTimeFilter from "../components/SignalTimeFilter.jsx";
 import Card from "../components/ui/Card.jsx";
 import { CANDLE_MARKS, timeStrToMinutes } from "../utils/candleTime.js";
 
 const SORTS = {
-  rs_desc: { label: "RS ▼ (strongest)", fn: (a, b) => b.relative_strength - a.relative_strength },
-  rs_asc: { label: "RS ▲ (weakest)", fn: (a, b) => a.relative_strength - b.relative_strength },
+  rs_desc: {
+    label: "RS ▼ (strongest)",
+    fn: (a, b) => b.relative_strength - a.relative_strength,
+  },
+  rs_asc: {
+    label: "RS ▲ (weakest)",
+    fn: (a, b) => a.relative_strength - b.relative_strength,
+  },
   chg_desc: { label: "% Change ▼", fn: (a, b) => b.pct_change - a.pct_change },
-  pos_desc: { label: "Day range % ▼", fn: (a, b) => b.day_range_pos - a.day_range_pos },
+  pos_desc: {
+    label: "Day range % ▼",
+    fn: (a, b) => b.day_range_pos - a.day_range_pos,
+  },
   sym: { label: "Symbol A-Z", fn: (a, b) => a.symbol.localeCompare(b.symbol) },
 };
 
@@ -26,17 +43,21 @@ export default function RankingScreen({ stocks }) {
   }, [stocks]);
 
   const filteredStocks = useMemo(() => {
-    const timeThreshold = signalTimeIndex > 0 ? CANDLE_MARKS[signalTimeIndex - 1].minutes : null;
+    const timeThreshold =
+      signalTimeIndex > 0 ? CANDLE_MARKS[signalTimeIndex - 1].minutes : null;
     const rows = (stocks || []).filter((stock) => {
       if (selectedSignal !== "All signals") {
-        if (!stock.signal || !stock.signal.includes(selectedSignal)) return false;
+        if (!stock.signal || !stock.signal.includes(selectedSignal))
+          return false;
       }
-      if (selectedSector !== "All sectors" && stock.sector !== selectedSector) return false;
+      if (selectedSector !== "All sectors" && stock.sector !== selectedSector)
+        return false;
       if (timeThreshold !== null) {
         const hasSignal = stock.signal && stock.signal !== "None";
         if (!hasSignal) return false;
         const signalMinutes = timeStrToMinutes(stock.signal_time);
-        if (signalMinutes === null || signalMinutes > timeThreshold) return false;
+        if (signalMinutes === null || signalMinutes > timeThreshold)
+          return false;
       }
       return true;
     });
@@ -113,7 +134,10 @@ export default function RankingScreen({ stocks }) {
                   </select>
                 </FilterGroup>
 
-                <SignalTimeFilter value={signalTimeIndex} onChange={setSignalTimeIndex} />
+                <SignalTimeFilter
+                  value={signalTimeIndex}
+                  onChange={setSignalTimeIndex}
+                />
 
                 <button
                   onClick={resetFilters}
@@ -150,7 +174,11 @@ export default function RankingScreen({ stocks }) {
               </div>
             )}
             <div className="text-xs text-faint ml-auto">
-              Showing <span className="font-bold text-primary">{filteredStocks.length}</span> stocks
+              Showing{" "}
+              <span className="font-bold text-primary">
+                {filteredStocks.length}
+              </span>{" "}
+              stocks
             </div>
           </div>
 
@@ -186,7 +214,8 @@ export default function RankingScreen({ stocks }) {
             </div>
             {filteredStocks.length === 0 && (
               <div className="py-12 text-center text-faint text-sm">
-                No stocks match the current filters. Try adjusting your criteria.
+                No stocks match the current filters. Try adjusting your
+                criteria.
               </div>
             )}
           </div>

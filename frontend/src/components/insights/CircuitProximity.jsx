@@ -29,7 +29,9 @@ export default function CircuitProximity({ stocks }) {
     return rows.sort((a, b) => a.distPct - b.distPct);
   }, [stocks]);
 
-  const anyCircuitDataAtAll = (stocks || []).some((s) => s.upper_ckt > 0 || s.lower_ckt > 0);
+  const anyCircuitDataAtAll = (stocks || []).some(
+    (s) => s.upper_ckt > 0 || s.lower_ckt > 0,
+  );
 
   return (
     <Card
@@ -40,7 +42,10 @@ export default function CircuitProximity({ stocks }) {
     >
       <div className="space-y-1.5">
         {near.map((s) => (
-          <div key={`${s.symbol}-${s.side}`} className="flex items-center justify-between text-xs py-1">
+          <div
+            key={`${s.symbol}-${s.side}`}
+            className="flex items-center justify-between text-xs py-1"
+          >
             <div>
               <span className="font-bold text-primary">{s.symbol}</span>
               <span className="text-faint ml-2">{s.sector}</span>
@@ -50,7 +55,11 @@ export default function CircuitProximity({ stocks }) {
                 s.side === "upper" ? "text-bull" : "text-bear"
               }`}
             >
-              {s.side === "upper" ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
+              {s.side === "upper" ? (
+                <ArrowUp size={11} />
+              ) : (
+                <ArrowDown size={11} />
+              )}
               {s.side} · {s.distPct.toFixed(2)}%
             </span>
           </div>

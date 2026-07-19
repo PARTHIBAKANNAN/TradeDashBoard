@@ -39,11 +39,7 @@ export default function Card({
           {actions}
         </div>
       )}
-      <div
-        className={
-          bodyClassName || (title ? "px-4 pb-4" : "p-4")
-        }
-      >
+      <div className={bodyClassName || (title ? "px-4 pb-4" : "p-4")}>
         {children}
       </div>
     </div>
