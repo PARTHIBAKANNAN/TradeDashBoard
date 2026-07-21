@@ -31,7 +31,7 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "account": "",
         "local_database_path": null,
         "safety_version": "3.8.1",
-        "timestamp": "2026-07-20 11:38:24",
+        "timestamp": "2026-07-21 10:59:42",
         "packages_found": 11,
         "vulnerabilities_found": 14,
         "vulnerabilities_ignored": 0,
@@ -56,7 +56,7 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "git": {
             "branch": "main",
             "tag": "",
-            "commit": "49e5cd8f72fca20a2e10d3f687c31603e1a6c040",
+            "commit": "23686e32cf305ed37b40d92d69d350759d52c593",
             "dirty": "True",
             "origin": "https://github.com/PARTHIBAKANNAN/TradeDashBoard"
         },
@@ -756,6 +756,39 @@ We highly encourage switching to the new `scan` command which is easier to use, 
     "announcements": [],
     "vulnerabilities": [
         {
+            "vulnerability_id": "86217",
+            "package_name": "cryptography",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                "<46.0.5"
+            ],
+            "all_vulnerable_specs": [
+                "<46.0.5"
+            ],
+            "analyzed_version": "44.0.0",
+            "analyzed_requirement": {
+                "raw": "cryptography==44.0.0  # ES256/RS256 support for verifying Supabase JWTs",
+                "extras": [],
+                "marker": null,
+                "name": "cryptography",
+                "specifier": "==44.0.0",
+                "url": null,
+                "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
+            },
+            "advisory": "Affected versions of the cryptography package are vulnerable to Improper Input Validation due to missing prime-order subgroup validation for SECT elliptic-curve points. The public_key_from_numbers, EllipticCurvePublicNumbers.public_key(), load_der_public_key(), and load_pem_public_key() entry points accept attacker-supplied public keys without verifying that the provided point lies in the expected prime-order subgroup, enabling small-subgroup points to pass as valid.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2026-26007",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://getsafety.com/v/86217/97c"
+        },
+        {
             "vulnerability_id": "76170",
             "package_name": "cryptography",
             "ignored": {},
@@ -820,39 +853,6 @@ We highly encourage switching to the new `scan` command which is easier to use, 
             "severity": null,
             "affected_versions": [],
             "more_info_url": "https://getsafety.com/v/SFTY-20260327-04621/97c"
-        },
-        {
-            "vulnerability_id": "86217",
-            "package_name": "cryptography",
-            "ignored": {},
-            "ignored_reason": null,
-            "ignored_expires": null,
-            "vulnerable_spec": [
-                "<46.0.5"
-            ],
-            "all_vulnerable_specs": [
-                "<46.0.5"
-            ],
-            "analyzed_version": "44.0.0",
-            "analyzed_requirement": {
-                "raw": "cryptography==44.0.0  # ES256/RS256 support for verifying Supabase JWTs",
-                "extras": [],
-                "marker": null,
-                "name": "cryptography",
-                "specifier": "==44.0.0",
-                "url": null,
-                "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
-            },
-            "advisory": "Affected versions of the cryptography package are vulnerable to Improper Input Validation due to missing prime-order subgroup validation for SECT elliptic-curve points. The public_key_from_numbers, EllipticCurvePublicNumbers.public_key(), load_der_public_key(), and load_pem_public_key() entry points accept attacker-supplied public keys without verifying that the provided point lies in the expected prime-order subgroup, enabling small-subgroup points to pass as valid.",
-            "is_transitive": false,
-            "published_date": null,
-            "fixed_versions": [],
-            "closest_versions_without_known_vulnerabilities": [],
-            "resources": [],
-            "CVE": "CVE-2026-26007",
-            "severity": null,
-            "affected_versions": [],
-            "more_info_url": "https://getsafety.com/v/86217/97c"
         },
         {
             "vulnerability_id": "SFTY-20260615-96125",
@@ -1020,39 +1020,6 @@ We highly encourage switching to the new `scan` command which is easier to use, 
             "more_info_url": "https://getsafety.com/v/SFTY-20260615-02573/97c"
         },
         {
-            "vulnerability_id": "89028",
-            "package_name": "pyjwt",
-            "ignored": {},
-            "ignored_reason": null,
-            "ignored_expires": null,
-            "vulnerable_spec": [
-                "<2.12.0"
-            ],
-            "all_vulnerable_specs": [
-                "<2.12.0"
-            ],
-            "analyzed_version": "2.10.1",
-            "analyzed_requirement": {
-                "raw": "pyjwt==2.10.1",
-                "extras": [],
-                "marker": null,
-                "name": "pyjwt",
-                "specifier": "==2.10.1",
-                "url": null,
-                "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
-            },
-            "advisory": "Affected versions of this package are vulnerable to Insufficient Verification of Data Authenticity. The library does not validate the `crit` (Critical) Header Parameter as required by RFC 7515 \u00a74.1.11 \u2014 when a JWT contains a `crit` array listing extensions that the library does not understand, the token is accepted instead of rejected. An attacker can exploit this vulnerability by crafting JWTs with unknown critical extensions (e.g., MFA requirements, token binding, scope restrictions) that are silently ignored, potentially bypassing security policies or causing split-brain verification in mixed-library deployments where other RFC-compliant libraries would reject the same token.",
-            "is_transitive": false,
-            "published_date": null,
-            "fixed_versions": [],
-            "closest_versions_without_known_vulnerabilities": [],
-            "resources": [],
-            "CVE": "CVE-2026-32597",
-            "severity": null,
-            "affected_versions": [],
-            "more_info_url": "https://getsafety.com/v/89028/97c"
-        },
-        {
             "vulnerability_id": "SFTY-20260615-71642",
             "package_name": "pyjwt",
             "ignored": {},
@@ -1084,6 +1051,39 @@ We highly encourage switching to the new `scan` command which is easier to use, 
             "severity": null,
             "affected_versions": [],
             "more_info_url": "https://getsafety.com/v/SFTY-20260615-71642/97c"
+        },
+        {
+            "vulnerability_id": "89028",
+            "package_name": "pyjwt",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                "<2.12.0"
+            ],
+            "all_vulnerable_specs": [
+                "<2.12.0"
+            ],
+            "analyzed_version": "2.10.1",
+            "analyzed_requirement": {
+                "raw": "pyjwt==2.10.1",
+                "extras": [],
+                "marker": null,
+                "name": "pyjwt",
+                "specifier": "==2.10.1",
+                "url": null,
+                "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
+            },
+            "advisory": "Affected versions of this package are vulnerable to Insufficient Verification of Data Authenticity. The library does not validate the `crit` (Critical) Header Parameter as required by RFC 7515 \u00a74.1.11 \u2014 when a JWT contains a `crit` array listing extensions that the library does not understand, the token is accepted instead of rejected. An attacker can exploit this vulnerability by crafting JWTs with unknown critical extensions (e.g., MFA requirements, token binding, scope restrictions) that are silently ignored, potentially bypassing security policies or causing split-brain verification in mixed-library deployments where other RFC-compliant libraries would reject the same token.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2026-32597",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://getsafety.com/v/89028/97c"
         },
         {
             "vulnerability_id": "94066",
