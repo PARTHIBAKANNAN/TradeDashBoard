@@ -49,7 +49,8 @@ const OverlappingRangeBar = React.memo(({ ranges }) => {
     // Previous day range — skip entirely when it was never backfilled (both
     // raw bounds still at their 0 default), rather than drawing a misleading
     // sliver pinned to the left edge that looks like real data at price 0.
-    const hasYesterdayRange = ranges.yesterday.raw_low > 0 || ranges.yesterday.raw_high > 0;
+    const hasYesterdayRange =
+      ranges.yesterday.raw_low > 0 || ranges.yesterday.raw_high > 0;
     if (hasYesterdayRange) {
       const pL = pct(ranges.yesterday.low);
       const pR = pct(ranges.yesterday.high);

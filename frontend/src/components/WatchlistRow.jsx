@@ -16,7 +16,8 @@ const WatchlistRow = React.memo(({ stock, index = 0, leading }) => {
   // Both stay exactly 0 only when yesterday's range was never backfilled (e.g.
   // a broker-side historical-data permission gap) — a real price can't be 0.
   const hasYesterdayRange =
-    stock.ranges?.yesterday?.raw_low > 0 || stock.ranges?.yesterday?.raw_high > 0;
+    stock.ranges?.yesterday?.raw_low > 0 ||
+    stock.ranges?.yesterday?.raw_high > 0;
 
   return (
     <motion.tr
@@ -62,8 +63,12 @@ const WatchlistRow = React.memo(({ stock, index = 0, leading }) => {
       <td className="py-3 px-4 text-center">
         <div className="flex flex-col items-center">
           <div className="flex justify-between w-[160px] text-[10px] text-faint font-mono mb-1">
-            <span>{hasYesterdayRange ? stock.ranges?.yesterday?.raw_low : "—"}</span>
-            <span>{hasYesterdayRange ? stock.ranges?.yesterday?.raw_high : "—"}</span>
+            <span>
+              {hasYesterdayRange ? stock.ranges?.yesterday?.raw_low : "—"}
+            </span>
+            <span>
+              {hasYesterdayRange ? stock.ranges?.yesterday?.raw_high : "—"}
+            </span>
           </div>
           {stock.ranges && <OverlappingRangeBar ranges={stock.ranges} />}
           <div className="text-[10px] text-faint font-mono mt-1">
