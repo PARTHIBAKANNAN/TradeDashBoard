@@ -46,11 +46,16 @@ const OverlappingRangeBar = React.memo(({ ranges }) => {
     ctx.fillStyle = "rgba(127,127,127,0.08)";
     roundRect(ctx, 0, H / 2 - 2, W, 4, 2);
 
-    // Previous day range
-    const pL = pct(ranges.yesterday.low);
-    const pR = pct(ranges.yesterday.high);
-    ctx.fillStyle = prevRangeColor;
-    roundRect(ctx, pL, H / 2 - 2, Math.max(2, pR - pL), 4, 2);
+    // Previous day range — skip entirely when it was never backfilled (both
+    // raw bounds still at their 0 default), rather than drawing a misleading
+    // sliver pinned to the left edge that looks like real data at price 0.
+    const hasYesterdayRange = ranges.yesterday.raw_low > 0 || ranges.yesterday.raw_high > 0;
+    if (hasYesterdayRange) {
+      const pL = pct(ranges.yesterday.low);
+      const pR = pct(ranges.yesterday.high);
+      ctx.fillStyle = prevRangeColor;
+      roundRect(ctx, pL, H / 2 - 2, Math.max(2, pR - pL), 4, 2);
+    }
 
     // Today's range — gradient fill, blue -> violet
     const tL = pct(ranges.today.low);
