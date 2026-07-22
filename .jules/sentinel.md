@@ -1,0 +1,4 @@
+## 2024-07-22 - Hardcoded Session Secret Fallback
+**Vulnerability:** The backend's session middleware used a hardcoded, predictable fallback secret ("dev-insecure-change-me") for `SESSION_SECRET` when not provided in the environment.
+**Learning:** Hardcoded secrets in configuration files, even when intended for development, can easily slip into production environments if environment variables are misconfigured or missing, leading to predictable session tokens that can be forged by an attacker.
+**Prevention:** Always default to generating a cryptographically secure random string (e.g., using `secrets.token_urlsafe()`) at startup if an explicit secret is not provided in the environment. This ensures that even in default states, sessions cannot be spoofed, although sessions will be invalidated across restarts (which is a safe failure mode for missing config).
