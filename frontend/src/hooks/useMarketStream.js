@@ -7,7 +7,10 @@ const CANDLE_INTERVAL_MIN = 5;
 // Minutes-since-midnight, floored to the current 5-min bucket — a plain
 // comparable int, not a display string.
 function candleBucket(d) {
-  return d.getHours() * 60 + Math.floor(d.getMinutes() / CANDLE_INTERVAL_MIN) * CANDLE_INTERVAL_MIN;
+  return (
+    d.getHours() * 60 +
+    Math.floor(d.getMinutes() / CANDLE_INTERVAL_MIN) * CANDLE_INTERVAL_MIN
+  );
 }
 
 function dayStamp(d) {
@@ -74,7 +77,16 @@ export function useMarketStream() {
             };
             series = [...prevSeries.slice(0, -1), updatedLast];
           } else {
-            series = [...prevSeries, { bucket, open: stock.ltp, high: stock.ltp, low: stock.ltp, close: stock.ltp }];
+            series = [
+              ...prevSeries,
+              {
+                bucket,
+                open: stock.ltp,
+                high: stock.ltp,
+                low: stock.ltp,
+                close: stock.ltp,
+              },
+            ];
           }
           candlesRef.current.set(stock.symbol, series);
           stock.candles = series;

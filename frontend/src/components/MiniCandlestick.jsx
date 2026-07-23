@@ -70,7 +70,11 @@ const MiniCandlestick = React.memo(({ candles }) => {
     <canvas
       ref={canvasRef}
       style={{ width: `${W}px`, height: `${H}px` }}
-      title={candles?.length ? `${candles.length} x 5-min candles today` : "No candles yet"}
+      title={
+        candles?.length
+          ? `${candles.length} x 5-min candles today`
+          : "No candles yet"
+      }
     />
   );
 });
