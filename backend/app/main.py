@@ -1,82 +1,54 @@
 """
 FastAPI Backend-For-Frontend.
 
-Ingests millisecond ticks in-memory (via DataEngine), then batches the fully
-computed state of the whole watchlist into a single JSON payload pushed to the
-browser exactly once per `STREAM_INTERVAL` second over Server-Sent Events.
-
-No broker credentials or raw broker sockets are ever exposed to the client.
-A built-in login (session cookie) gates the dashboard; FYERS account auth is
-handled separately via /callback + /api/auth/*.
+Ingests millisecond ticks in-memory (via DataEngine), then a single Broadcaster
+task fans a diffed JSON frame out to all WebSocket subscribers every
+`STREAM_INTERVAL` seconds. No broker credentials or raw broker sockets are
+ever exposed to the client. A built-in login (session cookie) gates the
+dashboard; FYERS account auth is handled separately via /callback + /api/auth/*.
 """
-
 import asyncio
-import json
+import json as _json
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse,
-                               StreamingResponse)
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.middleware.sessions import SessionMiddleware
 
 from . import auth, config, security
-from .calculations import range_map
+from .broadcaster import Broadcaster, build_frame, snapshot_from_state
 from .fyers_service import data_engine
-from .scheduler import (ensure_engine_running, init_scheduler, is_market_open,
-                        shutdown_scheduler)
+from .scheduler import ensure_engine_running, init_scheduler, is_market_open, shutdown_scheduler
 from .state import market_state
 
 
-def build_payload() -> dict:
-    """Snapshot the shared state (under lock) and package the client payload."""
-    with market_state.lock():
-        nifty = dict(market_state.nifty)
-        stocks_snapshot = [dict(s) for s in market_state.stocks.values()]
-        market_open = market_state.market_open
+def _live_snapshot() -> dict:
+    """Snapshot provider for the Broadcaster: reads state + patches fyers flag."""
+    snap = snapshot_from_state(market_state)
+    snap["fyers_connected"] = auth.auth_status()["authenticated"]
+    return snap
 
-    stocks = []
-    for s in stocks_snapshot:
-        ranges = range_map(
-            s["yesterday_low"], s["yesterday_high"], s["today_low"], s["today_high"], s["ltp"]
-        )
-        stocks.append(
-            {
-                "symbol": s["symbol"],
-                "sector": s["sector"],
-                "ltp": s["ltp"],
-                "pct_change": s["pct_change"],
-                "relative_strength": s["relative_strength"],
-                "day_range_pos": s["day_range_pos"],
-                "signal": s["signal"],
-                "signal_time": s["signal_time"],
-                "volume": s["volume"],
-                "traded_value": round(s["ltp"] * s["volume"], 2),
-                "upper_ckt": s["upper_ckt"],
-                "lower_ckt": s["lower_ckt"],
-                "tot_buy_qty": s["tot_buy_qty"],
-                "tot_sell_qty": s["tot_sell_qty"],
-                "ranges": ranges,
-            }
-        )
 
-    return {
-        "market_open": market_open,
-        "fyers_connected": auth.auth_status()["authenticated"],
-        "nifty": nifty,
-        "stocks": stocks,
-    }
+broadcaster = Broadcaster(
+    snapshot_provider=_live_snapshot,
+    interval=config.STREAM_INTERVAL,
+    max_queue=config.BROADCAST_MAX_QUEUE,
+)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Run the (blocking) scheduler bootstrap off the event loop.
     await asyncio.to_thread(init_scheduler)
-    yield
-    shutdown_scheduler()
+    await broadcaster.start()
+    try:
+        yield
+    finally:
+        await broadcaster.stop()
+        shutdown_scheduler()
 
 
 app = FastAPI(title="Live Stock Scanning BFF", lifespan=lifespan)
@@ -98,18 +70,18 @@ def require_login(request: Request):
         raise HTTPException(status_code=401, detail="login required")
 
 
-# ----------------- dashboard login (Supabase-verified; session cookie) -----------------
+# ----------------- dashboard login (built-in; future: subscriptions) -----------------
 class Credentials(BaseModel):
-    access_token: str
+    username: str
+    password: str
 
 
 @app.post("/api/auth/login")
 async def login(creds: Credentials, request: Request):
-    user = security.authenticate(creds.access_token)
-    if not user:
+    if not security.authenticate(creds.username, creds.password):
         raise HTTPException(status_code=401, detail="invalid credentials")
-    request.session["user"] = user
-    return {"authenticated": True, "user": user}
+    request.session["user"] = creds.username
+    return {"authenticated": True, "user": creds.username}
 
 
 @app.post("/api/auth/logout")
@@ -144,9 +116,7 @@ async def fyers_callback(request: Request):
         return HTMLResponse(_callback_html(False, "No auth_code in the redirect."), status_code=400)
     token = auth.exchange_and_cache(auth_code)
     if not token:
-        return HTMLResponse(
-            _callback_html(False, "Token exchange failed. Check server logs."), status_code=400
-        )
+        return HTMLResponse(_callback_html(False, "Token exchange failed. Check server logs."), status_code=400)
     data_engine.set_token(token)
     # Bring the data engine up now if the market is open.
     ensure_engine_running()
@@ -171,25 +141,55 @@ async def health():
 
 @app.get("/api/snapshot", dependencies=[Depends(require_login)])
 async def snapshot():
-    return build_payload()
+    """One-shot current state, in the same frame shape as a WS 'snapshot' message.
+    Used by the SPA to warm its store when it can't open a WebSocket yet."""
+    curr = _live_snapshot()
+    return build_frame(prev=None, curr=curr, seq=0)
 
 
-@app.get("/api/stream", dependencies=[Depends(require_login)])
-async def stream(request: Request):
-    async def event_generator():
+@app.websocket("/ws/stream")
+async def ws_stream(websocket: WebSocket):
+    # Auth: session cookie is exposed on websocket.session by SessionMiddleware.
+    await websocket.accept()
+    if not security.is_authenticated(websocket):
+        await websocket.close(code=4401)
+        return
+    q = broadcaster.subscribe()
+    receiver_task = asyncio.create_task(_ws_reader(websocket, q))
+    try:
         while True:
-            if await request.is_disconnected():
-                break
-            payload = build_payload()
-            yield f"data: {json.dumps(payload)}\n\n"
-            await asyncio.sleep(config.STREAM_INTERVAL)
+            msg = await q.get()
+            await websocket.send_text(msg)
+    except WebSocketDisconnect:
+        pass
+    except Exception as exc:  # noqa: BLE001
+        # Any send error → connection dead; fall through to cleanup.
+        print(f"[ws] send failed: {exc}")
+    finally:
+        receiver_task.cancel()
+        try:
+            await receiver_task
+        except (asyncio.CancelledError, Exception):
+            pass
+        broadcaster.unsubscribe(q)
 
-    headers = {
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
-        "X-Accel-Buffering": "no",  # disable proxy buffering for true streaming
-    }
-    return StreamingResponse(event_generator(), media_type="text/event-stream", headers=headers)
+
+async def _ws_reader(websocket: WebSocket, q):
+    """Handle inbound client control messages (only 'resync' for now)."""
+    try:
+        while True:
+            try:
+                msg = await websocket.receive_json()
+            except (_json.JSONDecodeError, TypeError, ValueError) as exc:
+                print(f"[ws] discarding malformed inbound message: {exc}")
+                continue
+            if isinstance(msg, dict) and msg.get("type") == "resync":
+                broadcaster.mark_resync(q)
+    except WebSocketDisconnect:
+        return
+    except Exception as exc:  # noqa: BLE001
+        print(f"[ws] reader exiting on unexpected error: {exc}")
+        return
 
 
 # ----------------- serve the built React app same-origin (prod) -----------------
@@ -206,7 +206,6 @@ if os.path.isdir(_DIST) and os.path.isfile(_INDEX):
         if full_path.startswith("api/") or full_path == "callback":
             return JSONResponse({"detail": "not found"}, status_code=404)
         return FileResponse(_INDEX)
-
 else:
     print(f"[main] Frontend dist not found at {_DIST}; not serving SPA (dev mode / Vite proxy).")
 

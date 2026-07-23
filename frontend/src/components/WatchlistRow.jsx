@@ -1,14 +1,30 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import OverlappingRangeBar from "./OverlappingRangeBar.jsx";
+import { useStock } from "../hooks/useMarketStream.js";
+import { rangeMap } from "../lib/rangeMap.js";
 
 // React.memo isolates re-renders to rows whose stock object actually changed.
-// `leading` renders an optional extra cell (e.g. a watchlist star toggle)
-// as the row's first <td> — kept inside this single <tr>, since nesting a
-// second <tr> inside a wrapping <td> (the old WatchlistScreen approach) is
-// invalid HTML that browsers silently reflow via foster parenting.
-const WatchlistRow = React.memo(({ stock, index = 0, leading }) => {
+// Accepts either `symbol` (subscribes via useStock) or `stock` prop directly.
+const WatchlistRow = React.memo(({ stock: propStock, symbol, index = 0, leading }) => {
+  const stockFromHook = useStock(symbol || propStock?.symbol);
+  const stock = stockFromHook || propStock;
+
+  const ranges = useMemo(() => {
+    if (!stock) return null;
+    return stock.ranges || rangeMap(
+      stock.yesterday_low || 0, stock.yesterday_high || 0,
+      stock.today_low || 0, stock.today_high || 0,
+      stock.ltp || 0,
+    );
+  }, [
+    stock?.yesterday_low, stock?.yesterday_high,
+    stock?.today_low, stock?.today_high, stock?.ltp, stock?.ranges,
+  ]);
+
+  if (!stock) return null;
+
   const isPositive = stock.pct_change >= 0;
   const isRsPositive = stock.relative_strength >= 0;
   const hasSignal = stock.signal && stock.signal !== "None";
@@ -58,10 +74,10 @@ const WatchlistRow = React.memo(({ stock, index = 0, leading }) => {
       <td className="py-3 px-4 text-center">
         <div className="flex flex-col items-center">
           <div className="flex justify-between w-[160px] text-[10px] text-faint font-mono mb-1">
-            <span>{stock.ranges?.yesterday?.raw_low}</span>
-            <span>{stock.ranges?.yesterday?.raw_high}</span>
+            <span>{ranges?.yesterday?.raw_low}</span>
+            <span>{ranges?.yesterday?.raw_high}</span>
           </div>
-          {stock.ranges && <OverlappingRangeBar ranges={stock.ranges} />}
+          {ranges && <OverlappingRangeBar ranges={ranges} />}
           <div className="text-[10px] text-faint font-mono mt-1">
             {stock.day_range_pos}% of day range
           </div>

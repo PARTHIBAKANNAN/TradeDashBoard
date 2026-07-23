@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3,
@@ -12,9 +12,15 @@ import {
   AlertTriangle,
   ArrowUpRight,
 } from "lucide-react";
-import { useMarketStream } from "./hooks/useMarketStream.js";
+import {
+  useMarketStream,
+  useMarketMeta,
+  useSymbols,
+} from "./hooks/useMarketStream.js";
+import { marketStore } from "./store/marketStore.js";
 import { useTheme } from "./contexts/ThemeContext.jsx";
 import { supabase } from "./lib/supabaseClient.js";
+import TopNavbar from "./components/TopNavbar.jsx";
 import RankingScreen from "./screens/RankingScreen.jsx";
 import HeatmapScreen from "./screens/HeatmapScreen.jsx";
 import InsightsScreen from "./screens/InsightsScreen.jsx";
@@ -221,12 +227,20 @@ function ConnectFyersBanner() {
 
 // -------- Dashboard --------
 function Dashboard({ user, onLogout }) {
-  const { data, connected } = useMarketStream();
+  useMarketStream(); // Start/stop singleton WebSocket
+  const meta = useMarketMeta();
+  const symbols = useSymbols();
   const [activeTab, setActiveTab] = useState("ranking");
 
-  const marketOpen = data.market_open;
-  const fyersConnected = data.fyers_connected;
-  const nifty = data.nifty || {};
+  // Reactive list of all stocks from marketStore
+  const stocks = useMemo(() => {
+    return symbols.map((s) => marketStore.getStock(s)).filter(Boolean);
+  }, [symbols, meta.lastSeq]);
+
+  const marketOpen = meta.marketOpen;
+  const fyersConnected = meta.fyersConnected;
+  const nifty = meta.nifty || {};
+  const connected = meta.connected;
 
   return (
     <div className="min-h-screen bg-surface text-primary font-sans flex flex-col">
@@ -256,154 +270,20 @@ function Dashboard({ user, onLogout }) {
             transition={{ duration: 0.18, ease: "easeOut" }}
           >
             {activeTab === "ranking" && (
-              <RankingScreen stocks={data.stocks || []} />
+              <RankingScreen stocks={stocks} />
             )}
             {activeTab === "heatmap" && (
-              <HeatmapScreen stocks={data.stocks || []} />
+              <HeatmapScreen stocks={stocks} />
             )}
             {activeTab === "insights" && (
-              <InsightsScreen stocks={data.stocks || []} />
+              <InsightsScreen stocks={stocks} />
             )}
             {activeTab === "watchlist" && (
-              <WatchlistScreen stocks={data.stocks || []} />
+              <WatchlistScreen stocks={stocks} />
             )}
           </motion.div>
         </AnimatePresence>
       </div>
     </div>
-  );
-}
-
-// -------- Top Navbar --------
-const TABS = [
-  { key: "ranking", label: "Ranking", icon: BarChart3 },
-  { key: "heatmap", label: "Heatmap", icon: Flame },
-  { key: "insights", label: "Insights", icon: Lightbulb },
-  { key: "watchlist", label: "Watchlist", icon: Star },
-];
-
-function TopNavbar({
-  user,
-  onLogout,
-  activeTab,
-  onTabChange,
-  nifty,
-  marketOpen,
-  connected,
-}) {
-  const niftyUp = (nifty.pct_change ?? 0) >= 0;
-
-  return (
-    <nav className="sticky top-0 z-50 border-b border-subtle bg-surface2/90 backdrop-blur-xl shadow-sm">
-      <div className="mx-auto max-w-full px-6 py-3.5">
-        <div className="flex items-center justify-between gap-6 mb-3.5">
-          {/* Logo & Status */}
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-blue to-accent-violet grid place-items-center font-bold text-white text-sm shadow-glow-sm">
-              T
-            </div>
-            <div>
-              <h1 className="text-sm font-bold tracking-tight bg-gradient-to-r from-accent-violet to-accent-blue bg-clip-text text-transparent font-display">
-                Live Price Action
-              </h1>
-            </div>
-            <div className="flex items-center gap-2 ml-4 pl-4 border-l border-subtle">
-              <span className="relative flex h-2 w-2">
-                {connected && marketOpen && (
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-bull opacity-60" />
-                )}
-                <span
-                  className={`relative inline-flex rounded-full h-2 w-2 ${
-                    connected && marketOpen ? "bg-bull" : "bg-faint"
-                  }`}
-                />
-              </span>
-              <span
-                className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wide ${
-                  marketOpen ? "bg-bull/10 text-bull" : "bg-surface3 text-muted"
-                }`}
-              >
-                <Radio size={9} />
-                {marketOpen ? "Live" : connected ? "Closed" : "Offline"}
-              </span>
-            </div>
-          </div>
-
-          {/* Right side: Benchmark & User */}
-          <div className="flex items-center gap-6">
-            <div className="text-right">
-              <div className="text-[10px] text-faint font-bold uppercase tracking-wide">
-                NIFTY 50
-              </div>
-              <div className="font-mono text-sm font-bold tabular-nums">
-                <span className="text-primary">
-                  {nifty.ltp?.toLocaleString("en-IN", {
-                    minimumFractionDigits: 2,
-                  })}
-                </span>
-                <span className={`ml-2 ${niftyUp ? "text-bull" : "text-bear"}`}>
-                  {niftyUp ? "+" : ""}
-                  {nifty.pct_change}%
-                </span>
-              </div>
-            </div>
-
-            <div className="border-l border-subtle pl-6 flex items-center gap-4">
-              <div className="text-right">
-                <div className="text-xs text-faint">{user}</div>
-                <button
-                  onClick={onLogout}
-                  className="flex items-center gap-1 text-xs font-bold text-muted hover:text-primary transition-colors"
-                >
-                  <LogOut size={11} />
-                  Log out
-                </button>
-              </div>
-              <ThemeToggle />
-            </div>
-          </div>
-        </div>
-
-        {/* Horizontal Tabs */}
-        <div className="flex gap-1 relative">
-          {TABS.map((tab) => {
-            const isActive = activeTab === tab.key;
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => onTabChange(tab.key)}
-                className={`relative px-4 py-2 text-sm font-semibold transition-colors flex items-center gap-2 rounded-lg ${
-                  isActive
-                    ? "text-primary"
-                    : "text-muted hover:text-primary hover:bg-surface3/40"
-                }`}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="tab-pill"
-                    className="absolute inset-0 bg-surface3 rounded-lg border border-subtle"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
-                  />
-                )}
-                <span className="relative flex items-center gap-2">
-                  <Icon
-                    size={14}
-                    className={isActive ? "text-accent-blue" : "text-faint"}
-                  />
-                  {tab.label}
-                </span>
-                {isActive && (
-                  <motion.span
-                    layoutId="tab-underline"
-                    className="absolute -bottom-[15px] left-2 right-2 h-[2px] bg-gradient-to-r from-accent-blue to-accent-violet rounded-full"
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </nav>
   );
 }

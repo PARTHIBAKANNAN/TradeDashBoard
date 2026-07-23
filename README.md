@@ -2,9 +2,9 @@
 
 Real-time scanning dashboard for the Indian market built on the **FYERS API v3**.
 A Python **Backend-For-Frontend (BFF)** ingests millisecond websocket ticks,
-computes the technical engines in memory, and pushes the full state of the
-watchlist to the browser once per second over **Server-Sent Events (SSE)**. The
-React frontend renders 40+ rows with canvas range bars at a stable frame rate.
+computes the technical engines in memory, and streams diffed state to the browser
+over a **WebSocket delta stream**. The React frontend renders 40+ rows with canvas
+range bars at a stable frame rate.
 
 ```
 FYERS WebSocket ──(ms binary ticks)──▶  Python BFF (FastAPI)
@@ -12,7 +12,7 @@ FYERS WebSocket ──(ms binary ticks)──▶  Python BFF (FastAPI)
                                           • REST backfill: prev close, ranges, C1–C4 ORB
                                           • in-memory math: IRS, ORB, range map, day-range %
                                           │
-                                          └──(1-sec batched JSON via SSE)──▶  React UI
+                                          └──(250 ms JSON deltas via WebSocket)──▶  React UI
 ```
 
 **Security boundary:** all API keys, secret keys, TOTP seeds and the broker
@@ -32,7 +32,7 @@ backend/
     calculations.py    # IRS, ORB, dual-range mapper, day-range % (pure fns)
     fyers_service.py   # REST backfill + websocket ingestion (lifecycle-managed)
     scheduler.py       # 08:45 login cron + market-hours gating
-    main.py            # FastAPI app: /api/stream (SSE), /api/snapshot, /api/health
+    main.py            # FastAPI app: /ws/stream (WebSocket), /api/snapshot, /api/health
   tests/test_calculations.py
   requirements.txt
   install.ps1
@@ -132,8 +132,8 @@ python -m tests.test_calculations
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /api/stream` | SSE, one JSON payload per second (`{market_open, nifty, stocks[]}`) |
-| `GET /api/snapshot` | One-shot current state (initial/offline cache) |
+| `WS /ws/stream` | WebSocket, delta frames every 250 ms (`snapshot` on connect, `delta` on change, `heartbeat` on quiet) |
+| `GET /api/snapshot` | One-shot snapshot frame (same shape as the WS `snapshot` message; used to warm the store before WS connects) |
 | `GET /api/health` | Liveness + market-open flag |
 
 ---
@@ -166,5 +166,4 @@ store, or set `REQUESTS_CA_BUNDLE` / `SSL_CERT_FILE` to a bundle that includes i
 - **Watchlist** — edit `WATCHLIST` in `app/config.py` (Fyers format `NSE:TCS-EQ`).
 - **Live ORB aggregation** — REST backfill seeds C1–C4; to build boundaries live
   before REST is available, aggregate ticks per candle window in `_handle_tick`.
-- **Multi-client scale** — the SSE generator builds the payload per connection;
-  for many clients, compute once per tick into a shared broadcast buffer.
+- **Multi-client scale** — a single `Broadcaster` task runs one diff per tick and fans the serialized frame to every subscriber via bounded `asyncio.Queue`s. Slow clients are silently resynced (drain + snapshot) rather than dropped. A `heartbeat` frame is emitted every ~5 s of quiet so the client liveness timer never fires during off-market hours.
