@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { ArrowUp, ArrowDown } from "lucide-react";
-import OverlappingRangeBar from "./OverlappingRangeBar.jsx";
+import MiniCandlestick from "./MiniCandlestick.jsx";
 
 // React.memo isolates re-renders to rows whose stock object actually changed.
 // `leading` renders an optional extra cell (e.g. a watchlist star toggle)
@@ -13,10 +13,6 @@ const WatchlistRow = React.memo(({ stock, index = 0, leading }) => {
   const isRsPositive = stock.relative_strength >= 0;
   const hasSignal = stock.signal && stock.signal !== "None";
   const isBull = hasSignal && stock.signal.includes("Bull");
-  // Both stay exactly 0 only when yesterday's range was never backfilled (e.g.
-  // a broker-side historical-data permission gap) — a real price can't be 0.
-  const hasYesterdayRange =
-    stock.ranges?.yesterday?.raw_low > 0 || stock.ranges?.yesterday?.raw_high > 0;
 
   return (
     <motion.tr
@@ -58,14 +54,10 @@ const WatchlistRow = React.memo(({ stock, index = 0, leading }) => {
         </div>
       </td>
 
-      {/* Range bar */}
+      {/* Mini candlestick chart — today's session, built live from ticks */}
       <td className="py-3 px-4 text-center">
         <div className="flex flex-col items-center">
-          <div className="flex justify-between w-[160px] text-[10px] text-faint font-mono mb-1">
-            <span>{hasYesterdayRange ? stock.ranges?.yesterday?.raw_low : "—"}</span>
-            <span>{hasYesterdayRange ? stock.ranges?.yesterday?.raw_high : "—"}</span>
-          </div>
-          {stock.ranges && <OverlappingRangeBar ranges={stock.ranges} />}
+          <MiniCandlestick candles={stock.candles} />
           <div className="text-[10px] text-faint font-mono mt-1">
             {stock.day_range_pos}% of day range
           </div>

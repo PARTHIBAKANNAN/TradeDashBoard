@@ -7,7 +7,7 @@ const PADDING = 40;
 
 // x = today's %change, y = RS vs Nifty, one dot per sector (mean of members).
 // Hand-rolled linear-scale scatter — same absolute-positioning technique
-// already used by Treemap.jsx/OverlappingRangeBar.jsx, no new dependency.
+// already used by Treemap.jsx, no new dependency.
 export default function SectorRotationChart({ stocks }) {
   const containerRef = useRef(null);
   const [size, setSize] = useState({ width: 0, height: 380 });
