@@ -1,14 +1,30 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import MiniCandlestick from "./MiniCandlestick.jsx";
+import { useStock } from "../hooks/useMarketStream.js";
+import { rangeMap } from "../lib/rangeMap.js";
 
 // React.memo isolates re-renders to rows whose stock object actually changed.
-// `leading` renders an optional extra cell (e.g. a watchlist star toggle)
-// as the row's first <td> — kept inside this single <tr>, since nesting a
-// second <tr> inside a wrapping <td> (the old WatchlistScreen approach) is
-// invalid HTML that browsers silently reflow via foster parenting.
-const WatchlistRow = React.memo(({ stock, index = 0, leading }) => {
+// Accepts either `symbol` (subscribes via useStock) or `stock` prop directly.
+const WatchlistRow = React.memo(({ stock: propStock, symbol, index = 0, leading }) => {
+  const stockFromHook = useStock(symbol || propStock?.symbol);
+  const stock = stockFromHook || propStock;
+
+  const ranges = useMemo(() => {
+    if (!stock) return null;
+    return stock.ranges || rangeMap(
+      stock.yesterday_low || 0, stock.yesterday_high || 0,
+      stock.today_low || 0, stock.today_high || 0,
+      stock.ltp || 0,
+    );
+  }, [
+    stock?.yesterday_low, stock?.yesterday_high,
+    stock?.today_low, stock?.today_high, stock?.ltp, stock?.ranges,
+  ]);
+
+  if (!stock) return null;
+
   const isPositive = stock.pct_change >= 0;
   const isRsPositive = stock.relative_strength >= 0;
   const hasSignal = stock.signal && stock.signal !== "None";
