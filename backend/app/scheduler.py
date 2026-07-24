@@ -49,7 +49,7 @@ def _start_engine():
     if not data_engine.access_token:
         print(
             "[scheduler] No valid FYERS token — engine idle until you connect "
-            "(dashboard → 'Connect FYERS')."
+            "(dashboard -> 'Connect FYERS')."
         )
         return
 

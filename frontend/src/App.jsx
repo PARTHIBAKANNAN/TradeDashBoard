@@ -20,7 +20,6 @@ import {
 import { marketStore } from "./store/marketStore.js";
 import { useTheme } from "./contexts/ThemeContext.jsx";
 import { supabase } from "./lib/supabaseClient.js";
-import TopNavbar from "./components/TopNavbar.jsx";
 import RankingScreen from "./screens/RankingScreen.jsx";
 import HeatmapScreen from "./screens/HeatmapScreen.jsx";
 import InsightsScreen from "./screens/InsightsScreen.jsx";
@@ -285,5 +284,96 @@ function Dashboard({ user, onLogout }) {
         </AnimatePresence>
       </div>
     </div>
+  );
+}
+
+// -------- Top Navbar --------
+function TopNavbar({ user, onLogout, activeTab, onTabChange, nifty, marketOpen, connected }) {
+  const tabs = [
+    { key: "ranking", label: "Ranking", icon: "📊" },
+    { key: "heatmap", label: "Heatmap", icon: "🔥" },
+    { key: "insights", label: "Insights", icon: "💡" },
+    { key: "watchlist", label: "Watchlist", icon: "⭐" },
+  ];
+
+  return (
+    <nav className="sticky top-0 z-50 border-b border-subtle bg-surface2/95 backdrop-blur-xl shadow-sm">
+      <div className="mx-auto max-w-full px-6 py-4">
+        <div className="flex items-center justify-between gap-6 mb-4">
+          {/* Logo & Status */}
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-blue to-accent-violet grid place-items-center font-bold text-white text-sm">
+              T
+            </div>
+            <div>
+              <h1 className="text-sm font-bold tracking-tight bg-gradient-to-r from-accent-violet to-accent-blue bg-clip-text text-transparent">
+                Live Price Action
+              </h1>
+            </div>
+            <div className="flex items-center gap-2 ml-4 pl-4 border-l border-subtle">
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  connected && marketOpen ? "bg-green-500 animate-pulse" : "bg-faint"
+                }`}
+              />
+              <span
+                className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${
+                  marketOpen ? "bg-green-950 text-green-400" : "bg-surface3 text-muted"
+                }`}
+              >
+                {marketOpen ? "Live" : connected ? "Closed" : "Offline"}
+              </span>
+            </div>
+          </div>
+
+          {/* Right side: Benchmark & User */}
+          <div className="flex items-center gap-6">
+            <div className="text-right">
+              <div className="text-[10px] text-faint font-bold uppercase">NIFTY 50</div>
+              <div className="font-mono text-sm font-bold">
+                <span className="text-primary">
+                  {nifty.ltp?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                </span>
+                <span className={`ml-2 ${nifty.pct_change >= 0 ? "text-green-400" : "text-red-400"}`}>
+                  {nifty.pct_change >= 0 ? "+" : ""}
+                  {nifty.pct_change}%
+                </span>
+              </div>
+            </div>
+
+            <div className="border-l border-subtle pl-6 flex items-center gap-4">
+              <div className="text-right">
+                <div className="text-xs text-faint">{user}</div>
+                <button
+                  onClick={onLogout}
+                  className="text-xs font-bold text-muted hover:text-primary transition-colors"
+                >
+                  Log out
+                </button>
+              </div>
+              <ThemeToggle />
+            </div>
+          </div>
+        </div>
+
+        {/* Horizontal Tabs */}
+        <div className="flex gap-0.5">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => onTabChange(tab.key)}
+              className={`px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 ${
+                activeTab === tab.key
+                  ? "border-accent-blue text-accent-blue bg-surface3/40"
+                  : "border-transparent text-muted hover:text-primary hover:bg-surface3/20"
+              }`}
+            >
+              <span className="mr-2">{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </nav>
   );
 }
