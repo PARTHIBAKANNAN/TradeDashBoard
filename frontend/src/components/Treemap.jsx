@@ -19,15 +19,20 @@ function colorFor(pctChange) {
   return `hsl(350, 74%, ${l}%)`;
 }
 
-// Level 1: one node per NIFTY sector group, sized by total traded value,
-// colored by that group's traded-value-weighted average %change.
+// Level 1: one node per NIFTY sector group, sized by total traded value / volume,
+// or stock count when market volume is uninitialized.
 function buildSectorLevelHierarchy(stocks) {
   const groups = sectorAggregates(stocks);
   return {
     name: "root",
     children: groups.map((g) => ({
       name: g.group,
-      value: Math.max(g.totalTradedValue, 1),
+      value:
+        g.totalTradedValue > 0
+          ? g.totalTradedValue
+          : g.totalVolume > 0
+            ? g.totalVolume
+            : Math.max(g.count, 1),
       pct_change: g.weightedMean,
       count: g.count,
     })),
@@ -41,9 +46,15 @@ function buildStockLevelHierarchy(stocks, sector) {
     name: sector,
     children: members.map((s) => ({
       name: s.symbol,
-      value: Math.max(s.traded_value || 0, 1),
+      value:
+        s.traded_value > 0
+          ? s.traded_value
+          : s.volume > 0
+            ? s.volume
+            : 1,
       pct_change: s.pct_change,
       ltp: s.ltp,
+      volume: s.volume,
     })),
   };
 }

@@ -17,7 +17,7 @@ from typing import Callable, Optional
 SNAPSHOT_STOCK_FIELDS: tuple[str, ...] = (
     "symbol", "sector",
     "ltp", "pct_change", "relative_strength", "day_range_pos",
-    "signal", "signal_time",
+    "signal", "signal_time", "volume", "traded_value",
     "yesterday_low", "yesterday_high", "today_low", "today_high",
 )
 # Fields whose values are compared to detect a delta (identity fields excluded).
@@ -31,7 +31,9 @@ def snapshot_from_state(market_state) -> dict:
     with market_state.lock():
         stocks = {}
         for sym, s in market_state.stocks.items():
-            stocks[sym] = {f: s[f] for f in SNAPSHOT_STOCK_FIELDS}
+            entry = {f: s.get(f, 0) for f in SNAPSHOT_STOCK_FIELDS}
+            entry["traded_value"] = round(s.get("ltp", 0.0) * s.get("volume", 0), 2)
+            stocks[sym] = entry
         nifty = dict(market_state.nifty)
         return {
             "market_open": market_state.market_open,
@@ -42,12 +44,16 @@ def snapshot_from_state(market_state) -> dict:
 
 
 def _stock_snapshot_entry(stock: dict) -> dict:
-    return {f: stock[f] for f in SNAPSHOT_STOCK_FIELDS}
+    return {f: stock.get(f, 0) for f in SNAPSHOT_STOCK_FIELDS}
 
 
 def _stock_delta_entry(prev: dict, curr: dict) -> Optional[dict]:
     """Return {'symbol': X, ...changed fields} or None if nothing changed."""
-    changed = {f: curr[f] for f in DIFFABLE_STOCK_FIELDS if prev.get(f) != curr[f]}
+    changed = {
+        f: curr[f]
+        for f in DIFFABLE_STOCK_FIELDS
+        if f in curr and prev.get(f) != curr.get(f)
+    }
     if not changed:
         return None
     return {"symbol": curr["symbol"], **changed}
