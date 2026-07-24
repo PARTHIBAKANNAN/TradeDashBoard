@@ -5,6 +5,7 @@ read here from the process environment only.
 """
 
 import os
+import secrets
 from datetime import time as dt_time
 
 import pytz
@@ -46,7 +47,7 @@ DATA_ENGINE_ENABLED = os.getenv("DATA_ENGINE_ENABLED", "true").lower() == "true"
 INSTANCE_NAME = os.getenv("INSTANCE_NAME", "local")
 
 # ----------------- Dashboard login (Supabase Auth; session cookie bridges to SSE) -----------------
-SESSION_SECRET = os.getenv("SESSION_SECRET", "dev-insecure-change-me")
+SESSION_SECRET = os.getenv("SESSION_SECRET", secrets.token_urlsafe(32))
 # Project URL only — credential verification uses Supabase's public JWKS endpoint,
 # no shared secret needed. Empty disables the login gate (dev).
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
