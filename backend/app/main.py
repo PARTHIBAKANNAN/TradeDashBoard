@@ -160,11 +160,12 @@ async def ws_stream(websocket: WebSocket):
         while True:
             msg = await q.get()
             await websocket.send_text(msg)
-    except WebSocketDisconnect:
+    except (WebSocketDisconnect, RuntimeError):
+        # Normal client disconnect or socket teardown by browser
         pass
     except Exception as exc:  # noqa: BLE001
-        # Any send error → connection dead; fall through to cleanup.
-        print(f"[ws] send failed: {exc}")
+        # Unexpected server-side transport error
+        print(f"[ws] send error: {exc}")
     finally:
         receiver_task.cancel()
         try:
