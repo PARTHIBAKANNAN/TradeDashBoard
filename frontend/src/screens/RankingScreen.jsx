@@ -13,7 +13,24 @@ import SignalTimeFilter from "../components/SignalTimeFilter.jsx";
 import Card from "../components/ui/Card.jsx";
 import { CANDLE_MARKS, timeStrToMinutes } from "../utils/candleTime.js";
 
+// A stock only ever carries a real signal once it's passed all 3 breakout-
+// quality rules (calculations.py) — so "has a signal" already *is* "passed
+// the 3 conditions", no separate check needed here.
+const hasQualifiedSignal = (s) => Boolean(s.signal && s.signal !== "None");
+
 const SORTS = {
+  breakout_first: {
+    label: "Breakout qualified first",
+    fn: (a, b) => {
+      const q = Number(hasQualifiedSignal(b)) - Number(hasQualifiedSignal(a));
+      if (q !== 0) return q;
+      // Among equally-qualified (or equally unqualified) rows, most recent
+      // signal first, then fall back to RS as a tiebreaker.
+      if (a.signal_time !== b.signal_time)
+        return (b.signal_time || "").localeCompare(a.signal_time || "");
+      return b.relative_strength - a.relative_strength;
+    },
+  },
   rs_desc: {
     label: "RS ▼ (strongest)",
     fn: (a, b) => b.relative_strength - a.relative_strength,
@@ -35,7 +52,7 @@ export default function RankingScreen({ stocks }) {
   const [selectedSignal, setSelectedSignal] = useState("All signals");
   const [selectedSector, setSelectedSector] = useState("All sectors");
   const [signalTimeIndex, setSignalTimeIndex] = useState(0);
-  const [sortKey, setSortKey] = useState("rs_desc");
+  const [sortKey, setSortKey] = useState("breakout_first");
 
   const sectors = useMemo(() => {
     const set = new Set((stocks || []).map((s) => s.sector));
@@ -73,7 +90,7 @@ export default function RankingScreen({ stocks }) {
     setSelectedSignal("All signals");
     setSelectedSector("All sectors");
     setSignalTimeIndex(0);
-    setSortKey("rs_desc");
+    setSortKey("breakout_first");
   };
 
   return (
