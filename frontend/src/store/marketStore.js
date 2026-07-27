@@ -2,8 +2,8 @@
 // let a WatchlistRow re-render only when its own stock changes.
 
 function createStore() {
-  let stocks = new Map();                 // symbol -> stock object
-  let symbols = [];                        // stable-sorted symbol list
+  let stocks = new Map(); // symbol -> stock object
+  let symbols = []; // stable-sorted symbol list
   let meta = {
     marketOpen: false,
     fyersConnected: false,
@@ -12,21 +12,27 @@ function createStore() {
     lastSeq: 0,
   };
 
-  const stockSubs = new Map();             // symbol -> Set<cb>
-  const symbolSubs = new Set();            // Set<cb>
-  const metaSubs = new Set();              // Set<cb>
+  const stockSubs = new Map(); // symbol -> Set<cb>
+  const symbolSubs = new Set(); // Set<cb>
+  const metaSubs = new Set(); // Set<cb>
 
   function notifyStock(sym) {
     const subs = stockSubs.get(sym);
     if (subs) subs.forEach((cb) => cb());
   }
-  function notifySymbols() { symbolSubs.forEach((cb) => cb()); }
-  function notifyMeta() { metaSubs.forEach((cb) => cb()); }
+  function notifySymbols() {
+    symbolSubs.forEach((cb) => cb());
+  }
+  function notifyMeta() {
+    metaSubs.forEach((cb) => cb());
+  }
 
   function recomputeSymbolList() {
     const next = Array.from(stocks.keys()).sort();
-    if (next.length !== symbols.length ||
-        next.some((s, i) => s !== symbols[i])) {
+    if (
+      next.length !== symbols.length ||
+      next.some((s, i) => s !== symbols[i])
+    ) {
       symbols = next;
       notifySymbols();
     }
@@ -90,13 +96,22 @@ function createStore() {
       if (frame.type === "snapshot") applySnapshot(frame);
       else if (frame.type === "delta") applyDelta(frame);
     },
-    getStock(sym) { return stocks.get(sym); },
-    getSymbols() { return symbols; },
-    getMeta() { return meta; },
+    getStock(sym) {
+      return stocks.get(sym);
+    },
+    getSymbols() {
+      return symbols;
+    },
+    getMeta() {
+      return meta;
+    },
 
     subscribeStock(sym, cb) {
       let subs = stockSubs.get(sym);
-      if (!subs) { subs = new Set(); stockSubs.set(sym, subs); }
+      if (!subs) {
+        subs = new Set();
+        stockSubs.set(sym, subs);
+      }
       subs.add(cb);
       return () => {
         subs.delete(cb);
@@ -121,8 +136,13 @@ function createStore() {
     reset() {
       stocks = new Map();
       symbols = [];
-      meta = { marketOpen: false, fyersConnected: false, connected: false,
-               nifty: {}, lastSeq: 0 };
+      meta = {
+        marketOpen: false,
+        fyersConnected: false,
+        connected: false,
+        nifty: {},
+        lastSeq: 0,
+      };
       stockSubs.clear();
       symbolSubs.clear();
       metaSubs.clear();

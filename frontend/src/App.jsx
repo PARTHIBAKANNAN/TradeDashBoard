@@ -268,18 +268,10 @@ function Dashboard({ user, onLogout }) {
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
           >
-            {activeTab === "ranking" && (
-              <RankingScreen stocks={stocks} />
-            )}
-            {activeTab === "heatmap" && (
-              <HeatmapScreen stocks={stocks} />
-            )}
-            {activeTab === "insights" && (
-              <InsightsScreen stocks={stocks} />
-            )}
-            {activeTab === "watchlist" && (
-              <WatchlistScreen stocks={stocks} />
-            )}
+            {activeTab === "ranking" && <RankingScreen stocks={stocks} />}
+            {activeTab === "heatmap" && <HeatmapScreen stocks={stocks} />}
+            {activeTab === "insights" && <InsightsScreen stocks={stocks} />}
+            {activeTab === "watchlist" && <WatchlistScreen stocks={stocks} />}
           </motion.div>
         </AnimatePresence>
       </div>
@@ -288,7 +280,15 @@ function Dashboard({ user, onLogout }) {
 }
 
 // -------- Top Navbar --------
-function TopNavbar({ user, onLogout, activeTab, onTabChange, nifty, marketOpen, connected }) {
+function TopNavbar({
+  user,
+  onLogout,
+  activeTab,
+  onTabChange,
+  nifty,
+  marketOpen,
+  connected,
+}) {
   const tabs = [
     { key: "ranking", label: "Ranking", icon: "📊" },
     { key: "heatmap", label: "Heatmap", icon: "🔥" },
@@ -313,12 +313,16 @@ function TopNavbar({ user, onLogout, activeTab, onTabChange, nifty, marketOpen, 
             <div className="flex items-center gap-2 ml-4 pl-4 border-l border-subtle">
               <span
                 className={`w-2 h-2 rounded-full ${
-                  connected && marketOpen ? "bg-green-500 animate-pulse" : "bg-faint"
+                  connected && marketOpen
+                    ? "bg-green-500 animate-pulse"
+                    : "bg-faint"
                 }`}
               />
               <span
                 className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${
-                  marketOpen ? "bg-green-950 text-green-400" : "bg-surface3 text-muted"
+                  marketOpen
+                    ? "bg-green-950 text-green-400"
+                    : "bg-surface3 text-muted"
                 }`}
               >
                 {marketOpen ? "Live" : connected ? "Closed" : "Offline"}
@@ -329,12 +333,18 @@ function TopNavbar({ user, onLogout, activeTab, onTabChange, nifty, marketOpen, 
           {/* Right side: Benchmark & User */}
           <div className="flex items-center gap-6">
             <div className="text-right">
-              <div className="text-[10px] text-faint font-bold uppercase">NIFTY 50</div>
+              <div className="text-[10px] text-faint font-bold uppercase">
+                NIFTY 50
+              </div>
               <div className="font-mono text-sm font-bold">
                 <span className="text-primary">
-                  {nifty.ltp?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  {nifty.ltp?.toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                  })}
                 </span>
-                <span className={`ml-2 ${nifty.pct_change >= 0 ? "text-green-400" : "text-red-400"}`}>
+                <span
+                  className={`ml-2 ${nifty.pct_change >= 0 ? "text-green-400" : "text-red-400"}`}
+                >
                   {nifty.pct_change >= 0 ? "+" : ""}
                   {nifty.pct_change}%
                 </span>

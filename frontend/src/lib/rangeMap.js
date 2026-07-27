@@ -5,7 +5,7 @@
 const round2 = (n) => Math.round(n * 100) / 100;
 
 function normalize(price, gMin, gMax) {
-  const denom = (gMax - gMin) || 1.0;
+  const denom = gMax - gMin || 1.0;
   return round2(((price - gMin) / denom) * 100);
 }
 

@@ -8,14 +8,34 @@ const snapshotFrame = {
   fyers_connected: true,
   nifty: { symbol: "NIFTY50", ltp: 100, prev_close: 100, pct_change: 0 },
   stocks: [
-    { symbol: "RELIANCE", sector: "Energy",
-      ltp: 100, pct_change: 0, relative_strength: 0, day_range_pos: 50,
-      signal: "None", signal_time: "",
-      yesterday_low: 90, yesterday_high: 110, today_low: 95, today_high: 105 },
-    { symbol: "TCS", sector: "IT",
-      ltp: 4000, pct_change: 0, relative_strength: 0, day_range_pos: 25,
-      signal: "None", signal_time: "",
-      yesterday_low: 3900, yesterday_high: 4050, today_low: 3950, today_high: 4020 },
+    {
+      symbol: "RELIANCE",
+      sector: "Energy",
+      ltp: 100,
+      pct_change: 0,
+      relative_strength: 0,
+      day_range_pos: 50,
+      signal: "None",
+      signal_time: "",
+      yesterday_low: 90,
+      yesterday_high: 110,
+      today_low: 95,
+      today_high: 105,
+    },
+    {
+      symbol: "TCS",
+      sector: "IT",
+      ltp: 4000,
+      pct_change: 0,
+      relative_strength: 0,
+      day_range_pos: 25,
+      signal: "None",
+      signal_time: "",
+      yesterday_low: 3900,
+      yesterday_high: 4050,
+      today_low: 3950,
+      today_high: 4020,
+    },
   ],
 };
 
@@ -33,7 +53,8 @@ describe("marketStore.applyFrame", () => {
   it("merges a delta into an existing stock", () => {
     marketStore.applyFrame(snapshotFrame);
     marketStore.applyFrame({
-      type: "delta", seq: 2,
+      type: "delta",
+      seq: 2,
       stocks: [{ symbol: "RELIANCE", ltp: 101.5, pct_change: 1.5 }],
     });
     const r = marketStore.getStock("RELIANCE");
@@ -45,10 +66,16 @@ describe("marketStore.applyFrame", () => {
 
   it("snapshot + N deltas equals equivalent single snapshot", () => {
     marketStore.applyFrame(snapshotFrame);
-    marketStore.applyFrame({ type: "delta", seq: 2,
-      stocks: [{ symbol: "RELIANCE", ltp: 101.0 }] });
-    marketStore.applyFrame({ type: "delta", seq: 3,
-      stocks: [{ symbol: "TCS", ltp: 4020.0 }] });
+    marketStore.applyFrame({
+      type: "delta",
+      seq: 2,
+      stocks: [{ symbol: "RELIANCE", ltp: 101.0 }],
+    });
+    marketStore.applyFrame({
+      type: "delta",
+      seq: 3,
+      stocks: [{ symbol: "TCS", ltp: 4020.0 }],
+    });
 
     marketStore.reset();
     marketStore.applyFrame({
@@ -71,8 +98,11 @@ describe("marketStore.applyFrame", () => {
     marketStore.subscribeStock("RELIANCE", reliance);
     marketStore.subscribeStock("TCS", tcs);
 
-    marketStore.applyFrame({ type: "delta", seq: 2,
-      stocks: [{ symbol: "RELIANCE", ltp: 101 }] });
+    marketStore.applyFrame({
+      type: "delta",
+      seq: 2,
+      stocks: [{ symbol: "RELIANCE", ltp: 101 }],
+    });
 
     expect(reliance).toHaveBeenCalledTimes(1);
     expect(tcs).not.toHaveBeenCalled();
@@ -84,17 +114,34 @@ describe("marketStore.applyFrame", () => {
     marketStore.subscribeSymbols(cb);
 
     // Same set of symbols → no notification.
-    marketStore.applyFrame({ type: "delta", seq: 2,
-      stocks: [{ symbol: "RELIANCE", ltp: 105 }] });
+    marketStore.applyFrame({
+      type: "delta",
+      seq: 2,
+      stocks: [{ symbol: "RELIANCE", ltp: 105 }],
+    });
     expect(cb).not.toHaveBeenCalled();
 
     // New symbol appears → notify.
-    marketStore.applyFrame({ type: "delta", seq: 3, stocks: [
-      { symbol: "INFY", sector: "IT",
-        ltp: 1500, pct_change: 0, relative_strength: 0, day_range_pos: 50,
-        signal: "None", signal_time: "",
-        yesterday_low: 1490, yesterday_high: 1520, today_low: 1495, today_high: 1510 },
-    ] });
+    marketStore.applyFrame({
+      type: "delta",
+      seq: 3,
+      stocks: [
+        {
+          symbol: "INFY",
+          sector: "IT",
+          ltp: 1500,
+          pct_change: 0,
+          relative_strength: 0,
+          day_range_pos: 50,
+          signal: "None",
+          signal_time: "",
+          yesterday_low: 1490,
+          yesterday_high: 1520,
+          today_low: 1495,
+          today_high: 1510,
+        },
+      ],
+    });
     expect(cb).toHaveBeenCalledTimes(1);
     expect(marketStore.getSymbols()).toEqual(["INFY", "RELIANCE", "TCS"]);
   });
@@ -116,8 +163,11 @@ describe("marketStore.applyFrame", () => {
     const cb = vi.fn();
     const unsub = marketStore.subscribeStock("RELIANCE", cb);
     unsub();
-    marketStore.applyFrame({ type: "delta", seq: 2,
-      stocks: [{ symbol: "RELIANCE", ltp: 101 }] });
+    marketStore.applyFrame({
+      type: "delta",
+      seq: 2,
+      stocks: [{ symbol: "RELIANCE", ltp: 101 }],
+    });
     expect(cb).not.toHaveBeenCalled();
   });
 });

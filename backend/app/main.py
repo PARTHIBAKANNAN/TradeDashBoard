@@ -7,12 +7,14 @@ task fans a diffed JSON frame out to all WebSocket subscribers every
 ever exposed to the client. A built-in login (session cookie) gates the
 dashboard; FYERS account auth is handled separately via /callback + /api/auth/*.
 """
+
 import asyncio
 import json as _json
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import (Depends, FastAPI, HTTPException, Request, WebSocket,
+                     WebSocketDisconnect)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -22,7 +24,8 @@ from starlette.middleware.sessions import SessionMiddleware
 from . import auth, config, security
 from .broadcaster import Broadcaster, build_frame, snapshot_from_state
 from .fyers_service import data_engine
-from .scheduler import ensure_engine_running, init_scheduler, is_market_open, shutdown_scheduler
+from .scheduler import (ensure_engine_running, init_scheduler, is_market_open,
+                        shutdown_scheduler)
 from .state import market_state
 
 
@@ -116,7 +119,9 @@ async def fyers_callback(request: Request):
         return HTMLResponse(_callback_html(False, "No auth_code in the redirect."), status_code=400)
     token = auth.exchange_and_cache(auth_code)
     if not token:
-        return HTMLResponse(_callback_html(False, "Token exchange failed. Check server logs."), status_code=400)
+        return HTMLResponse(
+            _callback_html(False, "Token exchange failed. Check server logs."), status_code=400
+        )
     data_engine.set_token(token)
     # Bring the data engine up now if the market is open.
     ensure_engine_running()
@@ -207,6 +212,7 @@ if os.path.isdir(_DIST) and os.path.isfile(_INDEX):
         if full_path.startswith("api/") or full_path == "callback":
             return JSONResponse({"detail": "not found"}, status_code=404)
         return FileResponse(_INDEX)
+
 else:
     print(f"[main] Frontend dist not found at {_DIST}; not serving SPA (dev mode / Vite proxy).")
 

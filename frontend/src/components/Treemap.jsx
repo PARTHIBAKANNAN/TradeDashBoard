@@ -46,12 +46,7 @@ function buildStockLevelHierarchy(stocks, sector) {
     name: sector,
     children: members.map((s) => ({
       name: s.symbol,
-      value:
-        s.traded_value > 0
-          ? s.traded_value
-          : s.volume > 0
-            ? s.volume
-            : 1,
+      value: s.traded_value > 0 ? s.traded_value : s.volume > 0 ? s.volume : 1,
       pct_change: s.pct_change,
       ltp: s.ltp,
       volume: s.volume,

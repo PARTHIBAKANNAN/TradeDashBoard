@@ -27,7 +27,8 @@ export function aggregate(members) {
   const pctChanges = members.map((s) => s.pct_change || 0);
   const totalVolume = members.reduce((sum, s) => sum + (s.volume || 0), 0);
   const totalTradedValue = members.reduce(
-    (sum, s) => sum + (s.traded_value || (s.volume ? s.ltp * s.volume : 0) || 0),
+    (sum, s) =>
+      sum + (s.traded_value || (s.volume ? s.ltp * s.volume : 0) || 0),
     0,
   );
   const mean = pctChanges.length

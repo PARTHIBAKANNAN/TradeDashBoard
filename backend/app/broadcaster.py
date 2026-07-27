@@ -9,16 +9,27 @@ Real-time streaming layer.
 The `Broadcaster` class defined below drives these on a fixed cadence and fans
 each frame out to connected WebSocket subscribers.
 """
+
 import asyncio
 import json
 from typing import Callable, Optional
 
 # Every field the client needs to render a fresh row.
 SNAPSHOT_STOCK_FIELDS: tuple[str, ...] = (
-    "symbol", "sector",
-    "ltp", "pct_change", "relative_strength", "day_range_pos",
-    "signal", "signal_time", "volume", "traded_value",
-    "yesterday_low", "yesterday_high", "today_low", "today_high",
+    "symbol",
+    "sector",
+    "ltp",
+    "pct_change",
+    "relative_strength",
+    "day_range_pos",
+    "signal",
+    "signal_time",
+    "volume",
+    "traded_value",
+    "yesterday_low",
+    "yesterday_high",
+    "today_low",
+    "today_high",
 )
 # Fields whose values are compared to detect a delta (identity fields excluded).
 DIFFABLE_STOCK_FIELDS: tuple[str, ...] = tuple(
@@ -50,9 +61,7 @@ def _stock_snapshot_entry(stock: dict) -> dict:
 def _stock_delta_entry(prev: dict, curr: dict) -> Optional[dict]:
     """Return {'symbol': X, ...changed fields} or None if nothing changed."""
     changed = {
-        f: curr[f]
-        for f in DIFFABLE_STOCK_FIELDS
-        if f in curr and prev.get(f) != curr.get(f)
+        f: curr[f] for f in DIFFABLE_STOCK_FIELDS if f in curr and prev.get(f) != curr.get(f)
     }
     if not changed:
         return None
@@ -64,8 +73,9 @@ def _nifty_delta(prev: dict, curr: dict) -> Optional[dict]:
     return changed or None
 
 
-def build_frame(prev: Optional[dict], curr: dict, seq: int,
-                force_snapshot: bool = False) -> Optional[dict]:
+def build_frame(
+    prev: Optional[dict], curr: dict, seq: int, force_snapshot: bool = False
+) -> Optional[dict]:
     """
     Diff two snapshots into the smallest wire frame.
 
@@ -119,9 +129,13 @@ class Broadcaster:
     asyncio.Queues. Slow subscribers are silently resynced (drain + snapshot).
     """
 
-    def __init__(self, snapshot_provider: Callable[[], dict],
-                 interval: float = 0.25, max_queue: int = 8,
-                 heartbeat_secs: float = 5.0):
+    def __init__(
+        self,
+        snapshot_provider: Callable[[], dict],
+        interval: float = 0.25,
+        max_queue: int = 8,
+        heartbeat_secs: float = 5.0,
+    ):
         self._provider = snapshot_provider
         self._interval = interval
         self._max_queue = max_queue
@@ -189,8 +203,7 @@ class Broadcaster:
             self._quiet_ticks += 1
             if self._quiet_ticks >= self._heartbeat_ticks:
                 self._quiet_ticks = 0
-                hb_msg = json.dumps({"type": "heartbeat", "seq": self._seq},
-                                    separators=(",", ":"))
+                hb_msg = json.dumps({"type": "heartbeat", "seq": self._seq}, separators=(",", ":"))
                 for q in list(self._subs):
                     try:
                         q.put_nowait(hb_msg)

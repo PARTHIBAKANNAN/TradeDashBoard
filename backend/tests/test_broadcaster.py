@@ -2,25 +2,28 @@
 Tests for the pure frame differ. No asyncio, no sockets — just dict math.
 Run from backend/:  python -m tests.test_broadcaster
 """
+
 import asyncio
 import json
 
-from app.broadcaster import (
-    DIFFABLE_STOCK_FIELDS,
-    SNAPSHOT_STOCK_FIELDS,
-    build_frame,
-    Broadcaster,
-)
+from app.broadcaster import (DIFFABLE_STOCK_FIELDS, SNAPSHOT_STOCK_FIELDS,
+                             Broadcaster, build_frame)
 
 
 def _stock(symbol="RELIANCE", ltp=100.0, pct_change=0.0, day_range_pos=50.0):
     return {
-        "symbol": symbol, "sector": "Energy",
-        "ltp": ltp, "pct_change": pct_change,
-        "relative_strength": 0.0, "day_range_pos": day_range_pos,
-        "signal": "None", "signal_time": "",
-        "yesterday_low": 90.0, "yesterday_high": 110.0,
-        "today_low": 95.0, "today_high": 105.0,
+        "symbol": symbol,
+        "sector": "Energy",
+        "ltp": ltp,
+        "pct_change": pct_change,
+        "relative_strength": 0.0,
+        "day_range_pos": day_range_pos,
+        "signal": "None",
+        "signal_time": "",
+        "yesterday_low": 90.0,
+        "yesterday_high": 110.0,
+        "today_low": 95.0,
+        "today_high": 105.0,
     }
 
 
@@ -56,7 +59,7 @@ def test_single_stock_changed_produces_minimal_delta():
     frame = build_frame(prev=prev, curr=curr, seq=2)
     assert frame["type"] == "delta"
     assert frame["seq"] == 2
-    assert "nifty" not in frame        # nifty unchanged -> omitted
+    assert "nifty" not in frame  # nifty unchanged -> omitted
     assert len(frame["stocks"]) == 1
     entry = frame["stocks"][0]
     # Only 'symbol' key + the fields that changed.
@@ -144,6 +147,7 @@ def test_broadcaster_first_frame_is_snapshot():
 
 def test_broadcaster_emits_delta_on_change():
     provider_state = {"seq": 0}
+
     def provider():
         provider_state["seq"] += 1
         n = provider_state["seq"]
@@ -174,6 +178,7 @@ def test_broadcaster_emits_delta_on_change():
 def test_slow_subscriber_receives_snapshot_after_overflow():
     # Provider always returns a changed snapshot so every tick produces a delta.
     counter = {"n": 0}
+
     def provider():
         counter["n"] += 1
         return _snapshot([_stock(ltp=100.0 + counter["n"])])
@@ -232,6 +237,7 @@ def test_unsubscribe_stops_delivery():
 def test_heartbeat_emitted_after_quiet():
     # Static provider: every tick returns the same snapshot → no delta ever.
     static = _snapshot([_stock(ltp=100.0)])
+
     def provider():
         return static
 
