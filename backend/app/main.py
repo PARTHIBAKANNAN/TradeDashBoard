@@ -111,7 +111,7 @@ async def fyers_login_url():
     return {"url": auth.build_login_url()}
 
 
-@app.get("/callback", response_class=HTMLResponse)
+@app.get("/callback", response_class=HTMLResponse, dependencies=[Depends(require_login)])
 async def fyers_callback(request: Request):
     """FYERS redirects here after browser authorization; auto-capture the code."""
     auth_code = request.query_params.get("auth_code")
