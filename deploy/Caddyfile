@@ -3,12 +3,27 @@
 # /etc/caddy/Caddyfile, then: sudo systemctl reload caddy
 #
 # Requires ports 80 + 443 open (Oracle VCN Security List AND the host firewall).
+#
+# Everything the backend actually owns must be routed explicitly by path
+# prefix — anything NOT matched here falls through to the static file_server,
+# which will silently 200 with index.html instead of erroring. This has bitten
+# us twice already: /callback (FYERS OAuth redirect) and /ws/* (the live
+# WebSocket stream) both looked like "nothing works" bugs in the app before
+# anyone noticed Caddy itself was never forwarding those specific paths.
 
-parthitrade.duckdns.org {
-    encode zstd gzip
-
-    # SSE needs streaming (no response buffering). Caddy streams by default; make it explicit.
-    reverse_proxy 127.0.0.1:8000 {
-        flush_interval -1
+trading-dashboard-1.duckdns.org {
+    handle /api/* {
+        reverse_proxy localhost:8000
+    }
+    handle /callback* {
+        reverse_proxy localhost:8000
+    }
+    handle /ws/* {
+        reverse_proxy localhost:8000
+    }
+    handle {
+        root * /home/ubuntu/app/frontend/dist
+        file_server
+        try_files {path} /index.html
     }
 }
