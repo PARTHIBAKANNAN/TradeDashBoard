@@ -105,7 +105,10 @@ function persistCandles(force = false) {
   try {
     localStorage.setItem(
       CANDLE_CACHE_KEY,
-      JSON.stringify({ day: candleDay, candles: Object.fromEntries(candlesMap) }),
+      JSON.stringify({
+        day: candleDay,
+        candles: Object.fromEntries(candlesMap),
+      }),
     );
   } catch {
     /* ignore — e.g. storage quota; candles just won't survive a reload this time */
