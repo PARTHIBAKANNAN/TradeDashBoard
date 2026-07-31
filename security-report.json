@@ -31,7 +31,7 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "account": "",
         "local_database_path": null,
         "safety_version": "3.8.1",
-        "timestamp": "2026-07-28 11:10:44",
+        "timestamp": "2026-07-30 11:00:12",
         "packages_found": 11,
         "vulnerabilities_found": 14,
         "vulnerabilities_ignored": 0,
@@ -56,7 +56,7 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "git": {
             "branch": "main",
             "tag": "",
-            "commit": "22f0745f348ba5c550b1f02774991e61d2d190e8",
+            "commit": "964d2338615aeaad40388042fa91a7c8b2787dda",
             "dirty": "True",
             "origin": "https://github.com/PARTHIBAKANNAN/TradeDashBoard"
         },
@@ -1020,39 +1020,6 @@ We highly encourage switching to the new `scan` command which is easier to use, 
             "more_info_url": "https://getsafety.com/v/SFTY-20260615-02573/97c"
         },
         {
-            "vulnerability_id": "89028",
-            "package_name": "pyjwt",
-            "ignored": {},
-            "ignored_reason": null,
-            "ignored_expires": null,
-            "vulnerable_spec": [
-                "<2.12.0"
-            ],
-            "all_vulnerable_specs": [
-                "<2.12.0"
-            ],
-            "analyzed_version": "2.10.1",
-            "analyzed_requirement": {
-                "raw": "pyjwt==2.10.1",
-                "extras": [],
-                "marker": null,
-                "name": "pyjwt",
-                "specifier": "==2.10.1",
-                "url": null,
-                "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
-            },
-            "advisory": "Affected versions of this package are vulnerable to Insufficient Verification of Data Authenticity. The library does not validate the `crit` (Critical) Header Parameter as required by RFC 7515 \u00a74.1.11 \u2014 when a JWT contains a `crit` array listing extensions that the library does not understand, the token is accepted instead of rejected. An attacker can exploit this vulnerability by crafting JWTs with unknown critical extensions (e.g., MFA requirements, token binding, scope restrictions) that are silently ignored, potentially bypassing security policies or causing split-brain verification in mixed-library deployments where other RFC-compliant libraries would reject the same token.",
-            "is_transitive": false,
-            "published_date": null,
-            "fixed_versions": [],
-            "closest_versions_without_known_vulnerabilities": [],
-            "resources": [],
-            "CVE": "CVE-2026-32597",
-            "severity": null,
-            "affected_versions": [],
-            "more_info_url": "https://getsafety.com/v/89028/97c"
-        },
-        {
             "vulnerability_id": "SFTY-20260615-71642",
             "package_name": "pyjwt",
             "ignored": {},
@@ -1084,6 +1051,39 @@ We highly encourage switching to the new `scan` command which is easier to use, 
             "severity": null,
             "affected_versions": [],
             "more_info_url": "https://getsafety.com/v/SFTY-20260615-71642/97c"
+        },
+        {
+            "vulnerability_id": "89028",
+            "package_name": "pyjwt",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                "<2.12.0"
+            ],
+            "all_vulnerable_specs": [
+                "<2.12.0"
+            ],
+            "analyzed_version": "2.10.1",
+            "analyzed_requirement": {
+                "raw": "pyjwt==2.10.1",
+                "extras": [],
+                "marker": null,
+                "name": "pyjwt",
+                "specifier": "==2.10.1",
+                "url": null,
+                "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
+            },
+            "advisory": "Affected versions of this package are vulnerable to Insufficient Verification of Data Authenticity. The library does not validate the `crit` (Critical) Header Parameter as required by RFC 7515 \u00a74.1.11 \u2014 when a JWT contains a `crit` array listing extensions that the library does not understand, the token is accepted instead of rejected. An attacker can exploit this vulnerability by crafting JWTs with unknown critical extensions (e.g., MFA requirements, token binding, scope restrictions) that are silently ignored, potentially bypassing security policies or causing split-brain verification in mixed-library deployments where other RFC-compliant libraries would reject the same token.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2026-32597",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://getsafety.com/v/89028/97c"
         },
         {
             "vulnerability_id": "94066",
