@@ -2,6 +2,8 @@ import { useEffect, useSyncExternalStore } from "react";
 import { marketStore } from "../store/marketStore.js";
 
 const CACHE_KEY = "dashboard_offline_cache";
+const CANDLE_CACHE_KEY = "dashboard_candle_cache";
+const CANDLE_PERSIST_INTERVAL_MS = 15_000;
 const CANDLE_INTERVAL_MIN = 5;
 
 // Minutes-since-midnight, floored to current 5-min bucket
@@ -27,6 +29,7 @@ let lastFrameAt = 0;
 
 let candlesMap = new Map(); // symbol -> candle[]
 let candleDay = dayStamp(new Date());
+let lastCandlePersistAt = 0;
 
 function scheduleReconnect() {
   if (reconnectTimer) return;
@@ -55,12 +58,14 @@ function armHeartbeat() {
 function warmFromCache() {
   try {
     const cached = localStorage.getItem(CACHE_KEY);
-    if (!cached) return;
-    const frame = JSON.parse(cached);
-    if (frame && frame.type === "snapshot") marketStore.applyFrame(frame);
+    if (cached) {
+      const frame = JSON.parse(cached);
+      if (frame && frame.type === "snapshot") marketStore.applyFrame(frame);
+    }
   } catch {
     /* ignore */
   }
+  restoreCandles();
 }
 
 function persistSnapshot(frame) {
@@ -70,6 +75,40 @@ function persistSnapshot(frame) {
     }
   } catch {
     /* ignore */
+  }
+}
+
+// Candle history is rebuilt purely from live ticks (see processCandles), so a
+// plain page reload used to throw away everything accumulated so far today —
+// annoying if you refresh mid-session. Persist/restore it separately from the
+// main offline-cache snapshot (which intentionally excludes candles to keep
+// that write small/fast every tick — see persistSnapshot). Restoring is only
+// valid for the *same* trading day; a stale cache from a previous day is
+// discarded so the chart still correctly starts empty each morning.
+function restoreCandles() {
+  try {
+    const raw = localStorage.getItem(CANDLE_CACHE_KEY);
+    if (!raw) return;
+    const { day, candles } = JSON.parse(raw);
+    if (day !== dayStamp(new Date())) return;
+    candleDay = day;
+    candlesMap = new Map(Object.entries(candles || {}));
+  } catch {
+    /* ignore */
+  }
+}
+
+function persistCandles(force = false) {
+  const now = Date.now();
+  if (!force && now - lastCandlePersistAt < CANDLE_PERSIST_INTERVAL_MS) return;
+  lastCandlePersistAt = now;
+  try {
+    localStorage.setItem(
+      CANDLE_CACHE_KEY,
+      JSON.stringify({ day: candleDay, candles: Object.fromEntries(candlesMap) }),
+    );
+  } catch {
+    /* ignore — e.g. storage quota; candles just won't survive a reload this time */
   }
 }
 
@@ -146,6 +185,7 @@ function connect() {
       processCandles(frame.stocks);
       marketStore.applyFrame(frame);
       persistSnapshot(frame);
+      persistCandles();
     } catch (err) {
       console.error("WS decode error:", err);
     }
@@ -173,6 +213,7 @@ function acquire() {
 function release() {
   refCount = Math.max(0, refCount - 1);
   if (refCount === 0) {
+    persistCandles(true); // flush immediately rather than waiting for the throttle
     backoffMs = 500;
     if (reconnectTimer) {
       clearTimeout(reconnectTimer);
