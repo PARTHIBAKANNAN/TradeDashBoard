@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { Search, Star, PlusCircle } from "lucide-react";
 import WatchlistRow from "../components/WatchlistRow.jsx";
 
-export default function WatchlistScreen({ stocks }) {
+export default function WatchlistScreen({ stocks, nifty }) {
   const [watchlist, setWatchlist] = useState(
     JSON.parse(localStorage.getItem("watchlist") || "[]"),
   );
@@ -91,6 +91,7 @@ export default function WatchlistScreen({ stocks }) {
                       key={stock.symbol}
                       stock={stock}
                       index={i}
+                      niftyPctChange={nifty?.pct_change || 0}
                       leading={
                         <button
                           onClick={() => toggleWatchlist(stock.symbol)}

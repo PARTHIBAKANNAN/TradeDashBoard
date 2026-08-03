@@ -14,7 +14,7 @@ shared state, and it delegates all arithmetic to these helpers.
 from datetime import datetime
 from datetime import time as dt_time
 
-from . import order_monitor
+from . import candle_aggregator, order_monitor
 from .config import IST, ORB_CANDLES
 
 
@@ -196,6 +196,7 @@ def process_incoming_tick(
         )
 
         now_ist = datetime.now(IST)
+        candle_aggregator.on_tick(stock, ltp, now_ist)
         signal, signal_time = evaluate_orb(stock["orb"], ltp, now_ist, stock["signal"])
         # The breakout-quality rules apply specifically to the 30-min opening-
         # range breakout (both directions), not later C2-C4 structural breaks:

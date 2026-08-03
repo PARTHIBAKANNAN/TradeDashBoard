@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ArrowUpCircle, ArrowDownCircle, Loader2 } from "lucide-react";
 import { fetchMargin, placeOrder } from "../../hooks/useOrders.js";
+import TslFields from "./TslFields.jsx";
 
 const SIDES = ["BUY", "SELL"];
 const ORDER_TYPES = ["MARKET", "LIMIT"];
@@ -20,6 +21,8 @@ export default function PlaceOrderForm({ stocks, defaultSymbol, lockSymbol = fal
   const [limitPrice, setLimitPrice] = useState("");
   const [slPrice, setSlPrice] = useState("");
   const [targetPrice, setTargetPrice] = useState("");
+  const [tslType, setTslType] = useState("");
+  const [tslValue, setTslValue] = useState("");
   const [margin, setMargin] = useState(null);
   const [marginLoading, setMarginLoading] = useState(false);
   const [error, setError] = useState("");
@@ -71,6 +74,10 @@ export default function PlaceOrderForm({ stocks, defaultSymbol, lockSymbol = fal
       setError("Limit price is required for a LIMIT order.");
       return;
     }
+    if (tslType && (!tslValue || Number(tslValue) <= 0)) {
+      setError("Trailing stop value is required when a trail type is selected.");
+      return;
+    }
     setBusy(true);
     try {
       await placeOrder({
@@ -81,9 +88,13 @@ export default function PlaceOrderForm({ stocks, defaultSymbol, lockSymbol = fal
         limit_price: orderType === "LIMIT" ? Number(limitPrice) : undefined,
         sl_price: slPrice ? Number(slPrice) : undefined,
         target_price: targetPrice ? Number(targetPrice) : undefined,
+        tsl_type: tslType || undefined,
+        tsl_value: tslType && tslValue ? Number(tslValue) : undefined,
       });
       setSlPrice("");
       setTargetPrice("");
+      setTslType("");
+      setTslValue("");
       if (orderType === "LIMIT") setLimitPrice("");
       onPlaced?.();
     } catch (err) {
@@ -217,6 +228,13 @@ export default function PlaceOrderForm({ stocks, defaultSymbol, lockSymbol = fal
           />
         </div>
       </div>
+
+      <TslFields
+        tslType={tslType}
+        tslValue={tslValue}
+        onTypeChange={setTslType}
+        onValueChange={setTslValue}
+      />
 
       <div className="rounded-lg border border-subtle bg-surface3/50 px-3 py-2.5 text-xs space-y-1">
         {marginLoading ? (

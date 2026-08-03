@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowUp, ArrowDown, Rocket } from "lucide-react";
+import { ArrowUp, ArrowDown, Rocket, AlertTriangle } from "lucide-react";
 import MiniCandlestick from "./MiniCandlestick.jsx";
 import QuickTradeModal from "./paper-trading/QuickTradeModal.jsx";
 import { useStock } from "../hooks/useMarketStream.js";
@@ -9,7 +9,7 @@ import { rangeMap } from "../lib/rangeMap.js";
 // React.memo isolates re-renders to rows whose stock object actually changed.
 // Accepts either `symbol` (subscribes via useStock) or `stock` prop directly.
 const WatchlistRow = React.memo(
-  ({ stock: propStock, symbol, index = 0, leading }) => {
+  ({ stock: propStock, symbol, index = 0, leading, niftyPctChange = 0 }) => {
     const stockFromHook = useStock(symbol || propStock?.symbol);
     const stock = stockFromHook || propStock;
     const [tradeOpen, setTradeOpen] = useState(false);
@@ -41,6 +41,13 @@ const WatchlistRow = React.memo(
     const isRsPositive = stock.relative_strength >= 0;
     const hasSignal = stock.signal && stock.signal !== "None";
     const isBull = hasSignal && stock.signal.includes("Bull");
+    // Already near today's high/low — a fresh entry here has less room left
+    // in either direction than a stock still mid-range.
+    const isExtended = stock.day_range_pos >= 85 || stock.day_range_pos <= 15;
+    // Signal direction disagreeing with the broader market (Nifty) — lower
+    // probability follow-through than a signal aligned with the index.
+    const againstTrend =
+      hasSignal && ((isBull && niftyPctChange < 0) || (!isBull && niftyPctChange > 0));
 
     return (
       <motion.tr
@@ -86,8 +93,16 @@ const WatchlistRow = React.memo(
         <td className="py-3 px-4 text-center">
           <div className="flex flex-col items-center">
             <MiniCandlestick candles={stock.candles} />
-            <div className="text-[10px] text-faint font-mono mt-1">
+            <div className="text-[10px] text-faint font-mono mt-1 flex items-center gap-1">
               {stock.day_range_pos}% of day range
+              {isExtended && (
+                <span
+                  title="Already near today's high/low — less room left for a fresh entry"
+                  className="text-accent-amber font-bold"
+                >
+                  Extended
+                </span>
+              )}
             </div>
           </div>
         </td>
@@ -105,6 +120,13 @@ const WatchlistRow = React.memo(
               <span className="flex items-center gap-1">
                 {isBull ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
                 {stock.signal}
+                {againstTrend && (
+                  <AlertTriangle
+                    size={10}
+                    className="text-accent-amber"
+                    title={`Nifty is ${niftyPctChange >= 0 ? "up" : "down"} — this breakout is against the broader trend`}
+                  />
+                )}
               </span>
               <span className="text-[10px] font-semibold text-muted mt-0.5 font-mono">
                 {stock.signal_time}

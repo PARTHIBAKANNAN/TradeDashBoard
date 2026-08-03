@@ -130,12 +130,27 @@ async def fill_order(order_id: int, user_id: str, ltp: float) -> dict | None:
             )
             filled = await conn.fetchrow(
                 "update public.paper_orders set status='OPEN', entry_price=$1, margin_locked=$2, "
+                "peak_price=case when tsl_type is not null then $1 else peak_price end, "
                 "filled_at=now() where id=$3 returning *",
                 ltp, margin, order_id,
             )
     order_monitor.unregister(order_id, row["symbol"])
     order_monitor.register_open_bracket(dict(filled))
     return _serialize(dict(filled))
+
+
+async def update_trailing_stop(order_id: int, user_id: str, sl_price: float, peak_price: float) -> None:
+    """System-driven: called only from order_monitor's tick-driven ratchet, never
+    from a user request, so no separate ownership ambiguity beyond the WHERE clause."""
+    pool = get_pool()
+    if pool is None:
+        return
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "update public.paper_orders set sl_price=$1, peak_price=$2 "
+            "where id=$3 and user_id=$4 and status='OPEN'",
+            sl_price, peak_price, order_id, user_id,
+        )
 
 
 async def close_order(order_id: int, user_id: str, reason: str, exit_price: float) -> dict | None:
@@ -221,6 +236,15 @@ class PlaceOrderBody(BaseModel):
     limit_price: float | None = None
     sl_price: float | None = None
     target_price: float | None = None
+    tsl_type: str | None = None
+    tsl_value: float | None = None
+
+
+class ModifyPositionBody(BaseModel):
+    sl_price: float | None = None
+    target_price: float | None = None
+    tsl_type: str | None = None
+    tsl_value: float | None = None
 
 
 # ---------------- endpoints ----------------
@@ -244,6 +268,15 @@ async def get_margin(symbol: str, request: Request):
     }
 
 
+def _validate_tsl(tsl_type: str | None, tsl_value: float | None) -> None:
+    if tsl_type is None:
+        return
+    if tsl_type not in ("PERCENT", "POINTS"):
+        raise HTTPException(status_code=400, detail="tsl_type must be PERCENT or POINTS")
+    if not tsl_value or tsl_value <= 0:
+        raise HTTPException(status_code=400, detail="tsl_value is required when tsl_type is set")
+
+
 @router.post("/orders")
 async def place_order(body: PlaceOrderBody, request: Request):
     user_id = await _current_user_id(request)
@@ -253,6 +286,7 @@ async def place_order(body: PlaceOrderBody, request: Request):
         raise HTTPException(status_code=400, detail="order_type must be MARKET or LIMIT")
     if body.quantity <= 0:
         raise HTTPException(status_code=400, detail="quantity must be positive")
+    _validate_tsl(body.tsl_type, body.tsl_value)
 
     stock = market_state.get_stock(body.symbol)
     if stock is None:
@@ -269,16 +303,18 @@ async def place_order(body: PlaceOrderBody, request: Request):
         async with pool.acquire() as conn:
             row = await conn.fetchrow(
                 "insert into public.paper_orders "
-                "(user_id, symbol, side, quantity, order_type, limit_price, sl_price, target_price, status) "
-                "values ($1,$2,$3,$4,'LIMIT',$5,$6,$7,'PENDING') returning *",
+                "(user_id, symbol, side, quantity, order_type, limit_price, sl_price, target_price, "
+                "tsl_type, tsl_value, status) "
+                "values ($1,$2,$3,$4,'LIMIT',$5,$6,$7,$8,$9,'PENDING') returning *",
                 user_id, body.symbol, body.side, body.quantity, body.limit_price,
-                body.sl_price, body.target_price,
+                body.sl_price, body.target_price, body.tsl_type, body.tsl_value,
             )
         order_monitor.register_pending_limit(dict(row))
         return _serialize(dict(row))
 
     # MARKET: fills immediately at the live LTP.
     margin = paper_margin.required_margin(ltp, body.quantity)
+    peak_price = ltp if body.tsl_type else None
     async with pool.acquire() as conn:
         async with conn.transaction():
             wallet = await conn.fetchrow(
@@ -294,14 +330,50 @@ async def place_order(body: PlaceOrderBody, request: Request):
             row = await conn.fetchrow(
                 "insert into public.paper_orders "
                 "(user_id, symbol, side, quantity, order_type, sl_price, target_price, "
-                "entry_price, margin_locked, status, filled_at) "
-                "values ($1,$2,$3,$4,'MARKET',$5,$6,$7,$8,'OPEN', now()) returning *",
+                "tsl_type, tsl_value, peak_price, entry_price, margin_locked, status, filled_at) "
+                "values ($1,$2,$3,$4,'MARKET',$5,$6,$7,$8,$9,$10,$11,'OPEN', now()) returning *",
                 user_id, body.symbol, body.side, body.quantity, body.sl_price,
-                body.target_price, ltp, margin,
+                body.target_price, body.tsl_type, body.tsl_value, peak_price, ltp, margin,
             )
-    if body.sl_price or body.target_price:
+    if body.sl_price or body.target_price or body.tsl_type:
         order_monitor.register_open_bracket(dict(row))
     return _serialize(dict(row))
+
+
+@router.post("/orders/{order_id}/modify")
+async def modify_position(order_id: int, body: ModifyPositionBody, request: Request):
+    """Full-replace the bracket on an OPEN position: SL, Target, and/or TSL.
+    The client always sends the complete desired state (the edit UI pre-fills
+    current values) — there's no partial-patch semantics here."""
+    user_id = await _current_user_id(request)
+    _validate_tsl(body.tsl_type, body.tsl_value)
+    pool = _require_pool()
+
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "select * from public.paper_orders where id=$1 and user_id=$2 and status='OPEN'",
+            order_id, user_id,
+        )
+        if row is None:
+            raise HTTPException(status_code=404, detail="position not found")
+
+        # Trailing should start fresh from "now" whenever TSL is (re)configured,
+        # not from the original entry price — the intuitive behavior when a
+        # trader adds/changes a TSL mid-trade.
+        if body.tsl_type:
+            stock = market_state.get_stock(row["symbol"])
+            new_peak = stock["ltp"] if stock and stock["ltp"] else float(row["entry_price"])
+        else:
+            new_peak = None
+
+        updated = await conn.fetchrow(
+            "update public.paper_orders set sl_price=$1, target_price=$2, tsl_type=$3, "
+            "tsl_value=$4, peak_price=$5 where id=$6 returning *",
+            body.sl_price, body.target_price, body.tsl_type, body.tsl_value, new_peak, order_id,
+        )
+    order_monitor.unregister(order_id, row["symbol"])
+    order_monitor.register_open_bracket(dict(updated))
+    return _serialize(dict(updated))
 
 
 @router.post("/orders/{order_id}/cancel")

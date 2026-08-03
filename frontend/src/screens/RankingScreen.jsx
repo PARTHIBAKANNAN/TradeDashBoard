@@ -47,7 +47,7 @@ const SORTS = {
   sym: { label: "Symbol A-Z", fn: (a, b) => a.symbol.localeCompare(b.symbol) },
 };
 
-export default function RankingScreen({ stocks }) {
+export default function RankingScreen({ stocks, nifty }) {
   const [showFilters, setShowFilters] = useState(true);
   const [selectedSignal, setSelectedSignal] = useState("All signals");
   const [selectedSector, setSelectedSector] = useState("All sectors");
@@ -227,7 +227,12 @@ export default function RankingScreen({ stocks }) {
                 </thead>
                 <tbody>
                   {filteredStocks.map((stock, i) => (
-                    <WatchlistRow key={stock.symbol} stock={stock} index={i} />
+                    <WatchlistRow
+                      key={stock.symbol}
+                      stock={stock}
+                      index={i}
+                      niftyPctChange={nifty?.pct_change || 0}
+                    />
                   ))}
                 </tbody>
               </table>

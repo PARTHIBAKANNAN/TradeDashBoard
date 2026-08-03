@@ -44,6 +44,16 @@ export async function placeOrder(body) {
   return order;
 }
 
+export async function modifyPosition(id, body) {
+  const order = await api(`/api/paper/orders/${id}/modify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  await fetchPositions();
+  return order;
+}
+
 export async function cancelOrder(id) {
   const order = await api(`/api/paper/orders/${id}/cancel`, { method: "POST" });
   await Promise.all([fetchPositions(), fetchHistory()]);

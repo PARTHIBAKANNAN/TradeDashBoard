@@ -16,6 +16,8 @@ top-level import between the two modules.
 
 import asyncio
 
+from . import trailing_stop
+
 _pending_limits: dict[str, list[dict]] = {}  # symbol -> [order dict]
 _open_brackets: dict[str, list[dict]] = {}  # symbol -> [order dict]
 
@@ -39,7 +41,7 @@ def register_pending_limit(order: dict) -> None:
 
 
 def register_open_bracket(order: dict) -> None:
-    if not order.get("sl_price") and not order.get("target_price"):
+    if not order.get("sl_price") and not order.get("target_price") and not order.get("tsl_type"):
         return  # nothing to watch for this position
     _open_brackets.setdefault(order["symbol"], []).append(order)
 
@@ -71,6 +73,29 @@ def _bracket_hit(order: dict, ltp: float) -> str | None:
     return None
 
 
+def _ratchet_trailing_stop(order: dict, ltp: float) -> None:
+    """Mutate `order` in place: advance peak_price and, if favorable, sl_price.
+    Runs before the bracket-hit check on the same tick so a stop crossed by
+    this tick's own ratchet is caught immediately, not one tick late."""
+    prev_peak = order.get("peak_price") or order["entry_price"]
+    new_peak = trailing_stop.update_peak(order["side"], float(prev_peak), ltp)
+    candidate = trailing_stop.trailing_sl_price(
+        order["side"], new_peak, order["tsl_type"], float(order["tsl_value"])
+    )
+    prev_sl = order.get("sl_price")
+    new_sl = trailing_stop.ratchet_sl(order["side"], float(prev_sl) if prev_sl else None, candidate)
+
+    changed = new_peak != prev_peak or new_sl != prev_sl
+    order["peak_price"] = new_peak
+    order["sl_price"] = new_sl
+    if changed:
+        from . import paper_trading
+
+        asyncio.create_task(
+            paper_trading.update_trailing_stop(order["id"], order["user_id"], new_sl, new_peak)
+        )
+
+
 async def on_tick(symbol: str, ltp: float) -> None:
     """React to a live price tick for one symbol. Cheap dict lookups only —
     DB writes (rare relative to raw tick volume) happen via fire-and-forget
@@ -81,6 +106,8 @@ async def on_tick(symbol: str, ltp: float) -> None:
         if _limit_hit(order, ltp):
             asyncio.create_task(paper_trading.fill_order(order["id"], order["user_id"], ltp))
     for order in list(_open_brackets.get(symbol, [])):
+        if order.get("tsl_type"):
+            _ratchet_trailing_stop(order, ltp)
         reason = _bracket_hit(order, ltp)
         if reason:
             asyncio.create_task(paper_trading.close_order(order["id"], order["user_id"], reason, ltp))
@@ -107,8 +134,8 @@ async def load_from_db() -> None:
     async with pool.acquire() as conn:
         rows = await conn.fetch(
             "select id, user_id, symbol, side, quantity, order_type, limit_price, "
-            "sl_price, target_price, entry_price, status from public.paper_orders "
-            "where status in ('PENDING', 'OPEN')"
+            "sl_price, target_price, entry_price, tsl_type, tsl_value, peak_price, status "
+            "from public.paper_orders where status in ('PENDING', 'OPEN')"
         )
     _pending_limits.clear()
     _open_brackets.clear()
