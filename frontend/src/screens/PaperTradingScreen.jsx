@@ -11,9 +11,12 @@ export default function PaperTradingScreen({ stocks }) {
             <FlaskConical size={17} />
           </span>
           <div>
-            <h2 className="text-lg font-bold text-primary font-display">Paper Trading</h2>
+            <h2 className="text-lg font-bold text-primary font-display">
+              Paper Trading
+            </h2>
             <p className="text-xs text-faint">
-              Simulated intraday orders against live prices — no real money, no real broker orders
+              Simulated intraday orders against live prices — no real money, no
+              real broker orders
             </p>
           </div>
         </div>

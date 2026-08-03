@@ -18,7 +18,10 @@ export default function PositionRow({ order }) {
 
   const isPending = order.status === "PENDING";
   const ltp = live?.ltp || order.ltp;
-  const pnl = !isPending && ltp ? unrealizedPnl(order.side, order.quantity, order.entry_price, ltp) : null;
+  const pnl =
+    !isPending && ltp
+      ? unrealizedPnl(order.side, order.quantity, order.entry_price, ltp)
+      : null;
 
   const act = async (fn) => {
     setBusy(true);
@@ -44,7 +47,9 @@ export default function PositionRow({ order }) {
           {order.side}
         </span>
       </td>
-      <td className="py-2.5 px-4 text-right font-mono tabular-nums">{order.quantity}</td>
+      <td className="py-2.5 px-4 text-right font-mono tabular-nums">
+        {order.quantity}
+      </td>
       <td className="py-2.5 px-4 text-right font-mono tabular-nums">
         {isPending ? (
           <span className="text-accent-amber">{order.limit_price}</span>
@@ -53,7 +58,7 @@ export default function PositionRow({ order }) {
         )}
       </td>
       <td className="py-2.5 px-4 text-right font-mono tabular-nums">
-        {isPending ? "—" : ltp ?? "—"}
+        {isPending ? "—" : (ltp ?? "—")}
       </td>
       <td className="py-2.5 px-4 text-right font-mono tabular-nums">
         {order.sl_price || order.target_price || order.tsl_type ? (
@@ -63,7 +68,11 @@ export default function PositionRow({ order }) {
             {order.target_price ? `T ${order.target_price}` : ""}
             {order.tsl_type && (
               <span className="ml-1 text-accent-violet">
-                (TSL {order.tsl_type === "PERCENT" ? `${order.tsl_value}%` : `₹${order.tsl_value}`})
+                (TSL{" "}
+                {order.tsl_type === "PERCENT"
+                  ? `${order.tsl_value}%`
+                  : `₹${order.tsl_value}`}
+                )
               </span>
             )}
           </span>
@@ -75,7 +84,11 @@ export default function PositionRow({ order }) {
         {pnl == null ? (
           <span className="text-faint">—</span>
         ) : (
-          <span className={pnl >= 0 ? "text-bull font-semibold" : "text-bear font-semibold"}>
+          <span
+            className={
+              pnl >= 0 ? "text-bull font-semibold" : "text-bear font-semibold"
+            }
+          >
             {pnl >= 0 ? "+" : ""}
             {pnl}
           </span>

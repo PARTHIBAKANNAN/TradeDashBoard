@@ -11,7 +11,13 @@ from app.config import IST
 
 
 def _stock(symbol):
-    return {"symbol": symbol, "orb": {}, "candle1_high": 0.0, "candle1_low": 0.0, "two_sided_ok": False}
+    return {
+        "symbol": symbol,
+        "orb": {},
+        "candle1_high": 0.0,
+        "candle1_low": 0.0,
+        "two_sided_ok": False,
+    }
 
 
 def _t(h, m):

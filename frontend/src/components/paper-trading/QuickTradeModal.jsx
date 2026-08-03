@@ -33,13 +33,22 @@ export default function QuickTradeModal({ symbol, onClose }) {
                 <span className="grid place-items-center w-7 h-7 rounded-md bg-accent-blue/10 text-accent-blue">
                   <Rocket size={14} />
                 </span>
-                <h3 className="text-sm font-bold text-primary">Quick Trade · {symbol}</h3>
+                <h3 className="text-sm font-bold text-primary">
+                  Quick Trade · {symbol}
+                </h3>
               </div>
-              <button onClick={onClose} className="text-faint hover:text-primary transition-colors">
+              <button
+                onClick={onClose}
+                className="text-faint hover:text-primary transition-colors"
+              >
                 <X size={16} />
               </button>
             </div>
-            <PlaceOrderForm defaultSymbol={symbol} lockSymbol onPlaced={onClose} />
+            <PlaceOrderForm
+              defaultSymbol={symbol}
+              lockSymbol
+              onPlaced={onClose}
+            />
           </motion.div>
         </motion.div>
       )}

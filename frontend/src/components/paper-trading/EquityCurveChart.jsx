@@ -25,7 +25,9 @@ export default function EquityCurveChart({ closedOrders }) {
 
   const points = useMemo(() => {
     const closed = (closedOrders || [])
-      .filter((o) => o.status === "CLOSED" && o.realized_pnl != null && o.closed_at)
+      .filter(
+        (o) => o.status === "CLOSED" && o.realized_pnl != null && o.closed_at,
+      )
       .sort((a, b) => new Date(a.closed_at) - new Date(b.closed_at));
     let running = 0;
     return closed.map((o, i) => {
@@ -43,8 +45,12 @@ export default function EquityCurveChart({ closedOrders }) {
     return [-max * 1.15, max * 1.15];
   }, [points]);
 
-  const scaleX = (i) => (points.length <= 1 ? PADDING + w / 2 : PADDING + (i / (points.length - 1)) * w);
-  const scaleY = (v) => PADDING + h - ((v - yDomain[0]) / (yDomain[1] - yDomain[0])) * h;
+  const scaleX = (i) =>
+    points.length <= 1
+      ? PADDING + w / 2
+      : PADDING + (i / (points.length - 1)) * w;
+  const scaleY = (v) =>
+    PADDING + h - ((v - yDomain[0]) / (yDomain[1] - yDomain[0])) * h;
   const zeroY = scaleY(0);
 
   const path = points.map((p) => `${scaleX(p.i)},${scaleY(p.cum)}`).join(" ");
@@ -52,10 +58,22 @@ export default function EquityCurveChart({ closedOrders }) {
   const isUp = last ? last.cum >= 0 : true;
 
   return (
-    <Card title="Equity Curve" subtitle="Cumulative realized P&L, closed trades only" icon={LineChartIcon}>
-      <div ref={containerRef} className="relative w-full" style={{ height: size.height }}>
+    <Card
+      title="Equity Curve"
+      subtitle="Cumulative realized P&L, closed trades only"
+      icon={LineChartIcon}
+    >
+      <div
+        ref={containerRef}
+        className="relative w-full"
+        style={{ height: size.height }}
+      >
         {size.width > 0 && (
-          <svg width={size.width} height={size.height} className="absolute inset-0">
+          <svg
+            width={size.width}
+            height={size.height}
+            className="absolute inset-0"
+          >
             <line
               x1={PADDING}
               x2={PADDING + w}
@@ -84,8 +102,8 @@ export default function EquityCurveChart({ closedOrders }) {
                 fill="currentColor"
               >
                 <title>
-                  {p.order.symbol} {p.order.side} · realized {p.order.realized_pnl} · cumulative{" "}
-                  {p.cum.toFixed(2)}
+                  {p.order.symbol} {p.order.side} · realized{" "}
+                  {p.order.realized_pnl} · cumulative {p.cum.toFixed(2)}
                 </title>
               </circle>
             ))}

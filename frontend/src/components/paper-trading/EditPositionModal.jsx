@@ -20,7 +20,9 @@ export default function EditPositionModal({ order, onClose }) {
     e.preventDefault();
     setError("");
     if (tslType && (!tslValue || Number(tslValue) <= 0)) {
-      setError("Trailing stop value is required when a trail type is selected.");
+      setError(
+        "Trailing stop value is required when a trail type is selected.",
+      );
       return;
     }
     setBusy(true);
@@ -66,7 +68,10 @@ export default function EditPositionModal({ order, onClose }) {
                   Edit Position · {order.symbol}
                 </h3>
               </div>
-              <button onClick={onClose} className="text-faint hover:text-primary transition-colors">
+              <button
+                onClick={onClose}
+                className="text-faint hover:text-primary transition-colors"
+              >
                 <X size={16} />
               </button>
             </div>
@@ -75,7 +80,8 @@ export default function EditPositionModal({ order, onClose }) {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] font-bold text-muted uppercase tracking-wider mb-1.5">
-                    Stop Loss <span className="text-faint font-normal">(optional)</span>
+                    Stop Loss{" "}
+                    <span className="text-faint font-normal">(optional)</span>
                   </label>
                   <input
                     type="number"
@@ -87,7 +93,8 @@ export default function EditPositionModal({ order, onClose }) {
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-muted uppercase tracking-wider mb-1.5">
-                    Target <span className="text-faint font-normal">(optional)</span>
+                    Target{" "}
+                    <span className="text-faint font-normal">(optional)</span>
                   </label>
                   <input
                     type="number"

@@ -19,7 +19,9 @@ export async function fetchPositions() {
 }
 
 export async function fetchHistory(limit = 50, offset = 0) {
-  const j = await api(`/api/paper/orders/history?limit=${limit}&offset=${offset}`);
+  const j = await api(
+    `/api/paper/orders/history?limit=${limit}&offset=${offset}`,
+  );
   ordersStore.setHistory(j.orders || []);
   return j.orders;
 }
