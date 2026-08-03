@@ -11,6 +11,7 @@ apscheduler==3.11.0
 itsdangerous==2.2.0  # signed session cookies (Starlette SessionMiddleware)
 pyjwt==2.10.1
 cryptography==44.0.0  # ES256/RS256 support for verifying Supabase JWTs
+asyncpg==0.30.0  # direct Postgres access to Supabase's DB (paper trading)
 
 # WINDOWS ONLY — do NOT install on Linux/cloud hosts. Routes Python TLS through
 # the Windows certificate store so a corporate SSL-inspection root CA (Zscaler)

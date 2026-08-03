@@ -15,7 +15,7 @@ from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from . import auth, config
+from . import auth, config, paper_trading
 from .config import IST, MARKET_CLOSE, MARKET_OPEN
 from .fyers_service import data_engine
 from .state import market_state
@@ -89,6 +89,16 @@ def _stop_engine():
     print("[scheduler] Data engine stopped (market closed / standby).")
 
 
+def _market_close():
+    """15:30 IST cron job only — stops the engine AND squares off every open
+    paper position (matches real intraday/MIS broker rules). Kept separate
+    from `_stop_engine` (also called by `shutdown_scheduler` on app shutdown)
+    because square-off blocks this worker thread waiting on the asyncio loop;
+    calling it from the loop's own thread at shutdown would deadlock."""
+    _stop_engine()
+    paper_trading.square_off_all_sync()
+
+
 def _daily_login():
     token = auth.get_access_token(force_refresh=True)
     if not token:
@@ -129,9 +139,9 @@ def init_scheduler():
         id="opening_range_refresh",
         replace_existing=True,
     )
-    # 15:30 market close -> standby
+    # 15:30 market close -> standby + square off all open paper positions
     scheduler.add_job(
-        _stop_engine,
+        _market_close,
         CronTrigger(day_of_week="mon-fri", hour=15, minute=30, timezone=IST),
         id="market_close",
         replace_existing=True,

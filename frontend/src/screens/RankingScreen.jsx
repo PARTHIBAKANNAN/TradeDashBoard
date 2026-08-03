@@ -220,6 +220,9 @@ export default function RankingScreen({ stocks }) {
                     <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-right">
                       RS vs NIFTY
                     </th>
+                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-center">
+                      Trade
+                    </th>
                   </tr>
                 </thead>
                 <tbody>

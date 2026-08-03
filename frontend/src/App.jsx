@@ -24,6 +24,7 @@ import RankingScreen from "./screens/RankingScreen.jsx";
 import HeatmapScreen from "./screens/HeatmapScreen.jsx";
 import InsightsScreen from "./screens/InsightsScreen.jsx";
 import WatchlistScreen from "./screens/WatchlistScreen.jsx";
+import PaperTradingScreen from "./screens/PaperTradingScreen.jsx";
 
 // ---------------- Auth gate ----------------
 export default function App() {
@@ -272,6 +273,7 @@ function Dashboard({ user, onLogout }) {
             {activeTab === "heatmap" && <HeatmapScreen stocks={stocks} />}
             {activeTab === "insights" && <InsightsScreen stocks={stocks} />}
             {activeTab === "watchlist" && <WatchlistScreen stocks={stocks} />}
+            {activeTab === "paper-trading" && <PaperTradingScreen stocks={stocks} />}
           </motion.div>
         </AnimatePresence>
       </div>
@@ -294,6 +296,7 @@ function TopNavbar({
     { key: "heatmap", label: "Heatmap", icon: "🔥" },
     { key: "insights", label: "Insights", icon: "💡" },
     { key: "watchlist", label: "Watchlist", icon: "⭐" },
+    { key: "paper-trading", label: "Positions", icon: "🧪" },
   ];
 
   return (

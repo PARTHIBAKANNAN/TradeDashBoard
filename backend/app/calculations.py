@@ -14,6 +14,7 @@ shared state, and it delegates all arithmetic to these helpers.
 from datetime import datetime
 from datetime import time as dt_time
 
+from . import order_monitor
 from .config import IST, ORB_CANDLES
 
 
@@ -214,3 +215,5 @@ def process_incoming_tick(
         if signal:
             stock["signal"] = signal
             stock["signal_time"] = signal_time
+
+    order_monitor.on_tick_threadsafe(short_sym, ltp)

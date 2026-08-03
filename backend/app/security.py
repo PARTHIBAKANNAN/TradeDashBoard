@@ -7,7 +7,13 @@ JWT and manages our own session cookie, which keeps the SSE stream (native
 EventSource can't send an Authorization header) working unchanged.
 """
 
+from fastapi import HTTPException, Request
+
 from . import config, supabase_auth
+
+# Fixed placeholder used to attribute paper-trading data to a single "user"
+# when the login gate is disabled (dev / SUPABASE_URL unset).
+DEV_USER_ID = "00000000-0000-0000-0000-000000000000"
 
 
 def login_required() -> bool:
@@ -15,12 +21,14 @@ def login_required() -> bool:
     return bool(config.SUPABASE_URL)
 
 
-def authenticate(access_token: str) -> str | None:
-    """Verify a Supabase session JWT; return the user's email if valid, else None."""
+def authenticate(access_token: str) -> dict | None:
+    """Verify a Supabase session JWT; return {"email", "user_id"} if valid, else None."""
     if not login_required():
-        return "dev"
+        return {"email": "dev", "user_id": DEV_USER_ID}
     claims = supabase_auth.verify_token(access_token)
-    return claims.get("email") if claims else None
+    if not claims:
+        return None
+    return {"email": claims.get("email"), "user_id": claims.get("sub")}
 
 
 def is_authenticated(request) -> bool:
@@ -28,6 +36,18 @@ def is_authenticated(request) -> bool:
     if not login_required():
         return True
     return bool(request.session.get("user"))
+
+
+def require_login(request: Request):
+    """FastAPI dependency: 401 unless the request carries a valid dashboard session."""
+    if not is_authenticated(request):
+        raise HTTPException(status_code=401, detail="login required")
+
+
+def current_user_id(request: Request) -> str:
+    """The stable Supabase user id for this session, or the dev placeholder."""
+    user = request.session.get("user")
+    return user["user_id"] if user else DEV_USER_ID
 
 
 # Paths reachable without a dashboard login session.

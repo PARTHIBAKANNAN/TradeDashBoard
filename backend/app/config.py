@@ -51,6 +51,10 @@ SESSION_SECRET = os.getenv("SESSION_SECRET", "dev-insecure-change-me")
 # Project URL only — credential verification uses Supabase's public JWKS endpoint,
 # no shared secret needed. Empty disables the login gate (dev).
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
+# Direct Postgres connection (Supabase -> Project Settings -> Database ->
+# Connection string -> Transaction pooler, port 6543). Used for paper-trading
+# persistence via asyncpg. Empty disables the paper-trading feature.
+SUPABASE_DB_URL = os.getenv("SUPABASE_DB_URL", "")
 
 # ----------------- Token cache & refresh -----------------
 # Location where the daily access token is cached (env-configurable → mount a volume when hosted).

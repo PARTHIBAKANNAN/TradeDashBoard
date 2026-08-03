@@ -21,7 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.middleware.sessions import SessionMiddleware
 
-from . import auth, config, security
+from . import auth, config, paper_trading, security
 from .broadcaster import Broadcaster, build_frame, snapshot_from_state
 from .fyers_service import data_engine
 from .scheduler import (ensure_engine_running, init_scheduler, is_market_open,
@@ -47,11 +47,13 @@ broadcaster = Broadcaster(
 async def lifespan(app: FastAPI):
     await asyncio.to_thread(init_scheduler)
     await broadcaster.start()
+    await paper_trading.init_pool()
     try:
         yield
     finally:
         await broadcaster.stop()
         shutdown_scheduler()
+        await paper_trading.close_pool()
 
 
 app = FastAPI(title="Live Stock Scanning BFF", lifespan=lifespan)
@@ -67,10 +69,9 @@ app.add_middleware(
 )
 
 
-def require_login(request: Request):
-    """Dependency: 401 unless the request carries a valid dashboard session."""
-    if not security.is_authenticated(request):
-        raise HTTPException(status_code=401, detail="login required")
+require_login = security.require_login
+
+app.include_router(paper_trading.router)
 
 
 # ----------------- dashboard login (Supabase-verified; session cookie) -----------------
@@ -84,7 +85,8 @@ async def login(creds: Credentials, request: Request):
     if not user:
         raise HTTPException(status_code=401, detail="invalid credentials")
     request.session["user"] = user
-    return {"authenticated": True, "user": user}
+    await paper_trading.ensure_wallet(user["user_id"])
+    return {"authenticated": True, "user": user["email"]}
 
 
 @app.post("/api/auth/logout")
@@ -97,7 +99,10 @@ async def logout(request: Request):
 async def me(request: Request):
     """Public: lets the SPA decide whether to show the login screen."""
     user = request.session.get("user")
-    return {"authenticated": security.is_authenticated(request), "user": user}
+    return {
+        "authenticated": security.is_authenticated(request),
+        "user": user["email"] if user else None,
+    }
 
 
 # ----------------- FYERS account auth (admin-only) -----------------

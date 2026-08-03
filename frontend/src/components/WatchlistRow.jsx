@@ -1,7 +1,8 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUp, ArrowDown, Rocket } from "lucide-react";
 import MiniCandlestick from "./MiniCandlestick.jsx";
+import QuickTradeModal from "./paper-trading/QuickTradeModal.jsx";
 import { useStock } from "../hooks/useMarketStream.js";
 import { rangeMap } from "../lib/rangeMap.js";
 
@@ -11,6 +12,7 @@ const WatchlistRow = React.memo(
   ({ stock: propStock, symbol, index = 0, leading }) => {
     const stockFromHook = useStock(symbol || propStock?.symbol);
     const stock = stockFromHook || propStock;
+    const [tradeOpen, setTradeOpen] = useState(false);
 
     const ranges = useMemo(() => {
       if (!stock) return null;
@@ -124,6 +126,20 @@ const WatchlistRow = React.memo(
           <div className="text-[10px] font-bold text-faint uppercase tracking-widest mt-0.5">
             {isRsPositive ? "Outperform" : "Underperform"}
           </div>
+        </td>
+
+        {/* Quick paper-trade entry point */}
+        <td className="py-3 px-4 text-center">
+          <button
+            onClick={() => setTradeOpen(true)}
+            title="Paper trade this stock"
+            className="inline-flex items-center gap-1 rounded-lg border border-subtle bg-surface3 px-2.5 py-1 text-[11px] font-bold text-muted hover:text-accent-blue hover:border-accent-blue/40 transition-colors"
+          >
+            <Rocket size={11} /> Trade
+          </button>
+          {tradeOpen && (
+            <QuickTradeModal symbol={stock.symbol} onClose={() => setTradeOpen(false)} />
+          )}
         </td>
       </motion.tr>
     );
