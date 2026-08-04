@@ -1,7 +1,13 @@
 import React, { useMemo, useState } from "react";
 import { Rocket } from "lucide-react";
 import Card from "../ui/Card.jsx";
-import { usePositions, useOrderHistory, usePnlSummary, usePaperTradingSync, fetchHistory } from "../../hooks/useOrders.js";
+import {
+  usePositions,
+  useOrderHistory,
+  usePnlSummary,
+  usePaperTradingSync,
+  fetchHistory,
+} from "../../hooks/useOrders.js";
 import WalletSummaryCard from "./WalletSummaryCard.jsx";
 import PlaceOrderForm from "./PlaceOrderForm.jsx";
 import PositionsTable from "./PositionsTable.jsx";

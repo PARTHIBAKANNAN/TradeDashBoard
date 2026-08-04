@@ -106,40 +106,48 @@ async def fill_order(order_id: int, user_id: str, ltp: float) -> dict | None:
             row = await conn.fetchrow(
                 "select * from public.paper_orders where id=$1 and user_id=$2 and status='PENDING' "
                 "for update",
-                order_id, user_id,
+                order_id,
+                user_id,
             )
             if row is None:
                 return None
             margin = paper_margin.required_margin(ltp, row["quantity"])
             wallet = await conn.fetchrow(
-                "select balance from public.paper_wallets where user_id=$1 for update", user_id,
+                "select balance from public.paper_wallets where user_id=$1 for update",
+                user_id,
             )
             if wallet is None or float(wallet["balance"]) < margin:
                 # Balance dropped below what's needed since the order was placed
                 # (e.g. margin locked by other fills) — auto-cancel rather than
                 # leaving it stuck PENDING forever.
                 await conn.execute(
-                    "update public.paper_orders set status='CANCELLED' where id=$1", order_id,
+                    "update public.paper_orders set status='CANCELLED' where id=$1",
+                    order_id,
                 )
                 order_monitor.unregister(order_id, row["symbol"])
                 return None
             await conn.execute(
                 "update public.paper_wallets set balance = balance - $1, updated_at = now() "
                 "where user_id = $2",
-                margin, user_id,
+                margin,
+                user_id,
             )
             filled = await conn.fetchrow(
                 "update public.paper_orders set status='OPEN', entry_price=$1, margin_locked=$2, "
                 "peak_price=case when tsl_type is not null then $1 else peak_price end, "
                 "filled_at=now() where id=$3 returning *",
-                ltp, margin, order_id,
+                ltp,
+                margin,
+                order_id,
             )
     order_monitor.unregister(order_id, row["symbol"])
     order_monitor.register_open_bracket(dict(filled))
     return _serialize(dict(filled))
 
 
-async def update_trailing_stop(order_id: int, user_id: str, sl_price: float, peak_price: float) -> None:
+async def update_trailing_stop(
+    order_id: int, user_id: str, sl_price: float, peak_price: float
+) -> None:
     """System-driven: called only from order_monitor's tick-driven ratchet, never
     from a user request, so no separate ownership ambiguity beyond the WHERE clause."""
     pool = get_pool()
@@ -149,7 +157,10 @@ async def update_trailing_stop(order_id: int, user_id: str, sl_price: float, pea
         await conn.execute(
             "update public.paper_orders set sl_price=$1, peak_price=$2 "
             "where id=$3 and user_id=$4 and status='OPEN'",
-            sl_price, peak_price, order_id, user_id,
+            sl_price,
+            peak_price,
+            order_id,
+            user_id,
         )
 
 
@@ -163,7 +174,8 @@ async def close_order(order_id: int, user_id: str, reason: str, exit_price: floa
             row = await conn.fetchrow(
                 "select * from public.paper_orders where id=$1 and user_id=$2 and status='OPEN' "
                 "for update",
-                order_id, user_id,
+                order_id,
+                user_id,
             )
             if row is None:
                 return None
@@ -178,7 +190,8 @@ async def close_order(order_id: int, user_id: str, reason: str, exit_price: floa
             await conn.execute(
                 "update public.paper_wallets set balance = balance + $1, updated_at = now() "
                 "where user_id = $2",
-                credit, user_id,
+                credit,
+                user_id,
             )
             closed = await conn.fetchrow(
                 "update public.paper_orders set status='CLOSED', close_reason=$1, exit_price=$2, "
@@ -217,10 +230,14 @@ async def square_off_all() -> None:
             closed += 1
     if pending_rows:
         async with pool.acquire() as conn:
-            await conn.execute("update public.paper_orders set status='CANCELLED' where status='PENDING'")
+            await conn.execute(
+                "update public.paper_orders set status='CANCELLED' where status='PENDING'"
+            )
         for r in pending_rows:
             order_monitor.unregister(r["id"], r["symbol"])
-    print(f"[paper_trading] Square-off: closed {closed} open position(s), cancelled {len(pending_rows)} pending order(s).")
+    print(
+        f"[paper_trading] Square-off: closed {closed} open position(s), cancelled {len(pending_rows)} pending order(s)."
+    )
 
 
 def square_off_all_sync() -> None:
@@ -266,7 +283,8 @@ async def get_margin(symbol: str, request: Request):
     if _pool is not None:
         async with _pool.acquire() as conn:
             wallet = await conn.fetchrow(
-                "select balance from public.paper_wallets where user_id=$1", user_id,
+                "select balance from public.paper_wallets where user_id=$1",
+                user_id,
             )
         balance = float(wallet["balance"]) if wallet else 0.0
     return {
@@ -315,8 +333,15 @@ async def place_order(body: PlaceOrderBody, request: Request):
                 "(user_id, symbol, side, quantity, order_type, limit_price, sl_price, target_price, "
                 "tsl_type, tsl_value, status) "
                 "values ($1,$2,$3,$4,'LIMIT',$5,$6,$7,$8,$9,'PENDING') returning *",
-                user_id, body.symbol, body.side, body.quantity, body.limit_price,
-                body.sl_price, body.target_price, body.tsl_type, body.tsl_value,
+                user_id,
+                body.symbol,
+                body.side,
+                body.quantity,
+                body.limit_price,
+                body.sl_price,
+                body.target_price,
+                body.tsl_type,
+                body.tsl_value,
             )
         order_monitor.register_pending_limit(dict(row))
         return _serialize(dict(row))
@@ -327,22 +352,33 @@ async def place_order(body: PlaceOrderBody, request: Request):
     async with pool.acquire() as conn:
         async with conn.transaction():
             wallet = await conn.fetchrow(
-                "select balance from public.paper_wallets where user_id=$1 for update", user_id,
+                "select balance from public.paper_wallets where user_id=$1 for update",
+                user_id,
             )
             if wallet is None or float(wallet["balance"]) < margin:
                 raise HTTPException(status_code=400, detail="insufficient margin")
             await conn.execute(
                 "update public.paper_wallets set balance = balance - $1, updated_at = now() "
                 "where user_id = $2",
-                margin, user_id,
+                margin,
+                user_id,
             )
             row = await conn.fetchrow(
                 "insert into public.paper_orders "
                 "(user_id, symbol, side, quantity, order_type, sl_price, target_price, "
                 "tsl_type, tsl_value, peak_price, entry_price, margin_locked, status, filled_at) "
                 "values ($1,$2,$3,$4,'MARKET',$5,$6,$7,$8,$9,$10,$11,'OPEN', now()) returning *",
-                user_id, body.symbol, body.side, body.quantity, body.sl_price,
-                body.target_price, body.tsl_type, body.tsl_value, peak_price, ltp, margin,
+                user_id,
+                body.symbol,
+                body.side,
+                body.quantity,
+                body.sl_price,
+                body.target_price,
+                body.tsl_type,
+                body.tsl_value,
+                peak_price,
+                ltp,
+                margin,
             )
     if body.sl_price or body.target_price or body.tsl_type:
         order_monitor.register_open_bracket(dict(row))
@@ -361,7 +397,8 @@ async def modify_position(order_id: int, body: ModifyPositionBody, request: Requ
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
             "select * from public.paper_orders where id=$1 and user_id=$2 and status='OPEN'",
-            order_id, user_id,
+            order_id,
+            user_id,
         )
         if row is None:
             raise HTTPException(status_code=404, detail="position not found")
@@ -378,7 +415,12 @@ async def modify_position(order_id: int, body: ModifyPositionBody, request: Requ
         updated = await conn.fetchrow(
             "update public.paper_orders set sl_price=$1, target_price=$2, tsl_type=$3, "
             "tsl_value=$4, peak_price=$5 where id=$6 returning *",
-            body.sl_price, body.target_price, body.tsl_type, body.tsl_value, new_peak, order_id,
+            body.sl_price,
+            body.target_price,
+            body.tsl_type,
+            body.tsl_value,
+            new_peak,
+            order_id,
         )
     order_monitor.unregister(order_id, row["symbol"])
     order_monitor.register_open_bracket(dict(updated))
@@ -393,7 +435,8 @@ async def cancel_order(order_id: int, request: Request):
         row = await conn.fetchrow(
             "update public.paper_orders set status='CANCELLED' "
             "where id=$1 and user_id=$2 and status='PENDING' returning *",
-            order_id, user_id,
+            order_id,
+            user_id,
         )
     if row is None:
         raise HTTPException(status_code=404, detail="order not found or not cancellable")
@@ -408,7 +451,8 @@ async def close_position(order_id: int, request: Request):
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
             "select symbol from public.paper_orders where id=$1 and user_id=$2 and status='OPEN'",
-            order_id, user_id,
+            order_id,
+            user_id,
         )
     if row is None:
         raise HTTPException(status_code=404, detail="position not found")
@@ -442,7 +486,8 @@ async def positions(request: Request):
             d["ltp"] = ltp
             d["unrealized_pnl"] = (
                 paper_pnl.unrealized_pnl(d["side"], d["quantity"], d["entry_price"], ltp)
-                if ltp else None
+                if ltp
+                else None
             )
         else:
             d["ltp"] = None
@@ -486,7 +531,8 @@ async def pnl_summary(request: Request):
     pool = _require_pool()
     async with pool.acquire() as conn:
         wallet = await conn.fetchrow(
-            "select balance from public.paper_wallets where user_id=$1", user_id,
+            "select balance from public.paper_wallets where user_id=$1",
+            user_id,
         )
         realized = await conn.fetchrow(
             "select coalesce(sum(realized_pnl),0) as total, count(*) as n "

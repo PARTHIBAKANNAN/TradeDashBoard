@@ -5,7 +5,12 @@ const LABEL = { NONE: "Off", PERCENT: "%", POINTS: "₹ pts" };
 
 // Shared Trailing-Stop input group — used by both PlaceOrderForm (set at
 // entry) and EditPositionModal (add/change on an already-open position).
-export default function TslFields({ tslType, tslValue, onTypeChange, onValueChange }) {
+export default function TslFields({
+  tslType,
+  tslValue,
+  onTypeChange,
+  onValueChange,
+}) {
   const active = tslType || "NONE";
   return (
     <div>
@@ -35,7 +40,9 @@ export default function TslFields({ tslType, tslValue, onTypeChange, onValueChan
           min="0"
           value={tslValue}
           onChange={(e) => onValueChange(e.target.value)}
-          placeholder={tslType === "PERCENT" ? "Trail % e.g. 1.5" : "Trail ₹ e.g. 20"}
+          placeholder={
+            tslType === "PERCENT" ? "Trail % e.g. 1.5" : "Trail ₹ e.g. 20"
+          }
           className="mt-2 w-full bg-surface3 border border-strong rounded-lg p-2 text-sm font-mono focus:outline-none focus:border-accent-blue"
         />
       )}

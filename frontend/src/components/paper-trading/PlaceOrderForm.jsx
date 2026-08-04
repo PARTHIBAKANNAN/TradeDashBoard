@@ -9,7 +9,12 @@ const ORDER_TYPES = ["MARKET", "LIMIT"];
 // Order-ticket form: symbol + side + order type + qty + optional bracket
 // SL/Target. Recomputes the live "how many shares can I afford" figure from
 // /api/paper/margin as symbol/qty change, mirroring a real broker's ticket.
-export default function PlaceOrderForm({ stocks, defaultSymbol, lockSymbol = false, onPlaced }) {
+export default function PlaceOrderForm({
+  stocks,
+  defaultSymbol,
+  lockSymbol = false,
+  onPlaced,
+}) {
   const symbols = useMemo(
     () => (stocks || []).map((s) => s.symbol).sort(),
     [stocks],
@@ -54,12 +59,17 @@ export default function PlaceOrderForm({ stocks, defaultSymbol, lockSymbol = fal
   const requiredMargin =
     margin && margin.ltp
       ? Math.round(
-          ((orderType === "LIMIT" && limitPrice ? Number(limitPrice) : margin.ltp) *
+          ((orderType === "LIMIT" && limitPrice
+            ? Number(limitPrice)
+            : margin.ltp) *
             (Number(quantity) || 0)) /
             margin.leverage,
         )
       : null;
-  const overBudget = requiredMargin != null && margin && requiredMargin > margin.available_balance;
+  const overBudget =
+    requiredMargin != null &&
+    margin &&
+    requiredMargin > margin.available_balance;
 
   const submit = async (e) => {
     e.preventDefault();
@@ -75,7 +85,9 @@ export default function PlaceOrderForm({ stocks, defaultSymbol, lockSymbol = fal
       return;
     }
     if (tslType && (!tslValue || Number(tslValue) <= 0)) {
-      setError("Trailing stop value is required when a trail type is selected.");
+      setError(
+        "Trailing stop value is required when a trail type is selected.",
+      );
       return;
     }
     setBusy(true);
@@ -158,7 +170,11 @@ export default function PlaceOrderForm({ stocks, defaultSymbol, lockSymbol = fal
                 : "bg-surface3 border-subtle text-muted hover:text-primary"
             }`}
           >
-            {s === "BUY" ? <ArrowUpCircle size={14} /> : <ArrowDownCircle size={14} />}
+            {s === "BUY" ? (
+              <ArrowUpCircle size={14} />
+            ) : (
+              <ArrowDownCircle size={14} />
+            )}
             {s}
           </button>
         ))}
@@ -248,13 +264,23 @@ export default function PlaceOrderForm({ stocks, defaultSymbol, lockSymbol = fal
               <span className="text-primary font-semibold">₹{margin.ltp}</span>
             </div>
             <div className="flex justify-between font-mono tabular-nums">
-              <span className="text-faint">Max affordable qty ({margin.leverage}x)</span>
-              <span className="text-accent-blue font-semibold">{margin.max_qty} shares</span>
+              <span className="text-faint">
+                Max affordable qty ({margin.leverage}x)
+              </span>
+              <span className="text-accent-blue font-semibold">
+                {margin.max_qty} shares
+              </span>
             </div>
             {requiredMargin != null && (
               <div className="flex justify-between font-mono tabular-nums">
                 <span className="text-faint">Margin required</span>
-                <span className={overBudget ? "text-bear font-semibold" : "text-primary font-semibold"}>
+                <span
+                  className={
+                    overBudget
+                      ? "text-bear font-semibold"
+                      : "text-primary font-semibold"
+                  }
+                >
                   ₹{requiredMargin.toLocaleString("en-IN")}
                 </span>
               </div>

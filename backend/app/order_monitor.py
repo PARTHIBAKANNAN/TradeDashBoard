@@ -110,7 +110,9 @@ async def on_tick(symbol: str, ltp: float) -> None:
             _ratchet_trailing_stop(order, ltp)
         reason = _bracket_hit(order, ltp)
         if reason:
-            asyncio.create_task(paper_trading.close_order(order["id"], order["user_id"], reason, ltp))
+            asyncio.create_task(
+                paper_trading.close_order(order["id"], order["user_id"], reason, ltp)
+            )
 
 
 def on_tick_threadsafe(symbol: str, ltp: float) -> None:

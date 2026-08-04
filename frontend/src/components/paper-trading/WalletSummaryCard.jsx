@@ -13,7 +13,9 @@ function Tile({ icon: Icon, label, value, tone = "text-primary" }) {
         <Icon size={11} />
         {label}
       </div>
-      <div className={`font-mono text-sm font-bold tabular-nums ${tone}`}>{value}</div>
+      <div className={`font-mono text-sm font-bold tabular-nums ${tone}`}>
+        {value}
+      </div>
     </div>
   );
 }
@@ -37,8 +39,16 @@ export default function WalletSummaryCard({ summary, marginInUse = 0 }) {
   return (
     <div className="rounded-xl border border-subtle bg-surface2/70 backdrop-blur-xl shadow-card p-4">
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <Tile icon={Wallet} label="Available" value={formatMoney(summary.balance)} />
-        <Tile icon={Lock} label="Margin in Use" value={formatMoney(marginInUse)} />
+        <Tile
+          icon={Wallet}
+          label="Available"
+          value={formatMoney(summary.balance)}
+        />
+        <Tile
+          icon={Lock}
+          label="Margin in Use"
+          value={formatMoney(marginInUse)}
+        />
         <Tile
           icon={realizedPositive ? TrendingUp : TrendingDown}
           label="Realized P&L"

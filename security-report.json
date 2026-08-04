@@ -31,8 +31,8 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "account": "",
         "local_database_path": null,
         "safety_version": "3.8.1",
-        "timestamp": "2026-08-02 10:27:30",
-        "packages_found": 11,
+        "timestamp": "2026-08-04 11:17:32",
+        "packages_found": 12,
         "vulnerabilities_found": 14,
         "vulnerabilities_ignored": 0,
         "remediations_recommended": 0,
@@ -56,7 +56,7 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "git": {
             "branch": "main",
             "tag": "",
-            "commit": "f25aace6be0141275b210907f4d4ed61740569c4",
+            "commit": "46d71da594c4f1b3b996dff1fcfb63a11fe7d1dd",
             "dirty": "True",
             "origin": "https://github.com/PARTHIBAKANNAN/TradeDashBoard"
         },
@@ -214,6 +214,21 @@ We highly encourage switching to the new `scan` command which is easier to use, 
                     "marker": null,
                     "name": "cryptography",
                     "specifier": "==44.0.0",
+                    "url": null,
+                    "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
+                }
+            ]
+        },
+        "asyncpg": {
+            "name": "asyncpg",
+            "version": "0.30.0",
+            "requirements": [
+                {
+                    "raw": "asyncpg==0.30.0  # direct Postgres access to Supabase's DB (paper trading)",
+                    "extras": [],
+                    "marker": null,
+                    "name": "asyncpg",
+                    "specifier": "==0.30.0",
                     "url": null,
                     "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
                 }

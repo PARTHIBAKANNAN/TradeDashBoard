@@ -269,11 +269,17 @@ function Dashboard({ user, onLogout }) {
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
           >
-            {activeTab === "ranking" && <RankingScreen stocks={stocks} nifty={nifty} />}
+            {activeTab === "ranking" && (
+              <RankingScreen stocks={stocks} nifty={nifty} />
+            )}
             {activeTab === "heatmap" && <HeatmapScreen stocks={stocks} />}
             {activeTab === "insights" && <InsightsScreen stocks={stocks} />}
-            {activeTab === "watchlist" && <WatchlistScreen stocks={stocks} nifty={nifty} />}
-            {activeTab === "paper-trading" && <PaperTradingScreen stocks={stocks} />}
+            {activeTab === "watchlist" && (
+              <WatchlistScreen stocks={stocks} nifty={nifty} />
+            )}
+            {activeTab === "paper-trading" && (
+              <PaperTradingScreen stocks={stocks} />
+            )}
           </motion.div>
         </AnimatePresence>
       </div>

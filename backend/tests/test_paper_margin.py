@@ -4,7 +4,8 @@ Standalone checks for paper-trading margin/sizing math. Run from backend/:
     python -m tests.test_paper_margin
 """
 
-from app.paper_margin import INTRADAY_LEVERAGE, max_affordable_qty, required_margin
+from app.paper_margin import (INTRADAY_LEVERAGE, max_affordable_qty,
+                              required_margin)
 
 
 def test_required_margin():

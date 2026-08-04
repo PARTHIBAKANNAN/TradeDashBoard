@@ -47,7 +47,8 @@ const WatchlistRow = React.memo(
     // Signal direction disagreeing with the broader market (Nifty) — lower
     // probability follow-through than a signal aligned with the index.
     const againstTrend =
-      hasSignal && ((isBull && niftyPctChange < 0) || (!isBull && niftyPctChange > 0));
+      hasSignal &&
+      ((isBull && niftyPctChange < 0) || (!isBull && niftyPctChange > 0));
 
     return (
       <motion.tr
@@ -170,7 +171,10 @@ const WatchlistRow = React.memo(
             <Rocket size={11} /> Trade
           </button>
           {tradeOpen && (
-            <QuickTradeModal symbol={stock.symbol} onClose={() => setTradeOpen(false)} />
+            <QuickTradeModal
+              symbol={stock.symbol}
+              onClose={() => setTradeOpen(false)}
+            />
           )}
         </td>
       </motion.tr>
