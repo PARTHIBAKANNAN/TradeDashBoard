@@ -14,7 +14,7 @@ export default function PositionsTable({ positions }) {
       {positions.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
-            <thead>
+            <thead className="hidden md:table-header-group">
               <tr className="bg-surface3/60 border-b border-subtle">
                 <th className="py-2.5 px-4 text-[10px] uppercase font-bold text-muted tracking-wider">
                   Stock

@@ -13,6 +13,7 @@ export default function EditPositionModal({ order, onClose }) {
   const [targetPrice, setTargetPrice] = useState(order?.target_price ?? "");
   const [tslType, setTslType] = useState(order?.tsl_type ?? "");
   const [tslValue, setTslValue] = useState(order?.tsl_value ?? "");
+  const [notes, setNotes] = useState(order?.notes ?? "");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -32,6 +33,7 @@ export default function EditPositionModal({ order, onClose }) {
         target_price: targetPrice ? Number(targetPrice) : undefined,
         tsl_type: tslType || undefined,
         tsl_value: tslType && tslValue ? Number(tslValue) : undefined,
+        notes: notes.trim() || undefined,
       });
       onClose();
     } catch (err) {
@@ -112,6 +114,20 @@ export default function EditPositionModal({ order, onClose }) {
                 onTypeChange={setTslType}
                 onValueChange={setTslValue}
               />
+
+              <div>
+                <label className="block text-[10px] font-bold text-muted uppercase tracking-wider mb-1.5">
+                  Journal Note{" "}
+                  <span className="text-faint font-normal">(optional)</span>
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={2}
+                  placeholder="Why this trade? Setup, conviction, plan…"
+                  className="w-full bg-surface3 border border-strong rounded-lg p-2 text-sm focus:outline-none focus:border-accent-blue resize-none"
+                />
+              </div>
 
               {error && <p className="text-bear text-xs">{error}</p>}
 

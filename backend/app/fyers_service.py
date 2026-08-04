@@ -9,6 +9,7 @@ FYERS data plane:
                      scheduler for market-hours gating.
 """
 
+import logging
 import time
 from datetime import datetime
 from datetime import time as dt_time
@@ -22,6 +23,8 @@ from .calculations import has_two_sided_range, process_incoming_tick
 from .config import (ALL_SYMBOLS, BENCHMARK_SYMBOL, IST, ORB_CANDLES,
                      WATCHLIST, short_symbol)
 from .state import market_state
+
+logger = logging.getLogger(__name__)
 
 
 class DataEngine:
@@ -94,35 +97,35 @@ class DataEngine:
                         ok.add(sym)
                     else:
                         errored.add(sym)
-            except Exception as exc:  # noqa: BLE001
-                print(f"[validate] quotes batch failed: {exc}")
+            except Exception:  # noqa: BLE001
+                logger.exception("validate: quotes batch failed")
 
         if not ok:
             # Validation couldn't run (e.g. quotes API error) — don't strip
             # everything; keep the full list rather than subscribe to nothing.
-            print("[validate] could not validate any symbol; keeping full list.")
+            logger.warning("validate: could not validate any symbol; keeping full list.")
             self.valid_symbols = list(ALL_SYMBOLS)
             return self.valid_symbols
 
         self.valid_symbols = [s for s in ALL_SYMBOLS if s in ok]
         dropped = [s for s in ALL_SYMBOLS if s not in ok]
         if dropped:
-            print(f"[validate] dropping {len(dropped)} invalid symbol(s): {dropped}")
-        print(f"[validate] {len(self.valid_symbols)}/{len(ALL_SYMBOLS)} symbols valid.")
+            logger.warning("validate: dropping %d invalid symbol(s): %s", len(dropped), dropped)
+        logger.info("validate: %d/%d symbols valid.", len(self.valid_symbols), len(ALL_SYMBOLS))
         return self.valid_symbols
 
     # ---------------- REST backfill ----------------
     def backfill(self):
         if not self.rest:
-            print("[backfill] No REST client (not authenticated); skipping.")
+            logger.info("backfill: No REST client (not authenticated); skipping.")
             return
-        print("[backfill] Seeding prev-close, ranges and ORB boundaries ...")
+        logger.info("backfill: Seeding prev-close, ranges and ORB boundaries ...")
         self.validate_symbols()
         self._backfill_prev_day()
         self._backfill_today_orb()
         self._backfill_orb_quality()
         self._backfill_quotes()
-        print("[backfill] Done.")
+        logger.info("backfill: Done.")
 
     def _backfill_prev_day(self):
         """Daily candles -> previous trading day's high/low/close for each symbol."""
@@ -148,15 +151,15 @@ class DataEngine:
                     # App-level (not symbol-level) error — every remaining symbol
                     # would fail identically, so stop instead of wasting the rest
                     # of the rate-limit budget on calls that can't succeed.
-                    print(
-                        f"[backfill] prev-day history() unavailable, aborting rest of pass: {resp}"
+                    logger.warning(
+                        "backfill: prev-day history() unavailable, aborting rest of pass: %s", resp
                     )
                     return
                 if isinstance(resp, dict) and resp.get("s") == "error":
                     if not warned:
-                        print(
-                            f"[backfill] prev-day history() error (will repeat per-symbol, "
-                            f"only logging once): {resp}"
+                        logger.warning(
+                            "backfill: prev-day history() error (will repeat per-symbol, "
+                            "only logging once): %s", resp,
                         )
                         warned = True
                     continue
@@ -187,8 +190,8 @@ class DataEngine:
                             stock["today_high"] = close
                         if not stock["today_low"]:
                             stock["today_low"] = close
-            except Exception as exc:  # noqa: BLE001
-                print(f"[backfill] prev-day failed for {fy_symbol}: {exc}")
+            except Exception:  # noqa: BLE001
+                logger.exception("backfill: prev-day failed for %s", fy_symbol)
 
     def _backfill_today_orb(self):
         """30-min candles for today -> C1..C4 high/low boundaries + today's range."""
@@ -196,7 +199,7 @@ class DataEngine:
         if now.weekday() >= 5:
             # Weekend: no session happened "today" — every symbol would fail every
             # retry for nothing, turning startup into a multi-minute wait.
-            print("[backfill] Weekend — skipping today's ORB backfill (no session data exists).")
+            logger.info("backfill: Weekend — skipping today's ORB backfill (no session data exists).")
             return
         today = now.date()
         day = today.strftime("%Y-%m-%d")
@@ -218,13 +221,13 @@ class DataEngine:
                     }
                 )
                 if isinstance(resp, dict) and resp.get("code") in self._NON_RETRYABLE_CODES:
-                    print(f"[backfill] ORB history() unavailable, aborting rest of pass: {resp}")
+                    logger.warning("backfill: ORB history() unavailable, aborting rest of pass: %s", resp)
                     return
                 if isinstance(resp, dict) and resp.get("s") == "error":
                     if not warned:
-                        print(
-                            f"[backfill] ORB history() error (will repeat per-symbol, "
-                            f"only logging once): {resp}"
+                        logger.warning(
+                            "backfill: ORB history() error (will repeat per-symbol, "
+                            "only logging once): %s", resp,
                         )
                         warned = True
                     continue
@@ -248,8 +251,8 @@ class DataEngine:
                         stock["orb"] = orb
                         stock["today_high"] = day_high
                         stock["today_low"] = day_low
-            except Exception as exc:  # noqa: BLE001
-                print(f"[backfill] ORB failed for {fy_symbol}: {exc}")
+            except Exception:  # noqa: BLE001
+                logger.exception("backfill: ORB failed for %s", fy_symbol)
 
     def _backfill_orb_quality(self):
         """
@@ -263,7 +266,7 @@ class DataEngine:
         """
         now = datetime.now(IST)
         if now.weekday() >= 5:
-            print("[backfill] Weekend — skipping ORB quality check (no session data exists).")
+            logger.info("backfill: Weekend — skipping ORB quality check (no session data exists).")
             return
         day = now.date().strftime("%Y-%m-%d")
         c1_start, c1_end = ORB_CANDLES[0][1], ORB_CANDLES[0][2]
@@ -282,8 +285,8 @@ class DataEngine:
                     }
                 )
                 if isinstance(resp, dict) and resp.get("code") in self._NON_RETRYABLE_CODES:
-                    print(
-                        f"[backfill] ORB-quality history() unavailable, aborting rest of pass: {resp}"
+                    logger.warning(
+                        "backfill: ORB-quality history() unavailable, aborting rest of pass: %s", resp
                     )
                     return
                 candles = resp.get("candles", []) if isinstance(resp, dict) else []
@@ -304,8 +307,8 @@ class DataEngine:
                         if opening:
                             stock["candle1_high"] = opening[0][2]
                             stock["candle1_low"] = opening[0][3]
-            except Exception as exc:  # noqa: BLE001
-                print(f"[backfill] ORB-quality failed for {fy_symbol}: {exc}")
+            except Exception:  # noqa: BLE001
+                logger.exception("backfill: ORB-quality failed for %s", fy_symbol)
 
     def _backfill_quotes(self):
         """Seed a current LTP snapshot in batches so rows aren't blank pre-tick."""
@@ -315,7 +318,7 @@ class DataEngine:
             try:
                 resp = self.rest.quotes({"symbols": ",".join(batch)})
                 if isinstance(resp, dict) and resp.get("s") == "error":
-                    print(f"[backfill] quotes batch error: {resp}")
+                    logger.warning("backfill: quotes batch error: %s", resp)
                     continue
                 for entry in resp.get("d", []):
                     v = entry.get("v", {})
@@ -338,13 +341,13 @@ class DataEngine:
                         tot_buy_qty=v.get("tot_buy_qty") or 0,
                         tot_sell_qty=v.get("tot_sell_qty") or 0,
                     )
-            except Exception as exc:  # noqa: BLE001
-                print(f"[backfill] quotes batch failed: {exc}")
+            except Exception:  # noqa: BLE001
+                logger.exception("backfill: quotes batch failed")
 
     # ---------------- WebSocket feed ----------------
     def start_websocket(self):
         if not self.access_token:
-            print("[ws] No access token; websocket not started.")
+            logger.warning("ws: No access token; websocket not started.")
             return
         if self._running:
             return
@@ -352,20 +355,20 @@ class DataEngine:
         def on_message(msg):
             try:
                 self._handle_tick(msg)
-            except Exception as exc:  # noqa: BLE001
-                print(f"[ws] tick handler error: {exc}")
+            except Exception:  # noqa: BLE001
+                logger.exception("ws: tick handler error")
 
         def on_open():
             symbols = self.valid_symbols or ALL_SYMBOLS
-            print(f"[ws] subscribing to {len(symbols)} symbols ...")
+            logger.info("ws: subscribing to %d symbols ...", len(symbols))
             self.ws.subscribe(symbols=symbols, data_type="SymbolUpdate")
             self.ws.keep_running()
 
         def on_error(msg):
-            print(f"[ws] error: {msg}")
+            logger.warning("ws error: %s", msg)
 
         def on_close(msg):
-            print(f"[ws] closed: {msg}")
+            logger.info("ws closed: %s", msg)
             self._running = False
 
         self.ws = data_ws.FyersDataSocket(
@@ -380,15 +383,15 @@ class DataEngine:
             on_message=on_message,
         )
         self._running = True
-        print("[ws] Connecting to Fyers data socket ...")
+        logger.info("ws: Connecting to Fyers data socket ...")
         self.ws.connect()  # blocking; run this inside a background thread
 
     def stop_websocket(self):
         if self.ws and self._running:
             try:
                 self.ws.close_connection()
-            except Exception as exc:  # noqa: BLE001
-                print(f"[ws] close error: {exc}")
+            except Exception:  # noqa: BLE001
+                logger.exception("ws: close error")
         self._running = False
 
     def _handle_tick(self, msg: dict):

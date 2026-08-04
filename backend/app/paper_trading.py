@@ -13,14 +13,20 @@ resolves here.
 """
 
 import asyncio
+import logging
 from datetime import datetime
 from decimal import Decimal
+from io import BytesIO
 
 import asyncpg
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import StreamingResponse
+from openpyxl import Workbook
 from pydantic import BaseModel
 
-from . import brokerage, config, order_monitor, paper_margin, paper_pnl, security
+from . import brokerage, config, order_monitor, paper_margin, paper_pnl, security, telegram_notify
+
+logger = logging.getLogger(__name__)
 from .state import market_state
 
 router = APIRouter(
@@ -38,7 +44,7 @@ async def init_pool() -> None:
     """Called from main.py's lifespan on startup."""
     global _pool
     if not config.SUPABASE_DB_URL:
-        print("[paper_trading] SUPABASE_DB_URL not set; paper trading disabled.")
+        logger.info("SUPABASE_DB_URL not set; paper trading disabled.")
         return
     # statement_cache_size=0: Supabase's Transaction pooler (pgbouncer, transaction
     # mode) doesn't support asyncpg's prepared statements — each pooled connection
@@ -51,7 +57,7 @@ async def init_pool() -> None:
     )
     order_monitor.set_loop(asyncio.get_running_loop())
     await order_monitor.load_from_db()
-    print("[paper_trading] DB pool ready.")
+    logger.info("DB pool ready.")
 
 
 async def close_pool() -> None:
@@ -164,6 +170,22 @@ async def update_trailing_stop(
         )
 
 
+_CLOSE_ALERT_EMOJI = {"SL": "🔴", "TARGET": "🟢", "SQUARE_OFF": "🟠"}
+_CLOSE_ALERT_LABEL = {"SL": "Stop Loss", "TARGET": "Target", "SQUARE_OFF": "Square-off"}
+
+
+def _close_alert_text(order: dict) -> str:
+    emoji = _CLOSE_ALERT_EMOJI.get(order["close_reason"], "⚪")
+    label = _CLOSE_ALERT_LABEL.get(order["close_reason"], order["close_reason"])
+    sign = "+" if float(order["net_pnl"]) >= 0 else ""
+    return (
+        f"{emoji} *{label}*: {order['side']} {order['quantity']} {order['symbol']} "
+        f"@ {order['exit_price']} (entry {order['entry_price']})\n"
+        f"Gross: {sign}₹{order['realized_pnl']} | Charges: ₹{order['total_charges']} | "
+        f"Net: {sign}₹{order['net_pnl']}"
+    )
+
+
 async def close_order(order_id: int, user_id: str, reason: str, exit_price: float) -> dict | None:
     """Close an OPEN position (manual exit, SL/Target trigger, or square-off)."""
     pool = get_pool()
@@ -204,7 +226,13 @@ async def close_order(order_id: int, user_id: str, reason: str, exit_price: floa
                 charges["total_charges"], net_pnl, order_id,
             )
     order_monitor.unregister(order_id, row["symbol"])
-    return _serialize(dict(closed))
+    result = _serialize(dict(closed))
+    if reason in ("SL", "TARGET", "SQUARE_OFF"):
+        # Skip MANUAL — the user already knows, they clicked it themselves.
+        asyncio.get_running_loop().run_in_executor(
+            None, telegram_notify.send_message, _close_alert_text(result)
+        )
+    return result
 
 
 async def square_off_all() -> None:
@@ -235,8 +263,9 @@ async def square_off_all() -> None:
             )
         for r in pending_rows:
             order_monitor.unregister(r["id"], r["symbol"])
-    print(
-        f"[paper_trading] Square-off: closed {closed} open position(s), cancelled {len(pending_rows)} pending order(s)."
+    logger.info(
+        "Square-off: closed %d open position(s), cancelled %d pending order(s).",
+        closed, len(pending_rows),
     )
 
 
@@ -249,8 +278,8 @@ def square_off_all_sync() -> None:
     future = asyncio.run_coroutine_threadsafe(square_off_all(), loop)
     try:
         future.result(timeout=30)
-    except Exception as exc:  # noqa: BLE001
-        print(f"[paper_trading] square-off failed: {exc!r}")
+    except Exception:  # noqa: BLE001
+        logger.exception("square-off failed")
 
 
 # ---------------- request/response models ----------------
@@ -264,6 +293,7 @@ class PlaceOrderBody(BaseModel):
     target_price: float | None = None
     tsl_type: str | None = None
     tsl_value: float | None = None
+    notes: str | None = None
 
 
 class ModifyPositionBody(BaseModel):
@@ -271,9 +301,48 @@ class ModifyPositionBody(BaseModel):
     target_price: float | None = None
     tsl_type: str | None = None
     tsl_value: float | None = None
+    notes: str | None = None
+
+
+class WalletDepositBody(BaseModel):
+    amount: float
+
+
+DEFAULT_STARTING_BALANCE = 100_000.00
 
 
 # ---------------- endpoints ----------------
+@router.post("/wallet/deposit")
+async def deposit_to_wallet(body: WalletDepositBody, request: Request):
+    if body.amount <= 0:
+        raise HTTPException(status_code=400, detail="amount must be positive")
+    user_id = await _current_user_id(request)
+    pool = _require_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "update public.paper_wallets set balance = balance + $1, updated_at = now() "
+            "where user_id = $2 returning balance",
+            body.amount, user_id,
+        )
+    return {"balance": float(row["balance"])}
+
+
+@router.post("/wallet/reset")
+async def reset_wallet(request: Request):
+    """Resets the balance only — never touches existing orders/positions.
+    The frontend confirms first since resetting while positions are open
+    leaves margin still locked against the old balance."""
+    user_id = await _current_user_id(request)
+    pool = _require_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "update public.paper_wallets set balance = $1, updated_at = now() "
+            "where user_id = $2 returning balance",
+            DEFAULT_STARTING_BALANCE, user_id,
+        )
+    return {"balance": float(row["balance"])}
+
+
 @router.get("/margin")
 async def get_margin(symbol: str, request: Request):
     user_id = await _current_user_id(request)
@@ -331,8 +400,8 @@ async def place_order(body: PlaceOrderBody, request: Request):
             row = await conn.fetchrow(
                 "insert into public.paper_orders "
                 "(user_id, symbol, side, quantity, order_type, limit_price, sl_price, target_price, "
-                "tsl_type, tsl_value, status) "
-                "values ($1,$2,$3,$4,'LIMIT',$5,$6,$7,$8,$9,'PENDING') returning *",
+                "tsl_type, tsl_value, notes, status) "
+                "values ($1,$2,$3,$4,'LIMIT',$5,$6,$7,$8,$9,$10,'PENDING') returning *",
                 user_id,
                 body.symbol,
                 body.side,
@@ -342,6 +411,7 @@ async def place_order(body: PlaceOrderBody, request: Request):
                 body.target_price,
                 body.tsl_type,
                 body.tsl_value,
+                body.notes,
             )
         order_monitor.register_pending_limit(dict(row))
         return _serialize(dict(row))
@@ -366,8 +436,8 @@ async def place_order(body: PlaceOrderBody, request: Request):
             row = await conn.fetchrow(
                 "insert into public.paper_orders "
                 "(user_id, symbol, side, quantity, order_type, sl_price, target_price, "
-                "tsl_type, tsl_value, peak_price, entry_price, margin_locked, status, filled_at) "
-                "values ($1,$2,$3,$4,'MARKET',$5,$6,$7,$8,$9,$10,$11,'OPEN', now()) returning *",
+                "tsl_type, tsl_value, peak_price, entry_price, margin_locked, notes, status, filled_at) "
+                "values ($1,$2,$3,$4,'MARKET',$5,$6,$7,$8,$9,$10,$11,$12,'OPEN', now()) returning *",
                 user_id,
                 body.symbol,
                 body.side,
@@ -379,6 +449,7 @@ async def place_order(body: PlaceOrderBody, request: Request):
                 peak_price,
                 ltp,
                 margin,
+                body.notes,
             )
     if body.sl_price or body.target_price or body.tsl_type:
         order_monitor.register_open_bracket(dict(row))
@@ -414,12 +485,13 @@ async def modify_position(order_id: int, body: ModifyPositionBody, request: Requ
 
         updated = await conn.fetchrow(
             "update public.paper_orders set sl_price=$1, target_price=$2, tsl_type=$3, "
-            "tsl_value=$4, peak_price=$5 where id=$6 returning *",
+            "tsl_value=$4, peak_price=$5, notes=$6 where id=$7 returning *",
             body.sl_price,
             body.target_price,
             body.tsl_type,
             body.tsl_value,
             new_peak,
+            body.notes,
             order_id,
         )
     order_monitor.unregister(order_id, row["symbol"])
@@ -510,19 +582,93 @@ async def history(
     are resolved to concrete timestamps on the frontend — this endpoint only
     ever sees plain from/to bounds."""
     user_id = await _current_user_id(request)
+    rows = await _fetch_history_rows(user_id, from_ts, to_ts, limit, offset)
+    return {"orders": [_serialize(dict(r)) for r in rows]}
+
+
+# column key -> spreadsheet header label, per export section. Mirrors what
+# ExportButtons.jsx used to build client-side as plain CSV — moved server-
+# side so real .xlsx files can be generated with openpyxl.
+_EXPORT_COLUMNS = {
+    "orders": [
+        ("symbol", "Symbol"), ("side", "Side"), ("quantity", "Quantity"),
+        ("order_type", "Order Type"), ("entry_price", "Entry Price"),
+        ("exit_price", "Exit Price"), ("close_reason", "Close Reason"),
+        ("placed_at", "Placed At"), ("closed_at", "Closed At"),
+    ],
+    "pnl": [
+        ("symbol", "Symbol"), ("entry_price", "Entry Price"), ("exit_price", "Exit Price"),
+        ("realized_pnl", "Gross P&L"), ("total_charges", "Total Charges"), ("net_pnl", "Net P&L"),
+    ],
+    "tax": [
+        ("symbol", "Symbol"), ("stt", "STT"), ("stamp_duty", "Stamp Duty"),
+        ("sebi_charges", "SEBI Charges"),
+    ],
+    "brokerage": [
+        ("symbol", "Symbol"), ("brokerage", "Brokerage"), ("exchange_charges", "Exchange Charges"),
+        ("gst", "GST"),
+    ],
+    "combined": [
+        ("symbol", "Symbol"), ("side", "Side"), ("quantity", "Quantity"), ("order_type", "Order Type"),
+        ("entry_price", "Entry Price"), ("exit_price", "Exit Price"), ("close_reason", "Close Reason"),
+        ("realized_pnl", "Gross P&L"), ("brokerage", "Brokerage"), ("stt", "STT"),
+        ("exchange_charges", "Exchange Charges"), ("sebi_charges", "SEBI Charges"),
+        ("stamp_duty", "Stamp Duty"), ("gst", "GST"), ("total_charges", "Total Charges"),
+        ("net_pnl", "Net P&L"), ("notes", "Notes"), ("placed_at", "Placed At"), ("closed_at", "Closed At"),
+    ],
+}
+
+
+@router.get("/orders/export")
+async def export_orders(
+    request: Request,
+    section: str = "combined",
+    from_ts: str | None = None,
+    to_ts: str | None = None,
+):
+    if section not in _EXPORT_COLUMNS:
+        raise HTTPException(status_code=400, detail=f"section must be one of {list(_EXPORT_COLUMNS)}")
+    user_id = await _current_user_id(request)
+    rows = await _fetch_history_rows(user_id, from_ts, to_ts, limit=10_000, offset=0)
+    columns = _EXPORT_COLUMNS[section]
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = section.capitalize()
+    ws.append([label for _key, label in columns])
+    for r in rows:
+        row = _serialize(dict(r))
+        ws.append([row.get(key) for key, _label in columns])
+
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    stamp = datetime.now(config.IST).strftime("%Y%m%d")
+    filename = f"paper-trading-{section}-{stamp}.xlsx"
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+async def _fetch_history_rows(
+    user_id: str, from_ts: str | None, to_ts: str | None, limit: int, offset: int
+) -> list:
+    """Shared by /orders/history (JSON) and /orders/export (.xlsx) so both
+    read the exact same date-range-filtered rows via one query, not two."""
     if _pool is None:
-        return {"orders": []}
+        return []
     from_dt = datetime.fromisoformat(from_ts) if from_ts else None
     to_dt = datetime.fromisoformat(to_ts) if to_ts else None
     async with _pool.acquire() as conn:
-        rows = await conn.fetch(
+        return await conn.fetch(
             "select * from public.paper_orders where user_id=$1 and status in ('CLOSED','CANCELLED') "
             "and ($2::timestamptz is null or placed_at >= $2) "
             "and ($3::timestamptz is null or placed_at <= $3) "
             "order by placed_at desc limit $4 offset $5",
             user_id, from_dt, to_dt, limit, offset,
         )
-    return {"orders": [_serialize(dict(r)) for r in rows]}
 
 
 @router.get("/pnl/summary")

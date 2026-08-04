@@ -18,6 +18,7 @@ import {
   useSymbols,
 } from "./hooks/useMarketStream.js";
 import { marketStore } from "./store/marketStore.js";
+import { usePositionsCount } from "./hooks/useOrders.js";
 import { useTheme } from "./contexts/ThemeContext.jsx";
 import { supabase } from "./lib/supabaseClient.js";
 import RankingScreen from "./screens/RankingScreen.jsx";
@@ -297,18 +298,23 @@ function TopNavbar({
   marketOpen,
   connected,
 }) {
+  const openPositionsCount = usePositionsCount();
   const tabs = [
     { key: "ranking", label: "Ranking", icon: "📊" },
     { key: "heatmap", label: "Heatmap", icon: "🔥" },
     { key: "insights", label: "Insights", icon: "💡" },
     { key: "watchlist", label: "Watchlist", icon: "⭐" },
-    { key: "paper-trading", label: "Positions", icon: "🧪" },
+    {
+      key: "paper-trading",
+      label: openPositionsCount > 0 ? `Positions (${openPositionsCount})` : "Positions",
+      icon: "🧪",
+    },
   ];
 
   return (
     <nav className="sticky top-0 z-50 border-b border-subtle bg-surface2/95 backdrop-blur-xl shadow-sm">
-      <div className="mx-auto max-w-full px-6 py-4">
-        <div className="flex items-center justify-between gap-6 mb-4">
+      <div className="mx-auto max-w-full px-4 sm:px-6 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
           {/* Logo & Status */}
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-blue to-accent-violet grid place-items-center font-bold text-white text-sm">
@@ -340,8 +346,9 @@ function TopNavbar({
           </div>
 
           {/* Right side: Benchmark & User */}
-          <div className="flex items-center gap-6">
-            <div className="text-right">
+          <div className="flex items-center gap-4 sm:gap-6">
+            {/* Nifty ticker detail: sheds on the smallest screens, room is tight */}
+            <div className="text-right hidden sm:block">
               <div className="text-[10px] text-faint font-bold uppercase">
                 NIFTY 50
               </div>
@@ -360,8 +367,8 @@ function TopNavbar({
               </div>
             </div>
 
-            <div className="border-l border-subtle pl-6 flex items-center gap-4">
-              <div className="text-right">
+            <div className="border-l border-subtle pl-4 sm:pl-6 flex items-center gap-3 sm:gap-4">
+              <div className="text-right hidden md:block">
                 <div className="text-xs text-faint">{user}</div>
                 <button
                   onClick={onLogout}
@@ -370,18 +377,25 @@ function TopNavbar({
                   Log out
                 </button>
               </div>
+              <button
+                onClick={onLogout}
+                title="Log out"
+                className="md:hidden w-8 h-8 grid place-items-center rounded-lg border border-subtle bg-surface3 text-muted hover:text-primary transition-colors"
+              >
+                <LogOut size={14} />
+              </button>
               <ThemeToggle />
             </div>
           </div>
         </div>
 
-        {/* Horizontal Tabs */}
-        <div className="flex gap-0.5">
+        {/* Horizontal Tabs — scrolls instead of clipping on narrow screens */}
+        <div className="flex gap-0.5 overflow-x-auto">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => onTabChange(tab.key)}
-              className={`px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 ${
+              className={`px-4 py-2.5 text-sm font-semibold whitespace-nowrap transition-colors border-b-2 ${
                 activeTab === tab.key
                   ? "border-accent-blue text-accent-blue bg-surface3/40"
                   : "border-transparent text-muted hover:text-primary hover:bg-surface3/20"

@@ -28,6 +28,7 @@ restored, it'll seed these fields too — this module's tick updates simply
 layer on top without conflict either way).
 """
 
+import asyncio
 from datetime import datetime
 
 from .config import ORB_CANDLES
@@ -39,6 +40,13 @@ _FIVE_MIN = 5
 # the opening range completes for that symbol — nothing here is needed again
 # after `two_sided_ok`/`candle1_high/low` are set.
 _opening_5min: dict[str, dict[int, list]] = {}
+
+# symbol -> (bucket_date, bucket_minute, [open, high, low, close]) — tracks
+# the WHOLE session (09:15-15:30), kept deliberately SEPARATE from
+# `_opening_5min` above so this addition (backtest groundwork only, see
+# candle_history.py) can never regress the already-verified ORB/quality-gate
+# logic. Persisted to Postgres each time a bucket completes.
+_day_candles: dict[str, tuple] = {}
 
 
 def _five_min_bucket(now: datetime) -> int:
@@ -59,6 +67,7 @@ def on_tick(stock: dict, ltp: float, now: datetime) -> None:
             break
 
     sym = stock["symbol"]
+    _track_day_candle(sym, ltp, now)
     if now_t < _OPENING_RANGE_END:
         _update_opening_5min(sym, ltp, now)
     elif sym in _opening_5min:
@@ -89,3 +98,40 @@ def _finalize_opening_range(stock: dict) -> None:
     # ts/volume aren't used by that check, pad with 0.
     rows = [[0, o, h, l, c, 0] for o, h, l, c in ordered]
     stock["two_sided_ok"] = has_two_sided_range(rows)
+
+
+def _track_day_candle(sym: str, ltp: float, now: datetime) -> None:
+    """Backtest groundwork only — persists each completed 5-min candle across
+    the whole session, independent of the opening-range-specific logic above."""
+    bucket = _five_min_bucket(now)
+    today = now.date()
+    prev = _day_candles.get(sym)
+    if prev is None or prev[0] != today or prev[1] != bucket:
+        if prev is not None:
+            _persist_bucket(sym, *prev)
+        _day_candles[sym] = (today, bucket, [ltp, ltp, ltp, ltp])
+    else:
+        ohlc = prev[2]
+        ohlc[1] = max(ohlc[1], ltp)
+        ohlc[2] = min(ohlc[2], ltp)
+        ohlc[3] = ltp
+
+
+def _persist_bucket(sym: str, bucket_date, bucket_minute: int, ohlc: list) -> None:
+    from . import order_monitor
+    from .candle_history import persist_candle
+
+    loop = order_monitor.get_loop()
+    if loop is None:
+        return  # paper trading (and its DB pool) not configured
+    asyncio.run_coroutine_threadsafe(
+        persist_candle(sym, bucket_date, bucket_minute, list(ohlc)), loop
+    )
+
+
+def flush_all() -> None:
+    """Persists every still-open bucket — called once at 15:30 IST market
+    close (scheduler.py) so the last partial candle of the day isn't lost."""
+    for sym, (bucket_date, bucket_minute, ohlc) in list(_day_candles.items()):
+        _persist_bucket(sym, bucket_date, bucket_minute, ohlc)
+    _day_candles.clear()

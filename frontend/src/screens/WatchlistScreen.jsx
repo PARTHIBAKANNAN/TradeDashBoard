@@ -30,7 +30,7 @@ export default function WatchlistScreen({ stocks, nifty }) {
 
   return (
     <div className="min-h-screen bg-surface">
-      <div className="mx-auto max-w-7xl px-6 py-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-4">
@@ -66,7 +66,7 @@ export default function WatchlistScreen({ stocks, nifty }) {
           {watchlistStocks.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
-                <thead>
+                <thead className="hidden md:table-header-group">
                   <tr className="bg-surface3/60 border-b border-subtle">
                     <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider w-8" />
                     <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider">
@@ -131,7 +131,7 @@ export default function WatchlistScreen({ stocks, nifty }) {
           <div className="bg-surface2/70 backdrop-blur-xl border border-subtle rounded-xl overflow-hidden shadow-card">
             <div className="overflow-x-auto max-h-96">
               <table className="w-full text-left border-collapse">
-                <thead>
+                <thead className="hidden md:table-header-group">
                   <tr className="bg-surface3/60 border-b border-subtle sticky top-0">
                     <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider w-8" />
                     <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider">
@@ -155,58 +155,92 @@ export default function WatchlistScreen({ stocks, nifty }) {
                     .map((stock) => {
                       const isWatched = watchlist.includes(stock.symbol);
                       const isPositive = stock.pct_change >= 0;
-                      return (
-                        <tr
-                          key={stock.symbol}
-                          className="border-b border-subtle/70 hover:bg-surface3/40 transition-colors"
+                      const starButton = (
+                        <button
+                          onClick={() => toggleWatchlist(stock.symbol)}
+                          className={`transition-all hover:scale-110 ${
+                            isWatched
+                              ? "text-accent-amber"
+                              : "text-faint hover:text-accent-amber"
+                          }`}
+                          title={
+                            isWatched
+                              ? "Remove from watchlist"
+                              : "Add to watchlist"
+                          }
                         >
-                          <td className="py-3 px-4">
-                            <button
-                              onClick={() => toggleWatchlist(stock.symbol)}
-                              className={`transition-all hover:scale-110 ${
-                                isWatched
-                                  ? "text-accent-amber"
-                                  : "text-faint hover:text-accent-amber"
-                              }`}
-                              title={
-                                isWatched
-                                  ? "Remove from watchlist"
-                                  : "Add to watchlist"
-                              }
-                            >
-                              <Star
-                                size={16}
-                                fill={isWatched ? "currentColor" : "none"}
-                              />
-                            </button>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="text-sm font-semibold text-primary">
-                              {stock.symbol}
-                            </div>
-                            <div className="text-xs text-faint">
-                              {stock.sector}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <div className="text-sm font-mono text-primary tabular-nums">
-                              ₹
-                              {stock.ltp?.toLocaleString("en-IN", {
-                                maximumFractionDigits: 2,
-                              })}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            <span
-                              className={`text-sm font-semibold tabular-nums ${
-                                isPositive ? "text-bull" : "text-bear"
-                              }`}
-                            >
-                              {isPositive ? "+" : ""}
-                              {stock.pct_change}%
-                            </span>
-                          </td>
-                        </tr>
+                          <Star
+                            size={16}
+                            fill={isWatched ? "currentColor" : "none"}
+                          />
+                        </button>
+                      );
+                      return (
+                        <React.Fragment key={stock.symbol}>
+                          <tr className="hidden md:table-row border-b border-subtle/70 hover:bg-surface3/40 transition-colors">
+                            <td className="py-3 px-4">{starButton}</td>
+                            <td className="py-3 px-4">
+                              <div className="text-sm font-semibold text-primary">
+                                {stock.symbol}
+                              </div>
+                              <div className="text-xs text-faint">
+                                {stock.sector}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <div className="text-sm font-mono text-primary tabular-nums">
+                                ₹
+                                {stock.ltp?.toLocaleString("en-IN", {
+                                  maximumFractionDigits: 2,
+                                })}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <span
+                                className={`text-sm font-semibold tabular-nums ${
+                                  isPositive ? "text-bull" : "text-bear"
+                                }`}
+                              >
+                                {isPositive ? "+" : ""}
+                                {stock.pct_change}%
+                              </span>
+                            </td>
+                          </tr>
+
+                          <tr className="md:hidden border-b border-subtle/70">
+                            <td colSpan={4} className="p-3">
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  {starButton}
+                                  <div>
+                                    <div className="text-sm font-semibold text-primary">
+                                      {stock.symbol}
+                                    </div>
+                                    <div className="text-xs text-faint">
+                                      {stock.sector}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-sm font-mono text-primary tabular-nums">
+                                    ₹
+                                    {stock.ltp?.toLocaleString("en-IN", {
+                                      maximumFractionDigits: 2,
+                                    })}
+                                  </div>
+                                  <span
+                                    className={`text-xs font-semibold tabular-nums ${
+                                      isPositive ? "text-bull" : "text-bear"
+                                    }`}
+                                  >
+                                    {isPositive ? "+" : ""}
+                                    {stock.pct_change}%
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        </React.Fragment>
                       );
                     })}
                 </tbody>

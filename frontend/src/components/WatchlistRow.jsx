@@ -50,12 +50,15 @@ const WatchlistRow = React.memo(
       hasSignal &&
       ((isBull && niftyPctChange < 0) || (!isBull && niftyPctChange > 0));
 
+    const colSpan = leading ? 7 : 6;
+
     return (
+      <>
       <motion.tr
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.2, delay: Math.min(index, 20) * 0.012 }}
-        className="group border-b border-subtle/70 hover:bg-surface3/40 transition-colors"
+        className="hidden md:table-row group border-b border-subtle/70 hover:bg-surface3/40 transition-colors"
       >
         {leading && <td className="py-3 px-4 w-8">{leading}</td>}
 
@@ -178,6 +181,101 @@ const WatchlistRow = React.memo(
           )}
         </td>
       </motion.tr>
+
+      {/* Mobile card — kept inside a tr/td so table markup stays valid */}
+      <tr className="md:hidden border-b border-subtle/70">
+        <td colSpan={colSpan} className="p-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start gap-2">
+              {leading && <div className="pt-0.5">{leading}</div>}
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold text-primary text-sm">
+                    {stock.symbol}
+                  </span>
+                  {isRecommended && (
+                    <span
+                      title="Recommended: top-scoring by RS, sector strength, volume, VWAP side, signal freshness, and range position — a filtering aid, not a guarantee"
+                      className="inline-flex items-center gap-0.5 rounded-full bg-accent-amber/15 text-accent-amber border border-accent-amber/30 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide"
+                    >
+                      <Sparkles size={9} /> Rec
+                    </span>
+                  )}
+                </div>
+                <div className="text-[11px] text-faint font-semibold">
+                  {stock.sector}
+                </div>
+              </div>
+            </div>
+            <div className="text-right font-mono tabular-nums">
+              <div
+                className={
+                  isPositive
+                    ? "text-bull font-semibold"
+                    : "text-bear font-semibold"
+                }
+              >
+                {Number(stock.ltp).toLocaleString("en-IN", {
+                  minimumFractionDigits: 2,
+                })}
+              </div>
+              <div
+                className={`text-[11px] flex items-center justify-end gap-0.5 ${
+                  isPositive ? "text-bull/80" : "text-bear/80"
+                }`}
+              >
+                {isPositive ? <ArrowUp size={9} /> : <ArrowDown size={9} />}
+                {Math.abs(stock.pct_change)}%
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-2 flex items-center justify-between gap-2">
+            {hasSignal ? (
+              <div
+                className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider border ${
+                  isBull
+                    ? "bg-bull/10 text-bull border-bull/30"
+                    : "bg-bear/10 text-bear border-bear/30"
+                }`}
+              >
+                {isBull ? <ArrowUp size={10} /> : <ArrowDown size={10} />}
+                {stock.signal}
+                {againstTrend && (
+                  <AlertTriangle size={10} className="text-accent-amber" />
+                )}
+              </div>
+            ) : (
+              <span className="text-faint font-semibold text-[11px]">
+                No signal
+              </span>
+            )}
+            <span
+              className={`font-mono text-xs font-bold ${isRsPositive ? "text-bull" : "text-bear"}`}
+            >
+              RS {isRsPositive ? "+" : ""}
+              {stock.relative_strength}
+            </span>
+          </div>
+
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <div className="text-[10px] text-faint font-mono flex items-center gap-1">
+              {stock.day_range_pos}% of day range
+              {isExtended && (
+                <span className="text-accent-amber font-bold">Extended</span>
+              )}
+            </div>
+            <button
+              onClick={() => setTradeOpen(true)}
+              title="Paper trade this stock"
+              className="inline-flex items-center gap-1 rounded-lg border border-subtle bg-surface3 px-2.5 py-1 text-[11px] font-bold text-muted hover:text-accent-blue hover:border-accent-blue/40 transition-colors"
+            >
+              <Rocket size={11} /> Trade
+            </button>
+          </div>
+        </td>
+      </tr>
+      </>
     );
   },
 );

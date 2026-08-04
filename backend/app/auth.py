@@ -15,6 +15,7 @@ mid-day server restart does not force a fresh login.
 import base64
 import hashlib
 import json
+import logging
 import os
 import time
 from datetime import datetime
@@ -24,6 +25,8 @@ import requests
 from fyers_apiv3 import fyersModel
 
 from . import config
+
+logger = logging.getLogger(__name__)
 
 # Fyers programmatic auth endpoints
 URL_SEND_OTP = "https://api-t2.fyers.in/vagator/v2/send_login_otp_v2"
@@ -215,12 +218,12 @@ def refresh_via_token() -> str | None:
         token = data.get("access_token")
         if r.status_code == 200 and token:
             _save_cached_token(token)  # refresh_token unchanged
-            print("[auth] Access token renewed via refresh token.")
+            logger.info("Access token renewed via refresh token.")
             return token
-        print(f"[auth] Refresh-token renewal failed: {data}")
+        logger.warning("Refresh-token renewal failed: %s", data)
         return None
-    except Exception as exc:  # noqa: BLE001
-        print(f"[auth] Refresh-token renewal error: {exc}")
+    except Exception:  # noqa: BLE001
+        logger.exception("Refresh-token renewal error")
         return None
 
 
@@ -243,10 +246,10 @@ def exchange_and_cache(auth_code: str) -> str | None:
     try:
         access_token, refresh_token = _exchange_auth_code(auth_code)
         _save_cached_token(access_token, refresh_token)
-        print(f"[auth] Token cached via callback ({access_token[:8]}...).")
+        logger.info("Token cached via callback (%s...).", access_token[:8])
         return access_token
-    except Exception as exc:  # noqa: BLE001
-        print(f"[auth] callback exchange failed: {exc}")
+    except Exception:  # noqa: BLE001
+        logger.exception("callback exchange failed")
         return None
 
 
@@ -273,7 +276,7 @@ def get_access_token(force_refresh: bool = False) -> str | None:
     if not force_refresh:
         cached = _load_cached_token()
         if cached:
-            print("[auth] Using cached access token (valid).")
+            logger.info("Using cached access token (valid).")
             return cached
 
     # Prefer the refresh-token flow (no TOTP, no flaky auth-code path).
@@ -284,21 +287,21 @@ def get_access_token(force_refresh: bool = False) -> str | None:
     if not all(
         [config.CLIENT_ID, config.SECRET_KEY, config.FY_ID, config.USER_PIN, config.TOTP_SECRET]
     ):
-        print(
-            "[auth] No valid token and no way to refresh — MANUAL LOGIN required "
+        logger.warning(
+            "No valid token and no way to refresh — MANUAL LOGIN required "
             "(open the dashboard and click 'Connect FYERS')."
         )
         return None
 
     try:
-        print(
-            f"[auth] Generating fresh access token at {datetime.now(config.IST):%H:%M:%S} IST ..."
+        logger.info(
+            "Generating fresh access token at %s IST ...", f"{datetime.now(config.IST):%H:%M:%S}"
         )
         auth_code = _fetch_auth_code()
         access_token, refresh_token = _exchange_auth_code(auth_code)
         _save_cached_token(access_token, refresh_token)
-        print(f"[auth] Access token cached ({access_token[:8]}...).")
+        logger.info("Access token cached (%s...).", access_token[:8])
         return access_token
-    except Exception as exc:  # noqa: BLE001 - keep server alive; surface via auth_status()
-        print(f"[auth] Automated login failed ({exc}); MANUAL LOGIN may be required.")
+    except Exception:  # noqa: BLE001 - keep server alive; surface via auth_status()
+        logger.exception("Automated login failed; MANUAL LOGIN may be required.")
         return None

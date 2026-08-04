@@ -56,6 +56,13 @@ SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
 # persistence via asyncpg. Empty disables the paper-trading feature.
 SUPABASE_DB_URL = os.getenv("SUPABASE_DB_URL", "")
 
+# ----------------- Telegram alerts (position closes + Recommended-tag digest) -----------------
+# Create a bot via @BotFather, then message it once and call
+# https://api.telegram.org/bot<token>/getUpdates to read your chat_id.
+# Both empty disables Telegram alerts entirely (no-op, same as SUPABASE_DB_URL).
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
+
 # ----------------- Token cache & refresh -----------------
 # Location where the daily access token is cached (env-configurable → mount a volume when hosted).
 TOKEN_CACHE_FILE = os.getenv(

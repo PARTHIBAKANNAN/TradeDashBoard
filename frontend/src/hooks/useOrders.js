@@ -81,6 +81,22 @@ export async function closeOrder(id) {
   return order;
 }
 
+export async function depositToWallet(amount) {
+  const result = await api("/api/paper/wallet/deposit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ amount }),
+  });
+  await fetchSummary();
+  return result;
+}
+
+export async function resetWallet() {
+  const result = await api("/api/paper/wallet/reset", { method: "POST" });
+  await fetchSummary();
+  return result;
+}
+
 // ---- React hooks ----
 export function usePositions() {
   return useSyncExternalStore(
@@ -120,4 +136,21 @@ export function usePaperTradingSync() {
     const id = setInterval(refresh, POLL_INTERVAL_MS);
     return () => clearInterval(id);
   }, []);
+}
+
+const POSITIONS_COUNT_POLL_MS = 20_000;
+
+// Lightweight and independent of usePaperTradingSync — lets the main nav tab
+// show a live open-position count even if the user has never opened the
+// Paper Trading screen. Deliberately a longer interval since it only backs
+// a badge, not the actionable positions view.
+export function usePositionsCount() {
+  useEffect(() => {
+    const refresh = () => fetchPositions().catch(() => {});
+    refresh();
+    const id = setInterval(refresh, POSITIONS_COUNT_POLL_MS);
+    return () => clearInterval(id);
+  }, []);
+  const positions = usePositions();
+  return positions.filter((p) => p.status === "OPEN").length;
 }

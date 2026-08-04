@@ -1,7 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ArrowUpCircle, ArrowDownCircle, Loader2 } from "lucide-react";
+import {
+  ArrowUpCircle,
+  ArrowDownCircle,
+  Loader2,
+  AlertTriangle,
+} from "lucide-react";
 import { fetchMargin, placeOrder } from "../../hooks/useOrders.js";
 import TslFields from "./TslFields.jsx";
+
+// Above this % of available balance used as margin, the confirm step shows
+// an amber risk line rather than a separate warning flow.
+const HIGH_RISK_WALLET_PCT = 25;
 
 const SIDES = ["BUY", "SELL"];
 const ORDER_TYPES = ["MARKET", "LIMIT"];
@@ -28,10 +37,12 @@ export default function PlaceOrderForm({
   const [targetPrice, setTargetPrice] = useState("");
   const [tslType, setTslType] = useState("");
   const [tslValue, setTslValue] = useState("");
+  const [notes, setNotes] = useState("");
   const [margin, setMargin] = useState(null);
   const [marginLoading, setMarginLoading] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     if (!symbol && symbols.length) setSymbol(symbols[0]);
@@ -56,61 +67,80 @@ export default function PlaceOrderForm({
     };
   }, [symbol, quantity]);
 
-  const requiredMargin =
+  const positionValue =
     margin && margin.ltp
-      ? Math.round(
-          ((orderType === "LIMIT" && limitPrice
-            ? Number(limitPrice)
-            : margin.ltp) *
-            (Number(quantity) || 0)) /
-            margin.leverage,
-        )
+      ? (orderType === "LIMIT" && limitPrice
+          ? Number(limitPrice)
+          : margin.ltp) * (Number(quantity) || 0)
+      : null;
+  const requiredMargin =
+    positionValue != null && margin
+      ? Math.round(positionValue / margin.leverage)
       : null;
   const overBudget =
     requiredMargin != null &&
     margin &&
     requiredMargin > margin.available_balance;
+  const walletPct =
+    requiredMargin != null && margin && margin.available_balance
+      ? (requiredMargin / margin.available_balance) * 100
+      : null;
+  const highRisk = walletPct != null && walletPct > HIGH_RISK_WALLET_PCT;
 
-  const submit = async (e) => {
-    e.preventDefault();
+  const validate = () => {
     setError("");
-    if (!symbol) return;
+    if (!symbol) return false;
     const qty = Number(quantity);
     if (!qty || qty <= 0) {
       setError("Quantity must be a positive whole number.");
-      return;
+      return false;
     }
     if (orderType === "LIMIT" && (!limitPrice || Number(limitPrice) <= 0)) {
       setError("Limit price is required for a LIMIT order.");
-      return;
+      return false;
     }
     if (tslType && (!tslValue || Number(tslValue) <= 0)) {
       setError(
         "Trailing stop value is required when a trail type is selected.",
       );
-      return;
+      return false;
     }
+    return true;
+  };
+
+  const submit = (e) => {
+    e.preventDefault();
+    if (!validate()) return;
+    setShowConfirm(true);
+  };
+
+  const confirmSubmit = async () => {
     setBusy(true);
+    setError("");
     try {
       await placeOrder({
         symbol,
         side,
-        quantity: qty,
+        quantity: Number(quantity),
         order_type: orderType,
         limit_price: orderType === "LIMIT" ? Number(limitPrice) : undefined,
         sl_price: slPrice ? Number(slPrice) : undefined,
         target_price: targetPrice ? Number(targetPrice) : undefined,
         tsl_type: tslType || undefined,
         tsl_value: tslType && tslValue ? Number(tslValue) : undefined,
+        notes: notes.trim() || undefined,
       });
       setSlPrice("");
       setTargetPrice("");
       setTslType("");
       setTslValue("");
+      setNotes("");
       if (orderType === "LIMIT") setLimitPrice("");
+      setShowConfirm(false);
       onPlaced?.();
     } catch (err) {
       setError(err.message || "Order rejected.");
+      setShowConfirm(false);
     } finally {
       setBusy(false);
     }
@@ -118,7 +148,7 @@ export default function PlaceOrderForm({
 
   return (
     <form onSubmit={submit} className="space-y-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-[10px] font-bold text-muted uppercase tracking-wider mb-1.5">
             Symbol
@@ -218,7 +248,7 @@ export default function PlaceOrderForm({
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-[10px] font-bold text-muted uppercase tracking-wider mb-1.5">
             Stop Loss <span className="text-faint font-normal">(optional)</span>
@@ -252,6 +282,19 @@ export default function PlaceOrderForm({
         onValueChange={setTslValue}
       />
 
+      <div>
+        <label className="block text-[10px] font-bold text-muted uppercase tracking-wider mb-1.5">
+          Journal Note <span className="text-faint font-normal">(optional)</span>
+        </label>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={2}
+          placeholder="Why this trade? Setup, conviction, plan…"
+          className="w-full bg-surface3 border border-strong rounded-lg p-2 text-sm focus:outline-none focus:border-accent-blue resize-none"
+        />
+      </div>
+
       <div className="rounded-lg border border-subtle bg-surface3/50 px-3 py-2.5 text-xs space-y-1">
         {marginLoading ? (
           <span className="flex items-center gap-1.5 text-faint">
@@ -271,9 +314,19 @@ export default function PlaceOrderForm({
                 {margin.max_qty} shares
               </span>
             </div>
+            {positionValue != null && (
+              <div className="flex justify-between font-mono tabular-nums">
+                <span className="text-faint">
+                  Position value ({margin.leverage}x leverage)
+                </span>
+                <span className="text-primary font-semibold">
+                  ₹{Math.round(positionValue).toLocaleString("en-IN")}
+                </span>
+              </div>
+            )}
             {requiredMargin != null && (
               <div className="flex justify-between font-mono tabular-nums">
-                <span className="text-faint">Margin required</span>
+                <span className="text-faint">From your wallet</span>
                 <span
                   className={
                     overBudget
@@ -282,6 +335,7 @@ export default function PlaceOrderForm({
                   }
                 >
                   ₹{requiredMargin.toLocaleString("en-IN")}
+                  {walletPct != null ? ` (${walletPct.toFixed(1)}%)` : ""}
                 </span>
               </div>
             )}
@@ -293,13 +347,90 @@ export default function PlaceOrderForm({
 
       {error && <p className="text-bear text-xs">{error}</p>}
 
-      <button
-        type="submit"
-        disabled={busy || overBudget || !margin?.ltp}
-        className="w-full bg-gradient-to-r from-accent-blue to-accent-violet hover:opacity-90 disabled:opacity-50 rounded-lg py-2.5 text-sm font-bold text-white transition-opacity"
-      >
-        {busy ? "Placing…" : `Place ${orderType} ${side}`}
-      </button>
+      {showConfirm ? (
+        <div className="rounded-lg border border-accent-blue/40 bg-accent-blue/5 px-3 py-3 space-y-2">
+          <div className="text-[10px] font-bold text-accent-blue uppercase tracking-wider">
+            Confirm order
+          </div>
+          <div className="text-xs space-y-1.5">
+            <div className="flex justify-between font-mono tabular-nums">
+              <span className="text-faint">Side / Qty</span>
+              <span className="font-semibold text-primary">
+                {side} {quantity} {symbol}
+              </span>
+            </div>
+            <div className="flex justify-between font-mono tabular-nums">
+              <span className="text-faint">Order type</span>
+              <span className="font-semibold text-primary">
+                {orderType}
+                {orderType === "LIMIT" ? ` @ ₹${limitPrice}` : ""}
+              </span>
+            </div>
+            {positionValue != null && (
+              <div className="flex justify-between font-mono tabular-nums">
+                <span className="text-faint">
+                  Position value ({margin.leverage}x leverage)
+                </span>
+                <span className="font-semibold text-primary">
+                  ₹{Math.round(positionValue).toLocaleString("en-IN")}
+                </span>
+              </div>
+            )}
+            {requiredMargin != null && (
+              <div className="flex justify-between font-mono tabular-nums">
+                <span className="text-faint">From your wallet</span>
+                <span className="font-semibold text-primary">
+                  ₹{requiredMargin.toLocaleString("en-IN")}
+                  {walletPct != null ? ` (${walletPct.toFixed(1)}%)` : ""}
+                </span>
+              </div>
+            )}
+            {(slPrice || targetPrice || tslType) && (
+              <div className="flex justify-between font-mono tabular-nums">
+                <span className="text-faint">SL / Target / Trail</span>
+                <span className="font-semibold text-primary">
+                  {slPrice ? `₹${slPrice}` : "—"} /{" "}
+                  {targetPrice ? `₹${targetPrice}` : "—"} /{" "}
+                  {tslType ? `${tslType} ${tslValue}` : "—"}
+                </span>
+              </div>
+            )}
+          </div>
+          {highRisk && (
+            <div className="flex items-start gap-1.5 rounded-md bg-accent-amber/10 border border-accent-amber/30 px-2 py-1.5 text-[11px] text-accent-amber">
+              <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />
+              This order uses {walletPct.toFixed(0)}% of your available
+              balance — a big move against you will hit hard.
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setShowConfirm(false)}
+              disabled={busy}
+              className="rounded-lg py-2 text-sm font-bold border border-subtle text-muted hover:text-primary disabled:opacity-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={confirmSubmit}
+              disabled={busy}
+              className="rounded-lg bg-gradient-to-r from-accent-blue to-accent-violet hover:opacity-90 disabled:opacity-50 py-2 text-sm font-bold text-white transition-opacity"
+            >
+              {busy ? "Placing…" : "Confirm"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="submit"
+          disabled={busy || overBudget || !margin?.ltp}
+          className="w-full bg-gradient-to-r from-accent-blue to-accent-violet hover:opacity-90 disabled:opacity-50 rounded-lg py-2.5 text-sm font-bold text-white transition-opacity"
+        >
+          {`Review ${orderType} ${side}`}
+        </button>
+      )}
     </form>
   );
 }

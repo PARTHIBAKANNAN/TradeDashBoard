@@ -10,6 +10,7 @@ dashboard; FYERS account auth is handled separately via /callback + /api/auth/*.
 
 import asyncio
 import json as _json
+import logging
 import os
 from contextlib import asynccontextmanager
 
@@ -21,12 +22,18 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.middleware.sessions import SessionMiddleware
 
+from .logging_config import configure_logging
+
+configure_logging()
+
 from . import auth, config, paper_trading, security
 from .broadcaster import Broadcaster, build_frame, snapshot_from_state
 from .fyers_service import data_engine
 from .scheduler import (ensure_engine_running, init_scheduler, is_market_open,
                         shutdown_scheduler)
 from .state import market_state
+
+logger = logging.getLogger(__name__)
 
 
 def _live_snapshot() -> dict:
@@ -173,9 +180,9 @@ async def ws_stream(websocket: WebSocket):
     except (WebSocketDisconnect, RuntimeError):
         # Normal client disconnect or socket teardown by browser
         pass
-    except Exception as exc:  # noqa: BLE001
+    except Exception:  # noqa: BLE001
         # Unexpected server-side transport error
-        print(f"[ws] send error: {exc}")
+        logger.exception("ws send error")
     finally:
         receiver_task.cancel()
         try:
@@ -192,14 +199,14 @@ async def _ws_reader(websocket: WebSocket, q):
             try:
                 msg = await websocket.receive_json()
             except (_json.JSONDecodeError, TypeError, ValueError) as exc:
-                print(f"[ws] discarding malformed inbound message: {exc}")
+                logger.warning("discarding malformed inbound ws message: %r", exc)
                 continue
             if isinstance(msg, dict) and msg.get("type") == "resync":
                 broadcaster.mark_resync(q)
     except WebSocketDisconnect:
         return
-    except Exception as exc:  # noqa: BLE001
-        print(f"[ws] reader exiting on unexpected error: {exc}")
+    except Exception:  # noqa: BLE001
+        logger.exception("ws reader exiting on unexpected error")
         return
 
 
@@ -219,7 +226,7 @@ if os.path.isdir(_DIST) and os.path.isfile(_INDEX):
         return FileResponse(_INDEX)
 
 else:
-    print(f"[main] Frontend dist not found at {_DIST}; not serving SPA (dev mode / Vite proxy).")
+    logger.info("Frontend dist not found at %s; not serving SPA (dev mode / Vite proxy).", _DIST)
 
 
 if __name__ == "__main__":

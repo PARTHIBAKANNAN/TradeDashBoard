@@ -95,79 +95,88 @@ export default function RankingScreen({ stocks, nifty }) {
     setSortKey("breakout_first");
   };
 
+  const filterCard = (
+    <Card
+      title="Filters"
+      icon={SlidersHorizontal}
+      actions={
+        <button
+          onClick={() => setShowFilters(false)}
+          className="text-faint hover:text-primary transition-colors"
+        >
+          <X size={15} />
+        </button>
+      }
+    >
+      <div className="space-y-5">
+        <FilterGroup label="Breakout Signal" icon={Zap}>
+          <select
+            value={selectedSignal}
+            onChange={(e) => setSelectedSignal(e.target.value)}
+            className="w-full bg-surface3 border border-strong rounded-lg px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent-blue transition-colors"
+          >
+            <option>All signals</option>
+            <option value="Bull">Bull</option>
+            <option value="Bear">Bear</option>
+          </select>
+        </FilterGroup>
+
+        <FilterGroup label="Sector" icon={Building2}>
+          <select
+            value={selectedSector}
+            onChange={(e) => setSelectedSector(e.target.value)}
+            className="w-full bg-surface3 border border-strong rounded-lg px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent-blue transition-colors"
+          >
+            {sectors.map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+          </select>
+        </FilterGroup>
+
+        <FilterGroup label="Sort by" icon={ArrowUpDown}>
+          <select
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value)}
+            className="w-full bg-surface3 border border-strong rounded-lg px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent-blue transition-colors"
+          >
+            {Object.entries(SORTS).map(([key, { label }]) => (
+              <option key={key} value={key}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </FilterGroup>
+
+        <SignalTimeFilter value={signalTimeIndex} onChange={setSignalTimeIndex} />
+
+        <button
+          onClick={resetFilters}
+          className="w-full flex items-center justify-center gap-1.5 text-xs font-bold text-accent-blue hover:text-accent-violet transition-colors py-2 border border-subtle rounded-lg hover:bg-surface3"
+        >
+          <RotateCcw size={12} />
+          Reset Filters
+        </button>
+      </div>
+    </Card>
+  );
+
   return (
     <div className="min-h-screen bg-surface">
-      <div className="mx-auto max-w-7xl px-6 py-6 flex gap-6">
-        {/* Filters Sidebar */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 flex gap-6">
+        {/* Filters — inline sidebar on lg+, slide-over drawer below lg */}
         {showFilters && (
-          <div className="w-72 flex-shrink-0">
-            <Card
-              className="sticky top-24"
-              title="Filters"
-              icon={SlidersHorizontal}
-              actions={
-                <button
-                  onClick={() => setShowFilters(false)}
-                  className="text-faint hover:text-primary transition-colors"
-                >
-                  <X size={15} />
-                </button>
-              }
-            >
-              <div className="space-y-5">
-                <FilterGroup label="Breakout Signal" icon={Zap}>
-                  <select
-                    value={selectedSignal}
-                    onChange={(e) => setSelectedSignal(e.target.value)}
-                    className="w-full bg-surface3 border border-strong rounded-lg px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent-blue transition-colors"
-                  >
-                    <option>All signals</option>
-                    <option value="Bull">Bull</option>
-                    <option value="Bear">Bear</option>
-                  </select>
-                </FilterGroup>
-
-                <FilterGroup label="Sector" icon={Building2}>
-                  <select
-                    value={selectedSector}
-                    onChange={(e) => setSelectedSector(e.target.value)}
-                    className="w-full bg-surface3 border border-strong rounded-lg px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent-blue transition-colors"
-                  >
-                    {sectors.map((s) => (
-                      <option key={s}>{s}</option>
-                    ))}
-                  </select>
-                </FilterGroup>
-
-                <FilterGroup label="Sort by" icon={ArrowUpDown}>
-                  <select
-                    value={sortKey}
-                    onChange={(e) => setSortKey(e.target.value)}
-                    className="w-full bg-surface3 border border-strong rounded-lg px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent-blue transition-colors"
-                  >
-                    {Object.entries(SORTS).map(([key, { label }]) => (
-                      <option key={key} value={key}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </FilterGroup>
-
-                <SignalTimeFilter
-                  value={signalTimeIndex}
-                  onChange={setSignalTimeIndex}
-                />
-
-                <button
-                  onClick={resetFilters}
-                  className="w-full flex items-center justify-center gap-1.5 text-xs font-bold text-accent-blue hover:text-accent-violet transition-colors py-2 border border-subtle rounded-lg hover:bg-surface3"
-                >
-                  <RotateCcw size={12} />
-                  Reset Filters
-                </button>
-              </div>
-            </Card>
-          </div>
+          <>
+            <div
+              className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden"
+              onClick={() => setShowFilters(false)}
+            />
+            <div className="fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] overflow-y-auto p-4 lg:hidden">
+              {filterCard}
+            </div>
+            <div className="hidden lg:block w-72 flex-shrink-0">
+              <div className="sticky top-24">{filterCard}</div>
+            </div>
+          </>
         )}
 
         {/* Main Content */}
@@ -205,7 +214,7 @@ export default function RankingScreen({ stocks, nifty }) {
           <div className="bg-surface2/70 backdrop-blur-xl border border-subtle rounded-xl overflow-hidden shadow-card">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
-                <thead>
+                <thead className="hidden md:table-header-group">
                   <tr className="bg-surface3/60 border-b border-subtle">
                     <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider">
                       Stock

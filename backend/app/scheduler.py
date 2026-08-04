@@ -9,16 +9,24 @@ Uses APScheduler on the IST timezone. On startup, if the process boots
 mid-session, the engine is brought straight to the correct state.
 """
 
+import logging
 import threading
 from datetime import datetime
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from . import auth, config, paper_trading
+from . import auth, candle_aggregator, config, momentum_score, paper_trading, telegram_notify
 from .config import IST, MARKET_CLOSE, MARKET_OPEN
 from .fyers_service import data_engine
 from .state import market_state
+
+logger = logging.getLogger(__name__)
+
+# Symbols recommended as of the last checkpoint — lets the digest only fire
+# when the top-3 actually changes, instead of repeat-spamming unchanged picks
+# every 30 minutes.
+_last_recommended: set[str] = set()
 
 
 def is_market_open(now: datetime | None = None) -> bool:
@@ -37,9 +45,9 @@ def _launch_ws_thread():
 def _start_engine():
     """Authenticate (if needed), backfill, and launch the websocket thread."""
     if not config.DATA_ENGINE_ENABLED:
-        print(
-            f"[scheduler] DATA_ENGINE_ENABLED=false on '{config.INSTANCE_NAME}'; "
-            "not opening the FYERS websocket (single-WS-per-app safety)."
+        logger.info(
+            "DATA_ENGINE_ENABLED=false on '%s'; not opening the FYERS websocket "
+            "(single-WS-per-app safety).", config.INSTANCE_NAME,
         )
         return
     if not data_engine.access_token:
@@ -47,16 +55,16 @@ def _start_engine():
         if token:
             data_engine.set_token(token)
     if not data_engine.access_token:
-        print(
-            "[scheduler] No valid FYERS token — engine idle until you connect "
-            "(dashboard -> 'Connect FYERS')."
+        logger.warning(
+            "No valid FYERS token — engine idle until you connect (dashboard -> 'Connect FYERS')."
         )
         return
 
     data_engine.backfill()
     market_state.market_open = True
     _launch_ws_thread()
-    print(f"[scheduler] Data engine started on '{config.INSTANCE_NAME}' (single-WS owner).")
+    _last_recommended.clear()  # fresh day, don't let yesterday's picks suppress today's digest
+    logger.info("Data engine started on '%s' (single-WS owner).", config.INSTANCE_NAME)
 
 
 def ensure_engine_running():
@@ -80,13 +88,38 @@ def _refresh_opening_range():
         return
     data_engine._backfill_today_orb()
     data_engine._backfill_orb_quality()
-    print("[scheduler] Opening-range (9:15-9:45) data refreshed.")
+    logger.info("Opening-range (9:15-9:45) data refreshed.")
+
+
+def _recommended_digest():
+    """Runs on this cron job's own worker thread, not the asyncio loop — so
+    unlike close_order()'s Telegram alert, this can call
+    telegram_notify.send_message directly with no run_in_executor hop.
+    market_state.lock() is a plain threading.RLock, safe to take here too."""
+    if not config.TELEGRAM_BOT_TOKEN or not config.TELEGRAM_CHAT_ID:
+        return
+    global _last_recommended
+    with market_state.lock():
+        stocks = [dict(s) for s in market_state.stocks.values()]
+        nifty_pct_change = market_state.nifty.get("pct_change", 0.0)
+    picks = momentum_score.compute_recommended(stocks, nifty_pct_change)
+    symbols = {sym for sym, _score in picks}
+    if symbols == _last_recommended:
+        return  # unchanged since the last checkpoint — don't repeat-spam
+    _last_recommended = symbols
+    if not picks:
+        return  # nothing clears the confidence floor right now; no message
+    now_str = datetime.now(IST).strftime("%H:%M")
+    lines = [f"⭐ *Recommended* ({now_str} IST):"]
+    for sym, score in picks:
+        lines.append(f"  {sym} — score {score:.0f}")
+    telegram_notify.send_message("\n".join(lines))
 
 
 def _stop_engine():
     data_engine.stop_websocket()
     market_state.market_open = False
-    print("[scheduler] Data engine stopped (market closed / standby).")
+    logger.info("Data engine stopped (market closed / standby).")
 
 
 def _market_close():
@@ -97,19 +130,20 @@ def _market_close():
     calling it from the loop's own thread at shutdown would deadlock."""
     _stop_engine()
     paper_trading.square_off_all_sync()
+    candle_aggregator.flush_all()
 
 
 def _daily_login():
     token = auth.get_access_token(force_refresh=True)
     if not token:
-        print("[scheduler] Daily token refresh failed — MANUAL LOGIN required.")
+        logger.warning("Daily token refresh failed — MANUAL LOGIN required.")
         return
     data_engine.set_token(token)
-    print("[scheduler] Daily token refreshed.")
+    logger.info("Daily token refreshed.")
     # If the socket is live, rebuild it so the new token takes effect (the token
     # is baked into the connection string at connect time).
     if config.DATA_ENGINE_ENABLED and data_engine.running:
-        print("[scheduler] Rebuilding websocket with the refreshed token ...")
+        logger.info("Rebuilding websocket with the refreshed token ...")
         data_engine.stop_websocket()
         _launch_ws_thread()
 
@@ -146,16 +180,35 @@ def init_scheduler():
         id="market_close",
         replace_existing=True,
     )
+    # Recommended-tag digest checkpoints: 09:45, then every 30 min through
+    # 15:15 (last one before market close) — three cron rules cover the
+    # slightly irregular first checkpoint plus the regular 30-min cadence.
+    scheduler.add_job(
+        _recommended_digest,
+        CronTrigger(day_of_week="mon-fri", hour=9, minute=45, timezone=IST),
+        id="recommended_digest_0945",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        _recommended_digest,
+        CronTrigger(day_of_week="mon-fri", hour="10-14", minute="15,45", timezone=IST),
+        id="recommended_digest_checkpoints",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        _recommended_digest,
+        CronTrigger(day_of_week="mon-fri", hour=15, minute=15, timezone=IST),
+        id="recommended_digest_1515",
+        replace_existing=True,
+    )
     scheduler.start()
-    print(
-        f"[scheduler] Instance '{config.INSTANCE_NAME}', "
-        f"data_engine={'ON' if config.DATA_ENGINE_ENABLED else 'OFF'}."
+    logger.info(
+        "Instance '%s', data_engine=%s.",
+        config.INSTANCE_NAME, "ON" if config.DATA_ENGINE_ENABLED else "OFF",
     )
 
     if not config.DATA_ENGINE_ENABLED:
-        print(
-            "[scheduler] Data engine disabled on this instance; serving cached/empty snapshot only."
-        )
+        logger.info("Data engine disabled on this instance; serving cached/empty snapshot only.")
         return
 
     # Boot straight into the right state depending on when we started.
@@ -168,7 +221,7 @@ def init_scheduler():
             data_engine.set_token(token)
             data_engine.backfill()
         market_state.market_open = False
-        print("[scheduler] Booted in standby (market closed); serving snapshot.")
+        logger.info("Booted in standby (market closed); serving snapshot.")
 
 
 def shutdown_scheduler():

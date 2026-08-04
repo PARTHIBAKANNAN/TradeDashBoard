@@ -5,7 +5,7 @@ import PaperTrading from "../components/paper-trading/PaperTrading.jsx";
 export default function PaperTradingScreen({ stocks }) {
   return (
     <div className="min-h-screen bg-surface">
-      <div className="mx-auto max-w-7xl px-6 py-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6">
         <div className="mb-6 flex items-center gap-3">
           <span className="grid place-items-center w-9 h-9 rounded-lg bg-accent-blue/10 text-accent-blue border border-accent-blue/20">
             <FlaskConical size={17} />

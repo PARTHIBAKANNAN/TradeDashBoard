@@ -12,7 +12,10 @@ each frame out to connected WebSocket subscribers.
 
 import asyncio
 import json
+import logging
 from typing import Callable, Optional
+
+logger = logging.getLogger(__name__)
 
 # Every field the client needs to render a fresh row.
 SNAPSHOT_STOCK_FIELDS: tuple[str, ...] = (
@@ -162,8 +165,8 @@ class Broadcaster:
             await self._task
         except asyncio.CancelledError:
             pass
-        except Exception as exc:  # noqa: BLE001
-            print(f"[broadcaster] task exited abnormally: {exc!r}")
+        except Exception:  # noqa: BLE001
+            logger.exception("broadcaster task exited abnormally")
         self._task = None
 
     # ---- subscription ----
@@ -185,8 +188,8 @@ class Broadcaster:
             while True:
                 try:
                     await self._tick_once()
-                except Exception as exc:  # noqa: BLE001
-                    print(f"[broadcaster] tick error (continuing): {exc!r}")
+                except Exception:  # noqa: BLE001
+                    logger.exception("broadcaster tick error (continuing)")
                 await asyncio.sleep(self._interval)
         except asyncio.CancelledError:
             return

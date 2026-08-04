@@ -15,8 +15,11 @@ top-level import between the two modules.
 """
 
 import asyncio
+import logging
 
 from . import trailing_stop
+
+logger = logging.getLogger(__name__)
 
 _pending_limits: dict[str, list[dict]] = {}  # symbol -> [order dict]
 _open_brackets: dict[str, list[dict]] = {}  # symbol -> [order dict]
@@ -147,7 +150,7 @@ async def load_from_db() -> None:
             register_pending_limit(order)
         else:
             register_open_bracket(order)
-    print(
-        f"[order_monitor] Rebuilt index: {len(_pending_limits)} symbol(s) with pending "
-        f"limits, {len(_open_brackets)} symbol(s) with open brackets."
+    logger.info(
+        "Rebuilt index: %d symbol(s) with pending limits, %d symbol(s) with open brackets.",
+        len(_pending_limits), len(_open_brackets),
     )
