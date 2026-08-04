@@ -48,6 +48,12 @@ class MarketState:
                 "tot_sell_qty": 0,
                 "day_range_pos": 0.0,
                 "relative_strength": 0.0,
+                # Volume-weighted average price, built live from ticks (see
+                # calculations.update_vwap) — cum_pv/cum_vol are the running
+                # accumulators, vwap is the derived value consumed elsewhere.
+                "vwap_cum_pv": 0.0,
+                "vwap_cum_vol": 0,
+                "vwap": 0.0,
                 # ORB candle boundaries, filled by REST backfill / live aggregation.
                 "orb": {},  # {"C1": {"high": .., "low": ..}, ...}
                 # First 5-min candle (9:15-9:20) high/low — the day's-extreme

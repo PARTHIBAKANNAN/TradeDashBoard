@@ -12,6 +12,7 @@ import WatchlistRow from "../components/WatchlistRow.jsx";
 import SignalTimeFilter from "../components/SignalTimeFilter.jsx";
 import Card from "../components/ui/Card.jsx";
 import { CANDLE_MARKS, timeStrToMinutes } from "../utils/candleTime.js";
+import { useRecommendedStocks } from "../hooks/useRecommendedStocks.js";
 
 // A stock only ever carries a real signal once it's passed all 3 breakout-
 // quality rules (calculations.py) — so "has a signal" already *is* "passed
@@ -53,6 +54,7 @@ export default function RankingScreen({ stocks, nifty }) {
   const [selectedSector, setSelectedSector] = useState("All sectors");
   const [signalTimeIndex, setSignalTimeIndex] = useState(0);
   const [sortKey, setSortKey] = useState("breakout_first");
+  const recommended = useRecommendedStocks(stocks, nifty?.pct_change || 0);
 
   const sectors = useMemo(() => {
     const set = new Set((stocks || []).map((s) => s.sector));
@@ -232,6 +234,7 @@ export default function RankingScreen({ stocks, nifty }) {
                       stock={stock}
                       index={i}
                       niftyPctChange={nifty?.pct_change || 0}
+                      isRecommended={recommended.includes(stock.symbol)}
                     />
                   ))}
                 </tbody>

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowUp, ArrowDown, Rocket, AlertTriangle } from "lucide-react";
+import { ArrowUp, ArrowDown, Rocket, AlertTriangle, Sparkles } from "lucide-react";
 import MiniCandlestick from "./MiniCandlestick.jsx";
 import QuickTradeModal from "./paper-trading/QuickTradeModal.jsx";
 import { useStock } from "../hooks/useMarketStream.js";
@@ -9,7 +9,7 @@ import { rangeMap } from "../lib/rangeMap.js";
 // React.memo isolates re-renders to rows whose stock object actually changed.
 // Accepts either `symbol` (subscribes via useStock) or `stock` prop directly.
 const WatchlistRow = React.memo(
-  ({ stock: propStock, symbol, index = 0, leading, niftyPctChange = 0 }) => {
+  ({ stock: propStock, symbol, index = 0, leading, niftyPctChange = 0, isRecommended = false }) => {
     const stockFromHook = useStock(symbol || propStock?.symbol);
     const stock = stockFromHook || propStock;
     const [tradeOpen, setTradeOpen] = useState(false);
@@ -60,8 +60,18 @@ const WatchlistRow = React.memo(
 
         {/* Asset */}
         <td className="py-3 px-4">
-          <div className="font-bold text-primary tracking-wide group-hover:text-accent-blue transition-colors">
-            {stock.symbol}
+          <div className="flex items-center gap-1.5">
+            <span className="font-bold text-primary tracking-wide group-hover:text-accent-blue transition-colors">
+              {stock.symbol}
+            </span>
+            {isRecommended && (
+              <span
+                title="Recommended: top-scoring by RS, sector strength, volume, VWAP side, signal freshness, and range position — a filtering aid, not a guarantee"
+                className="inline-flex items-center gap-0.5 rounded-full bg-accent-amber/15 text-accent-amber border border-accent-amber/30 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide"
+              >
+                <Sparkles size={9} /> Recommended
+              </span>
+            )}
           </div>
           <div className="text-[11px] text-faint font-semibold">
             {stock.sector}

@@ -68,6 +68,27 @@ def day_range_position(ltp: float, t_low: float, t_high: float) -> float:
     return round((ltp - t_low) / span * 100, 2)
 
 
+# ---------- E. Volume-weighted average price ----------
+def update_vwap(
+    cum_pv: float, cum_vol: int, prev_total_volume: int, new_total_volume: int, ltp: float
+) -> tuple[float, int, float]:
+    """
+    Ticks carry *cumulative* today's volume (vol_traded_today), not the size of
+    the individual trade, so VWAP needs the delta between this tick's total and
+    the previous one. Returns (new_cum_pv, new_cum_vol, new_vwap).
+
+    Guards against a non-monotonic volume tick (a stale/duplicate frame) by
+    treating a decrease as a zero delta rather than corrupting the running sums.
+    """
+    delta = max(0, new_total_volume - prev_total_volume)
+    if delta == 0:
+        vwap = round(cum_pv / cum_vol, 4) if cum_vol else 0.0
+        return cum_pv, cum_vol, vwap
+    new_cum_pv = cum_pv + ltp * delta
+    new_cum_vol = cum_vol + delta
+    return new_cum_pv, new_cum_vol, round(new_cum_pv / new_cum_vol, 4)
+
+
 # ---------- B. Opening Range Breakout engine ----------
 def has_two_sided_range(candles: list) -> bool:
     """
@@ -174,6 +195,9 @@ def process_incoming_tick(
             stock["prev_close"] = prev_close
         stock["ltp"] = ltp
         if volume:
+            stock["vwap_cum_pv"], stock["vwap_cum_vol"], stock["vwap"] = update_vwap(
+                stock["vwap_cum_pv"], stock["vwap_cum_vol"], stock["volume"], volume, ltp
+            )
             stock["volume"] = volume
         if upper_ckt:
             stock["upper_ckt"] = upper_ckt

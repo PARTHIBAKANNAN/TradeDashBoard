@@ -1,12 +1,16 @@
 import React, { useState, useMemo } from "react";
 import { Search, Star, PlusCircle } from "lucide-react";
 import WatchlistRow from "../components/WatchlistRow.jsx";
+import { useRecommendedStocks } from "../hooks/useRecommendedStocks.js";
 
 export default function WatchlistScreen({ stocks, nifty }) {
   const [watchlist, setWatchlist] = useState(
     JSON.parse(localStorage.getItem("watchlist") || "[]"),
   );
   const [searchTerm, setSearchTerm] = useState("");
+  // Computed over the full watchlist universe (not just the starred subset)
+  // so sector means / volume percentile stay meaningful — same as Ranking.
+  const recommended = useRecommendedStocks(stocks, nifty?.pct_change || 0);
 
   const watchlistStocks = useMemo(() => {
     return (stocks || []).filter(
@@ -92,6 +96,7 @@ export default function WatchlistScreen({ stocks, nifty }) {
                       stock={stock}
                       index={i}
                       niftyPctChange={nifty?.pct_change || 0}
+                      isRecommended={recommended.includes(stock.symbol)}
                       leading={
                         <button
                           onClick={() => toggleWatchlist(stock.symbol)}

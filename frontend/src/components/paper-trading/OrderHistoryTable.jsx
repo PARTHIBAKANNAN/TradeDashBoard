@@ -36,14 +36,21 @@ export default function OrderHistoryTable({ orders }) {
                   Reason
                 </th>
                 <th className="py-2.5 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-right">
-                  P&amp;L
+                  Charges
+                </th>
+                <th className="py-2.5 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-right">
+                  Net P&amp;L
                 </th>
               </tr>
             </thead>
             <tbody>
               {orders.map((o) => {
-                const pnl = o.realized_pnl;
+                const netPnl = o.net_pnl;
+                const grossPnl = o.realized_pnl;
                 const cancelled = o.status === "CANCELLED";
+                const chargesTitle = cancelled
+                  ? undefined
+                  : `Brokerage ₹${o.brokerage ?? 0} · STT ₹${o.stt ?? 0} · Exchange ₹${o.exchange_charges ?? 0} · SEBI ₹${o.sebi_charges ?? 0} · Stamp Duty ₹${o.stamp_duty ?? 0} · GST ₹${o.gst ?? 0}`;
                 return (
                   <tr key={o.id} className="border-b border-subtle/70 hover:bg-surface3/40 transition-colors">
                     <td className="py-2.5 px-4 font-semibold text-primary">{o.symbol}</td>
@@ -66,14 +73,24 @@ export default function OrderHistoryTable({ orders }) {
                         {cancelled ? "Cancelled" : REASON_LABEL[o.close_reason] || "—"}
                       </span>
                     </td>
-                    <td className="py-2.5 px-4 text-right font-mono tabular-nums">
-                      {pnl == null ? (
+                    <td className="py-2.5 px-4 text-right font-mono tabular-nums" title={chargesTitle}>
+                      {o.total_charges == null ? (
                         <span className="text-faint">—</span>
                       ) : (
-                        <span className={pnl >= 0 ? "text-bull font-semibold" : "text-bear font-semibold"}>
-                          {pnl >= 0 ? "+" : ""}
-                          {pnl}
-                        </span>
+                        <span className="text-accent-amber">₹{o.total_charges}</span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-4 text-right font-mono tabular-nums">
+                      {netPnl == null ? (
+                        <span className="text-faint">—</span>
+                      ) : (
+                        <>
+                          <span className={netPnl >= 0 ? "text-bull font-semibold" : "text-bear font-semibold"}>
+                            {netPnl >= 0 ? "+" : ""}
+                            {netPnl}
+                          </span>
+                          <div className="text-[10px] text-faint">gross {grossPnl >= 0 ? "+" : ""}{grossPnl}</div>
+                        </>
                       )}
                     </td>
                   </tr>

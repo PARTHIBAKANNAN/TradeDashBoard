@@ -30,6 +30,7 @@ SNAPSHOT_STOCK_FIELDS: tuple[str, ...] = (
     "yesterday_high",
     "today_low",
     "today_high",
+    "vwap",
 )
 # Fields whose values are compared to detect a delta (identity fields excluded).
 DIFFABLE_STOCK_FIELDS: tuple[str, ...] = tuple(

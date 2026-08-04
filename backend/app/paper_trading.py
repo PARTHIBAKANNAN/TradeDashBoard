@@ -20,7 +20,7 @@ import asyncpg
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
-from . import config, order_monitor, paper_margin, paper_pnl, security
+from . import brokerage, config, order_monitor, paper_margin, paper_pnl, security
 from .state import market_state
 
 router = APIRouter(
@@ -170,7 +170,11 @@ async def close_order(order_id: int, user_id: str, reason: str, exit_price: floa
             pnl = paper_pnl.realized_pnl(
                 row["side"], row["quantity"], float(row["entry_price"]), exit_price
             )
-            credit = float(row["margin_locked"] or 0) + pnl
+            charges = brokerage.compute_charges(
+                row["side"], row["quantity"], float(row["entry_price"]), exit_price
+            )
+            net_pnl = round(pnl - charges["total_charges"], 2)
+            credit = float(row["margin_locked"] or 0) + net_pnl
             await conn.execute(
                 "update public.paper_wallets set balance = balance + $1, updated_at = now() "
                 "where user_id = $2",
@@ -178,8 +182,13 @@ async def close_order(order_id: int, user_id: str, reason: str, exit_price: floa
             )
             closed = await conn.fetchrow(
                 "update public.paper_orders set status='CLOSED', close_reason=$1, exit_price=$2, "
-                "realized_pnl=$3, closed_at=now() where id=$4 returning *",
-                reason, exit_price, pnl, order_id,
+                "realized_pnl=$3, brokerage=$4, stt=$5, exchange_charges=$6, sebi_charges=$7, "
+                "stamp_duty=$8, gst=$9, total_charges=$10, net_pnl=$11, closed_at=now() "
+                "where id=$12 returning *",
+                reason, exit_price, pnl,
+                charges["brokerage"], charges["stt"], charges["exchange_charges"],
+                charges["sebi_charges"], charges["stamp_duty"], charges["gst"],
+                charges["total_charges"], net_pnl, order_id,
             )
     order_monitor.unregister(order_id, row["symbol"])
     return _serialize(dict(closed))
@@ -443,15 +452,30 @@ async def positions(request: Request):
 
 
 @router.get("/orders/history")
-async def history(request: Request, limit: int = 50, offset: int = 0):
+async def history(
+    request: Request,
+    limit: int = 50,
+    offset: int = 0,
+    from_ts: str | None = None,
+    to_ts: str | None = None,
+):
+    """`from_ts`/`to_ts` are optional ISO datetime strings, filtered against
+    `placed_at` (chosen over `closed_at` since CANCELLED orders never get a
+    closed_at, but every order has placed_at). Preset ranges like "this week"
+    are resolved to concrete timestamps on the frontend — this endpoint only
+    ever sees plain from/to bounds."""
     user_id = await _current_user_id(request)
     if _pool is None:
         return {"orders": []}
+    from_dt = datetime.fromisoformat(from_ts) if from_ts else None
+    to_dt = datetime.fromisoformat(to_ts) if to_ts else None
     async with _pool.acquire() as conn:
         rows = await conn.fetch(
             "select * from public.paper_orders where user_id=$1 and status in ('CLOSED','CANCELLED') "
-            "order by placed_at desc limit $2 offset $3",
-            user_id, limit, offset,
+            "and ($2::timestamptz is null or placed_at >= $2) "
+            "and ($3::timestamptz is null or placed_at <= $3) "
+            "order by placed_at desc limit $4 offset $5",
+            user_id, from_dt, to_dt, limit, offset,
         )
     return {"orders": [_serialize(dict(r)) for r in rows]}
 
