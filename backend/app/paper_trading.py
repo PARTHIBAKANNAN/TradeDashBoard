@@ -24,7 +24,8 @@ from fastapi.responses import StreamingResponse
 from openpyxl import Workbook
 from pydantic import BaseModel
 
-from . import brokerage, config, order_monitor, paper_margin, paper_pnl, security, telegram_notify
+from . import (brokerage, config, order_monitor, paper_margin, paper_pnl,
+               security, telegram_notify)
 
 logger = logging.getLogger(__name__)
 from .state import market_state
@@ -220,10 +221,18 @@ async def close_order(order_id: int, user_id: str, reason: str, exit_price: floa
                 "realized_pnl=$3, brokerage=$4, stt=$5, exchange_charges=$6, sebi_charges=$7, "
                 "stamp_duty=$8, gst=$9, total_charges=$10, net_pnl=$11, closed_at=now() "
                 "where id=$12 returning *",
-                reason, exit_price, pnl,
-                charges["brokerage"], charges["stt"], charges["exchange_charges"],
-                charges["sebi_charges"], charges["stamp_duty"], charges["gst"],
-                charges["total_charges"], net_pnl, order_id,
+                reason,
+                exit_price,
+                pnl,
+                charges["brokerage"],
+                charges["stt"],
+                charges["exchange_charges"],
+                charges["sebi_charges"],
+                charges["stamp_duty"],
+                charges["gst"],
+                charges["total_charges"],
+                net_pnl,
+                order_id,
             )
     order_monitor.unregister(order_id, row["symbol"])
     result = _serialize(dict(closed))
@@ -265,7 +274,8 @@ async def square_off_all() -> None:
             order_monitor.unregister(r["id"], r["symbol"])
     logger.info(
         "Square-off: closed %d open position(s), cancelled %d pending order(s).",
-        closed, len(pending_rows),
+        closed,
+        len(pending_rows),
     )
 
 
@@ -322,7 +332,8 @@ async def deposit_to_wallet(body: WalletDepositBody, request: Request):
         row = await conn.fetchrow(
             "update public.paper_wallets set balance = balance + $1, updated_at = now() "
             "where user_id = $2 returning balance",
-            body.amount, user_id,
+            body.amount,
+            user_id,
         )
     return {"balance": float(row["balance"])}
 
@@ -338,7 +349,8 @@ async def reset_wallet(request: Request):
         row = await conn.fetchrow(
             "update public.paper_wallets set balance = $1, updated_at = now() "
             "where user_id = $2 returning balance",
-            DEFAULT_STARTING_BALANCE, user_id,
+            DEFAULT_STARTING_BALANCE,
+            user_id,
         )
     return {"balance": float(row["balance"])}
 
@@ -591,30 +603,56 @@ async def history(
 # side so real .xlsx files can be generated with openpyxl.
 _EXPORT_COLUMNS = {
     "orders": [
-        ("symbol", "Symbol"), ("side", "Side"), ("quantity", "Quantity"),
-        ("order_type", "Order Type"), ("entry_price", "Entry Price"),
-        ("exit_price", "Exit Price"), ("close_reason", "Close Reason"),
-        ("placed_at", "Placed At"), ("closed_at", "Closed At"),
+        ("symbol", "Symbol"),
+        ("side", "Side"),
+        ("quantity", "Quantity"),
+        ("order_type", "Order Type"),
+        ("entry_price", "Entry Price"),
+        ("exit_price", "Exit Price"),
+        ("close_reason", "Close Reason"),
+        ("placed_at", "Placed At"),
+        ("closed_at", "Closed At"),
     ],
     "pnl": [
-        ("symbol", "Symbol"), ("entry_price", "Entry Price"), ("exit_price", "Exit Price"),
-        ("realized_pnl", "Gross P&L"), ("total_charges", "Total Charges"), ("net_pnl", "Net P&L"),
+        ("symbol", "Symbol"),
+        ("entry_price", "Entry Price"),
+        ("exit_price", "Exit Price"),
+        ("realized_pnl", "Gross P&L"),
+        ("total_charges", "Total Charges"),
+        ("net_pnl", "Net P&L"),
     ],
     "tax": [
-        ("symbol", "Symbol"), ("stt", "STT"), ("stamp_duty", "Stamp Duty"),
+        ("symbol", "Symbol"),
+        ("stt", "STT"),
+        ("stamp_duty", "Stamp Duty"),
         ("sebi_charges", "SEBI Charges"),
     ],
     "brokerage": [
-        ("symbol", "Symbol"), ("brokerage", "Brokerage"), ("exchange_charges", "Exchange Charges"),
+        ("symbol", "Symbol"),
+        ("brokerage", "Brokerage"),
+        ("exchange_charges", "Exchange Charges"),
         ("gst", "GST"),
     ],
     "combined": [
-        ("symbol", "Symbol"), ("side", "Side"), ("quantity", "Quantity"), ("order_type", "Order Type"),
-        ("entry_price", "Entry Price"), ("exit_price", "Exit Price"), ("close_reason", "Close Reason"),
-        ("realized_pnl", "Gross P&L"), ("brokerage", "Brokerage"), ("stt", "STT"),
-        ("exchange_charges", "Exchange Charges"), ("sebi_charges", "SEBI Charges"),
-        ("stamp_duty", "Stamp Duty"), ("gst", "GST"), ("total_charges", "Total Charges"),
-        ("net_pnl", "Net P&L"), ("notes", "Notes"), ("placed_at", "Placed At"), ("closed_at", "Closed At"),
+        ("symbol", "Symbol"),
+        ("side", "Side"),
+        ("quantity", "Quantity"),
+        ("order_type", "Order Type"),
+        ("entry_price", "Entry Price"),
+        ("exit_price", "Exit Price"),
+        ("close_reason", "Close Reason"),
+        ("realized_pnl", "Gross P&L"),
+        ("brokerage", "Brokerage"),
+        ("stt", "STT"),
+        ("exchange_charges", "Exchange Charges"),
+        ("sebi_charges", "SEBI Charges"),
+        ("stamp_duty", "Stamp Duty"),
+        ("gst", "GST"),
+        ("total_charges", "Total Charges"),
+        ("net_pnl", "Net P&L"),
+        ("notes", "Notes"),
+        ("placed_at", "Placed At"),
+        ("closed_at", "Closed At"),
     ],
 }
 
@@ -627,7 +665,9 @@ async def export_orders(
     to_ts: str | None = None,
 ):
     if section not in _EXPORT_COLUMNS:
-        raise HTTPException(status_code=400, detail=f"section must be one of {list(_EXPORT_COLUMNS)}")
+        raise HTTPException(
+            status_code=400, detail=f"section must be one of {list(_EXPORT_COLUMNS)}"
+        )
     user_id = await _current_user_id(request)
     rows = await _fetch_history_rows(user_id, from_ts, to_ts, limit=10_000, offset=0)
     columns = _EXPORT_COLUMNS[section]
@@ -667,7 +707,11 @@ async def _fetch_history_rows(
             "and ($2::timestamptz is null or placed_at >= $2) "
             "and ($3::timestamptz is null or placed_at <= $3) "
             "order by placed_at desc limit $4 offset $5",
-            user_id, from_dt, to_dt, limit, offset,
+            user_id,
+            from_dt,
+            to_dt,
+            limit,
+            offset,
         )
 
 

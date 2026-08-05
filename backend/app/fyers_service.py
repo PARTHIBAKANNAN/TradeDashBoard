@@ -159,7 +159,8 @@ class DataEngine:
                     if not warned:
                         logger.warning(
                             "backfill: prev-day history() error (will repeat per-symbol, "
-                            "only logging once): %s", resp,
+                            "only logging once): %s",
+                            resp,
                         )
                         warned = True
                     continue
@@ -199,7 +200,9 @@ class DataEngine:
         if now.weekday() >= 5:
             # Weekend: no session happened "today" — every symbol would fail every
             # retry for nothing, turning startup into a multi-minute wait.
-            logger.info("backfill: Weekend — skipping today's ORB backfill (no session data exists).")
+            logger.info(
+                "backfill: Weekend — skipping today's ORB backfill (no session data exists)."
+            )
             return
         today = now.date()
         day = today.strftime("%Y-%m-%d")
@@ -221,13 +224,16 @@ class DataEngine:
                     }
                 )
                 if isinstance(resp, dict) and resp.get("code") in self._NON_RETRYABLE_CODES:
-                    logger.warning("backfill: ORB history() unavailable, aborting rest of pass: %s", resp)
+                    logger.warning(
+                        "backfill: ORB history() unavailable, aborting rest of pass: %s", resp
+                    )
                     return
                 if isinstance(resp, dict) and resp.get("s") == "error":
                     if not warned:
                         logger.warning(
                             "backfill: ORB history() error (will repeat per-symbol, "
-                            "only logging once): %s", resp,
+                            "only logging once): %s",
+                            resp,
                         )
                         warned = True
                     continue
@@ -286,7 +292,8 @@ class DataEngine:
                 )
                 if isinstance(resp, dict) and resp.get("code") in self._NON_RETRYABLE_CODES:
                     logger.warning(
-                        "backfill: ORB-quality history() unavailable, aborting rest of pass: %s", resp
+                        "backfill: ORB-quality history() unavailable, aborting rest of pass: %s",
+                        resp,
                     )
                     return
                 candles = resp.get("candles", []) if isinstance(resp, dict) else []

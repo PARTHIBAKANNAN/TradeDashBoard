@@ -147,7 +147,10 @@ export default function RankingScreen({ stocks, nifty }) {
           </select>
         </FilterGroup>
 
-        <SignalTimeFilter value={signalTimeIndex} onChange={setSignalTimeIndex} />
+        <SignalTimeFilter
+          value={signalTimeIndex}
+          onChange={setSignalTimeIndex}
+        />
 
         <button
           onClick={resetFilters}

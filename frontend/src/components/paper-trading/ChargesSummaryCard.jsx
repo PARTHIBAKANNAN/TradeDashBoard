@@ -1,5 +1,12 @@
 import React, { useMemo } from "react";
-import { Receipt, Landmark, ReceiptText, Percent, Wallet2, Scale } from "lucide-react";
+import {
+  Receipt,
+  Landmark,
+  ReceiptText,
+  Percent,
+  Wallet2,
+  Scale,
+} from "lucide-react";
 
 function formatMoney(v) {
   const n = Number(v) || 0;
@@ -17,7 +24,9 @@ function Tile({ icon: Icon, label, value, tone = "text-primary" }) {
         <Icon size={11} />
         {label}
       </div>
-      <div className={`font-mono text-sm font-bold tabular-nums ${tone}`}>{value}</div>
+      <div className={`font-mono text-sm font-bold tabular-nums ${tone}`}>
+        {value}
+      </div>
     </div>
   );
 }
@@ -32,7 +41,8 @@ export default function ChargesSummaryCard({ orders, rangeLabel }) {
       brokerage: sum(closed, "brokerage"),
       stt: sum(closed, "stt"),
       stampDuty: sum(closed, "stamp_duty"),
-      exchangeAndSebi: sum(closed, "exchange_charges") + sum(closed, "sebi_charges"),
+      exchangeAndSebi:
+        sum(closed, "exchange_charges") + sum(closed, "sebi_charges"),
       gst: sum(closed, "gst"),
       totalCharges: sum(closed, "total_charges"),
       grossPnl: sum(closed, "realized_pnl"),
@@ -47,15 +57,34 @@ export default function ChargesSummaryCard({ orders, rangeLabel }) {
       <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted uppercase tracking-wider mb-3">
         <Receipt size={12} className="text-accent-blue" />
         Tax &amp; Brokerage
-        {rangeLabel && <span className="text-faint font-normal">· {rangeLabel}</span>}
+        {rangeLabel && (
+          <span className="text-faint font-normal">· {rangeLabel}</span>
+        )}
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
-        <Tile icon={Landmark} label="Brokerage" value={formatMoney(totals.brokerage)} />
+        <Tile
+          icon={Landmark}
+          label="Brokerage"
+          value={formatMoney(totals.brokerage)}
+        />
         <Tile icon={ReceiptText} label="STT" value={formatMoney(totals.stt)} />
-        <Tile icon={ReceiptText} label="Stamp Duty" value={formatMoney(totals.stampDuty)} />
-        <Tile icon={Scale} label="Exchange + SEBI" value={formatMoney(totals.exchangeAndSebi)} />
+        <Tile
+          icon={ReceiptText}
+          label="Stamp Duty"
+          value={formatMoney(totals.stampDuty)}
+        />
+        <Tile
+          icon={Scale}
+          label="Exchange + SEBI"
+          value={formatMoney(totals.exchangeAndSebi)}
+        />
         <Tile icon={Percent} label="GST" value={formatMoney(totals.gst)} />
-        <Tile icon={Wallet2} label="Total Charges" value={formatMoney(totals.totalCharges)} tone="text-accent-amber" />
+        <Tile
+          icon={Wallet2}
+          label="Total Charges"
+          value={formatMoney(totals.totalCharges)}
+          tone="text-accent-amber"
+        />
         <Tile
           icon={Wallet2}
           label="Net P&L"

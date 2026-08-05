@@ -1,7 +1,14 @@
 import { sectorAggregates } from "./sectorAggregates.js";
 import { niftyGroup } from "./sectorGroups.js";
 
-const WEIGHTS = { rs: 0.3, sector: 0.15, volume: 0.2, vwap: 0.15, freshness: 0.1, extension: 0.1 };
+const WEIGHTS = {
+  rs: 0.3,
+  sector: 0.15,
+  volume: 0.2,
+  vwap: 0.15,
+  freshness: 0.1,
+  extension: 0.1,
+};
 const FRESHNESS_BY_CANDLE = { C1: 100, C2: 75, C3: 50, C4: 25 };
 
 function clamp(n, lo, hi) {
@@ -58,7 +65,8 @@ export function momentumScore(stock, allStocks, niftyPctChange, sectorMeans) {
   const volScore = percentileRank(stock.traded_value || 0, tradedValues) * 100;
 
   const vwapScore =
-    stock.vwap && ((isBull && stock.ltp > stock.vwap) || (!isBull && stock.ltp < stock.vwap))
+    stock.vwap &&
+    ((isBull && stock.ltp > stock.vwap) || (!isBull && stock.ltp < stock.vwap))
       ? 100
       : 0;
 

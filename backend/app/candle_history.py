@@ -24,7 +24,13 @@ async def persist_candle(symbol: str, bucket_date, bucket_minute: int, ohlc: lis
                 "(symbol, bucket_date, bucket_minute, open, high, low, close) "
                 "values ($1,$2,$3,$4,$5,$6,$7) "
                 "on conflict (symbol, bucket_date, bucket_minute) do nothing",
-                symbol, bucket_date, bucket_minute, open_, high, low, close,
+                symbol,
+                bucket_date,
+                bucket_minute,
+                open_,
+                high,
+                low,
+                close,
             )
     except Exception:  # noqa: BLE001 — never let a recording failure break tick processing
         logger.warning("persist_candle failed for %s", symbol, exc_info=True)

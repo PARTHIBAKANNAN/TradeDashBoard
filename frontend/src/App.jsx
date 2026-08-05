@@ -306,7 +306,10 @@ function TopNavbar({
     { key: "watchlist", label: "Watchlist", icon: "⭐" },
     {
       key: "paper-trading",
-      label: openPositionsCount > 0 ? `Positions (${openPositionsCount})` : "Positions",
+      label:
+        openPositionsCount > 0
+          ? `Positions (${openPositionsCount})`
+          : "Positions",
       icon: "🧪",
     },
   ];

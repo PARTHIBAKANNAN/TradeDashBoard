@@ -284,7 +284,8 @@ export default function PlaceOrderForm({
 
       <div>
         <label className="block text-[10px] font-bold text-muted uppercase tracking-wider mb-1.5">
-          Journal Note <span className="text-faint font-normal">(optional)</span>
+          Journal Note{" "}
+          <span className="text-faint font-normal">(optional)</span>
         </label>
         <textarea
           value={notes}
@@ -399,8 +400,8 @@ export default function PlaceOrderForm({
           {highRisk && (
             <div className="flex items-start gap-1.5 rounded-md bg-accent-amber/10 border border-accent-amber/30 px-2 py-1.5 text-[11px] text-accent-amber">
               <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />
-              This order uses {walletPct.toFixed(0)}% of your available
-              balance — a big move against you will hit hard.
+              This order uses {walletPct.toFixed(0)}% of your available balance
+              — a big move against you will hit hard.
             </div>
           )}
           <div className="grid grid-cols-2 gap-2 pt-1">

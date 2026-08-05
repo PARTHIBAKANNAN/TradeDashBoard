@@ -152,5 +152,6 @@ async def load_from_db() -> None:
             register_open_bracket(order)
     logger.info(
         "Rebuilt index: %d symbol(s) with pending limits, %d symbol(s) with open brackets.",
-        len(_pending_limits), len(_open_brackets),
+        len(_pending_limits),
+        len(_open_brackets),
     )
