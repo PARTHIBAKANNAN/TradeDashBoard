@@ -71,8 +71,20 @@ do_rollback() {
   fi
 
   sudo systemctl restart "$SERVICE" || warn "backend restart during rollback failed"
-  sleep 3
-  if curl -sf --max-time 5 "$HEALTH_URL" >/dev/null 2>&1; then
+  # Same retry-loop patience as the main health check below (50s), not a
+  # single flat sleep+check — the rollback is the last line of defense, so
+  # giving it less headroom than the primary path made no sense (this single-
+  # shot check is exactly what failed to catch a genuinely-healthy-but-slow
+  # rollback in the incident that motivated this comment).
+  ROLLBACK_HEALTHY=0
+  for i in $(seq 1 25); do
+    if curl -sf --max-time 3 "$HEALTH_URL" >/dev/null 2>&1; then
+      ROLLBACK_HEALTHY=1
+      break
+    fi
+    sleep 2
+  done
+  if [ "$ROLLBACK_HEALTHY" -eq 1 ]; then
     warn "rollback complete — backend is healthy again at $PREV_SHA"
   else
     warn "rollback restart did NOT come back healthy — needs a human: journalctl -u $SERVICE -n 100"
@@ -166,14 +178,21 @@ sudo systemctl restart "$SERVICE" || fail "systemctl restart $SERVICE failed"
 
 log "backend: waiting for /api/health"
 HEALTHY=0
-for i in $(seq 1 15); do
+# 25 x 2s = 50s, not 30s — bumped after a real incident where the REST
+# backfill loop (blocks startup) hit a 429 rate-limit per-symbol-retry storm
+# with the larger 210-symbol watchlist and blew past the old 30s window on
+# both the fresh deploy and the rollback restart. The root cause (429 not
+# treated as non-retryable) is fixed in fyers_service.py; this is just cheap
+# extra margin in case backfill is ever legitimately slower for some other
+# reason.
+for i in $(seq 1 25); do
   if curl -sf --max-time 3 "$HEALTH_URL" > /tmp/tradedashboard-health-post.json 2>/dev/null; then
     HEALTHY=1
     break
   fi
   sleep 2
 done
-[ "$HEALTHY" -eq 1 ] || fail "backend did not become healthy within 30s of restart (journalctl -u $SERVICE)"
+[ "$HEALTHY" -eq 1 ] || fail "backend did not become healthy within 50s of restart (journalctl -u $SERVICE)"
 
 POST_HEALTH=$(cat /tmp/tradedashboard-health-post.json)
 POST_STATUS=$(echo "$POST_HEALTH" | json_field status "unknown")

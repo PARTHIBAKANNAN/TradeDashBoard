@@ -53,7 +53,13 @@ class DataEngine:
     # burning the rate limit on every symbol (a permission error on one call means
     # every subsequent call fails identically; retrying 170x3 times starved out a
     # perfectly good quotes() call that ran right after and rate-limited it too).
-    _NON_RETRYABLE_CODES = {-403}
+    # 429 (rate limit) joined this set after the 210-symbol expansion: once one
+    # symbol gets rate-limited, every remaining symbol in the same pass hits the
+    # same 429 and burns 2 retries x up to 1.5s each anyway — with ~210 symbols
+    # x 3 history() passes, that stalled startup (which backfill() blocks on)
+    # past the deploy health-check window and even outlasted a rollback restart
+    # inheriting the same still-active rate-limit window.
+    _NON_RETRYABLE_CODES = {-403, 429}
 
     def _history_retry(self, params: dict, retries: int = 2):
         for attempt in range(retries + 1):
