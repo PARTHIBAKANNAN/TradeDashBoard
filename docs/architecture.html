@@ -197,6 +197,8 @@
   }
   .b-green { background: rgba(34,197,94,0.12); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
   .b-red { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+  .b-amber { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+  .b-violet { background: rgba(139,92,246,0.12); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.3); }
 
   .callout {
     margin-top: 18px; border-radius: 12px; padding: 14px 16px; font-size: 13.5px;
@@ -210,8 +212,9 @@
 
   footer { color: var(--faint); font-size: 12.5px; text-align: center; padding: 40px 0 0; border-top: 1px solid var(--border-soft); margin-top: 60px; }
   .mut { color: var(--muted); }
-  .pill-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .pill-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; align-items: center; }
   .pill { font-family: var(--mono); font-size: 11.5px; padding: 3px 8px; border-radius: 6px; background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); }
+  .chainarrow { color: var(--faint); font-size: 14px; }
 </style>
 </head>
 <body>
@@ -223,8 +226,12 @@
       <a href="#overview">Overview</a>
       <a href="#security">Security</a>
       <a href="#auth">Login</a>
-      <a href="#data">Data Flow</a>
+      <a href="#data">Ingestion</a>
       <a href="#math">Calculations</a>
+      <a href="#score">Recommended</a>
+      <a href="#filters">Filters</a>
+      <a href="#storage">Storage</a>
+      <a href="#process">Process Model</a>
       <a href="#frontend">Frontend</a>
       <a href="#lifecycle">Lifecycle</a>
       <a href="#files">Files</a>
@@ -238,15 +245,17 @@
   <div class="hero">
     <div class="eyebrow">System Architecture Report</div>
     <h1>Real-time Indian stock<br /><span class="grad">breakout &amp; relative-strength</span> dashboard</h1>
-    <p class="lead">A production Backend-For-Frontend that authenticates to FYERS API v3 automatically, ingests
-      millisecond ticks, computes technical engines in memory, and streams diffed state to the browser over a
-      WebSocket delta stream at 250 ms cadence.</p>
+    <p class="lead">A single Python process that authenticates to FYERS API v3 automatically, subscribes to 171
+      symbols over one WebSocket connection, computes every indicator in memory tick-by-tick, and streams diffed
+      state to the browser at 250&nbsp;ms cadence — no microservices, no message queue, one shared in-memory state
+      object guarded by a single lock.</p>
     <div class="chips">
       <span class="chip"><span class="dot" style="background:var(--green)"></span>FYERS API v3</span>
-      <span class="chip"><span class="dot" style="background:var(--blue)"></span>FastAPI BFF</span>
+      <span class="chip"><span class="dot" style="background:var(--blue)"></span>FastAPI · single process</span>
       <span class="chip"><span class="dot" style="background:var(--violet)"></span>WebSocket @ 250&nbsp;ms</span>
       <span class="chip"><span class="dot" style="background:var(--cyan)"></span>React + Canvas</span>
       <span class="chip"><span class="dot" style="background:var(--amber)"></span>Automated TOTP login</span>
+      <span class="chip"><span class="dot" style="background:#f87171"></span>170 stocks + NIFTY 50</span>
     </div>
   </div>
 
@@ -254,8 +263,9 @@
   <section id="overview">
     <div class="eyebrow">01 — Topology</div>
     <h2>System topology &amp; data plane</h2>
-    <p class="sub">Three isolated tiers. The browser never touches the broker: all secrets and the raw broker
-      websocket live only on the backend, which diffs each tick and fans out a minimal JSON delta to all clients.</p>
+    <p class="sub">Three tiers. The browser never touches the broker: all secrets and the raw broker websocket live
+      only on the backend, which diffs each tick and fans out a minimal JSON delta to all clients. A Postgres
+      database sits off to the side — it is <b>not</b> part of the live-tick path at all (see <a href="#storage">Storage</a>).</p>
 
     <div class="topo">
       <div class="layers">
@@ -269,16 +279,16 @@
             <li>Millisecond binary ticks</li>
           </ul>
         </div>
-        <div class="flowarrow"><span>ms ticks + REST</span><div class="a">→</div></div>
+        <div class="flowarrow"><span>ticks + REST</span><div class="a">→</div></div>
         <div class="layer">
-          <div class="tag">Backend-For-Frontend</div>
+          <div class="tag">Backend-For-Frontend (one process)</div>
           <h5>🔵 Python · FastAPI</h5>
           <ul>
-            <li>Automated TOTP login (08:45)</li>
+            <li>Automated TOTP / refresh-token login</li>
             <li>REST backfill (ranges, ORB)</li>
             <li>In-memory math engines</li>
-            <li>Thread-safe state store</li>
-            <li>Market-hours gating</li>
+            <li>Thread-safe shared state</li>
+            <li>Market-hours gating (APScheduler)</li>
           </ul>
         </div>
         <div class="flowarrow"><span>250 ms JSON deltas · WebSocket</span><div class="a">→</div></div>
@@ -297,11 +307,13 @@
     </div>
 
     <div class="grid c4">
-      <div class="card"><h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">◈</span>Zero data cost</h4><p>FYERS native 5,000-symbol websocket; the 42-symbol watchlist + NIFTY 50 benchmark stream free.</p></div>
+      <div class="card"><h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">◈</span>171 symbols, one socket</h4><p>170-stock watchlist + the NIFTY 50 benchmark, all subscribed on a single FYERS websocket connection.</p></div>
       <div class="card"><h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">⚡</span>Delta delivery</h4><p>Ticks land at ms resolution; the Broadcaster diffs state every 250 ms and sends only changed fields to each subscriber.</p></div>
       <div class="card"><h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">🔒</span>Secrets isolated</h4><p>Client ID, secret, TOTP seed, PIN are backend env vars — never shipped to the browser.</p></div>
-      <div class="card"><h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">↻</span>Self-healing</h4><p>Auto-reconnect websocket, token cache, and a localStorage snapshot for graceful offline/standby.</p></div>
+      <div class="card"><h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">↻</span>Self-healing</h4><p>Auto-reconnect websocket, on-disk token cache, and a localStorage snapshot for graceful offline/standby.</p></div>
     </div>
+
+    <div class="callout info"><div class="cico">🧭</div><p><b>Not microservices.</b> Everything in the middle tier above — auth, REST backfill, the websocket ingester, every calculation, the broadcaster — runs inside <i>one</i> Python process. See <a href="#process">Process Model</a> for exactly how that's split across threads internally.</p></div>
   </section>
 
   <!-- SECURITY -->
@@ -313,25 +325,42 @@
     <div class="grid c2">
       <div class="card">
         <h4><span class="ic" style="background:rgba(239,68,68,0.14);color:#f87171">✕</span>Never on the frontend</h4>
-        <p>API keys · Client ID · Secret Key · TOTP seed · trading PIN · access token · the raw broker websocket.</p>
+        <p>API keys · Client ID · Secret Key · TOTP seed · trading PIN · access/refresh tokens · the raw broker websocket.</p>
       </div>
       <div class="card">
         <h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">✓</span>Backend-only</h4>
-        <p>Loaded from <code class="inline">.env</code> via <code class="inline">python-dotenv</code>; the daily token is cached to <code class="inline">.token_cache.json</code> (git-ignored).</p>
+        <p>Loaded from <code class="inline">.env</code> via <code class="inline">python-dotenv</code>; the daily token is cached to <code class="inline">.token_cache.json</code> on disk (git-ignored) — not in any database.</p>
       </div>
     </div>
-    <div class="callout info"><div class="cico">🛡️</div><p><b>Corporate TLS.</b> On a network with SSL inspection, Python's bundled CA store rejects the broker's cert. <code class="inline">pip-system-certs</code> routes TLS through the Windows certificate store (which holds the corporate root CA), fixing <code class="inline">requests</code>, the FYERS SDK, and the websocket at once.</p></div>
+    <div class="callout info"><div class="cico">🛡️</div><p><b>Corporate TLS.</b> On a network with SSL inspection, Python's bundled CA store rejects the broker's cert. <code class="inline">pip-system-certs</code> routes TLS through the Windows certificate store (which holds the corporate root CA), fixing <code class="inline">requests</code>, the FYERS SDK, and the websocket at once. Windows-only — skipped entirely on the Linux production host.</p></div>
   </section>
 
   <!-- AUTH -->
   <section id="auth">
     <div class="eyebrow">03 — Authentication</div>
     <h2>Login method &amp; flow</h2>
-    <p class="sub">Fyers access tokens expire every 24&nbsp;hours. Rather than a manual OAuth redirect, the backend
-      drives Fyers' programmatic login using your own credentials + a TOTP seed — the standard headless algo pattern.
-      A newly created app requires a <b>one-time browser consent</b>; every day after is fully automatic.</p>
+    <p class="sub">FYERS access tokens expire every 24&nbsp;hours. Rather than a manual OAuth redirect every day, the
+      backend drives FYERS' programmatic login using your own credentials + a TOTP seed — the standard headless
+      algo-trading pattern. A newly created app requires a <b>one-time browser consent</b>; every day after is fully
+      automatic.</p>
 
-    <h3>The daily automated chain</h3>
+    <h3>Token acquisition — the actual fallback chain</h3>
+    <p class="sub">The full 6-step TOTP dance below is the <i>last resort</i>, not the everyday path. Every call to
+      <code class="inline">get_access_token()</code> — including the 08:45 daily cron — tries these in order and
+      stops at the first that succeeds:</p>
+    <div class="pill-row">
+      <span class="pill">1 · same-day cached token</span>
+      <span class="chainarrow">→</span>
+      <span class="pill">2 · refresh-token grant (~15-day validity, no TOTP)</span>
+      <span class="chainarrow">→</span>
+      <span class="pill">3 · full TOTP + PIN login (steps below)</span>
+      <span class="chainarrow">→</span>
+      <span class="pill">4 · give up, wait for manual "Connect FYERS"</span>
+    </div>
+    <p class="sub" style="margin-top:10px">In practice the 6-step chain only actually runs once every ~15 days, when
+      the refresh token itself expires — most days, step 2 alone renews the access token silently.</p>
+
+    <h3>The full TOTP + PIN chain (step 3 above)</h3>
     <div class="steps">
       <div class="step ok">
         <div class="num">1</div>
@@ -346,7 +375,7 @@
         <div class="num">2</div>
         <div class="body">
           <h4>Verify TOTP</h4>
-          <p><code class="inline">POST /vagator/v2/verify_otp</code> — code from <code class="inline">pyotp.TOTP(seed).now()</code>. Generated boundary-safe (avoids the tail of the 30s window) with a one-shot retry.</p>
+          <p><code class="inline">POST /vagator/v2/verify_otp</code> — code from <code class="inline">pyotp.TOTP(seed).now()</code>. If the first attempt lands on a 30s window boundary, it retries once with a freshly minted code a second later.</p>
           <pre>{ <span class="tok-s">"request_key"</span>: …, <span class="tok-s">"otp"</span>: TOTP() }  <span class="tok-c">→ request_key  (sub: verify_pin)</span></pre>
         </div>
       </div>
@@ -354,7 +383,7 @@
         <div class="num">3</div>
         <div class="body">
           <h4>Verify PIN → vagator token</h4>
-          <p><code class="inline">POST /vagator/v2/verify_pin_v2</code> — the <code class="inline">_v2</code> variant is required; the base64 PIN yields a short-lived login access token.</p>
+          <p><code class="inline">POST /vagator/v2/verify_pin_v2</code> — the base64 trading PIN yields a short-lived login access token.</p>
           <pre>{ <span class="tok-s">"request_key"</span>: …, <span class="tok-s">"identity_type"</span>: <span class="tok-s">"pin"</span>, <span class="tok-s">"identifier"</span>: base64(PIN) }
     <span class="tok-c">→ data.access_token  (the "vagator" bearer)</span></pre>
         </div>
@@ -363,7 +392,7 @@
         <div class="num">4</div>
         <div class="body">
           <h4>Obtain the OAuth auth code</h4>
-          <p><code class="inline">POST /api/v3/token</code> with the vagator bearer. For an <b>authorized</b> app this returns a redirect URL carrying the real <code class="inline">auth_code</code> (<code class="inline">sub: auth_code</code>).</p>
+          <p><code class="inline">POST /api/v3/token</code> with the vagator bearer. For an <b>authorized</b> app this returns a redirect URL carrying the real <code class="inline">auth_code</code>.</p>
           <pre><span class="tok-c"># api-t1.fyers.in</span>
 Bearer &lt;vagator_token&gt;
 { <span class="tok-s">"fyers_id"</span>, <span class="tok-s">"app_id"</span>, <span class="tok-s">"redirect_uri"</span>, <span class="tok-s">"appType"</span>,
@@ -374,33 +403,27 @@ Bearer &lt;vagator_token&gt;
       <div class="step ok">
         <div class="num">5</div>
         <div class="body">
-          <h4>Exchange for the API access token</h4>
+          <h4>Exchange for the API access &amp; refresh token</h4>
           <p><code class="inline">SessionModel.generate_token()</code> POSTs to <code class="inline">/validate-authcode</code> with <code class="inline">appIdHash = SHA256("client_id:secret")</code> + the auth code.</p>
           <pre>session.set_token(auth_code)
-token = session.generate_token()[<span class="tok-s">"access_token"</span>]  <span class="tok-c"># valid until end of day</span></pre>
+resp = session.generate_token()
+access_token, refresh_token = resp[<span class="tok-s">"access_token"</span>], resp.get(<span class="tok-s">"refresh_token"</span>)</pre>
         </div>
       </div>
       <div class="step ok">
         <div class="num">6</div>
         <div class="body">
           <h4>Cache &amp; use</h4>
-          <p>Token is date-stamped into <code class="inline">.token_cache.json</code> (survives restarts today), then powers the REST <code class="inline">FyersModel</code> and the <code class="inline">FyersDataSocket</code> feed (<code class="inline">CLIENT_ID:token</code>).</p>
+          <p>Both tokens are written atomically to <code class="inline">.token_cache.json</code> (temp file + rename, so a kill mid-write can't corrupt it), keyed off the JWT's own real <code class="inline">exp</code> claim — then power the REST <code class="inline">FyersModel</code> and the <code class="inline">FyersDataSocket</code> feed (<code class="inline">CLIENT_ID:token</code>).</p>
         </div>
       </div>
     </div>
 
     <h3>One-time consent for a new app</h3>
     <p class="sub">A freshly created app is not yet authorized against your account, so step&nbsp;4 returns a pre-consent
-      <code class="inline">data.auth</code> token (<code class="inline">sub: access_token</code>) with no <code class="inline">auth_code</code> — which <code class="inline">/validate-authcode</code> rejects with <code class="inline">-437</code>.
-      Running <code class="inline">manual_auth.py</code> once (browser login → <b>Allow</b> → paste the redirected URL) authorizes the
-      app permanently. After that, the chain above runs unattended.</p>
-
-    <h3>Token lifecycle</h3>
-    <div class="grid c3">
-      <div class="card"><h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">⏰</span>08:45 IST cron</h4><p>APScheduler force-refreshes a fresh token before the open — no manual step.</p></div>
-      <div class="card"><h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">💾</span>Same-day cache</h4><p>Restarts reuse the cached token; a stale (previous-day) cache triggers re-login.</p></div>
-      <div class="card"><h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">🔁</span>Graceful fallback</h4><p>If login fails, the server stays up and serves the last snapshot instead of crashing.</p></div>
-    </div>
+      token with no <code class="inline">auth_code</code>. Running <code class="inline">manual_auth.py</code> once
+      (browser login → <b>Allow</b> → paste the redirected URL) authorizes the app permanently. After that, the chain
+      above runs unattended.</p>
 
     <h3>Environment gotchas resolved</h3>
     <table>
@@ -410,7 +433,7 @@ token = session.generate_token()[<span class="tok-s">"access_token"</span>]  <sp
         <tr><td>Install fails on <code>aiohttp 3.9.3</code></td><td>No Python 3.13 wheel; pinned by fyers-apiv3</td><td>Install fyers with <code>--no-deps</code> + compatible libs</td></tr>
         <tr><td><code>No module named pkg_resources</code></td><td>Removed in setuptools ≥ 81</td><td>Pin <code>setuptools&lt;81</code></td></tr>
         <tr><td><code>invalid totp</code> (intermittent)</td><td>Code generated at 30s window boundary</td><td>Boundary-safe generation + one retry</td></tr>
-        <tr><td><code>-437 invalid auth code</code></td><td>New app not yet authorized → pre-consent <code>data.auth</code></td><td>One-time <code>manual_auth.py</code> consent</td></tr>
+        <tr><td><code>-437 invalid auth code</code></td><td>New app not yet authorized → pre-consent token</td><td>One-time <code>manual_auth.py</code> consent</td></tr>
         <tr><td>Endpoint <code>-1025</code> / <code>-1006</code></td><td>Wrong endpoint variant</td><td><code>send_login_otp_v2</code>, <code>verify_pin_v2</code>; <code>verify_otp</code> stays non-v2</td></tr>
       </tbody>
     </table>
@@ -419,12 +442,15 @@ token = session.generate_token()[<span class="tok-s">"access_token"</span>]  <sp
   <!-- DATA FLOW -->
   <section id="data">
     <div class="eyebrow">04 — Data plane</div>
-    <h2>Complete data-retrieval flow</h2>
+    <h2>Complete data-ingestion flow</h2>
     <p class="sub">Two ingestion paths feed one thread-safe in-memory state: a REST <b>backfill</b> at startup so no field is
       ever blank, and the live <b>websocket</b> for streaming ticks. A <code class="inline">Broadcaster</code> task diffs state every 250 ms and fans delta frames to all WebSocket subscribers.</p>
 
-    <h3>A · Startup REST backfill</h3>
-    <div class="grid c3">
+    <h3>A · Startup REST backfill (4 passes, all per-symbol except quotes)</h3>
+    <p class="sub">FYERS' <code class="inline">history()</code> endpoint has no batch mode — each pass below is a
+      loop of 170 individual REST calls, paced 50 ms apart. Only <code class="inline">quotes()</code> supports
+      batching (≤50 symbols/request).</p>
+    <div class="grid c4">
       <div class="card">
         <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">1</span>Previous day</h4>
         <p>Daily candles (<code class="inline">resolution:"D"</code>, ~12d) → last <i>completed</i> day's high / low / close for the benchmark &amp; every stock.</p>
@@ -434,27 +460,49 @@ token = session.generate_token()[<span class="tok-s">"access_token"</span>]  <sp
         <p>30-min candles for today → C1–C4 high/low keyed by candle start-time, plus today's running high/low.</p>
       </div>
       <div class="card">
-        <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">3</span>Quote seed</h4>
+        <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">3</span>Breakout-quality seed</h4>
+        <p>5-min candles for the 09:15–09:45 opening range → <code class="inline">candle1_high/low</code> + the two-sided-range check (feeds the C1 quality gates).</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">4</span>Quote seed</h4>
         <p>Batched <code class="inline">quotes()</code> (≤50/req) → an initial LTP so rows render fully before the first tick.</p>
       </div>
     </div>
+    <div class="callout warn"><div class="cico">⚠️</div><p><b>Known account limitation.</b> On this FYERS account, <code class="inline">history()</code> currently returns <code class="inline">-403 Additional permission required</code> — so passes 1–3 above return nothing in production; only the batched quote seed (pass 4) succeeds. The ORB boundaries and breakout-quality data are instead derived <i>live from ticks</i> (<code class="inline">candle_aggregator.py</code>) using the identical math, just fed from the websocket instead of REST history. If FYERS' permission is ever restored, the REST passes simply start working again — the two paths don't conflict.</p></div>
 
-    <h3>B · Live websocket ingestion</h3>
+    <h3>B · Symbol subscription &amp; live websocket ingestion</h3>
+    <p class="sub">Yes — <b>all 170 watchlist stocks plus the NIFTY 50 index are subscribed together on one single
+      websocket connection</b>, not 170 separate sockets. Before subscribing, <code class="inline">validate_symbols()</code>
+      pings every symbol via a batched <code class="inline">quotes()</code> call and drops anything FYERS doesn't
+      recognise — one bad/delisted ticker in the subscribe list would otherwise tear down the entire connection.</p>
+    <pre><span class="tok-c"># fyers_service.py — one connection, full watchlist + benchmark</span>
+self.ws = FyersDataSocket(
+    access_token=<span class="tok-s">f"{CLIENT_ID}:{token}"</span>,
+    litemode=<span class="tok-k">False</span>,       <span class="tok-c"># full tick: LTP, high/low, volume, circuit limits, buy/sell qty</span>
+    reconnect=<span class="tok-k">True</span>,
+    on_connect=on_open, on_close=on_close, on_error=on_error, on_message=on_message,
+)
+self.ws.connect()                          <span class="tok-c"># BLOCKING — run on its own daemon thread</span>
+
+<span class="tok-c"># inside on_connect:</span>
+self.ws.subscribe(symbols=valid_symbols, data_type=<span class="tok-s">"SymbolUpdate"</span>)  <span class="tok-c"># all 171 at once</span>
+self.ws.keep_running()</pre>
+
     <div class="topo" style="margin-top:16px">
       <div class="layers" style="min-width:640px">
-        <div class="layer"><div class="tag">Socket</div><h5>FyersDataSocket</h5><ul><li>SymbolUpdate mode</li><li>auto-reconnect</li><li>runs on a daemon thread</li></ul></div>
+        <div class="layer"><div class="tag">Socket</div><h5>FyersDataSocket</h5><ul><li>171 symbols, 1 connection</li><li>auto-reconnect</li><li>runs on a daemon thread</li></ul></div>
         <div class="flowarrow"><span>on_message</span><div class="a">→</div></div>
         <div class="layer"><div class="tag">Normalize</div><h5>_handle_tick</h5><ul><li>defensive key read</li><li>NIFTY → set_nifty()</li><li>equity → process_tick</li></ul></div>
-        <div class="flowarrow"><span>under lock</span><div class="a">→</div></div>
-        <div class="layer"><div class="tag">Compute</div><h5>process_incoming_tick</h5><ul><li>LTP · today H/L</li><li>%Δ · RS · day-pos</li><li>ORB evaluation</li></ul></div>
+        <div class="flowarrow"><span>under RLock</span><div class="a">→</div></div>
+        <div class="layer"><div class="tag">Compute</div><h5>process_incoming_tick</h5><ul><li>LTP · today H/L · VWAP</li><li>%Δ · RS(Nifty) · RS(sector) · day-pos</li><li>ORB eval + quality gates</li><li>candle_aggregator hooks</li></ul></div>
         <div class="flowarrow"><span>mutates</span><div class="a">→</div></div>
-        <div class="layer"><div class="tag">State</div><h5>MarketState</h5><ul><li>RLock guarded</li><li>plain dicts</li><li>market_open flag</li></ul></div>
+        <div class="layer"><div class="tag">State</div><h5>MarketState</h5><ul><li>RLock guarded</li><li>plain dicts, RAM only</li><li>market_open flag</li></ul></div>
       </div>
     </div>
 
-    <h3>C · 250 ms WebSocket broadcast</h3>
-    <p class="sub">A single <code class="inline">Broadcaster</code> task snapshots state every 250 ms, diffs it against the previous snapshot, and fans the minimal JSON delta (or a full snapshot on first connect / resync) to every subscriber via bounded <code class="inline">asyncio.Queue</code>s. The client connects via <code class="inline">WebSocket</code> and updates only changed rows.</p>
-    <pre><span class="tok-c"># Broadcaster._tick_once — runs every 250 ms</span>
+    <h3>C · 250 ms WebSocket broadcast to the browser</h3>
+    <p class="sub">A single <code class="inline">Broadcaster</code> task snapshots state every 250 ms, diffs it against the previous snapshot, and fans the minimal JSON delta (or a full snapshot on first connect / resync) to every subscriber via bounded <code class="inline">asyncio.Queue</code>s. This is a completely separate WebSocket connection from the FYERS one above — the browser only ever talks to this backend, never to FYERS directly.</p>
+    <pre><span class="tok-c"># Broadcaster._tick_once — runs every 250 ms on the asyncio loop</span>
 frame = build_frame(prev, curr, seq=next_seq)  <span class="tok-c"># None if nothing changed</span>
 <span class="tok-k">if</span> frame <span class="tok-k">is None</span> <span class="tok-k">and not</span> needs_resync:
     <span class="tok-c"># emit heartbeat every ~5 s of quiet to keep client liveness timer alive</span>
@@ -475,20 +523,29 @@ frame = build_frame(prev, curr, seq=next_seq)  <span class="tok-c"># None if not
   <!-- MATH -->
   <section id="math">
     <div class="eyebrow">05 — Engines</div>
-    <h2>Mathematical calculations</h2>
-    <p class="sub">Every tick recomputes four deterministic engines in memory before the next broadcast. All functions are
-      pure and unit-tested.</p>
+    <h2>Indicators &amp; calculations</h2>
+    <p class="sub">Every tick recomputes these deterministic engines in memory before the next broadcast. All
+      functions are pure (no side effects) and unit-tested in isolation.</p>
 
     <div class="grid c2">
       <div class="formula">
         <div class="label">Engine A</div>
-        <h4>Intraday Relative Strength vs NIFTY 50</h4>
-        <div class="eq">IRS<sub>i,t</sub> = Δ%&nbsp;Stock<sub>i,t</sub> − Δ%&nbsp;Index<sub>t</sub></div>
-        <p class="note">Each side is % change vs its own previous close. The sign classifies the row:</p>
+        <h4>Relative Strength vs NIFTY 50 (RS)</h4>
+        <div class="eq">RS<sub>i,t</sub> = Δ%&nbsp;Stock<sub>i,t</sub> − Δ%&nbsp;NIFTY<sub>t</sub></div>
+        <p class="note">Each side is % change vs its own previous close. The single biggest input into every
+          downstream score — positive means outperforming the index right now.</p>
         <div class="pill-row" style="margin-top:10px">
-          <span class="badge b-green">IRS &gt; 0 · Outperform · #22c55e</span>
-          <span class="badge b-red">IRS &lt; 0 · Underperform · #ef4444</span>
+          <span class="badge b-green">RS &gt; 0 · Outperform</span>
+          <span class="badge b-red">RS &lt; 0 · Underperform</span>
         </div>
+      </div>
+
+      <div class="formula">
+        <div class="label">Engine F</div>
+        <h4>Relative Strength vs Sector</h4>
+        <div class="eq">RS<sub>sector</sub> = Δ%&nbsp;Stock − mean(Δ%&nbsp;Sector members)</div>
+        <p class="note">Each stock's fine-grained sector tag rolls up into a broader NIFTY-style group; every
+          member's plain average % change (not volume-weighted) becomes that group's benchmark for this comparison.</p>
       </div>
 
       <div class="formula">
@@ -497,17 +554,28 @@ frame = build_frame(prev, curr, seq=next_seq)  <span class="tok-c"># None if not
         <div class="eq">
           <span class="frac"><span class="num">LTP<sub>t</sub> − T<sub>L</sub></span><span class="den">T<sub>H</sub> − T<sub>L</sub></span></span> × 100
         </div>
-        <p class="note">Where the price sits inside today's low→high band. Feeds the slider filter directly; a zero-span
-          guard returns 0 to avoid division errors.</p>
+        <p class="note">Where the price sits inside today's own low→high band so far (0–100%). Feeds the day-range
+          bar, the "Extended" warning, and the momentum score's extension penalty. A zero-span guard returns 0.</p>
+      </div>
+
+      <div class="formula">
+        <div class="label">Engine E</div>
+        <h4>Volume-Weighted Average Price (VWAP)</h4>
+        <div class="eq">VWAP = cumPV / cumVol</div>
+        <p class="note">Ticks carry <i>cumulative</i> today's volume, not per-trade size — so each tick's volume
+          <b>delta</b> is multiplied by that tick's LTP and added to a running (price×volume) sum, divided by
+          running volume. A non-monotonic (stale/duplicate) volume tick is treated as a zero delta rather than
+          corrupting the running sums.</p>
       </div>
 
       <div class="formula">
         <div class="label">Engine B</div>
         <h4>30-min Opening Range Breakout (C1–C4)</h4>
-        <div class="eq">Upper<sub>Cn</sub> = max(P)&nbsp;&nbsp;·&nbsp;&nbsp;Lower<sub>Cn</sub> = min(P)&nbsp;&nbsp;<span class="mut">over t ∈ Cn</span></div>
+        <div class="eq">Upper<sub>Cn</sub> = max(LTP)&nbsp;&nbsp;·&nbsp;&nbsp;Lower<sub>Cn</sub> = min(LTP)&nbsp;&nbsp;<span class="mut">over t ∈ Cn</span></div>
         <p class="note">Candles: C1 09:15–09:45 · C2 09:45–10:15 · C3 10:15–10:45 · C4 10:45–11:15. Once a candle
-          completes, a breach of its bound triggers a signal; the <b>newest completed candle wins</b>, and repeated
-          same-state ticks don't re-fire.</p>
+          completes, a breach of its bound triggers a signal; the <b>newest completed candle wins</b> over an
+          earlier one, and a repeat tick in the same signal state doesn't re-fire. C1 additionally has to clear two
+          quality gates below before it's allowed to fire at all.</p>
         <div class="pill-row" style="margin-top:10px">
           <span class="badge b-green">LTP &gt; Upper → Bull • Cn</span>
           <span class="badge b-red">LTP &lt; Lower → Bear • Cn</span>
@@ -520,64 +588,225 @@ frame = build_frame(prev, curr, seq=next_seq)  <span class="tok-c"># None if not
         <div class="eq">
           x(P) = <span class="frac"><span class="num">P − min</span><span class="den">max − min</span></span> × 100
         </div>
-        <p class="note">With <code class="inline">min = min(Y<sub>L</sub>, T<sub>L</sub>)</code> and <code class="inline">max = max(Y<sub>H</sub>, T<sub>H</sub>)</code>, both sessions map onto one 0–100% scale so
-          yesterday's grey bar, today's blue bar, and the LTP tick share coordinates on a single canvas element.</p>
+        <p class="note">With <code class="inline">min = min(Y<sub>L</sub>, T<sub>L</sub>)</code> and <code class="inline">max = max(Y<sub>H</sub>, T<sub>H</sub>)</code>, yesterday's and today's ranges (plus the live LTP) all map onto one shared 0–100% scale, drawn as one canvas bar.</p>
       </div>
     </div>
 
-    <div class="callout good"><div class="cico">✓</div><p><b>Verified.</b> The engine suite passes its unit tests — <code class="inline">python -m tests.test_calculations</code> (pct-change, IRS, day-range, dual-range map, ORB breakout &amp; precedence).</p></div>
+    <h3>Breakout quality gates — C1 only</h3>
+    <p class="sub">C2–C4 are pure structural breaks with no filter. A <b>C1</b> (opening-range) breakout additionally
+      has to pass both of these before the signal is allowed to fire:</p>
+    <div class="steps">
+      <div class="step ok">
+        <div class="num">1</div>
+        <div class="body">
+          <h4>First-candle-extreme-intact</h4>
+          <p>The very first 5-minute candle's low (bullish) — or high (bearish) — must still be the day's extreme
+            <i>so far</i>, i.e. never undercut/overtaken since. A trend-cleanliness check: it rules out a first
+            candle that was itself later invalidated by a bigger move the other way.</p>
+        </div>
+      </div>
+      <div class="step ok">
+        <div class="num">2</div>
+        <div class="body">
+          <h4>Two-sided range</h4>
+          <p>Among the six 5-minute candles making up the 09:15–09:45 window, at least one must close red and one
+            green. Rules out a stock that simply gapped and ran one direction non-stop for 30 minutes — no genuine
+            range was ever established to "break out" of.</p>
+        </div>
+      </div>
+    </div>
+    <div class="callout info"><div class="cico">🧵</div><p><b>Tick-derived, not REST-derived.</b> Because <code class="inline">history()</code> is broken on this account (see <a href="#data">Ingestion</a>), <code class="inline">candle_aggregator.py</code> builds the C1–C4 boundaries and the two quality-gate inputs live from the tick stream itself — same formulas, different data source. It also separately records every completed 5-minute candle across the whole session (09:15–15:30) into <code class="inline">candle_history</code> for future backtesting — kept in an entirely separate code path so that addition can never regress the signal logic above.</p></div>
+
+    <div class="callout good"><div class="cico">✓</div><p><b>Verified.</b> The engine suite passes its unit tests — pct-change, RS, day-range, dual-range map, VWAP, ORB breakout &amp; precedence, and the momentum score below all have dedicated test files exercised on every deploy.</p></div>
+  </section>
+
+  <!-- SCORE -->
+  <section id="score">
+    <div class="eyebrow">06 — Composite score</div>
+    <h2>Momentum score &amp; the "Recommended" tag</h2>
+    <p class="sub">A single 0–100 composite that ranks every currently-signaled stock, computed identically in two
+      places from one ported formula: client-side (JS) for the on-screen tag, and server-side (Python) on a
+      schedule for automated checkpoint alerts.</p>
+
+    <h3>Hard filter — applied before any scoring</h3>
+    <div class="callout warn"><div class="cico">⛔</div><p>Score is forced to <b>0</b> if there's no active signal, or if the signal direction disagrees with NIFTY's own move right now — a Bull signal needs NIFTY %change ≥ 0; a Bear signal needs NIFTY %change ≤ 0. On a day NIFTY is anywhere near flat, this alone disqualifies roughly half the signaled universe outright, regardless of how strong the individual setup looks.</p></div>
+
+    <h3>Weighted composite (if the hard filter passes)</h3>
+    <table>
+      <thead><tr><th>Component</th><th>Weight</th><th>Formula</th><th>What it rewards</th></tr></thead>
+      <tbody>
+        <tr><td>RS vs NIFTY</td><td><code>30%</code></td><td><code>clamp(signed RS × 10, 0, 100)</code></td><td>Outperforming the index in the signal's direction</td></tr>
+        <tr><td>RS vs sector</td><td><code>15%</code></td><td><code>clamp(signed sector-RS × 10, 0, 100)</code></td><td>Outperforming its own sector peers, not just the index</td></tr>
+        <tr><td>Volume percentile</td><td><code>20%</code></td><td>percentile rank of traded value among all signaled stocks</td><td>Real money behind the move, not a thin-volume drift</td></tr>
+        <tr><td>VWAP side</td><td><code>15%</code></td><td><code>100</code> if on the "right side" of VWAP for the direction, else <code>0</code></td><td>Trading with the day's volume-weighted trend, not against it</td></tr>
+        <tr><td>Signal freshness</td><td><code>10%</code></td><td><code>C1=100 · C2=75 · C3=50 · C4=25</code></td><td>Earlier breakouts over later, staler ones</td></tr>
+        <tr><td>Extension penalty</td><td><code>10%</code></td><td><code>100 − 2×|day_range_pos − 50|</code></td><td>Room left to run — peaks at the midpoint of today's range, decays toward either edge</td></tr>
+      </tbody>
+    </table>
+
+    <div class="grid c2" style="margin-top:20px">
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">🏅</span>Confidence floor</h4>
+        <p>Only the top <b>3</b> stocks scoring <b>≥ 60</b> get the Recommended tag. Below that, the tag simply
+          doesn't appear — a quiet/indecisive market can legitimately produce zero picks all day.</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">⏱</span>Checkpoint-locked</h4>
+        <p>Recomputed every tick underneath, but the <i>displayed</i> picks only re-lock every 30 minutes (09:45,
+          10:15, 10:45…) to avoid flickering — so the tag can be up to ~30 minutes stale relative to the live number.</p>
+      </div>
+    </div>
+    <div class="callout info"><div class="cico">📈</div><p><b>What this score does <i>not</i> know.</b> It measures how strong the current move looks right now — it has no concept of chart structure, prior peaks, or "this already failed once today." A stock mid-double-top can still score well right up until it reverses.</p></div>
+  </section>
+
+  <!-- FILTERS -->
+  <section id="filters">
+    <div class="eyebrow">07 — Screen controls</div>
+    <h2>Filters, sorts &amp; on-row warnings</h2>
+    <p class="sub">All client-side, computed over whatever the WebSocket store currently holds — no extra network
+      call per filter change.</p>
+    <table>
+      <thead><tr><th>Control</th><th>Options</th></tr></thead>
+      <tbody>
+        <tr><td>Breakout signal</td><td>All / Bull / Bear</td></tr>
+        <tr><td>Sector</td><td>Any sector group present in the current universe</td></tr>
+        <tr><td>Sort</td><td>Breakout-qualified-first (default, then most-recent signal time, then RS as tiebreak) · RS ▼/▲ · % Change ▼ · Day-range-% ▼ · Symbol A–Z</td></tr>
+        <tr><td>Signal-time cutoff</td><td>Only show signals that fired by a chosen 15-minute mark of the day</td></tr>
+      </tbody>
+    </table>
+    <h3>On-row warning badges</h3>
+    <div class="pill-row">
+      <span class="badge b-amber">Extended</span> <span class="mut" style="font-size:13px">day_range_pos ≥ 85% or ≤ 15% — near today's high/low, little room left for a fresh entry</span>
+    </div>
+    <div class="pill-row" style="margin-top:10px">
+      <span class="badge b-red">⚠ Against-trend</span> <span class="mut" style="font-size:13px">signal direction disagrees with NIFTY's current move — the same rule as the momentum-score hard filter, surfaced on the row itself even before scoring</span>
+    </div>
+  </section>
+
+  <!-- STORAGE -->
+  <section id="storage">
+    <div class="eyebrow">08 — Persistence</div>
+    <h2>What's actually stored in the database</h2>
+    <p class="sub">Almost nothing about the live market data is persisted. Everything in <a href="#math">Calculations</a>
+      and <a href="#score">Recommended</a> above — LTP, RS, VWAP, signals, momentum scores — lives only in RAM
+      (<code class="inline">MarketState</code>) and is <b>wiped on every backend restart</b>.</p>
+    <table>
+      <thead><tr><th>Data</th><th>Where it lives</th><th>Survives a restart?</th></tr></thead>
+      <tbody>
+        <tr><td>Live LTP, RS, VWAP, signals, momentum scores</td><td><code>MarketState</code> — plain Python dicts in RAM</td><td>No</td></tr>
+        <tr><td>5-min OHLC candles, whole session</td><td>Postgres — <code>candle_history</code></td><td>Yes (backtest groundwork)</td></tr>
+        <tr><td>Simulated (paper) orders &amp; positions</td><td>Postgres — <code>paper_orders</code></td><td>Yes</td></tr>
+        <tr><td>Simulated wallet balance</td><td>Postgres — <code>paper_wallets</code></td><td>Yes</td></tr>
+        <tr><td>FYERS access/refresh tokens</td><td>Local disk file — <code>.token_cache.json</code> (not the DB)</td><td>Yes, same-day / ~15-day</td></tr>
+        <tr><td>Dashboard login session</td><td>Signed cookie (<code>itsdangerous</code>) — no server-side session table</td><td>Yes, ~14 days per cookie</td></tr>
+        <tr><td>User accounts</td><td>Supabase Auth (managed externally, not our own tables)</td><td>Yes</td></tr>
+      </tbody>
+    </table>
+    <div class="callout info"><div class="cico">💽</div><p>In short: the database's job is <i>trade record-keeping and future backtest data</i>, not live market state. The entire signal/scoring engine could run with zero database connectivity at all — Postgres only gets involved once you place a simulated order or once a 5-minute candle needs recording.</p></div>
+  </section>
+
+  <!-- PROCESS MODEL -->
+  <section id="process">
+    <div class="eyebrow">09 — Concurrency</div>
+    <h2>Process model — one service, not microservices</h2>
+    <p class="sub">There is exactly <b>one</b> deployed backend service (<code class="inline">tradedashboard-backend</code>,
+      one systemd unit, one Python interpreter). Inside that single process, a few concurrent workers all read and
+      write the <i>same</i> in-memory <code class="inline">MarketState</code> object, coordinated by one
+      <code class="inline">threading.RLock</code> — there is no separate "fetcher" service handing data to a
+      separate "storage" service over a network hop.</p>
+
+    <div class="grid c2">
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">🔁</span>Main asyncio event loop</h4>
+        <p>Serves HTTP + the browser's <code class="inline">/ws/stream</code> WebSocket, runs the <code class="inline">Broadcaster</code> task, owns the paper-trading Postgres connection pool.</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">🧵</span>FYERS ingest thread</h4>
+        <p>One dedicated background thread running the blocking FYERS websocket client — ingests every tick and runs the full calculation pipeline synchronously, right there on that thread.</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">⏰</span>APScheduler background thread</h4>
+        <p>Cron-style jobs: daily login, market open/close, opening-range refresh, checkpoint score digests — see <a href="#lifecycle">Lifecycle</a>.</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">🗄</span>Postgres connection pool</h4>
+        <p><code class="inline">asyncpg</code> pool on the main event loop, used only by the paper-trading router and the candle-history writer — never by the live-tick path.</p>
+      </div>
+    </div>
+
+    <div class="callout good"><div class="cico">✓</div><p><b>Why one process, on purpose.</b> The entire point of <code class="inline">MarketState</code> is a single shared source of truth that every reader — the broadcaster, the momentum score, the order monitor — can read <i>instantly, in-process</i>, with no network hop or serialization cost. Splitting "fetch" and "store" into separate deployed services would mean shipping every one of thousands of ticks/minute over a network boundary before anything downstream could use it — unnecessary latency and operational complexity for a single-operator dashboard at this scale.</p></div>
   </section>
 
   <!-- FRONTEND -->
   <section id="frontend">
-    <div class="eyebrow">06 — Client</div>
-    <h2>Frontend rendering</h2>
-    <p class="sub">Built for a stable frame rate across 40+ live rows.</p>
+    <div class="eyebrow">10 — Client</div>
+    <h2>Frontend: how &amp; when data loads into the UI</h2>
+    <p class="sub">Built for a stable frame rate across 170+ live rows, and to survive a mid-session page reload
+      without a blank screen.</p>
+
+    <h3>Load sequence, in order</h3>
+    <div class="steps">
+      <div class="step ok"><div class="num">1</div><div class="body"><h4>Auth gate</h4><p><code class="inline">GET /api/auth/me</code> on mount decides Login screen vs Dashboard, based on the signed session cookie.</p></div></div>
+      <div class="step ok"><div class="num">2</div><div class="body"><h4>Instant paint from localStorage</h4><p>Before any network round-trip resolves, the last cached <code class="inline">snapshot</code> frame (and the day's client-built candles) are read straight from <code class="inline">localStorage</code> so the screen is never blank — even if slightly stale.</p></div></div>
+      <div class="step ok"><div class="num">3</div><div class="body"><h4>WebSocket connect</h4><p><code class="inline">useMarketStream()</code> opens <code class="inline">/ws/stream</code>. The very first message is always a full <code class="inline">snapshot</code> frame, which immediately overwrites the warm cache with live truth.</p></div></div>
+      <div class="step ok"><div class="num">4</div><div class="body"><h4>Live deltas, surgical re-renders</h4><p>Every message after that is a small <code class="inline">delta</code> — only the fields that actually changed. The store fans updates out per-symbol (<code class="inline">useSyncExternalStore</code>), so a tick on one stock only re-renders that one row, not the whole table.</p></div></div>
+      <div class="step ok"><div class="num">5</div><div class="body"><h4>Client-side candle building</h4><p>The mini-candlestick chart is built purely from the LTP stream itself, tick-by-tick, in 5-minute buckets — no separate history fetch. Persisted to its own localStorage key so a reload mid-session doesn't lose the day's candles (discarded automatically if the cached day doesn't match today).</p></div></div>
+      <div class="step ok"><div class="num">6</div><div class="body"><h4>Self-healing</h4><p>A sequence-number gap on a delta triggers a <code class="inline">resync</code> request for a fresh snapshot; 30 seconds of silence (no heartbeat) force-closes and reconnects with exponential backoff.</p></div></div>
+    </div>
+
+    <h3>Rendering techniques</h3>
     <div class="grid c4">
       <div class="card"><h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">🎨</span>Canvas bars</h4><p>Pre-normalized coordinates rasterized on <code class="inline">&lt;canvas&gt;</code> — no per-pixel DOM, DPR-aware.</p></div>
       <div class="card"><h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">🧩</span>React.memo rows</h4><p>Re-renders isolated to rows whose data actually changed.</p></div>
-      <div class="card"><h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">🔎</span>Filters &amp; sort</h4><p>Signal · sector · day-range slider · multi-key sort, all client-side via <code class="inline">useMemo</code>.</p></div>
-      <div class="card"><h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">📴</span>Offline cache</h4><p>Each payload mirrored to <code class="inline">localStorage</code>; on drop/standby it renders the last snapshot with a Closed/Offline badge.</p></div>
+      <div class="card"><h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">🔎</span>Filters &amp; sort</h4><p>Signal · sector · day-range · signal-time, all client-side via <code class="inline">useMemo</code>.</p></div>
+      <div class="card"><h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">📴</span>Offline cache</h4><p>Each snapshot mirrored to <code class="inline">localStorage</code>; on drop/standby it renders the last snapshot with a Closed/Offline badge.</p></div>
     </div>
   </section>
 
   <!-- LIFECYCLE -->
   <section id="lifecycle">
-    <div class="eyebrow">07 — Operations</div>
-    <h2>Daily lifecycle</h2>
-    <p class="sub">APScheduler on the IST timezone; if the process boots mid-session it jumps straight to the correct state.</p>
+    <div class="eyebrow">11 — Operations</div>
+    <h2>Daily lifecycle (APScheduler, IST)</h2>
+    <p class="sub">If the process boots mid-session, it jumps straight to the correct state instead of waiting for the next cron tick.</p>
     <div class="steps">
-      <div class="step"><div class="num" style="background:linear-gradient(135deg,#78350f,#3a1d05);border-color:#a16207;color:#fde68a">☀</div><div class="body"><h4>08:45 — Daily token</h4><p>Force-refresh a fresh access token via the automated TOTP chain (Mon–Fri).</p></div></div>
-      <div class="step"><div class="num" style="background:linear-gradient(135deg,#14532d,#06210f);border-color:#1f7a3d;color:#bbf7d0">▶</div><div class="body"><h4>09:15 — Market open</h4><p>Backfill ranges + ORB, flip <code class="inline">market_open = true</code>, launch the websocket thread.</p></div></div>
-      <div class="step"><div class="num" style="background:linear-gradient(135deg,#1e3a8a,#0b1b3a);border-color:#2b4d8a;color:#cfe0ff">≈</div><div class="body"><h4>09:15–15:30 — Live</h4><p>Ticks stream in; the Broadcaster fans delta frames to all WebSocket subscribers every 250 ms.</p></div></div>
-      <div class="step"><div class="num" style="background:linear-gradient(135deg,#3f0d0d,#210606);border-color:#7f1d1d;color:#fecaca">■</div><div class="body"><h4>15:30 — Standby</h4><p>Close the websocket to conserve bandwidth; UI shows Closed with the final snapshot.</p></div></div>
+      <div class="step"><div class="num" style="background:linear-gradient(135deg,#78350f,#3a1d05);border-color:#a16207;color:#fde68a">☀</div><div class="body"><h4>08:45 — Daily token refresh</h4><p>Force-refresh a token (tries the refresh-token grant first, falls back to full TOTP login) — Mon–Fri.</p></div></div>
+      <div class="step"><div class="num" style="background:linear-gradient(135deg,#14532d,#06210f);border-color:#1f7a3d;color:#bbf7d0">▶</div><div class="body"><h4>09:15 — Market open</h4><p>REST backfill, flip <code class="inline">market_open = true</code>, launch the websocket ingest thread.</p></div></div>
+      <div class="step"><div class="num" style="background:linear-gradient(135deg,#1e3a8a,#0b1b3a);border-color:#2b4d8a;color:#cfe0ff">↻</div><div class="body"><h4>09:46 — Opening-range refresh</h4><p>Now that 09:15–09:45 has fully printed, re-seed the C1 ORB boundaries + the two breakout-quality gates in case the engine booted mid-candle.</p></div></div>
+      <div class="step"><div class="num" style="background:linear-gradient(135deg,#1e3a8a,#0b1b3a);border-color:#2b4d8a;color:#cfe0ff">≈</div><div class="body"><h4>09:15–15:30 — Live</h4><p>Ticks stream continuously; the Broadcaster fans delta frames to all WebSocket subscribers every 250 ms. The momentum-score checkpoint re-locks at 09:45 and every 30 min through 15:15.</p></div></div>
+      <div class="step"><div class="num" style="background:linear-gradient(135deg,#3f0d0d,#210606);border-color:#7f1d1d;color:#fecaca">■</div><div class="body"><h4>15:30 — Market close</h4><p>Close the websocket to conserve bandwidth (standby), square off any still-open simulated positions, and flush the day's last partial 5-min candle bucket to storage.</p></div></div>
     </div>
     <div class="callout info"><div class="cico">🧪</div><p><b>Dev override.</b> <code class="inline">FORCE_MARKET_OPEN=true</code> in <code class="inline">.env</code> runs the engine regardless of the clock to exercise the full pipeline outside market hours.</p></div>
   </section>
 
   <!-- FILES -->
   <section id="files">
-    <div class="eyebrow">08 — Map</div>
+    <div class="eyebrow">12 — Map</div>
     <h2>Module map</h2>
     <table>
       <thead><tr><th style="width:30%">File</th><th>Responsibility</th></tr></thead>
       <tbody>
-        <tr><td><code>app/config.py</code></td><td>Env vars, watchlist (42 symbols), session timings, symbol helpers</td></tr>
-        <tr><td><code>app/state.py</code></td><td>Thread-safe in-memory <code>MarketState</code> (RLock)</td></tr>
-        <tr><td><code>app/auth.py</code></td><td>Automated TOTP login chain + token cache</td></tr>
-        <tr><td><code>app/calculations.py</code></td><td>IRS · ORB · dual-range mapper · day-range %, + tick processor</td></tr>
-        <tr><td><code>app/fyers_service.py</code></td><td>REST backfill + websocket ingestion (lifecycle-managed)</td></tr>
-        <tr><td><code>app/scheduler.py</code></td><td>08:45 login cron · 09:15 start · 15:30 standby · market-hours gate</td></tr>
-        <tr><td><code>app/main.py</code></td><td>FastAPI app: WebSocket stream (<code>/ws/stream</code>), snapshot, health, lifespan</td></tr>
-        <tr><td><code>manual_auth.py</code></td><td>One-time browser consent for a new app</td></tr>
+        <tr><td><code>app/config.py</code></td><td>Env vars, 170-symbol watchlist, session timings, ORB windows, symbol helpers</td></tr>
+        <tr><td><code>app/state.py</code></td><td>Thread-safe in-memory <code>MarketState</code> (RLock) — the single shared source of truth</td></tr>
+        <tr><td><code>app/auth.py</code></td><td>Token fallback chain: cache → refresh-token → TOTP login; on-disk token cache</td></tr>
+        <tr><td><code>app/calculations.py</code></td><td>RS(Nifty) · RS(sector) · VWAP · ORB · day-range % · dual-range map, + the tick processor</td></tr>
+        <tr><td><code>app/candle_aggregator.py</code></td><td>Tick-derived ORB boundaries/quality-gate seeding + all-day 5-min candle recording</td></tr>
+        <tr><td><code>app/candle_history.py</code></td><td>Persists completed 5-min candles to Postgres (backtest groundwork)</td></tr>
+        <tr><td><code>app/momentum_score.py</code></td><td>Server-side port of the "Recommended" composite score, run on a schedule</td></tr>
+        <tr><td><code>app/fyers_service.py</code></td><td>REST backfill + websocket subscription/ingestion (lifecycle-managed)</td></tr>
+        <tr><td><code>app/broadcaster.py</code></td><td>Snapshot/delta diffing + 250 ms fan-out to browser WebSocket subscribers</td></tr>
+        <tr><td><code>app/scheduler.py</code></td><td>All cron jobs: daily login, market open/close, ORB refresh, score checkpoints</td></tr>
+        <tr><td><code>app/main.py</code></td><td>FastAPI app: <code>/ws/stream</code>, snapshot, health, lifespan wiring</td></tr>
+        <tr><td><code>app/paper_trading.py</code>, <code>paper_margin.py</code>, <code>paper_pnl.py</code>, <code>brokerage.py</code>, <code>trailing_stop.py</code>, <code>order_monitor.py</code></td><td>Simulated order/position engine — separate from the live market-data path above</td></tr>
+        <tr><td><code>manual_auth.py</code></td><td>One-time browser consent for a new FYERS app</td></tr>
         <tr><td><code>diagnose_login.py</code> · <code>check_totp.py</code></td><td>Login diagnostics (safe, credential-masked)</td></tr>
-        <tr><td><code>frontend/src/*</code></td><td>App · useMarketStream hook · Canvas range bar · watchlist row</td></tr>
+        <tr><td><code>frontend/src/hooks/useMarketStream.js</code></td><td>Singleton WebSocket controller, localStorage cache, client-side candle building</td></tr>
+        <tr><td><code>frontend/src/utils/momentumScore.js</code></td><td>Client-side mirror of the Recommended-score formula (identical to the Python port)</td></tr>
       </tbody>
     </table>
   </section>
 
   <footer>
-    TradeDashboard · FYERS API v3 · FastAPI + React · Architecture report generated 09 Jul 2026
+    TradeDashboard · FYERS API v3 · FastAPI + React · Architecture report updated
   </footer>
 </main>
 </body>

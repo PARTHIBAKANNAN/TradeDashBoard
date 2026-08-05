@@ -284,6 +284,81 @@ WATCHLIST = {
     "NSE:SAIL-EQ": "Metals",
     "NSE:VEDL-EQ": "Metals",
     "NSE:HINDZINC-EQ": "Metals",
+
+    # ---------------------------------------------------------------------
+    # F&O universe expansion, batch 1 — 41 additional NSE F&O-eligible names
+    # compiled from general knowledge, NOT a live NSE feed. MUST be checked
+    # against NSE's current official F&O list before this is treated as
+    # authoritative (eligibility is revised periodically by NSE circulars).
+    # Kept as one clearly-delimited block (not interleaved into the curated
+    # list above) specifically so it's easy to review/revert as a unit and
+    # to watch fyers_service.py's "dropping N invalid symbol(s)" startup log
+    # against this exact set if any of these turn out wrong/delisted.
+    # ---------------------------------------------------------------------
+    # Energy / Gas utilities
+    "NSE:GAIL-EQ": "Energy",
+    "NSE:BPCL-EQ": "Energy",
+    "NSE:MGL-EQ": "Energy",
+    # Power
+    "NSE:ADANIPOWER-EQ": "Power",
+    # Capital Goods / Industrials / Defense
+    "NSE:LT-EQ": "Capital Goods",
+    "NSE:SIEMENS-EQ": "Capital Goods",
+    "NSE:ABB-EQ": "Capital Goods",
+    "NSE:BHEL-EQ": "Capital Goods",
+    "NSE:BEL-EQ": "Capital Goods",
+    "NSE:HAL-EQ": "Capital Goods",
+    # Infra / Ports
+    "NSE:ADANIPORTS-EQ": "Infra",
+    # Telecom
+    "NSE:BHARTIARTL-EQ": "Telecom",
+    "NSE:IDEA-EQ": "Telecom",
+    "NSE:INDUSTOWER-EQ": "Telecom",
+    "NSE:TATACOMM-EQ": "Telecom",
+    # Consumer Durables
+    "NSE:TITAN-EQ": "Consumer Durables",
+    "NSE:DIXON-EQ": "Consumer Durables",
+    "NSE:HAVELLS-EQ": "Consumer Durables",
+    "NSE:CROMPTON-EQ": "Consumer Durables",
+    # Paints / FMCG-adjacent
+    "NSE:ASIANPAINT-EQ": "FMCG",
+    # Chemicals
+    "NSE:SRF-EQ": "Chemicals",
+    "NSE:DEEPAKNTR-EQ": "Chemicals",
+    "NSE:AARTIIND-EQ": "Chemicals",
+    "NSE:COROMANDEL-EQ": "Chemicals",
+    # Aviation
+    "NSE:INDIGO-EQ": "Aviation",
+    # Retail
+    "NSE:TRENT-EQ": "Retail",
+    # Travel / Tourism
+    "NSE:IRCTC-EQ": "Travel",
+    # Capital Markets / Fintech
+    "NSE:NAUKRI-EQ": "Capital Markets",
+    "NSE:MCX-EQ": "Capital Markets",
+    "NSE:IEX-EQ": "Capital Markets",
+    # Pvt Banks
+    "NSE:YESBANK-EQ": "Pvt Banks",
+    # Auto / Auto Ancillary
+    "NSE:ESCORTS-EQ": "Auto",
+    "NSE:BALKRISIND-EQ": "Auto",
+    "NSE:APOLLOTYRE-EQ": "Auto",
+    # LTIM (LTIMindtree) deliberately NOT re-added: live-checked via quotes()
+    # on 2026-08-06 and it still returns no lp (same issue as the original
+    # KAYNES-area comment above) — re-confirmed bad, not just historical.
+    # Media
+    "NSE:SUNTV-EQ": "Media",
+    # NBFC / Financial Services
+    "NSE:LTF-EQ": "NBFC",
+    "NSE:MFSL-EQ": "NBFC",
+    "NSE:M&MFIN-EQ": "NBFC",
+    "NSE:ABCAPITAL-EQ": "NBFC",
+    "NSE:BAJAJHFL-EQ": "NBFC",  # Bajaj Housing Finance — swapped in for PIDILITE (see below)
+    # Diversified
+    "NSE:GRASIM-EQ": "Diversified",
+    # PIDILITE (Pidilite Industries) deliberately NOT included: live-checked
+    # via quotes() on 2026-08-06 like LTIM above, also returns no lp —
+    # excluded for the same reason, not a typo/oversight.
 }
 
 

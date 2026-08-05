@@ -135,3 +135,12 @@ def flush_all() -> None:
     for sym, (bucket_date, bucket_minute, ohlc) in list(_day_candles.items()):
         _persist_bucket(sym, bucket_date, bucket_minute, ohlc)
     _day_candles.clear()
+
+
+def get_in_progress(sym: str):
+    """Read-only snapshot of the currently-forming (not yet persisted) bucket
+    for `sym`, or None. Returns (bucket_date, bucket_minute, [open, high, low, close]).
+    Used by candle_query.py to fill in the gap between the last completed
+    candle_history row and "now" — never mutates _day_candles."""
+    entry = _day_candles.get(sym)
+    return (entry[0], entry[1], list(entry[2])) if entry else None

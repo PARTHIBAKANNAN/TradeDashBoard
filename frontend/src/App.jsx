@@ -25,6 +25,7 @@ import RankingScreen from "./screens/RankingScreen.jsx";
 import HeatmapScreen from "./screens/HeatmapScreen.jsx";
 import InsightsScreen from "./screens/InsightsScreen.jsx";
 import WatchlistScreen from "./screens/WatchlistScreen.jsx";
+import ChartsScreen from "./screens/ChartsScreen.jsx";
 import PaperTradingScreen from "./screens/PaperTradingScreen.jsx";
 
 // ---------------- Auth gate ----------------
@@ -278,6 +279,7 @@ function Dashboard({ user, onLogout }) {
             {activeTab === "watchlist" && (
               <WatchlistScreen stocks={stocks} nifty={nifty} />
             )}
+            {activeTab === "charts" && <ChartsScreen stocks={stocks} />}
             {activeTab === "paper-trading" && (
               <PaperTradingScreen stocks={stocks} />
             )}
@@ -304,6 +306,7 @@ function TopNavbar({
     { key: "heatmap", label: "Heatmap", icon: "🔥" },
     { key: "insights", label: "Insights", icon: "💡" },
     { key: "watchlist", label: "Watchlist", icon: "⭐" },
+    { key: "charts", label: "Charts", icon: "📈" },
     {
       key: "paper-trading",
       label: openPositionsCount > 0 ? `Positions (${openPositionsCount})` : "Positions",

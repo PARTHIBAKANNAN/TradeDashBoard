@@ -1,18 +1,10 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { marketStore } from "../store/marketStore.js";
+import { candleBucket, mergeTick } from "../utils/candleMerge.js";
 
 const CACHE_KEY = "dashboard_offline_cache";
 const CANDLE_CACHE_KEY = "dashboard_candle_cache";
 const CANDLE_PERSIST_INTERVAL_MS = 15_000;
-const CANDLE_INTERVAL_MIN = 5;
-
-// Minutes-since-midnight, floored to current 5-min bucket
-function candleBucket(d) {
-  return (
-    d.getHours() * 60 +
-    Math.floor(d.getMinutes() / CANDLE_INTERVAL_MIN) * CANDLE_INTERVAL_MIN
-  );
-}
 
 function dayStamp(d) {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
@@ -132,28 +124,7 @@ function processCandles(stocks) {
   for (const stock of stocks) {
     if (!stock.ltp) continue;
     const prevSeries = candlesMap.get(stock.symbol) || [];
-    const prevLast = prevSeries[prevSeries.length - 1];
-    let series;
-    if (prevLast && prevLast.bucket === bucket) {
-      const updatedLast = {
-        ...prevLast,
-        high: Math.max(prevLast.high, stock.ltp),
-        low: Math.min(prevLast.low, stock.ltp),
-        close: stock.ltp,
-      };
-      series = [...prevSeries.slice(0, -1), updatedLast];
-    } else {
-      series = [
-        ...prevSeries,
-        {
-          bucket,
-          open: stock.ltp,
-          high: stock.ltp,
-          low: stock.ltp,
-          close: stock.ltp,
-        },
-      ];
-    }
+    const series = mergeTick(prevSeries, stock.ltp, bucket);
     candlesMap.set(stock.symbol, series);
     stock.candles = series;
   }

@@ -26,7 +26,7 @@ from .logging_config import configure_logging
 
 configure_logging()
 
-from . import auth, config, paper_trading, security
+from . import auth, charts, config, paper_trading, security
 from .broadcaster import Broadcaster, build_frame, snapshot_from_state
 from .fyers_service import data_engine
 from .scheduler import (ensure_engine_running, init_scheduler, is_market_open,
@@ -79,6 +79,7 @@ app.add_middleware(
 require_login = security.require_login
 
 app.include_router(paper_trading.router)
+app.include_router(charts.router)
 
 
 # ----------------- dashboard login (Supabase-verified; session cookie) -----------------

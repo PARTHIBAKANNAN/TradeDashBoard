@@ -22,6 +22,11 @@ const SECTOR_TO_NIFTY_GROUP = {
   FMCG: "NIFTY FMCG",
   Cement: "NIFTY CEMENT",
   Metals: "NIFTY METAL",
+  Media: "NIFTY MEDIA",
+  // Telecom, Aviation, Retail, Travel, Diversified (added with the 210-symbol
+  // F&O expansion) intentionally left unmapped — no standard NIFTY sectoral
+  // index cleanly fits each of these, and the fallback below (render under
+  // their own raw sector name) is more accurate than forcing a wrong grouping.
 };
 
 export function niftyGroup(sector) {
