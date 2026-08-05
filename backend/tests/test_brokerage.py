@@ -39,7 +39,12 @@ def test_gst_applies_only_to_brokerage_and_exchange_charges():
 def test_total_charges_is_the_sum_of_all_components():
     c = compute_charges("BUY", 10, 100.0, 110.0)
     expected = round(
-        c["brokerage"] + c["stt"] + c["exchange_charges"] + c["sebi_charges"] + c["stamp_duty"] + c["gst"],
+        c["brokerage"]
+        + c["stt"]
+        + c["exchange_charges"]
+        + c["sebi_charges"]
+        + c["stamp_duty"]
+        + c["gst"],
         2,
     )
     assert c["total_charges"] == expected

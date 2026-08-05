@@ -309,7 +309,10 @@ function TopNavbar({
     { key: "charts", label: "Charts", icon: "📈" },
     {
       key: "paper-trading",
-      label: openPositionsCount > 0 ? `Positions (${openPositionsCount})` : "Positions",
+      label:
+        openPositionsCount > 0
+          ? `Positions (${openPositionsCount})`
+          : "Positions",
       icon: "🧪",
     },
   ];

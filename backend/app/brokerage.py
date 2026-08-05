@@ -11,13 +11,13 @@ matters for a short (SELL entry -> BUY exit), where STT lands on the entry
 leg and stamp duty on the exit leg, the reverse of a long trade.
 """
 
-BROKERAGE_RATE = 0.0003          # 0.03% per executed leg
-BROKERAGE_CAP = 20.0             # flat ₹20 max per leg (typical discount-broker cap)
-STT_SELL_RATE = 0.00025          # 0.025% on sell-leg turnover only (intraday equity)
-EXCHANGE_TXN_RATE = 0.0000297    # NSE exchange transaction charge, both legs
-SEBI_RATE = 0.0000001            # ₹10 per crore, both legs
-STAMP_DUTY_BUY_RATE = 0.00015    # 0.015% on buy-leg turnover only
-GST_RATE = 0.18                  # on (brokerage + exchange transaction charges) only
+BROKERAGE_RATE = 0.0003  # 0.03% per executed leg
+BROKERAGE_CAP = 20.0  # flat ₹20 max per leg (typical discount-broker cap)
+STT_SELL_RATE = 0.00025  # 0.025% on sell-leg turnover only (intraday equity)
+EXCHANGE_TXN_RATE = 0.0000297  # NSE exchange transaction charge, both legs
+SEBI_RATE = 0.0000001  # ₹10 per crore, both legs
+STAMP_DUTY_BUY_RATE = 0.00015  # 0.015% on buy-leg turnover only
+GST_RATE = 0.18  # on (brokerage + exchange transaction charges) only
 
 
 def _brokerage_for_leg(turnover: float) -> float:

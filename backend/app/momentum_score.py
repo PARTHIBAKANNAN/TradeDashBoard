@@ -8,7 +8,14 @@ whether the dashboard is open; the frontend-only score can't do that.
 
 import re
 
-WEIGHTS = {"rs": 0.30, "sector": 0.15, "volume": 0.20, "vwap": 0.15, "freshness": 0.10, "extension": 0.10}
+WEIGHTS = {
+    "rs": 0.30,
+    "sector": 0.15,
+    "volume": 0.20,
+    "vwap": 0.15,
+    "freshness": 0.10,
+    "extension": 0.10,
+}
 FRESHNESS_BY_CANDLE = {"C1": 100, "C2": 75, "C3": 50, "C4": 25}
 CONFIDENCE_FLOOR = 60
 MAX_PICKS = 3
@@ -102,7 +109,9 @@ def momentum_score(
 
     vwap = stock.get("vwap") or 0.0
     ltp = stock.get("ltp") or 0.0
-    vwap_score = 100.0 if vwap and ((is_bull and ltp > vwap) or (not is_bull and ltp < vwap)) else 0.0
+    vwap_score = (
+        100.0 if vwap and ((is_bull and ltp > vwap) or (not is_bull and ltp < vwap)) else 0.0
+    )
 
     freshness_score = FRESHNESS_BY_CANDLE.get(_signal_candle(signal), 0)
 

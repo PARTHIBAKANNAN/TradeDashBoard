@@ -16,7 +16,8 @@ from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from . import auth, candle_aggregator, config, momentum_score, paper_trading, telegram_notify
+from . import (auth, candle_aggregator, config, momentum_score, paper_trading,
+               telegram_notify)
 from .config import IST, MARKET_CLOSE, MARKET_OPEN
 from .fyers_service import data_engine
 from .state import market_state
@@ -47,7 +48,8 @@ def _start_engine():
     if not config.DATA_ENGINE_ENABLED:
         logger.info(
             "DATA_ENGINE_ENABLED=false on '%s'; not opening the FYERS websocket "
-            "(single-WS-per-app safety).", config.INSTANCE_NAME,
+            "(single-WS-per-app safety).",
+            config.INSTANCE_NAME,
         )
         return
     if not data_engine.access_token:
@@ -204,7 +206,8 @@ def init_scheduler():
     scheduler.start()
     logger.info(
         "Instance '%s', data_engine=%s.",
-        config.INSTANCE_NAME, "ON" if config.DATA_ENGINE_ENABLED else "OFF",
+        config.INSTANCE_NAME,
+        "ON" if config.DATA_ENGINE_ENABLED else "OFF",
     )
 
     if not config.DATA_ENGINE_ENABLED:

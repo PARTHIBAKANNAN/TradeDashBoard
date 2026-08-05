@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { today, yesterday, thisWeek, lastWeek, thisMonth, lastNDays, PRESETS } from "./dateRanges.js";
+import {
+  today,
+  yesterday,
+  thisWeek,
+  lastWeek,
+  thisMonth,
+  lastNDays,
+  PRESETS,
+} from "./dateRanges.js";
 
 describe("dateRanges", () => {
   it("today spans midnight to now", () => {
@@ -30,7 +38,9 @@ describe("dateRanges", () => {
     const { from, to } = lastWeek();
     expect(from.getDay()).toBe(1); // also a Monday
     expect(to.getTime()).toBeLessThan(thisMonday.getTime());
-    const spanDays = Math.round((to.getTime() - from.getTime()) / (24 * 60 * 60 * 1000));
+    const spanDays = Math.round(
+      (to.getTime() - from.getTime()) / (24 * 60 * 60 * 1000),
+    );
     expect(spanDays).toBeGreaterThanOrEqual(6); // ~7 days, inclusive of end-of-day rounding
   });
 
@@ -49,7 +59,15 @@ describe("dateRanges", () => {
 
   it("exposes all 7 required presets", () => {
     const keys = PRESETS.map((p) => p.key);
-    expect(keys).toEqual(["today", "yesterday", "thisWeek", "lastWeek", "thisMonth", "last30", "last60"]);
+    expect(keys).toEqual([
+      "today",
+      "yesterday",
+      "thisWeek",
+      "lastWeek",
+      "thisMonth",
+      "last30",
+      "last60",
+    ]);
     for (const preset of PRESETS) {
       const { from, to } = preset.range();
       expect(from).toBeInstanceOf(Date);

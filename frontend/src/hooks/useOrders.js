@@ -23,7 +23,12 @@ export async function fetchPositions() {
 // post-cancel/post-close refreshes below) keep respecting whatever date
 // range the user has selected in the UI, instead of silently resetting the
 // view back to "recent 50" underneath them.
-let _lastHistoryParams = { limit: 50, offset: 0, from: undefined, to: undefined };
+let _lastHistoryParams = {
+  limit: 50,
+  offset: 0,
+  from: undefined,
+  to: undefined,
+};
 
 // `from`/`to` are Date objects (see utils/dateRanges.js). Pass a generous
 // `limit` once a date range is active, since the same fetched rows back both
@@ -31,7 +36,10 @@ let _lastHistoryParams = { limit: 50, offset: 0, from: undefined, to: undefined 
 export async function fetchHistory(overrides = {}) {
   _lastHistoryParams = { ..._lastHistoryParams, ...overrides };
   const { limit, offset, from, to } = _lastHistoryParams;
-  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
   if (from) params.set("from_ts", from.toISOString());
   if (to) params.set("to_ts", to.toISOString());
   const j = await api(`/api/paper/orders/history?${params.toString()}`);

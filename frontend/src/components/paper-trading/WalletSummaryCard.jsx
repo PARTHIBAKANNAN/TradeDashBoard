@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { Wallet, Lock, TrendingUp, TrendingDown, Layers, Plus, RotateCcw } from "lucide-react";
+import {
+  Wallet,
+  Lock,
+  TrendingUp,
+  TrendingDown,
+  Layers,
+  Plus,
+  RotateCcw,
+} from "lucide-react";
 import { depositToWallet, resetWallet } from "../../hooks/useOrders.js";
 
 function formatMoney(v) {

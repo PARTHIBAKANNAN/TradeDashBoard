@@ -6,7 +6,8 @@ aligned. Run from backend/:
     python -m tests.test_momentum_score
 """
 
-from app.momentum_score import build_sector_means, compute_recommended, momentum_score
+from app.momentum_score import (build_sector_means, compute_recommended,
+                                momentum_score)
 
 
 def _stock(**overrides):
@@ -46,7 +47,9 @@ def test_rewards_stronger_rs_holding_others_equal():
     strong = _stock(relative_strength=5)
     all_stocks = [weak, strong]
     means = build_sector_means(all_stocks)
-    assert momentum_score(strong, all_stocks, 0.5, means) > momentum_score(weak, all_stocks, 0.5, means)
+    assert momentum_score(strong, all_stocks, 0.5, means) > momentum_score(
+        weak, all_stocks, 0.5, means
+    )
 
 
 def test_rewards_favorable_vwap_side():
@@ -54,7 +57,9 @@ def test_rewards_favorable_vwap_side():
     below = _stock(ltp=95, vwap=100)  # Bull, price below VWAP
     all_stocks = [above, below]
     means = build_sector_means(all_stocks)
-    assert momentum_score(above, all_stocks, 0.5, means) > momentum_score(below, all_stocks, 0.5, means)
+    assert momentum_score(above, all_stocks, 0.5, means) > momentum_score(
+        below, all_stocks, 0.5, means
+    )
 
 
 def test_penalizes_extended_day_range():
@@ -72,7 +77,9 @@ def test_rewards_fresher_signal():
     stale = _stock(signal="Bull • C4")
     all_stocks = [fresh, stale]
     means = build_sector_means(all_stocks)
-    assert momentum_score(fresh, all_stocks, 0.5, means) > momentum_score(stale, all_stocks, 0.5, means)
+    assert momentum_score(fresh, all_stocks, 0.5, means) > momentum_score(
+        stale, all_stocks, 0.5, means
+    )
 
 
 def test_compute_recommended_picks_top_qualifying_stocks():

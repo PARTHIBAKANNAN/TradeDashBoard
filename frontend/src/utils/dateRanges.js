@@ -47,12 +47,18 @@ export function thisWeek() {
 export function lastWeek() {
   const now = new Date();
   const thisMonday = mondayOf(now);
-  return { from: addDays(thisMonday, -7), to: endOfDay(addDays(thisMonday, -1)) };
+  return {
+    from: addDays(thisMonday, -7),
+    to: endOfDay(addDays(thisMonday, -1)),
+  };
 }
 
 export function thisMonth() {
   const now = new Date();
-  return { from: new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0), to: now };
+  return {
+    from: new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0),
+    to: now,
+  };
 }
 
 // Trailing N-day window INCLUDING today (so lastNDays(30) spans 30 calendar
