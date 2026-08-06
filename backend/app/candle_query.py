@@ -52,12 +52,18 @@ async def get_today_candles(symbol: str) -> dict:
 
 
 def get_levels(stock: dict) -> dict:
-    """Opening-range (C1) + previous-day high/low — both already computed
-    live by the existing ORB engine / REST backfill, nothing new to derive."""
+    """Opening-range (C1) + previous-day high/low/pivot — all derived from
+    fields already computed live by the existing ORB engine / REST backfill,
+    nothing new to fetch."""
     c1 = (stock.get("orb") or {}).get("C1") or {}
+    prev_high = stock.get("yesterday_high") or None
+    prev_low = stock.get("yesterday_low") or None
+    prev_close = stock.get("prev_close") or None
+    pivot = (prev_high + prev_low + prev_close) / 3 if prev_high and prev_low and prev_close else None
     return {
         "opening_range_high": c1.get("high"),
         "opening_range_low": c1.get("low"),
-        "prev_day_high": stock.get("yesterday_high") or None,
-        "prev_day_low": stock.get("yesterday_low") or None,
+        "prev_day_high": prev_high,
+        "prev_day_low": prev_low,
+        "pivot": pivot,
     }

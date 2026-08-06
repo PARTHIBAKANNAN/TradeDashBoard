@@ -6,6 +6,7 @@ import {
   Rocket,
   AlertTriangle,
   Sparkles,
+  LineChart,
 } from "lucide-react";
 import MiniCandlestick from "./MiniCandlestick.jsx";
 import QuickTradeModal from "./paper-trading/QuickTradeModal.jsx";
@@ -22,6 +23,7 @@ const WatchlistRow = React.memo(
     leading,
     niftyPctChange = 0,
     isRecommended = false,
+    onOpenChart,
   }) => {
     const stockFromHook = useStock(symbol || propStock?.symbol);
     const stock = stockFromHook || propStock;
@@ -181,13 +183,24 @@ const WatchlistRow = React.memo(
 
           {/* Quick paper-trade entry point */}
           <td className="py-3 px-4 text-center">
-            <button
-              onClick={() => setTradeOpen(true)}
-              title="Paper trade this stock"
-              className="inline-flex items-center gap-1 rounded-lg border border-subtle bg-surface3 px-2.5 py-1 text-[11px] font-bold text-muted hover:text-accent-blue hover:border-accent-blue/40 transition-colors"
-            >
-              <Rocket size={11} /> Trade
-            </button>
+            <div className="inline-flex items-center gap-1.5">
+              {onOpenChart && (
+                <button
+                  onClick={() => onOpenChart(stock.symbol)}
+                  title="Open in Charts"
+                  className="inline-flex items-center rounded-lg border border-subtle bg-surface3 p-1.5 text-muted hover:text-accent-blue hover:border-accent-blue/40 transition-colors"
+                >
+                  <LineChart size={13} />
+                </button>
+              )}
+              <button
+                onClick={() => setTradeOpen(true)}
+                title="Paper trade this stock"
+                className="inline-flex items-center gap-1 rounded-lg border border-subtle bg-surface3 px-2.5 py-1 text-[11px] font-bold text-muted hover:text-accent-blue hover:border-accent-blue/40 transition-colors"
+              >
+                <Rocket size={11} /> Trade
+              </button>
+            </div>
             {tradeOpen && (
               <QuickTradeModal
                 symbol={stock.symbol}
@@ -280,13 +293,24 @@ const WatchlistRow = React.memo(
                   <span className="text-accent-amber font-bold">Extended</span>
                 )}
               </div>
-              <button
-                onClick={() => setTradeOpen(true)}
-                title="Paper trade this stock"
-                className="inline-flex items-center gap-1 rounded-lg border border-subtle bg-surface3 px-2.5 py-1 text-[11px] font-bold text-muted hover:text-accent-blue hover:border-accent-blue/40 transition-colors"
-              >
-                <Rocket size={11} /> Trade
-              </button>
+              <div className="flex items-center gap-1.5">
+                {onOpenChart && (
+                  <button
+                    onClick={() => onOpenChart(stock.symbol)}
+                    title="Open in Charts"
+                    className="inline-flex items-center rounded-lg border border-subtle bg-surface3 p-1.5 text-muted hover:text-accent-blue hover:border-accent-blue/40 transition-colors"
+                  >
+                    <LineChart size={13} />
+                  </button>
+                )}
+                <button
+                  onClick={() => setTradeOpen(true)}
+                  title="Paper trade this stock"
+                  className="inline-flex items-center gap-1 rounded-lg border border-subtle bg-surface3 px-2.5 py-1 text-[11px] font-bold text-muted hover:text-accent-blue hover:border-accent-blue/40 transition-colors"
+                >
+                  <Rocket size={11} /> Trade
+                </button>
+              </div>
             </div>
           </td>
         </tr>

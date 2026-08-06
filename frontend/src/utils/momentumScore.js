@@ -1,5 +1,35 @@
-import { sectorAggregates } from "./sectorAggregates.js";
-import { niftyGroup } from "./sectorGroups.js";
+import { INDUSTRY_GROUP } from "./industryGroup.js";
+
+// Maps INDUSTRY_GROUP's fine-grained sectors (not marketStore's stock.sector,
+// see industryGroup.js) to NIFTY-style clusters for the RS-vs-sector score
+// component. Keep in sync with backend/app/momentum_score.py's SECTOR_TO_NIFTY_GROUP.
+const INDUSTRY_TO_NIFTY_GROUP = {
+  Energy: "NIFTY ENERGY",
+  Power: "NIFTY ENERGY",
+  "Capital Goods": "NIFTY CAPITAL GOODS",
+  "Consumer Durables": "NIFTY CONSR DURABLE",
+  Infra: "NIFTY INFRA",
+  Auto: "NIFTY AUTO",
+  "Pvt Banks": "NIFTY BANK",
+  "PSU Banks": "NIFTY PSU BANK",
+  NBFC: "NIFTY FINSERV",
+  Insurance: "NIFTY FINSERV",
+  "Capital Markets": "NIFTY FINSERV",
+  Healthcare: "NIFTY HEALTHCARE",
+  Realty: "NIFTY REALTY",
+  IT: "NIFTY IT",
+  Pharma: "NIFTY PHARMA",
+  Chemicals: "NIFTY CHEMICALS",
+  Consumer: "NIFTY CONSUMPTION",
+  FMCG: "NIFTY FMCG",
+  Cement: "NIFTY CEMENT",
+  Metals: "NIFTY METAL",
+};
+
+function niftyIndustryGroup(symbol) {
+  const industry = INDUSTRY_GROUP[symbol] || "";
+  return INDUSTRY_TO_NIFTY_GROUP[industry] || industry;
+}
 
 const WEIGHTS = {
   rs: 0.3,
@@ -23,9 +53,15 @@ function signalCandle(signal) {
 // group -> that sector's mean %change, computed once per `stocks` snapshot
 // (reused by every stock in that group) rather than re-aggregating per row.
 export function buildSectorMeans(stocks) {
+  const groups = new Map();
+  for (const s of stocks || []) {
+    const group = niftyIndustryGroup(s.symbol);
+    if (!groups.has(group)) groups.set(group, []);
+    groups.get(group).push(s.pct_change || 0);
+  }
   const means = new Map();
-  for (const { group, mean } of sectorAggregates(stocks)) {
-    means.set(group, mean);
+  for (const [group, pctChanges] of groups) {
+    means.set(group, pctChanges.reduce((a, b) => a + b, 0) / pctChanges.length);
   }
   return means;
 }
@@ -52,7 +88,7 @@ export function momentumScore(stock, allStocks, niftyPctChange, sectorMeans) {
   const rsRaw = isBull ? stock.relative_strength : -stock.relative_strength;
   const rsScore = clamp((rsRaw || 0) * 10, 0, 100);
 
-  const group = niftyGroup(stock.sector);
+  const group = niftyIndustryGroup(stock.symbol);
   const sectorMeanPct = sectorMeans.get(group) ?? 0;
   const sectorRsRaw = isBull
     ? (stock.pct_change || 0) - sectorMeanPct

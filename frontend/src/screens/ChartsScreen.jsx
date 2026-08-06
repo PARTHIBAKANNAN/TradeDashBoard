@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   LineChart,
   SlidersHorizontal,
@@ -8,9 +8,12 @@ import {
   Layers,
   Plus,
   Check,
+  Search,
+  Rocket,
 } from "lucide-react";
 import Card from "../components/ui/Card.jsx";
 import CandleChart from "../components/CandleChart.jsx";
+import QuickTradeModal from "../components/paper-trading/QuickTradeModal.jsx";
 import { useInViewport } from "../hooks/useInViewport.js";
 import { useSymbolCandles } from "../hooks/useSymbolCandles.js";
 import {
@@ -30,14 +33,16 @@ function FilterGroup({ label, icon: Icon, children }) {
   );
 }
 
-const CHART_HEIGHT = 360;
+const CHART_HEIGHT = 320;
 
 function ChartRow({ stock }) {
   const [ref, inView] = useInViewport();
   const wishlisted = useChartsWishlist().has(stock.symbol);
+  const [tradeOpen, setTradeOpen] = useState(false);
 
   return (
     <div
+      id={`chart-row-${stock.symbol}`}
       ref={ref}
       className="rounded-xl border border-subtle bg-surface2/70 backdrop-blur-xl shadow-card overflow-hidden"
     >
@@ -57,17 +62,29 @@ function ChartRow({ stock }) {
           </div>
           <div className="text-[11px] text-faint truncate">{stock.sector}</div>
         </div>
-        <button
-          onClick={() => chartsWishlistStore.toggle(stock.symbol)}
-          title={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-          className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition-colors flex-shrink-0 ${
-            wishlisted
-              ? "border-accent-amber/40 bg-accent-amber/15 text-accent-amber"
-              : "border-subtle bg-surface3 text-muted hover:text-accent-blue hover:border-accent-blue/40"
-          }`}
-        >
-          {wishlisted ? <Check size={13} /> : <Plus size={13} />}
-        </button>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <button
+            onClick={() => setTradeOpen(true)}
+            title="Paper trade this stock"
+            className="inline-flex items-center gap-1 rounded-lg border border-subtle bg-surface3 px-2.5 py-1.5 text-[11px] font-bold text-muted hover:text-accent-blue hover:border-accent-blue/40 transition-colors"
+          >
+            <Rocket size={13} /> Trade
+          </button>
+          <button
+            onClick={() => chartsWishlistStore.toggle(stock.symbol)}
+            title={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
+            className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition-colors ${
+              wishlisted
+                ? "border-accent-amber/40 bg-accent-amber/15 text-accent-amber"
+                : "border-subtle bg-surface3 text-muted hover:text-accent-blue hover:border-accent-blue/40"
+            }`}
+          >
+            {wishlisted ? <Check size={13} /> : <Plus size={13} />}
+          </button>
+        </div>
+        {tradeOpen && (
+          <QuickTradeModal symbol={stock.symbol} onClose={() => setTradeOpen(false)} />
+        )}
       </div>
 
       {inView ? (
@@ -110,11 +127,12 @@ function ChartRowBody({ symbol }) {
   return <CandleChart candles={candles} levels={levels} height={CHART_HEIGHT} />;
 }
 
-export default function ChartsScreen({ stocks }) {
+export default function ChartsScreen({ stocks, focusSymbol, onFocusHandled }) {
   const [showFilters, setShowFilters] = useState(true);
   const [strategy, setStrategy] = useState("all");
   const [selectedSector, setSelectedSector] = useState("All sectors");
   const [wishlistOnly, setWishlistOnly] = useState(false);
+  const [search, setSearch] = useState("");
   const wishlist = useChartsWishlist();
 
   const sectors = useMemo(() => {
@@ -126,8 +144,25 @@ export default function ChartsScreen({ stocks }) {
     return (stocks || [])
       .filter((s) => selectedSector === "All sectors" || s.sector === selectedSector)
       .filter((s) => !wishlistOnly || wishlist.has(s.symbol))
+      .filter((s) => !search || s.symbol.toUpperCase().includes(search.toUpperCase()))
       .sort((a, b) => a.symbol.localeCompare(b.symbol));
-  }, [stocks, selectedSector, wishlistOnly, wishlist]);
+  }, [stocks, selectedSector, wishlistOnly, wishlist, search]);
+
+  // Jumping here from Ranking/Watchlist ("open in Charts") should always
+  // reveal the target stock even if a stale filter would otherwise hide it.
+  useEffect(() => {
+    if (!focusSymbol) return;
+    setSelectedSector("All sectors");
+    setWishlistOnly(false);
+    setSearch("");
+    const timer = setTimeout(() => {
+      document
+        .getElementById(`chart-row-${focusSymbol}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      onFocusHandled?.();
+    }, 60);
+    return () => clearTimeout(timer);
+  }, [focusSymbol]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filterCard = (
     <Card
@@ -182,7 +217,7 @@ export default function ChartsScreen({ stocks }) {
 
   return (
     <div className="min-h-screen bg-surface">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-6 flex gap-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 flex gap-6">
         {showFilters && (
           <>
             <div
@@ -199,22 +234,35 @@ export default function ChartsScreen({ stocks }) {
         )}
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between gap-3 mb-4">
             {!showFilters ? (
               <button
                 onClick={() => setShowFilters(true)}
-                className="text-xs font-bold text-accent-blue hover:text-accent-violet transition-colors flex items-center gap-2"
+                className="text-xs font-bold text-accent-blue hover:text-accent-violet transition-colors flex items-center gap-2 flex-shrink-0"
               >
                 <SlidersHorizontal size={13} />
                 Show Filters
               </button>
             ) : (
-              <div className="flex items-center gap-1.5 text-xs font-bold text-faint">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-faint flex-shrink-0">
                 <LineChart size={13} className="text-accent-blue" />
                 Scroll through charts
               </div>
             )}
-            <div className="text-xs text-faint ml-auto">
+            <div className="relative w-full max-w-[220px] ml-auto">
+              <Search
+                size={13}
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-faint"
+              />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search symbol…"
+                className="w-full bg-surface3 border border-strong rounded-lg pl-8 pr-3 py-1.5 text-xs text-primary focus:outline-none focus:border-accent-blue transition-colors"
+              />
+            </div>
+            <div className="text-xs text-faint flex-shrink-0">
               Showing{" "}
               <span className="font-bold text-primary">
                 {filteredStocks.length}
@@ -223,12 +271,12 @@ export default function ChartsScreen({ stocks }) {
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {filteredStocks.map((stock) => (
               <ChartRow key={stock.symbol} stock={stock} />
             ))}
             {filteredStocks.length === 0 && (
-              <div className="py-12 text-center text-faint text-sm">
+              <div className="col-span-full py-12 text-center text-faint text-sm">
                 No stocks match the current filters.
               </div>
             )}

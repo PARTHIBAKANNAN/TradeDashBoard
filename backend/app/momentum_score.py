@@ -8,6 +8,8 @@ whether the dashboard is open; the frontend-only score can't do that.
 
 import re
 
+from .config import INDUSTRY_GROUP
+
 WEIGHTS = {
     "rs": 0.30,
     "sector": 0.15,
@@ -20,7 +22,9 @@ FRESHNESS_BY_CANDLE = {"C1": 100, "C2": 75, "C3": 50, "C4": 25}
 CONFIDENCE_FLOOR = 60
 MAX_PICKS = 3
 
-# Keep in sync with frontend/src/utils/sectorGroups.js's SECTOR_TO_NIFTY_GROUP.
+# Maps INDUSTRY_GROUP's fine-grained sectors (not WATCHLIST's display sector,
+# see config.py) to NIFTY-style clusters for the RS-vs-sector score component.
+# Keep in sync with frontend/src/utils/momentumScore.js's INDUSTRY_TO_NIFTY_GROUP.
 SECTOR_TO_NIFTY_GROUP = {
     "Energy": "NIFTY ENERGY",
     "Power": "NIFTY ENERGY",
@@ -49,6 +53,10 @@ def nifty_group(sector: str | None) -> str:
     return SECTOR_TO_NIFTY_GROUP.get(sector, sector or "")
 
 
+def industry_group(symbol: str | None) -> str:
+    return INDUSTRY_GROUP.get(symbol or "", "")
+
+
 def _clamp(n: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, n))
 
@@ -67,7 +75,7 @@ def _traded_value(stock: dict) -> float:
 def build_sector_means(stocks: list[dict]) -> dict[str, float]:
     groups: dict[str, list[float]] = {}
     for s in stocks:
-        group = nifty_group(s.get("sector"))
+        group = nifty_group(industry_group(s.get("symbol")))
         groups.setdefault(group, []).append(s.get("pct_change") or 0.0)
     return {group: sum(vals) / len(vals) for group, vals in groups.items() if vals}
 
@@ -96,7 +104,7 @@ def momentum_score(
     rs_raw = rs_raw if is_bull else -rs_raw
     rs_score = _clamp(rs_raw * 10, 0, 100)
 
-    group = nifty_group(stock.get("sector"))
+    group = nifty_group(industry_group(stock.get("symbol")))
     sector_mean_pct = sector_means.get(group, 0.0)
     pct_change = stock.get("pct_change") or 0.0
     sector_rs_raw = (pct_change - sector_mean_pct) if is_bull else (sector_mean_pct - pct_change)

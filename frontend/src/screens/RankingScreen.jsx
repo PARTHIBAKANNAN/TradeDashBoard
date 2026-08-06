@@ -7,6 +7,7 @@ import {
   Building2,
   ArrowUpDown,
   Zap,
+  Search,
 } from "lucide-react";
 import WatchlistRow from "../components/WatchlistRow.jsx";
 import SignalTimeFilter from "../components/SignalTimeFilter.jsx";
@@ -48,12 +49,13 @@ const SORTS = {
   sym: { label: "Symbol A-Z", fn: (a, b) => a.symbol.localeCompare(b.symbol) },
 };
 
-export default function RankingScreen({ stocks, nifty }) {
+export default function RankingScreen({ stocks, nifty, onOpenChart }) {
   const [showFilters, setShowFilters] = useState(true);
   const [selectedSignal, setSelectedSignal] = useState("All signals");
   const [selectedSector, setSelectedSector] = useState("All sectors");
   const [signalTimeIndex, setSignalTimeIndex] = useState(0);
   const [sortKey, setSortKey] = useState("breakout_first");
+  const [search, setSearch] = useState("");
   const recommended = useRecommendedStocks(stocks, nifty?.pct_change || 0);
 
   const sectors = useMemo(() => {
@@ -78,10 +80,12 @@ export default function RankingScreen({ stocks, nifty }) {
         if (signalMinutes === null || signalMinutes > timeThreshold)
           return false;
       }
+      if (search && !stock.symbol.toUpperCase().includes(search.toUpperCase()))
+        return false;
       return true;
     });
     return rows.sort(SORTS[sortKey].fn);
-  }, [stocks, selectedSignal, selectedSector, signalTimeIndex, sortKey]);
+  }, [stocks, selectedSignal, selectedSector, signalTimeIndex, sortKey, search]);
 
   const activeFilterCount =
     (selectedSignal !== "All signals" ? 1 : 0) +
@@ -184,11 +188,11 @@ export default function RankingScreen({ stocks, nifty }) {
 
         {/* Main Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between gap-3 mb-4">
             {!showFilters ? (
               <button
                 onClick={() => setShowFilters(true)}
-                className="text-xs font-bold text-accent-blue hover:text-accent-violet transition-colors flex items-center gap-2"
+                className="text-xs font-bold text-accent-blue hover:text-accent-violet transition-colors flex items-center gap-2 flex-shrink-0"
               >
                 <SlidersHorizontal size={13} />
                 Show Filters
@@ -199,12 +203,25 @@ export default function RankingScreen({ stocks, nifty }) {
                 )}
               </button>
             ) : (
-              <div className="flex items-center gap-1.5 text-xs font-bold text-faint">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-faint flex-shrink-0">
                 <TrendingUp size={13} className="text-accent-blue" />
                 Live rankings
               </div>
             )}
-            <div className="text-xs text-faint ml-auto">
+            <div className="relative w-full max-w-[220px] ml-auto">
+              <Search
+                size={13}
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-faint"
+              />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search symbol…"
+                className="w-full bg-surface3 border border-strong rounded-lg pl-8 pr-3 py-1.5 text-xs text-primary focus:outline-none focus:border-accent-blue transition-colors"
+              />
+            </div>
+            <div className="text-xs text-faint flex-shrink-0">
               Showing{" "}
               <span className="font-bold text-primary">
                 {filteredStocks.length}
@@ -247,6 +264,7 @@ export default function RankingScreen({ stocks, nifty }) {
                       index={i}
                       niftyPctChange={nifty?.pct_change || 0}
                       isRecommended={recommended.includes(stock.symbol)}
+                      onOpenChart={onOpenChart}
                     />
                   ))}
                 </tbody>

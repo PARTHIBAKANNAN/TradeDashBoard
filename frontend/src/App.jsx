@@ -233,6 +233,12 @@ function Dashboard({ user, onLogout }) {
   const meta = useMarketMeta();
   const symbols = useSymbols();
   const [activeTab, setActiveTab] = useState("ranking");
+  const [chartsFocusSymbol, setChartsFocusSymbol] = useState(null);
+
+  const openInCharts = (symbol) => {
+    setChartsFocusSymbol(symbol);
+    setActiveTab("charts");
+  };
 
   // Reactive list of all stocks from marketStore
   const stocks = useMemo(() => {
@@ -272,14 +278,28 @@ function Dashboard({ user, onLogout }) {
             transition={{ duration: 0.18, ease: "easeOut" }}
           >
             {activeTab === "ranking" && (
-              <RankingScreen stocks={stocks} nifty={nifty} />
+              <RankingScreen
+                stocks={stocks}
+                nifty={nifty}
+                onOpenChart={openInCharts}
+              />
             )}
             {activeTab === "heatmap" && <HeatmapScreen stocks={stocks} />}
             {activeTab === "insights" && <InsightsScreen stocks={stocks} />}
             {activeTab === "watchlist" && (
-              <WatchlistScreen stocks={stocks} nifty={nifty} />
+              <WatchlistScreen
+                stocks={stocks}
+                nifty={nifty}
+                onOpenChart={openInCharts}
+              />
             )}
-            {activeTab === "charts" && <ChartsScreen stocks={stocks} />}
+            {activeTab === "charts" && (
+              <ChartsScreen
+                stocks={stocks}
+                focusSymbol={chartsFocusSymbol}
+                onFocusHandled={() => setChartsFocusSymbol(null)}
+              />
+            )}
             {activeTab === "paper-trading" && (
               <PaperTradingScreen stocks={stocks} />
             )}

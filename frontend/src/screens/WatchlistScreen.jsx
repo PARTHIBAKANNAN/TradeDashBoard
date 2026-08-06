@@ -3,7 +3,7 @@ import { Search, Star, PlusCircle } from "lucide-react";
 import WatchlistRow from "../components/WatchlistRow.jsx";
 import { useRecommendedStocks } from "../hooks/useRecommendedStocks.js";
 
-export default function WatchlistScreen({ stocks, nifty }) {
+export default function WatchlistScreen({ stocks, nifty, onOpenChart }) {
   const [watchlist, setWatchlist] = useState(
     JSON.parse(localStorage.getItem("watchlist") || "[]"),
   );
@@ -97,6 +97,7 @@ export default function WatchlistScreen({ stocks, nifty }) {
                       index={i}
                       niftyPctChange={nifty?.pct_change || 0}
                       isRecommended={recommended.includes(stock.symbol)}
+                      onOpenChart={onOpenChart}
                       leading={
                         <button
                           onClick={() => toggleWatchlist(stock.symbol)}
