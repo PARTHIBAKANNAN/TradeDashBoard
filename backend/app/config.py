@@ -276,7 +276,6 @@ WATCHLIST = {
     "NSE:SAIL-EQ": "Metals",
     "NSE:VEDL-EQ": "Metals",
     "NSE:HINDZINC-EQ": "Metals",
-
     # ---------------------------------------------------------------------
     # F&O universe expansion, batch 1 — 41 additional NSE F&O-eligible names
     # compiled from general knowledge, NOT a live NSE feed. MUST be checked
@@ -339,7 +338,6 @@ WATCHLIST = {
     # Diversified
     "NSE:GRASIM-EQ": "Diversified",
     "NSE:BAJAJHLDNG-EQ": "Diversified",  # holding company, not an operating NBFC
-
     # ---------------------------------------------------------------------
     # F&O universe expansion, batch 2 — swapped in 2026-08-06 for the 23
     # names removed above that turned out not to be currently NSE F&O

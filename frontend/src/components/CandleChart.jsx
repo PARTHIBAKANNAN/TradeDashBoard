@@ -1,5 +1,10 @@
 import React, { useEffect, useRef } from "react";
-import { createChart, CandlestickSeries, HistogramSeries, LineStyle } from "lightweight-charts";
+import {
+  createChart,
+  CandlestickSeries,
+  HistogramSeries,
+  LineStyle,
+} from "lightweight-charts";
 import { useTheme } from "../contexts/ThemeContext.jsx";
 
 // `bucket` is minutes-since-midnight on the browser's own local clock, same
@@ -10,7 +15,15 @@ import { useTheme } from "../contexts/ThemeContext.jsx";
 // timezone conversion, consistent with every other candle computation here.
 function bucketToTime(bucket) {
   const now = new Date();
-  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const d = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    0,
+    0,
+    0,
+    0,
+  );
   d.setMinutes(bucket);
   return Math.floor(d.getTime() / 1000);
 }
@@ -58,7 +71,9 @@ export default function CandleChart({ candles, levels, height = 360 }) {
       },
       grid: {
         vertLines: { visible: false },
-        horzLines: { color: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" },
+        horzLines: {
+          color: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+        },
       },
       timeScale: { timeVisible: true, secondsVisible: false },
     });
@@ -76,7 +91,11 @@ export default function CandleChart({ candles, levels, height = 360 }) {
     // so no up/down color options are needed here.
     const deltaSeries = chart.addSeries(
       HistogramSeries,
-      { priceFormat: { type: "volume" }, priceLineVisible: false, lastValueVisible: false },
+      {
+        priceFormat: { type: "volume" },
+        priceLineVisible: false,
+        lastValueVisible: false,
+      },
       1,
     );
     const panes = chart.panes();
@@ -116,7 +135,9 @@ export default function CandleChart({ candles, levels, height = 360 }) {
         textColor: isDark ? "#a1a1aa" : "#52525b",
       },
       grid: {
-        horzLines: { color: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" },
+        horzLines: {
+          color: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+        },
       },
     });
   }, [theme]);
@@ -148,7 +169,11 @@ export default function CandleChart({ candles, levels, height = 360 }) {
     const data = (candles || [])
       .map((c) => {
         cumulative += c.delta || 0;
-        return { time: bucketToTime(c.bucket), value: cumulative, color: cumulative >= 0 ? up : down };
+        return {
+          time: bucketToTime(c.bucket),
+          value: cumulative,
+          color: cumulative >= 0 ? up : down,
+        };
       })
       .sort((a, b) => a.time - b.time);
     deltaSeriesRef.current.setData(data);

@@ -107,7 +107,9 @@ function ChartRowBody({ symbol }) {
       </div>
     );
   }
-  return <CandleChart candles={candles} levels={levels} height={CHART_HEIGHT} />;
+  return (
+    <CandleChart candles={candles} levels={levels} height={CHART_HEIGHT} />
+  );
 }
 
 export default function ChartsScreen({ stocks }) {
@@ -124,7 +126,9 @@ export default function ChartsScreen({ stocks }) {
 
   const filteredStocks = useMemo(() => {
     return (stocks || [])
-      .filter((s) => selectedSector === "All sectors" || s.sector === selectedSector)
+      .filter(
+        (s) => selectedSector === "All sectors" || s.sector === selectedSector,
+      )
       .filter((s) => !wishlistOnly || wishlist.has(s.symbol))
       .sort((a, b) => a.symbol.localeCompare(b.symbol));
   }, [stocks, selectedSector, wishlistOnly, wishlist]);

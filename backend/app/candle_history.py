@@ -52,6 +52,7 @@ async def get_candles(symbol: str, bucket_date) -> list[dict]:
         rows = await conn.fetch(
             "select bucket_minute, open, high, low, close, delta from public.candle_history "
             "where symbol=$1 and bucket_date=$2 order by bucket_minute",
-            symbol, bucket_date,
+            symbol,
+            bucket_date,
         )
     return [dict(r) for r in rows]
