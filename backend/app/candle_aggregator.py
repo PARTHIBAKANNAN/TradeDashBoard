@@ -41,13 +41,14 @@ _FIVE_MIN = 5
 # after `two_sided_ok`/`candle1_high/low` are set.
 _opening_5min: dict[str, dict[int, list]] = {}
 
-# symbol -> (bucket_date, bucket_minute, [open, high, low, close], delta) —
-# tracks the WHOLE session (09:15-15:30), kept deliberately SEPARATE from
-# `_opening_5min` above so this addition (backtest groundwork only, see
-# candle_history.py) can never regress the already-verified ORB/quality-gate
-# logic. Persisted to Postgres each time a bucket completes. `delta` is the
-# running tick-rule cumulative-volume-delta contribution for this bucket —
-# see _tick_delta() below.
+# symbol -> (bucket_date, bucket_minute, [open, high, low, close], delta,
+# volume) — tracks the WHOLE session (09:15-15:30), kept deliberately
+# SEPARATE from `_opening_5min` above so this addition (backtest groundwork,
+# CVD, Smart Money Engine — see candle_history.py) can never regress the
+# already-verified ORB/quality-gate logic. Persisted to Postgres each time a
+# bucket completes. `delta` is the running tick-rule cumulative-volume-delta
+# contribution for this bucket (see _tick_delta() below); `volume` is the
+# unsigned traded quantity for the bucket (RVOL / Fresh Turnover input).
 _day_candles: dict[str, tuple] = {}
 
 # Per-symbol state for the tick-rule delta estimate, deliberately INDEPENDENT
@@ -63,10 +64,11 @@ def _five_min_bucket(now: datetime) -> int:
     return (now.hour * 60 + now.minute) // _FIVE_MIN * _FIVE_MIN
 
 
-def _tick_delta(sym: str, ltp: float, volume: int) -> float:
-    """Signed volume-delta for this one tick, via the classic tick rule:
-    uptick since the last tick -> classify this tick's volume as buy-side
-    (+), downtick -> sell-side (-), unchanged price -> 0. This is an
+def _tick_delta(sym: str, ltp: float, volume: int) -> tuple[float, float]:
+    """Returns (signed_delta, vol_delta) for this one tick. `vol_delta` is
+    simply the traded quantity since the last tick (unsigned); `signed_delta`
+    classifies it via the classic tick rule: uptick since the last tick ->
+    buy-side (+), downtick -> sell-side (-), unchanged price -> 0. This is an
     approximation (no real bid/ask-crossed trade classification is available
     from FYERS' feed) — directionally useful, not a true institutional
     footprint read."""
@@ -76,12 +78,12 @@ def _tick_delta(sym: str, ltp: float, volume: int) -> float:
     _last_ltp[sym] = ltp
     _last_volume[sym] = volume
     if prev_ltp is None or vol_delta == 0:
-        return 0.0
+        return 0.0, float(vol_delta)
     if ltp > prev_ltp:
-        return float(vol_delta)
+        return float(vol_delta), float(vol_delta)
     if ltp < prev_ltp:
-        return -float(vol_delta)
-    return 0.0
+        return -float(vol_delta), float(vol_delta)
+    return 0.0, float(vol_delta)
 
 
 def on_tick(stock: dict, ltp: float, now: datetime) -> None:
@@ -133,25 +135,36 @@ def _finalize_opening_range(stock: dict) -> None:
 
 def _track_day_candle(sym: str, ltp: float, now: datetime, volume: int) -> None:
     """Backtest groundwork only — persists each completed 5-min candle (OHLC
-    + tick-rule delta) across the whole session, independent of the
-    opening-range-specific logic above."""
+    + tick-rule delta + traded volume) across the whole session, independent
+    of the opening-range-specific logic above."""
     bucket = _five_min_bucket(now)
     today = now.date()
-    tick_delta = _tick_delta(sym, ltp, volume)
+    tick_delta, vol_delta = _tick_delta(sym, ltp, volume)
     prev = _day_candles.get(sym)
     if prev is None or prev[0] != today or prev[1] != bucket:
         if prev is not None:
             _persist_bucket(sym, *prev)
-        _day_candles[sym] = (today, bucket, [ltp, ltp, ltp, ltp], tick_delta)
+        _day_candles[sym] = (today, bucket, [ltp, ltp, ltp, ltp], tick_delta, vol_delta)
     else:
-        _, _, ohlc, delta = prev
+        _, _, ohlc, delta, bucket_volume = prev
         ohlc[1] = max(ohlc[1], ltp)
         ohlc[2] = min(ohlc[2], ltp)
         ohlc[3] = ltp
-        _day_candles[sym] = (today, bucket, ohlc, delta + tick_delta)
+        _day_candles[sym] = (today, bucket, ohlc, delta + tick_delta, bucket_volume + vol_delta)
 
 
-def _persist_bucket(sym: str, bucket_date, bucket_minute: int, ohlc: list, delta: float) -> None:
+def on_index_tick(sym: str, ltp: float, now: datetime) -> None:
+    """Same day-candle tracking as on_tick(), for the benchmark index (NIFTY
+    50) — no ORB/opening-range/quality-gate logic applies to it, and FYERS
+    doesn't report a traded volume for the index, so volume is fixed at 0.
+    The Smart Money Engine (smart_money.py) needs the index's own 5-min OHLC
+    (today's open + latest close) for its Relative-Strength calculation."""
+    _track_day_candle(sym, ltp, now, 0)
+
+
+def _persist_bucket(
+    sym: str, bucket_date, bucket_minute: int, ohlc: list, delta: float, volume: float = 0.0
+) -> None:
     from . import order_monitor
     from .candle_history import persist_candle
 
@@ -159,22 +172,23 @@ def _persist_bucket(sym: str, bucket_date, bucket_minute: int, ohlc: list, delta
     if loop is None:
         return  # paper trading (and its DB pool) not configured
     asyncio.run_coroutine_threadsafe(
-        persist_candle(sym, bucket_date, bucket_minute, list(ohlc), delta), loop
+        persist_candle(sym, bucket_date, bucket_minute, list(ohlc), delta, volume), loop
     )
 
 
 def flush_all() -> None:
     """Persists every still-open bucket — called once at 15:30 IST market
     close (scheduler.py) so the last partial candle of the day isn't lost."""
-    for sym, (bucket_date, bucket_minute, ohlc, delta) in list(_day_candles.items()):
-        _persist_bucket(sym, bucket_date, bucket_minute, ohlc, delta)
+    for sym, (bucket_date, bucket_minute, ohlc, delta, volume) in list(_day_candles.items()):
+        _persist_bucket(sym, bucket_date, bucket_minute, ohlc, delta, volume)
     _day_candles.clear()
 
 
 def get_in_progress(sym: str):
     """Read-only snapshot of the currently-forming (not yet persisted) bucket
-    for `sym`, or None. Returns (bucket_date, bucket_minute, [open, high, low, close], delta).
-    Used by candle_query.py to fill in the gap between the last completed
-    candle_history row and "now" — never mutates _day_candles."""
+    for `sym`, or None. Returns (bucket_date, bucket_minute, [open, high, low,
+    close], delta, volume). Used by candle_query.py / smart_money.py to fill
+    in the gap between the last completed candle_history row and "now" —
+    never mutates _day_candles."""
     entry = _day_candles.get(sym)
-    return (entry[0], entry[1], list(entry[2]), entry[3]) if entry else None
+    return (entry[0], entry[1], list(entry[2]), entry[3], entry[4]) if entry else None

@@ -18,11 +18,13 @@ from datetime import timedelta
 from fyers_apiv3 import fyersModel
 from fyers_apiv3.FyersWebsocket import data_ws
 
-from . import config
+from . import candle_aggregator, config
 from .calculations import has_two_sided_range, process_incoming_tick
 from .config import (ALL_SYMBOLS, BENCHMARK_SYMBOL, IST, ORB_CANDLES,
                      WATCHLIST, short_symbol)
 from .state import market_state
+
+_BENCHMARK_SHORT_SYMBOL = short_symbol(BENCHMARK_SYMBOL)
 
 logger = logging.getLogger(__name__)
 
@@ -426,6 +428,10 @@ class DataEngine:
 
         if fy_symbol == BENCHMARK_SYMBOL:
             market_state.set_nifty(ltp=ltp, prev_close=prev_close or None)
+            # Smart Money Engine (smart_money.py) needs the index's own 5-min
+            # OHLC for its Relative-Strength calc — no ORB/signal logic
+            # applies to the benchmark, so this is the only thing it needs.
+            candle_aggregator.on_index_tick(_BENCHMARK_SHORT_SYMBOL, ltp, datetime.now(IST))
             return
         process_incoming_tick(
             market_state,

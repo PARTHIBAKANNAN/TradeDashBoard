@@ -26,6 +26,7 @@ import HeatmapScreen from "./screens/HeatmapScreen.jsx";
 import InsightsScreen from "./screens/InsightsScreen.jsx";
 import WatchlistScreen from "./screens/WatchlistScreen.jsx";
 import ChartsScreen from "./screens/ChartsScreen.jsx";
+import SmartMoneyScreen from "./screens/SmartMoneyScreen.jsx";
 import PaperTradingScreen from "./screens/PaperTradingScreen.jsx";
 
 // ---------------- Auth gate ----------------
@@ -300,6 +301,9 @@ function Dashboard({ user, onLogout }) {
                 onFocusHandled={() => setChartsFocusSymbol(null)}
               />
             )}
+            {activeTab === "smart-money" && (
+              <SmartMoneyScreen onOpenChart={openInCharts} />
+            )}
             {activeTab === "paper-trading" && (
               <PaperTradingScreen stocks={stocks} />
             )}
@@ -327,6 +331,7 @@ function TopNavbar({
     { key: "insights", label: "Insights", icon: "💡" },
     { key: "watchlist", label: "Watchlist", icon: "⭐" },
     { key: "charts", label: "Charts", icon: "📈" },
+    { key: "smart-money", label: "Smart Money", icon: "🧠" },
     {
       key: "paper-trading",
       label:

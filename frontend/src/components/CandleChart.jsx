@@ -1,10 +1,9 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   createChart,
   CandlestickSeries,
   HistogramSeries,
   LineStyle,
-  createSeriesMarkers,
 } from "lightweight-charts";
 import { useTheme } from "../contexts/ThemeContext.jsx";
 
@@ -65,10 +64,15 @@ export default function CandleChart({ candles, levels, height = 360 }) {
   const chartRef = useRef(null);
   const seriesRef = useRef(null);
   const deltaSeriesRef = useRef(null);
-  const deltaMarkersRef = useRef(null);
   const priceLinesRef = useRef([]);
   const levelValuesRef = useRef([]);
   const { theme } = useTheme();
+  // CVD badge: no text ever sits on the bars themselves (that was tried and
+  // found too cluttered once zoomed out) — instead a small legend shows the
+  // LATEST cumulative value at rest, and live-tracks whatever bar is under
+  // the crosshair while hovering.
+  const [latestDelta, setLatestDelta] = useState(0);
+  const [hoveredDelta, setHoveredDelta] = useState(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -125,23 +129,32 @@ export default function CandleChart({ candles, levels, height = 360 }) {
       },
       1,
     );
-    // Text-only value labels per bar (size: 0 hides the marker shape itself).
-    const deltaMarkers = createSeriesMarkers(deltaSeries, []);
     const panes = chart.panes();
     if (panes[0]) panes[0].setStretchFactor(3);
     if (panes[1]) panes[1].setStretchFactor(1);
 
+    // Drives the badge's "hovering" state — reading the delta series' value
+    // at the crosshair's time instead of annotating every bar.
+    const onCrosshairMove = (param) => {
+      if (!param.time) {
+        setHoveredDelta(null);
+        return;
+      }
+      const point = param.seriesData.get(deltaSeries);
+      setHoveredDelta(typeof point?.value === "number" ? point.value : null);
+    };
+    chart.subscribeCrosshairMove(onCrosshairMove);
+
     chartRef.current = chart;
     seriesRef.current = series;
     deltaSeriesRef.current = deltaSeries;
-    deltaMarkersRef.current = deltaMarkers;
 
     return () => {
+      chart.unsubscribeCrosshairMove(onCrosshairMove);
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
       deltaSeriesRef.current = null;
-      deltaMarkersRef.current = null;
       priceLinesRef.current = [];
     };
     // Deliberately create-once: theme/candles/levels are applied imperatively
@@ -192,8 +205,7 @@ export default function CandleChart({ candles, levels, height = 360 }) {
   // Cumulative tick-rule delta, one histogram bar per candle — colored by
   // the sign of the running total, not the per-bar delta, so a string of
   // small down-ticks that hasn't yet erased the day's net buying still
-  // reads green (matches how the reference tool colors it). Each bar also
-  // gets a text-only marker showing the actual cumulative value.
+  // reads green (matches how the reference tool colors it).
   useEffect(() => {
     if (!deltaSeriesRef.current) return;
     const { up, down } = readCandleColors();
@@ -209,16 +221,7 @@ export default function CandleChart({ candles, levels, height = 360 }) {
       })
       .sort((a, b) => a.time - b.time);
     deltaSeriesRef.current.setData(data);
-    deltaMarkersRef.current?.setMarkers(
-      data.map((d) => ({
-        time: d.time,
-        position: d.value >= 0 ? "aboveBar" : "belowBar",
-        color: d.color,
-        shape: "circle",
-        size: 0,
-        text: formatDelta(d.value),
-      })),
-    );
+    setLatestDelta(cumulative);
   }, [candles, theme]);
 
   // Reference-line levels (opening range, prev-day high/low, pivot).
@@ -249,5 +252,21 @@ export default function CandleChart({ candles, levels, height = 360 }) {
     chartRef.current?.timeScale().fitContent();
   }, [levels]);
 
-  return <div ref={containerRef} style={{ height }} className="w-full" />;
+  const displayDelta = hoveredDelta ?? latestDelta;
+  const isHovering = hoveredDelta != null;
+
+  return (
+    <div className="relative w-full">
+      <div
+        className={`absolute top-1.5 right-2.5 z-10 pointer-events-none rounded-md border px-2 py-0.5 text-[10px] font-mono font-bold transition-colors ${
+          isHovering
+            ? "border-accent-blue/50 bg-surface3/95 text-accent-blue"
+            : "border-subtle bg-surface3/80 text-muted"
+        }`}
+      >
+        CVD {formatDelta(displayDelta)}
+      </div>
+      <div ref={containerRef} style={{ height }} className="w-full" />
+    </div>
+  );
 }

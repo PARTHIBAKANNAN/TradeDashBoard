@@ -26,7 +26,7 @@ from .logging_config import configure_logging
 
 configure_logging()
 
-from . import auth, charts, config, paper_trading, security
+from . import auth, charts, config, paper_trading, security, smart_money
 from .broadcaster import Broadcaster, build_frame, snapshot_from_state
 from .fyers_service import data_engine
 from .scheduler import (ensure_engine_running, init_scheduler, is_market_open,
@@ -55,9 +55,14 @@ async def lifespan(app: FastAPI):
     await asyncio.to_thread(init_scheduler)
     await broadcaster.start()
     await paper_trading.init_pool()
+    # Fully isolated from the scheduler/broadcaster above — its own asyncio
+    # background loop, reads candle_history read-only, writes nothing back
+    # into MarketState. See smart_money.py.
+    smart_money_task = asyncio.create_task(smart_money.run_loop())
     try:
         yield
     finally:
+        smart_money_task.cancel()
         await broadcaster.stop()
         shutdown_scheduler()
         await paper_trading.close_pool()
@@ -80,6 +85,7 @@ require_login = security.require_login
 
 app.include_router(paper_trading.router)
 app.include_router(charts.router)
+app.include_router(smart_money.router)
 
 
 # ----------------- dashboard login (Supabase-verified; session cookie) -----------------
