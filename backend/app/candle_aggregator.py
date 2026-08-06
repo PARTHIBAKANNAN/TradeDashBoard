@@ -41,16 +41,47 @@ _FIVE_MIN = 5
 # after `two_sided_ok`/`candle1_high/low` are set.
 _opening_5min: dict[str, dict[int, list]] = {}
 
-# symbol -> (bucket_date, bucket_minute, [open, high, low, close]) — tracks
-# the WHOLE session (09:15-15:30), kept deliberately SEPARATE from
+# symbol -> (bucket_date, bucket_minute, [open, high, low, close], delta) —
+# tracks the WHOLE session (09:15-15:30), kept deliberately SEPARATE from
 # `_opening_5min` above so this addition (backtest groundwork only, see
 # candle_history.py) can never regress the already-verified ORB/quality-gate
-# logic. Persisted to Postgres each time a bucket completes.
+# logic. Persisted to Postgres each time a bucket completes. `delta` is the
+# running tick-rule cumulative-volume-delta contribution for this bucket —
+# see _tick_delta() below.
 _day_candles: dict[str, tuple] = {}
+
+# Per-symbol state for the tick-rule delta estimate, deliberately INDEPENDENT
+# of calculations.py's own VWAP volume tracking (stock["vwap_cum_vol"]) even
+# though both derive from the same underlying cumulative-day-volume field —
+# same isolation rationale as _day_candles vs _opening_5min: a bug here must
+# never be able to touch the already-verified VWAP/signal computation.
+_last_ltp: dict[str, float] = {}
+_last_volume: dict[str, int] = {}
 
 
 def _five_min_bucket(now: datetime) -> int:
     return (now.hour * 60 + now.minute) // _FIVE_MIN * _FIVE_MIN
+
+
+def _tick_delta(sym: str, ltp: float, volume: int) -> float:
+    """Signed volume-delta for this one tick, via the classic tick rule:
+    uptick since the last tick -> classify this tick's volume as buy-side
+    (+), downtick -> sell-side (-), unchanged price -> 0. This is an
+    approximation (no real bid/ask-crossed trade classification is available
+    from FYERS' feed) — directionally useful, not a true institutional
+    footprint read."""
+    prev_ltp = _last_ltp.get(sym)
+    prev_volume = _last_volume.get(sym, volume)
+    vol_delta = max(0, volume - prev_volume)
+    _last_ltp[sym] = ltp
+    _last_volume[sym] = volume
+    if prev_ltp is None or vol_delta == 0:
+        return 0.0
+    if ltp > prev_ltp:
+        return float(vol_delta)
+    if ltp < prev_ltp:
+        return -float(vol_delta)
+    return 0.0
 
 
 def on_tick(stock: dict, ltp: float, now: datetime) -> None:
@@ -67,7 +98,7 @@ def on_tick(stock: dict, ltp: float, now: datetime) -> None:
             break
 
     sym = stock["symbol"]
-    _track_day_candle(sym, ltp, now)
+    _track_day_candle(sym, ltp, now, stock.get("volume") or 0)
     if now_t < _OPENING_RANGE_END:
         _update_opening_5min(sym, ltp, now)
     elif sym in _opening_5min:
@@ -100,24 +131,27 @@ def _finalize_opening_range(stock: dict) -> None:
     stock["two_sided_ok"] = has_two_sided_range(rows)
 
 
-def _track_day_candle(sym: str, ltp: float, now: datetime) -> None:
-    """Backtest groundwork only — persists each completed 5-min candle across
-    the whole session, independent of the opening-range-specific logic above."""
+def _track_day_candle(sym: str, ltp: float, now: datetime, volume: int) -> None:
+    """Backtest groundwork only — persists each completed 5-min candle (OHLC
+    + tick-rule delta) across the whole session, independent of the
+    opening-range-specific logic above."""
     bucket = _five_min_bucket(now)
     today = now.date()
+    tick_delta = _tick_delta(sym, ltp, volume)
     prev = _day_candles.get(sym)
     if prev is None or prev[0] != today or prev[1] != bucket:
         if prev is not None:
             _persist_bucket(sym, *prev)
-        _day_candles[sym] = (today, bucket, [ltp, ltp, ltp, ltp])
+        _day_candles[sym] = (today, bucket, [ltp, ltp, ltp, ltp], tick_delta)
     else:
-        ohlc = prev[2]
+        _, _, ohlc, delta = prev
         ohlc[1] = max(ohlc[1], ltp)
         ohlc[2] = min(ohlc[2], ltp)
         ohlc[3] = ltp
+        _day_candles[sym] = (today, bucket, ohlc, delta + tick_delta)
 
 
-def _persist_bucket(sym: str, bucket_date, bucket_minute: int, ohlc: list) -> None:
+def _persist_bucket(sym: str, bucket_date, bucket_minute: int, ohlc: list, delta: float) -> None:
     from . import order_monitor
     from .candle_history import persist_candle
 
@@ -125,22 +159,22 @@ def _persist_bucket(sym: str, bucket_date, bucket_minute: int, ohlc: list) -> No
     if loop is None:
         return  # paper trading (and its DB pool) not configured
     asyncio.run_coroutine_threadsafe(
-        persist_candle(sym, bucket_date, bucket_minute, list(ohlc)), loop
+        persist_candle(sym, bucket_date, bucket_minute, list(ohlc), delta), loop
     )
 
 
 def flush_all() -> None:
     """Persists every still-open bucket — called once at 15:30 IST market
     close (scheduler.py) so the last partial candle of the day isn't lost."""
-    for sym, (bucket_date, bucket_minute, ohlc) in list(_day_candles.items()):
-        _persist_bucket(sym, bucket_date, bucket_minute, ohlc)
+    for sym, (bucket_date, bucket_minute, ohlc, delta) in list(_day_candles.items()):
+        _persist_bucket(sym, bucket_date, bucket_minute, ohlc, delta)
     _day_candles.clear()
 
 
 def get_in_progress(sym: str):
     """Read-only snapshot of the currently-forming (not yet persisted) bucket
-    for `sym`, or None. Returns (bucket_date, bucket_minute, [open, high, low, close]).
+    for `sym`, or None. Returns (bucket_date, bucket_minute, [open, high, low, close], delta).
     Used by candle_query.py to fill in the gap between the last completed
     candle_history row and "now" — never mutates _day_candles."""
     entry = _day_candles.get(sym)
-    return (entry[0], entry[1], list(entry[2])) if entry else None
+    return (entry[0], entry[1], list(entry[2]), entry[3]) if entry else None

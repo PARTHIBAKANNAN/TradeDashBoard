@@ -25,6 +25,8 @@ async def get_today_candles(symbol: str) -> dict:
             "high": float(r["high"]),
             "low": float(r["low"]),
             "close": float(r["close"]),
+            # None for any bucket persisted before this column existed.
+            "delta": float(r["delta"]) if r["delta"] is not None else 0.0,
             "is_live": False,
         }
         for r in rows
@@ -32,7 +34,7 @@ async def get_today_candles(symbol: str) -> dict:
 
     live = candle_aggregator.get_in_progress(symbol)
     if live and live[0] == today:
-        bucket_minute, (o, h, l, c) = live[1], live[2]
+        bucket_minute, (o, h, l, c), delta = live[1], live[2], live[3]
         if not candles or candles[-1]["bucket_minute"] != bucket_minute:
             candles.append(
                 {
@@ -41,6 +43,7 @@ async def get_today_candles(symbol: str) -> dict:
                     "high": h,
                     "low": l,
                     "close": c,
+                    "delta": delta,
                     "is_live": True,
                 }
             )

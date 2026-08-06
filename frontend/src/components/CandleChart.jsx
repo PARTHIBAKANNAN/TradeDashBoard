@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { createChart, CandlestickSeries, LineStyle } from "lightweight-charts";
+import { createChart, CandlestickSeries, HistogramSeries, LineStyle } from "lightweight-charts";
 import { useTheme } from "../contexts/ThemeContext.jsx";
 
 // `bucket` is minutes-since-midnight on the browser's own local clock, same
@@ -40,6 +40,7 @@ export default function CandleChart({ candles, levels, height = 360 }) {
   const containerRef = useRef(null);
   const chartRef = useRef(null);
   const seriesRef = useRef(null);
+  const deltaSeriesRef = useRef(null);
   const priceLinesRef = useRef([]);
   const { theme } = useTheme();
 
@@ -69,13 +70,28 @@ export default function CandleChart({ candles, levels, height = 360 }) {
       wickUpColor: up,
       wickDownColor: down,
     });
+    // Cumulative-delta histogram in its own pane below the candles — a
+    // separate price scale, not overlaid on the price axis. Per-bar color is
+    // set individually in the data itself (unlike the candlestick series),
+    // so no up/down color options are needed here.
+    const deltaSeries = chart.addSeries(
+      HistogramSeries,
+      { priceFormat: { type: "volume" }, priceLineVisible: false, lastValueVisible: false },
+      1,
+    );
+    const panes = chart.panes();
+    if (panes[0]) panes[0].setStretchFactor(3);
+    if (panes[1]) panes[1].setStretchFactor(1);
+
     chartRef.current = chart;
     seriesRef.current = series;
+    deltaSeriesRef.current = deltaSeries;
 
     return () => {
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
+      deltaSeriesRef.current = null;
       priceLinesRef.current = [];
     };
     // Deliberately create-once: theme/candles/levels are applied imperatively
@@ -120,6 +136,23 @@ export default function CandleChart({ candles, levels, height = 360 }) {
     seriesRef.current.setData(data);
     chartRef.current?.timeScale().fitContent();
   }, [candles]);
+
+  // Cumulative tick-rule delta, one histogram bar per candle — colored by
+  // the sign of the running total, not the per-bar delta, so a string of
+  // small down-ticks that hasn't yet erased the day's net buying still
+  // reads green (matches how the reference tool colors it).
+  useEffect(() => {
+    if (!deltaSeriesRef.current) return;
+    const { up, down } = readCandleColors();
+    let cumulative = 0;
+    const data = (candles || [])
+      .map((c) => {
+        cumulative += c.delta || 0;
+        return { time: bucketToTime(c.bucket), value: cumulative, color: cumulative >= 0 ? up : down };
+      })
+      .sort((a, b) => a.time - b.time);
+    deltaSeriesRef.current.setData(data);
+  }, [candles, theme]);
 
   // Reference-line levels (opening range + prev-day high/low).
   useEffect(() => {

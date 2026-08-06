@@ -99,11 +99,9 @@ WATCHLIST = {
     "NSE:PETRONET-EQ": "Energy",
     "NSE:IOC-EQ": "Energy",
     "NSE:HINDPETRO-EQ": "Energy",
-    "NSE:IGL-EQ": "Energy",
     # Power & Renewables
     "NSE:JSWENERGY-EQ": "Power",
     "NSE:ADANIENSOL-EQ": "Power",
-    "NSE:TORNTPOWER-EQ": "Power",
     "NSE:POWERGRID-EQ": "Power",
     "NSE:IREDA-EQ": "Power",
     "NSE:ADANIGREEN-EQ": "Power",
@@ -140,7 +138,6 @@ WATCHLIST = {
     "NSE:SONACOMS-EQ": "Auto",
     "NSE:EICHERMOT-EQ": "Auto",
     "NSE:BOSCHLTD-EQ": "Auto",
-    "NSE:TITAGARH-EQ": "Auto",
     "NSE:BHARATFORG-EQ": "Auto",
     "NSE:MARUTI-EQ": "Auto",
     "NSE:UNOMINDA-EQ": "Auto",
@@ -170,16 +167,13 @@ WATCHLIST = {
     "NSE:LICHSGFIN-EQ": "NBFC",
     "NSE:IRFC-EQ": "NBFC",
     "NSE:PNBHOUSING-EQ": "NBFC",
-    "NSE:HUDCO-EQ": "NBFC",
     "NSE:MUTHOOTFIN-EQ": "NBFC",
     "NSE:SBICARD-EQ": "NBFC",
     "NSE:BAJAJFINSV-EQ": "NBFC",
     "NSE:JIOFIN-EQ": "NBFC",
     "NSE:BAJFINANCE-EQ": "NBFC",
-    "NSE:IIFL-EQ": "NBFC",
     "NSE:PFC-EQ": "NBFC",
     "NSE:SHRIRAMFIN-EQ": "NBFC",
-    "NSE:SAMMAANCAP-EQ": "NBFC",
     "NSE:CHOLAFIN-EQ": "NBFC",
     # Insurance
     "NSE:SBILIFE-EQ": "Insurance",
@@ -196,10 +190,8 @@ WATCHLIST = {
     "NSE:PAYTM-EQ": "Capital Markets",
     # Healthcare
     "NSE:MAXHEALTH-EQ": "Healthcare",
-    "NSE:POLYMED-EQ": "Healthcare",
     # Realty
     "NSE:GODREJPROP-EQ": "Realty",
-    "NSE:NCC-EQ": "Realty",
     "NSE:LODHA-EQ": "Realty",
     "NSE:PRESTIGE-EQ": "Realty",
     "NSE:DLF-EQ": "Realty",
@@ -213,18 +205,19 @@ WATCHLIST = {
     "NSE:KPITTECH-EQ": "IT",
     "NSE:WIPRO-EQ": "IT",
     "NSE:CAMS-EQ": "IT",
-    "NSE:HFCL-EQ": "IT",
     "NSE:OFSS-EQ": "IT",
-    "NSE:CYIENT-EQ": "IT",
     "NSE:HCLTECH-EQ": "IT",
     "NSE:INFY-EQ": "IT",
     "NSE:TATAELXSI-EQ": "IT",
     "NSE:TECHM-EQ": "IT",
     "NSE:TCS-EQ": "IT",
-    # LTIMindtree intentionally omitted: NSE:LTIM-EQ returned no live quote and no
-    # verified alternate ticker was found before REST access dropped (Zscaler).
-    # A single wrong/dead symbol here would break the websocket for ALL stocks —
-    # add it back once the correct FYERS symbol is confirmed.
+    # Mystery resolved 2026-08-06: LTIMindtree itself renamed its ticker from
+    # LTIM to LTM (confirmed via multiple independent sources) — that's why
+    # NSE:LTIM-EQ never returned a live quote, not a data/permission issue.
+    # Added below as NSE:LTM-EQ. Still worth a live quotes() sanity-check
+    # next time the VM is reachable, per this project's standing practice of
+    # verifying newly-added symbols before treating them as confirmed-good.
+    "NSE:LTM-EQ": "IT",
     "NSE:KAYNES-EQ": "IT",
     # Pharma
     "NSE:LUPIN-EQ": "Pharma",
@@ -233,7 +226,6 @@ WATCHLIST = {
     "NSE:DIVISLAB-EQ": "Pharma",
     "NSE:GLENMARK-EQ": "Pharma",
     "NSE:DRREDDY-EQ": "Pharma",
-    "NSE:PPLPHARMA-EQ": "Pharma",
     "NSE:CIPLA-EQ": "Pharma",
     "NSE:TORNTPHARM-EQ": "Pharma",
     "NSE:BIOCON-EQ": "Pharma",
@@ -298,7 +290,6 @@ WATCHLIST = {
     # Energy / Gas utilities
     "NSE:GAIL-EQ": "Energy",
     "NSE:BPCL-EQ": "Energy",
-    "NSE:MGL-EQ": "Energy",
     # Power
     "NSE:ADANIPOWER-EQ": "Power",
     # Capital Goods / Industrials / Defense
@@ -314,7 +305,6 @@ WATCHLIST = {
     "NSE:BHARTIARTL-EQ": "Telecom",
     "NSE:IDEA-EQ": "Telecom",
     "NSE:INDUSTOWER-EQ": "Telecom",
-    "NSE:TATACOMM-EQ": "Telecom",
     # Consumer Durables
     "NSE:TITAN-EQ": "Consumer Durables",
     "NSE:DIXON-EQ": "Consumer Durables",
@@ -324,41 +314,62 @@ WATCHLIST = {
     "NSE:ASIANPAINT-EQ": "FMCG",
     # Chemicals
     "NSE:SRF-EQ": "Chemicals",
-    "NSE:DEEPAKNTR-EQ": "Chemicals",
-    "NSE:AARTIIND-EQ": "Chemicals",
-    "NSE:COROMANDEL-EQ": "Chemicals",
     # Aviation
     "NSE:INDIGO-EQ": "Aviation",
     # Retail
     "NSE:TRENT-EQ": "Retail",
-    # Travel / Tourism
-    "NSE:IRCTC-EQ": "Travel",
+    "NSE:VMM-EQ": "Retail",  # Vishal Mega Mart
     # Capital Markets / Fintech
     "NSE:NAUKRI-EQ": "Capital Markets",
     "NSE:MCX-EQ": "Capital Markets",
     "NSE:IEX-EQ": "Capital Markets",
+    "NSE:360ONE-EQ": "Capital Markets",  # 360 ONE WAM, formerly IIFL Wealth
+    "NSE:MOTILALOFS-EQ": "Capital Markets",
+    "NSE:NAM-INDIA-EQ": "Capital Markets",  # Nippon Life India Asset Management
     # Pvt Banks
     "NSE:YESBANK-EQ": "Pvt Banks",
     # Auto / Auto Ancillary
-    "NSE:ESCORTS-EQ": "Auto",
-    "NSE:BALKRISIND-EQ": "Auto",
-    "NSE:APOLLOTYRE-EQ": "Auto",
-    # LTIM (LTIMindtree) deliberately NOT re-added: live-checked via quotes()
-    # on 2026-08-06 and it still returns no lp (same issue as the original
-    # KAYNES-area comment above) — re-confirmed bad, not just historical.
-    # Media
-    "NSE:SUNTV-EQ": "Media",
+    "NSE:FORCEMOT-EQ": "Auto",
+    "NSE:HYUNDAI-EQ": "Auto",
     # NBFC / Financial Services
     "NSE:LTF-EQ": "NBFC",
     "NSE:MFSL-EQ": "NBFC",
-    "NSE:M&MFIN-EQ": "NBFC",
     "NSE:ABCAPITAL-EQ": "NBFC",
-    "NSE:BAJAJHFL-EQ": "NBFC",  # Bajaj Housing Finance — swapped in for PIDILITE (see below)
+    "NSE:MANAPPURAM-EQ": "NBFC",
     # Diversified
     "NSE:GRASIM-EQ": "Diversified",
-    # PIDILITE (Pidilite Industries) deliberately NOT included: live-checked
-    # via quotes() on 2026-08-06 like LTIM above, also returns no lp —
-    # excluded for the same reason, not a typo/oversight.
+    "NSE:BAJAJHLDNG-EQ": "Diversified",  # holding company, not an operating NBFC
+
+    # ---------------------------------------------------------------------
+    # F&O universe expansion, batch 2 — swapped in 2026-08-06 for the 23
+    # names removed above that turned out not to be currently NSE F&O
+    # eligible (cross-checked against a monthly-updated mirror of NSE's own
+    # derivatives symbol list, MaheshTechnicals/FNO-Stocks-list on GitHub,
+    # dated 2026-07-01 — same "verify before treating as authoritative"
+    # caveat as batch 1: worth a periodic recheck, not a one-time truth).
+    # ---------------------------------------------------------------------
+    # Capital Goods / Industrials
+    "NSE:COCHINSHIP-EQ": "Capital Goods",
+    "NSE:GVT&D-EQ": "Capital Goods",  # GE Vernova T&D India
+    "NSE:KEI-EQ": "Capital Goods",
+    "NSE:POLYCAB-EQ": "Capital Goods",
+    # Infra / Logistics
+    "NSE:DELHIVERY-EQ": "Infra",
+    # Consumer Durables
+    "NSE:AMBER-EQ": "Consumer Durables",
+    "NSE:PGEL-EQ": "Consumer Durables",  # PG Electroplast
+    # Healthcare
+    "NSE:APOLLOHOSP-EQ": "Healthcare",
+    # FMCG
+    "NSE:GODFRYPHLP-EQ": "FMCG",
+    "NSE:RADICO-EQ": "FMCG",
+    "NSE:SWIGGY-EQ": "FMCG",  # matches ETERNAL's existing FMCG classification
+    # Chemicals
+    "NSE:PIDILITIND-EQ": "Chemicals",  # correct ticker — not "PIDILITE"
+    # IT
+    "NSE:KFINTECH-EQ": "IT",  # matches CAMS' existing IT classification
+    # Power
+    "NSE:WAAREEENER-EQ": "Power",
 }
 
 
