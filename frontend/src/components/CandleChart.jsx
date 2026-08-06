@@ -17,7 +17,15 @@ import { useTheme } from "../contexts/ThemeContext.jsx";
 // show the correct IST time regardless of the browser's own timezone.
 function bucketToTime(bucket) {
   const now = new Date();
-  const utcMidnight = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const utcMidnight = Date.UTC(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    0,
+    0,
+    0,
+    0,
+  );
   return Math.floor(utcMidnight / 1000) + bucket * 60;
 }
 
@@ -76,7 +84,9 @@ export default function CandleChart({ candles, levels, height = 360 }) {
       },
       grid: {
         vertLines: { visible: false },
-        horzLines: { color: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" },
+        horzLines: {
+          color: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+        },
       },
       timeScale: { timeVisible: true, secondsVisible: false },
     });
@@ -108,7 +118,11 @@ export default function CandleChart({ candles, levels, height = 360 }) {
     // so no up/down color options are needed here.
     const deltaSeries = chart.addSeries(
       HistogramSeries,
-      { priceFormat: { type: "volume" }, priceLineVisible: false, lastValueVisible: false },
+      {
+        priceFormat: { type: "volume" },
+        priceLineVisible: false,
+        lastValueVisible: false,
+      },
       1,
     );
     // Text-only value labels per bar (size: 0 hides the marker shape itself).
@@ -152,7 +166,9 @@ export default function CandleChart({ candles, levels, height = 360 }) {
         textColor: isDark ? "#a1a1aa" : "#52525b",
       },
       grid: {
-        horzLines: { color: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" },
+        horzLines: {
+          color: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+        },
       },
     });
   }, [theme]);
@@ -185,7 +201,11 @@ export default function CandleChart({ candles, levels, height = 360 }) {
     const data = (candles || [])
       .map((c) => {
         cumulative += c.delta || 0;
-        return { time: bucketToTime(c.bucket), value: cumulative, color: cumulative >= 0 ? up : down };
+        return {
+          time: bucketToTime(c.bucket),
+          value: cumulative,
+          color: cumulative >= 0 ? up : down,
+        };
       })
       .sort((a, b) => a.time - b.time);
     deltaSeriesRef.current.setData(data);

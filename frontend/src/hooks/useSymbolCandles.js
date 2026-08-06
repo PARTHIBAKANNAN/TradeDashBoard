@@ -91,7 +91,12 @@ export function useSymbolCandles(symbol) {
 
     setCandles((prev) => {
       if (!prev.length) return prev; // don't synthesize a series before the initial fetch resolves
-      const next = mergeTickWithDelta(prev, ltp, candleBucket(new Date()), tickDelta);
+      const next = mergeTickWithDelta(
+        prev,
+        ltp,
+        candleBucket(new Date()),
+        tickDelta,
+      );
       setCached(symbol, { candles: next, levels });
       return next;
     });

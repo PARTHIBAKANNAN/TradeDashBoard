@@ -15,7 +15,9 @@ from .state import market_state
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/charts", tags=["charts"], dependencies=[Depends(security.require_login)])
+router = APIRouter(
+    prefix="/api/charts", tags=["charts"], dependencies=[Depends(security.require_login)]
+)
 
 
 @router.get("/candles/{symbol}")
