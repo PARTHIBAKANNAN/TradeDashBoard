@@ -83,7 +83,10 @@ function ChartRow({ stock }) {
           </button>
         </div>
         {tradeOpen && (
-          <QuickTradeModal symbol={stock.symbol} onClose={() => setTradeOpen(false)} />
+          <QuickTradeModal
+            symbol={stock.symbol}
+            onClose={() => setTradeOpen(false)}
+          />
         )}
       </div>
 
@@ -148,7 +151,9 @@ export default function ChartsScreen({ stocks, focusSymbol, onFocusHandled }) {
         (s) => selectedSector === "All sectors" || s.sector === selectedSector,
       )
       .filter((s) => !wishlistOnly || wishlist.has(s.symbol))
-      .filter((s) => !search || s.symbol.toUpperCase().includes(search.toUpperCase()))
+      .filter(
+        (s) => !search || s.symbol.toUpperCase().includes(search.toUpperCase()),
+      )
       .sort((a, b) => a.symbol.localeCompare(b.symbol));
   }, [stocks, selectedSector, wishlistOnly, wishlist, search]);
 

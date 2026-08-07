@@ -59,7 +59,9 @@ def get_levels(stock: dict) -> dict:
     prev_high = stock.get("yesterday_high") or None
     prev_low = stock.get("yesterday_low") or None
     prev_close = stock.get("prev_close") or None
-    pivot = (prev_high + prev_low + prev_close) / 3 if prev_high and prev_low and prev_close else None
+    pivot = (
+        (prev_high + prev_low + prev_close) / 3 if prev_high and prev_low and prev_close else None
+    )
     return {
         "opening_range_high": c1.get("high"),
         "opening_range_low": c1.get("low"),
