@@ -98,7 +98,14 @@ def _merge_in_progress(symbol: str, rows: list[dict], today) -> list[dict]:
     if rows and rows[-1]["bucket_minute"] == bucket_minute:
         return rows
     return rows + [
-        {"bucket_minute": bucket_minute, "open": o, "high": h, "low": l, "close": c, "volume": volume}
+        {
+            "bucket_minute": bucket_minute,
+            "open": o,
+            "high": h,
+            "low": l,
+            "close": c,
+            "volume": volume,
+        }
     ]
 
 
@@ -125,7 +132,9 @@ async def compute_rankings() -> dict:
         with market_state.lock():
             universe = {sym: dict(s) for sym, s in market_state.stocks.items()}
 
-        nifty_rows = _merge_in_progress(BENCHMARK_SHORT_SYMBOL, by_symbol.get(BENCHMARK_SHORT_SYMBOL, []), today)
+        nifty_rows = _merge_in_progress(
+            BENCHMARK_SHORT_SYMBOL, by_symbol.get(BENCHMARK_SHORT_SYMBOL, []), today
+        )
         nifty_return = _today_return(nifty_rows) if nifty_rows else None
 
         candidates = []

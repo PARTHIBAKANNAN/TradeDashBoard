@@ -85,7 +85,14 @@ export default function RankingScreen({ stocks, nifty }) {
       return true;
     });
     return rows.sort(SORTS[sortKey].fn);
-  }, [stocks, selectedSignal, selectedSector, signalTimeIndex, sortKey, search]);
+  }, [
+    stocks,
+    selectedSignal,
+    selectedSector,
+    signalTimeIndex,
+    sortKey,
+    search,
+  ]);
 
   const activeFilterCount =
     (selectedSignal !== "All signals" ? 1 : 0) +
