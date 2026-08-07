@@ -128,3 +128,88 @@ async def get_historical_slot_stats(before_date, lookback_days: int = 20) -> dic
         }
         for r in rows
     }
+
+
+async def get_startup_snapshot() -> dict[str, dict]:
+    """For every symbol, the two most recent DISTINCT trading dates on record
+    (d0 = most recent, d1 = the one before it) with each date's high/low/last
+    close. Used by seed_missing_state() below to give MarketState a real
+    "last known" value instead of a hardcoded 0 whenever REST backfill can't
+    (this account's -403 permission gap) or a restart wipes RAM outside
+    market hours. One query for the whole universe."""
+    from . import paper_trading
+
+    pool = paper_trading.get_pool()
+    if pool is None:
+        return {}
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            with ranked_dates as (
+                select symbol, bucket_date,
+                       row_number() over (partition by symbol order by bucket_date desc) as rn
+                from (select distinct symbol, bucket_date from public.candle_history) d
+            )
+            select c.symbol, rd.rn,
+                   max(c.high) as high, min(c.low) as low,
+                   (array_agg(c.close order by c.bucket_minute desc))[1] as close,
+                   max(c.bucket_date) as bucket_date
+            from public.candle_history c
+            join ranked_dates rd on rd.symbol = c.symbol and rd.bucket_date = c.bucket_date
+            where rd.rn <= 2
+            group by c.symbol, rd.rn
+            """
+        )
+    out: dict[str, dict] = {}
+    for r in rows:
+        entry = out.setdefault(r["symbol"], {})
+        prefix = "d0" if r["rn"] == 1 else "d1"
+        entry[f"{prefix}_date"] = r["bucket_date"]
+        entry[f"{prefix}_high"] = float(r["high"]) if r["high"] is not None else None
+        entry[f"{prefix}_low"] = float(r["low"]) if r["low"] is not None else None
+        entry[f"{prefix}_close"] = float(r["close"]) if r["close"] is not None else None
+    return out
+
+
+async def seed_missing_state(market_state) -> None:
+    """Called once at backend startup, and again daily at 08:45 IST (before
+    market open) — see scheduler.py's _daily_login(). MarketState is 100%
+    in-RAM and wiped on every restart; REST backfill is also permanently
+    broken on this FYERS account (-403), so without this, `yesterday_high`/
+    `yesterday_low`/`ltp`/`pct_change` would otherwise show a hard 0 until
+    live ticks arrive that day. Backfills a "last known" display state from
+    candle_history's own archive instead. Every field is only ever filled in
+    if it's currently falsy — a working REST backfill or live ticks always
+    win, this is purely a fallback for what they haven't set (yet)."""
+    from datetime import datetime
+
+    from .calculations import pct_change as _pct_change
+    from .config import IST
+
+    snapshot = await get_startup_snapshot()
+    if not snapshot:
+        return
+    today = datetime.now(IST).date()
+    with market_state.lock():
+        for sym, snap in snapshot.items():
+            stock = market_state.stocks.get(sym)
+            if not stock:
+                continue
+            # d0 is "today" once live ticks/backfill have written at least one
+            # bucket today; until then, d0 is really "yesterday" from today's
+            # point of view, and d1 is the day before that.
+            if snap.get("d0_date") == today:
+                y_high, y_low, y_close = snap.get("d1_high"), snap.get("d1_low"), snap.get("d1_close")
+            else:
+                y_high, y_low, y_close = snap.get("d0_high"), snap.get("d0_low"), snap.get("d0_close")
+                if not stock["ltp"] and snap.get("d0_close"):
+                    stock["ltp"] = snap["d0_close"]
+                if not stock["prev_close"] and snap.get("d1_close"):
+                    stock["prev_close"] = snap["d1_close"]
+                    stock["pct_change"] = _pct_change(stock["ltp"], stock["prev_close"])
+            if not stock["yesterday_high"] and y_high:
+                stock["yesterday_high"] = y_high
+            if not stock["yesterday_low"] and y_low:
+                stock["yesterday_low"] = y_low
+            if not stock["prev_close"] and y_close:
+                stock["prev_close"] = y_close

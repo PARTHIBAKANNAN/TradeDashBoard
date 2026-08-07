@@ -40,7 +40,6 @@
   }
   a { color: var(--blue); text-decoration: none; }
 
-  /* ---- Top nav ---- */
   header.topbar {
     position: sticky; top: 0; z-index: 50;
     backdrop-filter: blur(12px);
@@ -58,25 +57,24 @@
     display: grid; place-items: center; color: white; font-weight: 800; font-size: 15px;
     box-shadow: 0 4px 18px rgba(59,130,246,0.35);
   }
-  nav.anchors { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+  nav.anchors { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; max-width: 760px; justify-content: flex-end; }
   nav.anchors a {
-    color: var(--muted); font-size: 12.5px; font-weight: 600;
-    padding: 6px 11px; border-radius: 7px; transition: .15s;
+    color: var(--muted); font-size: 12px; font-weight: 600;
+    padding: 5px 10px; border-radius: 7px; transition: .15s;
   }
   nav.anchors a:hover { color: var(--text); background: var(--panel-2); }
 
-  /* ---- Layout ---- */
   main { max-width: 1120px; margin: 0 auto; padding: 0 28px 80px; }
   section { padding: 46px 0 8px; border-top: 1px solid var(--border-soft); }
   section:first-of-type { border-top: none; }
 
   .hero { padding: 66px 0 30px; border: none; }
-  .hero h1 { font-size: 40px; line-height: 1.12; margin: 14px 0 10px; letter-spacing: -0.5px; }
+  .hero h1 { font-size: 38px; line-height: 1.14; margin: 14px 0 10px; letter-spacing: -0.5px; }
   .hero h1 .grad {
     background: linear-gradient(100deg, var(--blue), var(--cyan) 55%, var(--violet));
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
-  .hero p.lead { font-size: 17px; color: var(--muted); max-width: 720px; }
+  .hero p.lead { font-size: 17px; color: var(--muted); max-width: 760px; }
   .chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 22px 0 4px; }
   .chip {
     font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 999px;
@@ -89,12 +87,12 @@
     text-transform: uppercase; letter-spacing: 2px; font-size: 11.5px;
     font-weight: 700; color: var(--blue); margin-bottom: 6px;
   }
-  h2 { font-size: 26px; margin: 4px 0 6px; letter-spacing: -0.3px; }
+  h2 { font-size: 25px; margin: 4px 0 6px; letter-spacing: -0.3px; }
   h3 { font-size: 17px; margin: 26px 0 8px; }
+  h4.subhead { font-size: 14.5px; margin: 22px 0 6px; color: #dcdce2; }
   p { color: #cfcfd6; }
-  .sub { color: var(--muted); max-width: 760px; }
+  .sub { color: var(--muted); max-width: 780px; }
 
-  /* ---- Cards ---- */
   .grid { display: grid; gap: 16px; margin-top: 22px; }
   .grid.c2 { grid-template-columns: repeat(2, 1fr); }
   .grid.c3 { grid-template-columns: repeat(3, 1fr); }
@@ -111,12 +109,9 @@
     font-size: 14px; flex: none;
   }
 
-  /* ---- Diagram (topology) ---- */
   .topo {
     margin-top: 24px; border: 1px solid var(--border); border-radius: 16px;
-    background:
-      linear-gradient(180deg, rgba(255,255,255,0.02), transparent),
-      var(--bg-soft);
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent), var(--bg-soft);
     padding: 26px; overflow-x: auto;
   }
   .layers { display: flex; align-items: stretch; gap: 0; min-width: 720px; }
@@ -128,18 +123,12 @@
   .layer h5 { margin: 6px 0 8px; font-size: 15px; }
   .layer ul { margin: 8px 0 0; padding-left: 16px; color: var(--muted); font-size: 12.5px; }
   .layer li { margin: 3px 0; }
-  .flowarrow {
-    flex: none; width: 62px; display: grid; place-items: center; color: var(--blue);
-    position: relative;
-  }
+  .flowarrow { flex: none; width: 62px; display: grid; place-items: center; color: var(--blue); position: relative; }
   .flowarrow span { font-size: 11px; color: var(--faint); position: absolute; top: 8px; width: 90px; text-align: center; }
   .flowarrow .a { font-size: 26px; }
 
-  /* ---- Steps (login/data flow) ---- */
   .steps { margin-top: 24px; position: relative; }
-  .step {
-    display: grid; grid-template-columns: 44px 1fr; gap: 16px; padding: 0 0 22px; position: relative;
-  }
+  .step { display: grid; grid-template-columns: 44px 1fr; gap: 16px; padding: 0 0 22px; position: relative; }
   .step:not(:last-child)::before {
     content: ""; position: absolute; left: 21px; top: 40px; bottom: -4px; width: 2px;
     background: linear-gradient(var(--border), transparent);
@@ -155,7 +144,6 @@
   .step .body h4 { margin: 6px 0 4px; font-size: 15.5px; }
   .step .body p { margin: 0 0 8px; color: var(--muted); font-size: 13.5px; }
 
-  /* ---- Code ---- */
   pre {
     margin: 10px 0 0; background: #0b0b0f; border: 1px solid var(--border);
     border-radius: 10px; padding: 14px 16px; overflow-x: auto;
@@ -168,22 +156,17 @@
   .tok-k { color: #c084fc; } .tok-s { color: #86efac; } .tok-c { color: #6b7280; font-style: italic; }
   .tok-f { color: #7dd3fc; } .tok-n { color: #fca5a5; }
 
-  /* ---- Tables ---- */
   table { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 13.5px; }
   th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
   th { color: var(--faint); text-transform: uppercase; font-size: 11px; letter-spacing: 1px; }
   td code, th code { font-family: var(--mono); font-size: 12px; }
   tr:hover td { background: rgba(255,255,255,0.015); }
 
-  /* ---- Formula cards ---- */
-  .formula {
-    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
-    padding: 18px 20px;
-  }
+  .formula { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; }
   .formula .label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--violet); }
   .formula h4 { margin: 4px 0 12px; font-size: 16px; }
   .eq {
-    font-family: var(--mono); font-size: 15px; color: #f4f4f5; background: #0b0b0f;
+    font-family: var(--mono); font-size: 14.5px; color: #f4f4f5; background: #0b0b0f;
     border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px;
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   }
@@ -199,6 +182,7 @@
   .b-red { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
   .b-amber { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
   .b-violet { background: rgba(139,92,246,0.12); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.3); }
+  .b-blue { background: rgba(59,130,246,0.12); color: #93c5fd; border: 1px solid rgba(59,130,246,0.3); }
 
   .callout {
     margin-top: 18px; border-radius: 12px; padding: 14px 16px; font-size: 13.5px;
@@ -215,6 +199,12 @@
   .pill-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; align-items: center; }
   .pill { font-family: var(--mono); font-size: 11.5px; padding: 3px 8px; border-radius: 6px; background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); }
   .chainarrow { color: var(--faint); font-size: 14px; }
+
+  .toc { margin-top: 22px; border: 1px solid var(--border); border-radius: 14px; background: var(--panel); padding: 18px 20px; }
+  .toc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 22px; margin-top: 8px; }
+  .toc-grid a { font-size: 13px; color: var(--muted); }
+  .toc-grid a:hover { color: var(--text); }
+  @media (max-width: 700px) { .toc-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -225,16 +215,25 @@
     <nav class="anchors">
       <a href="#overview">Overview</a>
       <a href="#security">Security</a>
-      <a href="#auth">Login</a>
+      <a href="#auth">Broker Login</a>
+      <a href="#dashboard-login">Dashboard Login</a>
       <a href="#data">Ingestion</a>
+      <a href="#broadcast">Broadcast</a>
       <a href="#math">Calculations</a>
-      <a href="#score">Recommended</a>
-      <a href="#filters">Filters</a>
+      <a href="#score">Momentum Score</a>
+      <a href="#smartmoney">Smart Money</a>
+      <a href="#cvd">CVD</a>
+      <a href="#screens">Screens</a>
+      <a href="#charts">Charts Tab</a>
+      <a href="#sectors">Sector Taxonomy</a>
+      <a href="#paper">Paper Trading</a>
+      <a href="#frontend">Frontend State</a>
       <a href="#storage">Storage</a>
       <a href="#process">Process Model</a>
-      <a href="#frontend">Frontend</a>
+      <a href="#notifications">Notifications</a>
       <a href="#lifecycle">Lifecycle</a>
-      <a href="#files">Files</a>
+      <a href="#deploy">Deployment</a>
+      <a href="#files">Module Map</a>
     </nav>
   </div>
 </header>
@@ -243,29 +242,60 @@
 
   <!-- HERO -->
   <div class="hero">
-    <div class="eyebrow">System Architecture Report</div>
-    <h1>Real-time Indian stock<br /><span class="grad">breakout &amp; relative-strength</span> dashboard</h1>
-    <p class="lead">A single Python process that authenticates to FYERS API v3 automatically, subscribes to 171
-      symbols over one WebSocket connection, computes every indicator in memory tick-by-tick, and streams diffed
-      state to the browser at 250&nbsp;ms cadence — no microservices, no message queue, one shared in-memory state
-      object guarded by a single lock.</p>
+    <div class="eyebrow">System Architecture Report · Full Rewrite</div>
+    <h1>Real-time Indian stock<br /><span class="grad">breakout, relative-strength &amp; smart-money</span> dashboard</h1>
+    <p class="lead">A single Python process authenticates to FYERS API v3 automatically, subscribes to 211 symbols
+      (210-stock F&amp;O watchlist + NIFTY 50) over one WebSocket connection, computes every indicator in memory
+      tick-by-tick, and streams diffed state to the browser at 250&nbsp;ms cadence. A second, fully isolated asyncio
+      loop recomputes a 20-day historical "Smart Money" cross-sectional ranking every 5 minutes from a growing
+      Postgres candle archive. Seven screens, one simulated (paper) order-execution engine, zero microservices.</p>
     <div class="chips">
       <span class="chip"><span class="dot" style="background:var(--green)"></span>FYERS API v3</span>
       <span class="chip"><span class="dot" style="background:var(--blue)"></span>FastAPI · single process</span>
       <span class="chip"><span class="dot" style="background:var(--violet)"></span>WebSocket @ 250&nbsp;ms</span>
-      <span class="chip"><span class="dot" style="background:var(--cyan)"></span>React + Canvas</span>
+      <span class="chip"><span class="dot" style="background:var(--cyan)"></span>React + lightweight-charts + Canvas</span>
       <span class="chip"><span class="dot" style="background:var(--amber)"></span>Automated TOTP login</span>
-      <span class="chip"><span class="dot" style="background:#f87171"></span>170 stocks + NIFTY 50</span>
+      <span class="chip"><span class="dot" style="background:#f87171"></span>210 F&amp;O stocks + NIFTY 50</span>
+      <span class="chip"><span class="dot" style="background:#4ade80"></span>7 screens</span>
+      <span class="chip"><span class="dot" style="background:#c4b5fd"></span>Paper trading + brokerage engine</span>
+    </div>
+
+    <div class="toc">
+      <div class="eyebrow" style="margin-bottom:0">Report contents</div>
+      <div class="toc-grid">
+        <a href="#overview">01 · System topology</a>
+        <a href="#security">02 · Security model</a>
+        <a href="#auth">03 · Broker (FYERS) login</a>
+        <a href="#dashboard-login">04 · Dashboard login (Supabase)</a>
+        <a href="#data">05 · Data ingestion</a>
+        <a href="#broadcast">06 · Real-time broadcast</a>
+        <a href="#math">07 · Calculation engines</a>
+        <a href="#score">08 · Momentum score / Recommended</a>
+        <a href="#smartmoney">09 · Smart Money Engine</a>
+        <a href="#cvd">10 · Cumulative Volume Delta</a>
+        <a href="#screens">11 · The seven screens</a>
+        <a href="#charts">12 · Charts tab deep dive</a>
+        <a href="#sectors">13 · Dual sector taxonomy</a>
+        <a href="#paper">14 · Paper trading engine</a>
+        <a href="#frontend">15 · Frontend state architecture</a>
+        <a href="#storage">16 · Storage &amp; DB schema</a>
+        <a href="#process">17 · Process &amp; concurrency model</a>
+        <a href="#notifications">18 · Notifications (Telegram)</a>
+        <a href="#lifecycle">19 · Daily lifecycle</a>
+        <a href="#deploy">20 · Deployment pipeline</a>
+        <a href="#files">21 · Module map</a>
+      </div>
     </div>
   </div>
 
-  <!-- OVERVIEW -->
+  <!-- 01 OVERVIEW -->
   <section id="overview">
     <div class="eyebrow">01 — Topology</div>
     <h2>System topology &amp; data plane</h2>
-    <p class="sub">Three tiers. The browser never touches the broker: all secrets and the raw broker websocket live
-      only on the backend, which diffs each tick and fans out a minimal JSON delta to all clients. A Postgres
-      database sits off to the side — it is <b>not</b> part of the live-tick path at all (see <a href="#storage">Storage</a>).</p>
+    <p class="sub">Three tiers, plus one fully isolated background analytics loop. The browser never touches the
+      broker: all secrets and the raw broker websocket live only on the backend, which diffs each tick and fans
+      out a minimal JSON delta to all clients. A Postgres database sits off to the side for record-keeping and a
+      growing historical candle archive — it is <b>not</b> part of the live-tick path (see <a href="#storage">Storage</a>).</p>
 
     <div class="topo">
       <div class="layers">
@@ -286,7 +316,7 @@
           <ul>
             <li>Automated TOTP / refresh-token login</li>
             <li>REST backfill (ranges, ORB)</li>
-            <li>In-memory math engines</li>
+            <li>In-memory math engines + Smart Money loop</li>
             <li>Thread-safe shared state</li>
             <li>Market-hours gating (APScheduler)</li>
           </ul>
@@ -297,9 +327,9 @@
           <h5>🟣 React · Vite · Tailwind</h5>
           <ul>
             <li>WebSocket delta stream</li>
-            <li>Canvas range bars</li>
+            <li>lightweight-charts + Canvas rendering</li>
             <li>React.memo isolated rows</li>
-            <li>Filters / sort</li>
+            <li>7 screens, one tab bar, no router</li>
             <li>localStorage offline cache</li>
           </ul>
         </div>
@@ -307,16 +337,16 @@
     </div>
 
     <div class="grid c4">
-      <div class="card"><h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">◈</span>171 symbols, one socket</h4><p>170-stock watchlist + the NIFTY 50 benchmark, all subscribed on a single FYERS websocket connection.</p></div>
+      <div class="card"><h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">◈</span>211 symbols, one socket</h4><p>210-stock F&amp;O watchlist + the NIFTY 50 benchmark, all subscribed on a single FYERS websocket connection.</p></div>
       <div class="card"><h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">⚡</span>Delta delivery</h4><p>Ticks land at ms resolution; the Broadcaster diffs state every 250 ms and sends only changed fields to each subscriber.</p></div>
       <div class="card"><h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">🔒</span>Secrets isolated</h4><p>Client ID, secret, TOTP seed, PIN are backend env vars — never shipped to the browser.</p></div>
-      <div class="card"><h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">↻</span>Self-healing</h4><p>Auto-reconnect websocket, on-disk token cache, and a localStorage snapshot for graceful offline/standby.</p></div>
+      <div class="card"><h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">↻</span>Self-healing</h4><p>Auto-reconnect websocket, on-disk token cache, automatic deploy rollback, and a localStorage snapshot for graceful offline/standby.</p></div>
     </div>
 
-    <div class="callout info"><div class="cico">🧭</div><p><b>Not microservices.</b> Everything in the middle tier above — auth, REST backfill, the websocket ingester, every calculation, the broadcaster — runs inside <i>one</i> Python process. See <a href="#process">Process Model</a> for exactly how that's split across threads internally.</p></div>
+    <div class="callout info"><div class="cico">🧭</div><p><b>Not microservices.</b> Everything in the middle tier above — auth, REST backfill, the websocket ingester, every calculation engine, the broadcaster, and the newer Smart Money ranking loop — runs inside <i>one</i> Python process. See <a href="#process">Process Model</a> for exactly how that's split across threads/tasks internally.</p></div>
   </section>
 
-  <!-- SECURITY -->
+  <!-- 02 SECURITY -->
   <section id="security">
     <div class="eyebrow">02 — Boundary</div>
     <h2>Security model</h2>
@@ -325,20 +355,21 @@
     <div class="grid c2">
       <div class="card">
         <h4><span class="ic" style="background:rgba(239,68,68,0.14);color:#f87171">✕</span>Never on the frontend</h4>
-        <p>API keys · Client ID · Secret Key · TOTP seed · trading PIN · access/refresh tokens · the raw broker websocket.</p>
+        <p>API keys · Client ID · Secret Key · TOTP seed · trading PIN · access/refresh tokens · the raw broker websocket · the Supabase service role (frontend only ever holds the anon key).</p>
       </div>
       <div class="card">
         <h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">✓</span>Backend-only</h4>
-        <p>Loaded from <code class="inline">.env</code> via <code class="inline">python-dotenv</code>; the daily token is cached to <code class="inline">.token_cache.json</code> on disk (git-ignored) — not in any database.</p>
+        <p>Loaded from <code class="inline">.env</code> via <code class="inline">python-dotenv</code>; the daily FYERS token is cached to <code class="inline">.token_cache.json</code> on disk (git-ignored) — not in any database.</p>
       </div>
     </div>
     <div class="callout info"><div class="cico">🛡️</div><p><b>Corporate TLS.</b> On a network with SSL inspection, Python's bundled CA store rejects the broker's cert. <code class="inline">pip-system-certs</code> routes TLS through the Windows certificate store (which holds the corporate root CA), fixing <code class="inline">requests</code>, the FYERS SDK, and the websocket at once. Windows-only — skipped entirely on the Linux production host.</p></div>
+    <div class="callout warn"><div class="cico">🔐</div><p><b>Row-Level Security is defense-in-depth only.</b> Postgres RLS policies exist on <code class="inline">paper_orders</code>/<code class="inline">paper_wallets</code> keyed on <code class="inline">auth.uid()=user_id</code>, but the backend connects with one pooled asyncpg service connection, not per-user JWTs — <code class="inline">auth.uid()</code> never actually resolves server-side. Real per-user isolation is enforced application-side via an explicit <code class="inline">WHERE user_id=$1</code> on every paper-trading query.</p></div>
   </section>
 
-  <!-- AUTH -->
+  <!-- 03 AUTH (BROKER) -->
   <section id="auth">
-    <div class="eyebrow">03 — Authentication</div>
-    <h2>Login method &amp; flow</h2>
+    <div class="eyebrow">03 — Broker authentication</div>
+    <h2>FYERS login method &amp; flow</h2>
     <p class="sub">FYERS access tokens expire every 24&nbsp;hours. Rather than a manual OAuth redirect every day, the
       backend drives FYERS' programmatic login using your own credentials + a TOTP seed — the standard headless
       algo-trading pattern. A newly created app requires a <b>one-time browser consent</b>; every day after is fully
@@ -358,7 +389,8 @@
       <span class="pill">4 · give up, wait for manual "Connect FYERS"</span>
     </div>
     <p class="sub" style="margin-top:10px">In practice the 6-step chain only actually runs once every ~15 days, when
-      the refresh token itself expires — most days, step 2 alone renews the access token silently.</p>
+      the refresh token itself expires — most days, step 2 alone renews the access token silently. Both tokens are
+      persisted via atomic temp-file + <code class="inline">os.replace</code> rename to <code class="inline">.token_cache.json</code>, keyed off the JWT's own real <code class="inline">exp</code> claim minus a 120s safety skew.</p>
 
     <h3>The full TOTP + PIN chain (step 3 above)</h3>
     <div class="steps">
@@ -414,7 +446,7 @@ access_token, refresh_token = resp[<span class="tok-s">"access_token"</span>], r
         <div class="num">6</div>
         <div class="body">
           <h4>Cache &amp; use</h4>
-          <p>Both tokens are written atomically to <code class="inline">.token_cache.json</code> (temp file + rename, so a kill mid-write can't corrupt it), keyed off the JWT's own real <code class="inline">exp</code> claim — then power the REST <code class="inline">FyersModel</code> and the <code class="inline">FyersDataSocket</code> feed (<code class="inline">CLIENT_ID:token</code>).</p>
+          <p>Both tokens power the REST <code class="inline">FyersModel</code> and the <code class="inline">FyersDataSocket</code> feed (<code class="inline">CLIENT_ID:token</code>).</p>
         </div>
       </div>
     </div>
@@ -422,8 +454,9 @@ access_token, refresh_token = resp[<span class="tok-s">"access_token"</span>], r
     <h3>One-time consent for a new app</h3>
     <p class="sub">A freshly created app is not yet authorized against your account, so step&nbsp;4 returns a pre-consent
       token with no <code class="inline">auth_code</code>. Running <code class="inline">manual_auth.py</code> once
-      (browser login → <b>Allow</b> → paste the redirected URL) authorizes the app permanently. After that, the chain
-      above runs unattended.</p>
+      (prints <code class="inline">auth.build_login_url()</code>, operator pastes the redirected URL or bare code back in,
+      then <code class="inline">auth.exchange_and_cache()</code> runs) authorizes the app permanently. After that, the
+      chain above runs unattended.</p>
 
     <h3>Environment gotchas resolved</h3>
     <table>
@@ -435,25 +468,47 @@ access_token, refresh_token = resp[<span class="tok-s">"access_token"</span>], r
         <tr><td><code>invalid totp</code> (intermittent)</td><td>Code generated at 30s window boundary</td><td>Boundary-safe generation + one retry</td></tr>
         <tr><td><code>-437 invalid auth code</code></td><td>New app not yet authorized → pre-consent token</td><td>One-time <code>manual_auth.py</code> consent</td></tr>
         <tr><td>Endpoint <code>-1025</code> / <code>-1006</code></td><td>Wrong endpoint variant</td><td><code>send_login_otp_v2</code>, <code>verify_pin_v2</code>; <code>verify_otp</code> stays non-v2</td></tr>
+        <tr><td><code>-403</code>/<code>429</code> on REST <code>history()</code></td><td>Account-level permission gap / rate limiting under the 210-symbol backfill</td><td>Treated as <b>non-retryable</b> (<code class="inline">_NON_RETRYABLE_CODES = {-403, 429}</code>) — fails fast instead of burning the retry budget; ORB data falls back to the tick-derived path (see §07)</td></tr>
       </tbody>
     </table>
   </section>
 
-  <!-- DATA FLOW -->
+  <!-- 04 DASHBOARD LOGIN -->
+  <section id="dashboard-login">
+    <div class="eyebrow">04 — Application authentication</div>
+    <h2>Dashboard login (Supabase-verified session cookie)</h2>
+    <p class="sub">Completely separate from the broker auth above — this is <i>who's allowed to open the dashboard at
+      all</i>, independent of whether the backend currently has a working FYERS connection.</p>
+    <div class="steps">
+      <div class="step ok"><div class="num">1</div><div class="body"><h4>Client-side Supabase auth</h4><p>The Login screen (inline in <code class="inline">App.jsx</code>, no separate file) calls <code class="inline">supabase.auth.signInWithPassword({email, password})</code> using a frontend Supabase client configured with only the <b>anon</b> key.</p></div></div>
+      <div class="step ok"><div class="num">2</div><div class="body"><h4>Exchange for a backend session</h4><p><code class="inline">POST /api/auth/login</code> with the resulting <code class="inline">access_token</code>, <code class="inline">credentials:"include"</code>. The backend verifies the JWT against Supabase's JWKS endpoint (<code class="inline">{SUPABASE_URL}/auth/v1/.well-known/jwks.json</code>, ES256/RS256, audience <code class="inline">"authenticated"</code> — no shared secret needed) and stores <code class="inline">{email, user_id}</code> in a Starlette <code class="inline">SessionMiddleware</code> cookie (<code class="inline">same_site="lax"</code>).</p></div></div>
+      <div class="step ok"><div class="num">3</div><div class="body"><h4>Wallet provisioning</h4><p>On successful login the backend also calls <code class="inline">paper_trading.ensure_wallet()</code> — lazily creates a <code class="inline">paper_wallets</code> row (₹1,00,000 starting balance) for a first-time user.</p></div></div>
+      <div class="step ok"><div class="num">4</div><div class="body"><h4>Every subsequent request</h4><p><code class="inline">GET /api/auth/me</code> is the sole gate the SPA checks on mount to decide Login vs Dashboard. Every login-gated route uses <code class="inline">Depends(security.require_login)</code>, reading the same session cookie — no bearer token is ever kept in JS state.</p></div></div>
+      <div class="step ok"><div class="num">5</div><div class="body"><h4>Logout</h4><p><code class="inline">supabase.auth.signOut()</code> (clears the Supabase client's own session) <b>and</b> <code class="inline">POST /api/auth/logout</code> (clears the backend cookie) — both, so neither side is left in a stale authenticated state.</p></div></div>
+    </div>
+    <div class="callout info"><div class="cico">🧪</div><p><b>Dev mode.</b> If <code class="inline">SUPABASE_URL</code> is unset, <code class="inline">security.py</code>'s login gate treats every request as authenticated under a fixed <code class="inline">DEV_USER_ID</code> — lets the whole app run locally with zero Supabase project configured.</p></div>
+    <div class="callout warn"><div class="cico">🔌</div><p><b>A third, unrelated auth concern.</b> <code class="inline">ConnectFyersBanner</code> (shown whenever the backend's FYERS <i>broker</i> connection drops) is not a login screen — it opens <code class="inline">GET /api/auth/login-url</code>'s broker OAuth URL in a new tab to reauthorize data ingestion, while the user's own dashboard session (above) stays fully logged in throughout.</p></div>
+  </section>
+
+  <!-- 05 DATA FLOW -->
   <section id="data">
-    <div class="eyebrow">04 — Data plane</div>
+    <div class="eyebrow">05 — Data plane</div>
     <h2>Complete data-ingestion flow</h2>
     <p class="sub">Two ingestion paths feed one thread-safe in-memory state: a REST <b>backfill</b> at startup so no field is
-      ever blank, and the live <b>websocket</b> for streaming ticks. A <code class="inline">Broadcaster</code> task diffs state every 250 ms and fans delta frames to all WebSocket subscribers.</p>
+      ever blank, and the live <b>websocket</b> for streaming ticks.</p>
 
-    <h3>A · Startup REST backfill (4 passes, all per-symbol except quotes)</h3>
+    <h3>A · Startup REST backfill — <code class="inline">DataEngine.backfill()</code>, in order</h3>
     <p class="sub">FYERS' <code class="inline">history()</code> endpoint has no batch mode — each pass below is a
-      loop of 170 individual REST calls, paced 50 ms apart. Only <code class="inline">quotes()</code> supports
-      batching (≤50 symbols/request).</p>
+      loop of individual REST calls (one per symbol), paced 50&nbsp;ms apart. Only <code class="inline">quotes()</code>
+      supports batching (≤50 symbols/request, the documented FYERS cap).</p>
     <div class="grid c4">
       <div class="card">
+        <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">0</span>Validate symbols</h4>
+        <p><code class="inline">validate_symbols()</code> batches all 211 symbols into 50-at-a-time <code class="inline">quotes()</code> calls, drops anything not returning <code class="inline">s=="ok"</code> — protects the WS subscription from one bad ticker tearing down the connection.</p>
+      </div>
+      <div class="card">
         <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">1</span>Previous day</h4>
-        <p>Daily candles (<code class="inline">resolution:"D"</code>, ~12d) → last <i>completed</i> day's high / low / close for the benchmark &amp; every stock.</p>
+        <p>Daily candles (<code class="inline">resolution:"D"</code>, 12-day lookback) → last <i>completed</i> day's high/low/close for every symbol.</p>
       </div>
       <div class="card">
         <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">2</span>Today's ORB</h4>
@@ -461,20 +516,16 @@ access_token, refresh_token = resp[<span class="tok-s">"access_token"</span>], r
       </div>
       <div class="card">
         <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">3</span>Breakout-quality seed</h4>
-        <p>5-min candles for the 09:15–09:45 opening range → <code class="inline">candle1_high/low</code> + the two-sided-range check (feeds the C1 quality gates).</p>
-      </div>
-      <div class="card">
-        <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">4</span>Quote seed</h4>
-        <p>Batched <code class="inline">quotes()</code> (≤50/req) → an initial LTP so rows render fully before the first tick.</p>
+        <p>5-min candles for the 09:15–09:45 opening range → <code class="inline">candle1_high/low</code> + the two-sided-range check.</p>
       </div>
     </div>
-    <div class="callout warn"><div class="cico">⚠️</div><p><b>Known account limitation.</b> On this FYERS account, <code class="inline">history()</code> currently returns <code class="inline">-403 Additional permission required</code> — so passes 1–3 above return nothing in production; only the batched quote seed (pass 4) succeeds. The ORB boundaries and breakout-quality data are instead derived <i>live from ticks</i> (<code class="inline">candle_aggregator.py</code>) using the identical math, just fed from the websocket instead of REST history. If FYERS' permission is ever restored, the REST passes simply start working again — the two paths don't conflict.</p></div>
+    <p class="sub" style="margin-top:14px">Then a 4th pass — batched <code class="inline">quotes()</code> — seeds an
+      initial LTP for every symbol so rows render fully before the first tick arrives.</p>
+    <div class="callout warn"><div class="cico">⚠️</div><p><b>Known account limitation.</b> On this FYERS account, <code class="inline">history()</code> currently returns <code class="inline">-403 Additional permission required</code> — treated as non-retryable, so passes 1–3 above return nothing in production; only the batched quote seed succeeds. The ORB boundaries and breakout-quality data are instead derived <i>live from ticks</i> (<code class="inline">candle_aggregator.py</code>) using the identical math, just fed from the websocket instead of REST history. If FYERS' permission is ever restored, the REST passes simply start working again — the two paths don't conflict.</p></div>
 
     <h3>B · Symbol subscription &amp; live websocket ingestion</h3>
-    <p class="sub">Yes — <b>all 170 watchlist stocks plus the NIFTY 50 index are subscribed together on one single
-      websocket connection</b>, not 170 separate sockets. Before subscribing, <code class="inline">validate_symbols()</code>
-      pings every symbol via a batched <code class="inline">quotes()</code> call and drops anything FYERS doesn't
-      recognise — one bad/delisted ticker in the subscribe list would otherwise tear down the entire connection.</p>
+    <p class="sub">All 210 watchlist stocks plus the NIFTY 50 index are subscribed together on <b>one single
+      websocket connection</b> — the underlying <code class="inline">fyers_apiv3</code> SDK's own <code class="inline">symbol_limit</code> is 5000 (internally chunking only above that), well beyond the 211-symbol universe, so effectively one subscribe call.</p>
     <pre><span class="tok-c"># fyers_service.py — one connection, full watchlist + benchmark</span>
 self.ws = FyersDataSocket(
     access_token=<span class="tok-s">f"{CLIENT_ID}:{token}"</span>,
@@ -485,55 +536,87 @@ self.ws = FyersDataSocket(
 self.ws.connect()                          <span class="tok-c"># BLOCKING — run on its own daemon thread</span>
 
 <span class="tok-c"># inside on_connect:</span>
-self.ws.subscribe(symbols=valid_symbols, data_type=<span class="tok-s">"SymbolUpdate"</span>)  <span class="tok-c"># all 171 at once</span>
+self.ws.subscribe(symbols=valid_symbols, data_type=<span class="tok-s">"SymbolUpdate"</span>)  <span class="tok-c"># all 211 at once</span>
 self.ws.keep_running()</pre>
+
+    <h4 class="subhead">Exact per-tick field extraction &amp; dispatch — <code class="inline">_handle_tick(msg)</code></h4>
+    <pre>fy_symbol = msg.get(<span class="tok-s">"symbol"</span>)                                    <span class="tok-c"># required, else drop</span>
+ltp = msg.get(<span class="tok-s">"ltp"</span>) or msg.get(<span class="tok-s">"last_traded_price"</span>)              <span class="tok-c"># required, else drop</span>
+high, low = msg.get(<span class="tok-s">"high_price"</span>) or msg.get(<span class="tok-s">"high"</span>) or 0, msg.get(<span class="tok-s">"low_price"</span>) or msg.get(<span class="tok-s">"low"</span>) or 0
+prev_close = msg.get(<span class="tok-s">"prev_close_price"</span>) or msg.get(<span class="tok-s">"prev_close"</span>) or 0
+volume = msg.get(<span class="tok-s">"vol_traded_today"</span>) or msg.get(<span class="tok-s">"volume"</span>) or 0
+upper_ckt, lower_ckt = msg.get(<span class="tok-s">"upper_ckt"</span>) or 0, msg.get(<span class="tok-s">"lower_ckt"</span>) or 0
+tot_buy_qty, tot_sell_qty = msg.get(<span class="tok-s">"tot_buy_qty"</span>) or 0, msg.get(<span class="tok-s">"tot_sell_qty"</span>) or 0
+
+<span class="tok-k">if</span> fy_symbol == BENCHMARK_SYMBOL:                       <span class="tok-c"># NSE:NIFTY50-INDEX</span>
+    market_state.set_nifty(ltp=ltp, prev_close=prev_close or <span class="tok-k">None</span>)
+    candle_aggregator.on_index_tick(<span class="tok-s">"NIFTY50"</span>, ltp, now_ist)  <span class="tok-c"># feeds Smart Money's RS calc — see §09</span>
+    <span class="tok-k">return</span>
+process_incoming_tick(market_state, short_symbol(fy_symbol), ltp, high, low,
+                       prev_close, volume, upper_ckt, lower_ckt, tot_buy_qty, tot_sell_qty)</pre>
 
     <div class="topo" style="margin-top:16px">
       <div class="layers" style="min-width:640px">
-        <div class="layer"><div class="tag">Socket</div><h5>FyersDataSocket</h5><ul><li>171 symbols, 1 connection</li><li>auto-reconnect</li><li>runs on a daemon thread</li></ul></div>
+        <div class="layer"><div class="tag">Socket</div><h5>FyersDataSocket</h5><ul><li>211 symbols, 1 connection</li><li>auto-reconnect</li><li>runs on a daemon thread</li></ul></div>
         <div class="flowarrow"><span>on_message</span><div class="a">→</div></div>
-        <div class="layer"><div class="tag">Normalize</div><h5>_handle_tick</h5><ul><li>defensive key read</li><li>NIFTY → set_nifty()</li><li>equity → process_tick</li></ul></div>
+        <div class="layer"><div class="tag">Normalize</div><h5>_handle_tick</h5><ul><li>defensive key read</li><li>NIFTY → set_nifty() + on_index_tick()</li><li>equity → process_incoming_tick</li></ul></div>
         <div class="flowarrow"><span>under RLock</span><div class="a">→</div></div>
-        <div class="layer"><div class="tag">Compute</div><h5>process_incoming_tick</h5><ul><li>LTP · today H/L · VWAP</li><li>%Δ · RS(Nifty) · RS(sector) · day-pos</li><li>ORB eval + quality gates</li><li>candle_aggregator hooks</li></ul></div>
+        <div class="layer"><div class="tag">Compute</div><h5>process_incoming_tick</h5><ul><li>LTP · today H/L · VWAP</li><li>%Δ · RS(Nifty) · day-pos</li><li>candle_aggregator.on_tick()</li><li>ORB eval + quality gates</li><li>order_monitor (paper trades)</li></ul></div>
         <div class="flowarrow"><span>mutates</span><div class="a">→</div></div>
         <div class="layer"><div class="tag">State</div><h5>MarketState</h5><ul><li>RLock guarded</li><li>plain dicts, RAM only</li><li>market_open flag</li></ul></div>
       </div>
     </div>
+  </section>
 
-    <h3>C · 250 ms WebSocket broadcast to the browser</h3>
-    <p class="sub">A single <code class="inline">Broadcaster</code> task snapshots state every 250 ms, diffs it against the previous snapshot, and fans the minimal JSON delta (or a full snapshot on first connect / resync) to every subscriber via bounded <code class="inline">asyncio.Queue</code>s. This is a completely separate WebSocket connection from the FYERS one above — the browser only ever talks to this backend, never to FYERS directly.</p>
+  <!-- 06 BROADCAST -->
+  <section id="broadcast">
+    <div class="eyebrow">06 — Real-time push</div>
+    <h2>250 ms WebSocket broadcast to the browser</h2>
+    <p class="sub">A single <code class="inline">Broadcaster</code> task snapshots state every <code class="inline">STREAM_INTERVAL</code> (250&nbsp;ms), diffs it against the previous snapshot, and fans the minimal JSON delta (or a full snapshot on first connect / resync) to every subscriber via bounded <code class="inline">asyncio.Queue</code>s. This is a completely separate WebSocket connection from the FYERS one above — the browser only ever talks to this backend, never to FYERS directly.</p>
+
+    <h4 class="subhead">Fields carried in every snapshot/delta stock entry</h4>
+    <div class="pill-row">
+      <span class="pill">symbol</span><span class="pill">sector</span><span class="pill">ltp</span><span class="pill">pct_change</span>
+      <span class="pill">relative_strength</span><span class="pill">day_range_pos</span><span class="pill">signal</span>
+      <span class="pill">signal_time</span><span class="pill">volume</span><span class="pill">traded_value (derived: ltp×volume)</span>
+      <span class="pill">yesterday_low/high</span><span class="pill">today_low/high</span><span class="pill">vwap</span>
+    </div>
+
     <pre><span class="tok-c"># Broadcaster._tick_once — runs every 250 ms on the asyncio loop</span>
 frame = build_frame(prev, curr, seq=next_seq)  <span class="tok-c"># None if nothing changed</span>
 <span class="tok-k">if</span> frame <span class="tok-k">is None</span> <span class="tok-k">and not</span> needs_resync:
-    <span class="tok-c"># emit heartbeat every ~5 s of quiet to keep client liveness timer alive</span>
+    <span class="tok-c"># after ~20 quiet ticks (5s at 250ms), emit a heartbeat to keep client liveness alive</span>
     ...
 <span class="tok-k">for</span> q <span class="tok-k">in</span> subscribers:
-    q.put_nowait(json.dumps(frame))            <span class="tok-c"># O(1) per subscriber</span></pre>
+    <span class="tok-k">try</span>: q.put_nowait(json.dumps(frame))
+    <span class="tok-k">except</span> asyncio.QueueFull:
+        <span class="tok-c"># slow client: drop its queue contents, force a fresh snapshot next tick</span>
+        drain(q); mark_resync(q)</pre>
 
     <table>
       <thead><tr><th>Endpoint</th><th>Method</th><th>Purpose</th></tr></thead>
       <tbody>
-        <tr><td><code>/ws/stream</code></td><td>WebSocket</td><td>250 ms delta frames (<code>snapshot</code> on connect, <code>delta</code> on change, <code>heartbeat</code> on quiet)</td></tr>
-        <tr><td><code>/api/snapshot</code></td><td>GET</td><td>One-shot snapshot frame (same shape as WS snapshot; used to warm the store before WS connects)</td></tr>
-        <tr><td><code>/api/health</code></td><td>GET</td><td>Liveness + market-open flag</td></tr>
+        <tr><td><code>/ws/stream</code></td><td>WebSocket</td><td>250 ms delta frames (<code>snapshot</code> on connect, <code>delta</code> on change, <code>heartbeat</code> on quiet). Session-cookie authenticated — closes with code <code>4401</code> if unauthenticated. Client can send <code>{"type":"resync"}</code> to force a fresh snapshot.</td></tr>
+        <tr><td><code>/api/snapshot</code></td><td>GET</td><td>One-shot snapshot frame (same shape as WS snapshot; warms the SPA before the WS connects)</td></tr>
+        <tr><td><code>/api/health</code></td><td>GET</td><td>Public. Liveness + market-open flag + FYERS auth status — also the endpoint <code class="inline">deploy.sh</code> polls after every restart</td></tr>
       </tbody>
     </table>
+    <div class="callout info"><div class="cico">🐌</div><p><b>Slow-client protocol.</b> If a subscriber's bounded queue (<code class="inline">BROADCAST_MAX_QUEUE</code>, default 8) fills up, the broadcaster drains it and force-resyncs that one client with a fresh snapshot next tick — rather than blocking the whole broadcast loop waiting on one slow connection.</p></div>
   </section>
 
-  <!-- MATH -->
+  <!-- 07 MATH -->
   <section id="math">
-    <div class="eyebrow">05 — Engines</div>
-    <h2>Indicators &amp; calculations</h2>
+    <div class="eyebrow">07 — Engines</div>
+    <h2>Core indicators &amp; calculations</h2>
     <p class="sub">Every tick recomputes these deterministic engines in memory before the next broadcast. All
       functions are pure (no side effects) and unit-tested in isolation.</p>
 
     <div class="grid c2">
       <div class="formula">
         <div class="label">Engine A</div>
-        <h4>Relative Strength vs NIFTY 50 (RS)</h4>
-        <div class="eq">RS<sub>i,t</sub> = Δ%&nbsp;Stock<sub>i,t</sub> − Δ%&nbsp;NIFTY<sub>t</sub></div>
-        <p class="note">Each side is % change vs its own previous close. The single biggest input into every
-          downstream score — positive means outperforming the index right now.</p>
+        <h4>Intraday Relative Strength vs NIFTY 50 (RS)</h4>
+        <div class="eq">RS = round(Δ%&nbsp;Stock − Δ%&nbsp;NIFTY, 2)</div>
+        <p class="note">Each side is % change vs its own previous close. The single biggest input into the Momentum Score — positive means outperforming the index right now. Field: <code class="inline">stock["relative_strength"]</code>.</p>
         <div class="pill-row" style="margin-top:10px">
           <span class="badge b-green">RS &gt; 0 · Outperform</span>
           <span class="badge b-red">RS &lt; 0 · Underperform</span>
@@ -541,41 +624,41 @@ frame = build_frame(prev, curr, seq=next_seq)  <span class="tok-c"># None if not
       </div>
 
       <div class="formula">
-        <div class="label">Engine F</div>
-        <h4>Relative Strength vs Sector</h4>
-        <div class="eq">RS<sub>sector</sub> = Δ%&nbsp;Stock − mean(Δ%&nbsp;Sector members)</div>
-        <p class="note">Each stock's fine-grained sector tag rolls up into a broader NIFTY-style group; every
-          member's plain average % change (not volume-weighted) becomes that group's benchmark for this comparison.</p>
+        <div class="label">Engine B</div>
+        <h4>% Change</h4>
+        <div class="eq">pct_change = round((LTP − prev_close) / prev_close × 100, 2)</div>
+        <p class="note">Returns <code class="inline">0.0</code> if <code class="inline">prev_close</code> is falsy (zero-guard) — the base input for RS and most of the Insights leaderboards.</p>
+      </div>
+
+      <div class="formula">
+        <div class="label">Engine C</div>
+        <h4>Day Range Position (%)</h4>
+        <div class="eq">
+          <span class="frac"><span class="num">LTP − T<sub>L</sub></span><span class="den">T<sub>H</sub> − T<sub>L</sub></span></span> × 100
+        </div>
+        <p class="note">Where the price sits inside today's own low→high band so far (0–100%). Feeds the "Extended" warning badge, the momentum score's extension penalty, and Insights' New Highs/Lows (≥95% / ≤5%). A zero-or-negative span guard returns 0.</p>
       </div>
 
       <div class="formula">
         <div class="label">Engine D</div>
-        <h4>Day Range Position (%)</h4>
-        <div class="eq">
-          <span class="frac"><span class="num">LTP<sub>t</sub> − T<sub>L</sub></span><span class="den">T<sub>H</sub> − T<sub>L</sub></span></span> × 100
-        </div>
-        <p class="note">Where the price sits inside today's own low→high band so far (0–100%). Feeds the day-range
-          bar, the "Extended" warning, and the momentum score's extension penalty. A zero-span guard returns 0.</p>
+        <h4>Volume-Weighted Average Price (VWAP)</h4>
+        <div class="eq">VWAP = round(cumPV / cumVol, 4)</div>
+        <p class="note">Ticks carry <i>cumulative</i> today's volume, not per-trade size — so each tick's volume
+          <b>delta</b> (<code class="inline">max(0, new_volume − prev_volume)</code>) is multiplied by that tick's
+          LTP and added to a running price×volume sum, divided by running volume. A non-monotonic (stale/duplicate)
+          volume tick is treated as a zero delta rather than corrupting the running sums — <code class="inline">stock["vwap_cum_pv"]</code>/<code class="inline">vwap_cum_vol</code>/<code class="inline">vwap</code>.</p>
       </div>
 
       <div class="formula">
         <div class="label">Engine E</div>
-        <h4>Volume-Weighted Average Price (VWAP)</h4>
-        <div class="eq">VWAP = cumPV / cumVol</div>
-        <p class="note">Ticks carry <i>cumulative</i> today's volume, not per-trade size — so each tick's volume
-          <b>delta</b> is multiplied by that tick's LTP and added to a running (price×volume) sum, divided by
-          running volume. A non-monotonic (stale/duplicate) volume tick is treated as a zero delta rather than
-          corrupting the running sums.</p>
-      </div>
-
-      <div class="formula">
-        <div class="label">Engine B</div>
         <h4>30-min Opening Range Breakout (C1–C4)</h4>
         <div class="eq">Upper<sub>Cn</sub> = max(LTP)&nbsp;&nbsp;·&nbsp;&nbsp;Lower<sub>Cn</sub> = min(LTP)&nbsp;&nbsp;<span class="mut">over t ∈ Cn</span></div>
         <p class="note">Candles: C1 09:15–09:45 · C2 09:45–10:15 · C3 10:15–10:45 · C4 10:45–11:15. Once a candle
-          completes, a breach of its bound triggers a signal; the <b>newest completed candle wins</b> over an
-          earlier one, and a repeat tick in the same signal state doesn't re-fire. C1 additionally has to clear two
-          quality gates below before it's allowed to fire at all.</p>
+          completes, a breach of its bound triggers a signal. <b>Precedence rule</b> (newest-first): the loop checks
+          the most recently completed candle first — if its boundary is breached and the signal differs from the
+          current one, that signal wins outright and older candles are never even consulted; if it's breached but
+          matches the current signal, the function returns "no new signal" immediately rather than falling through
+          to check an older candle.</p>
         <div class="pill-row" style="margin-top:10px">
           <span class="badge b-green">LTP &gt; Upper → Bull • Cn</span>
           <span class="badge b-red">LTP &lt; Lower → Bear • Cn</span>
@@ -583,50 +666,69 @@ frame = build_frame(prev, curr, seq=next_seq)  <span class="tok-c"># None if not
       </div>
 
       <div class="formula">
-        <div class="label">Engine C</div>
+        <div class="label">Engine F</div>
         <h4>Normalized Dual-Range Mapper</h4>
         <div class="eq">
           x(P) = <span class="frac"><span class="num">P − min</span><span class="den">max − min</span></span> × 100
         </div>
-        <p class="note">With <code class="inline">min = min(Y<sub>L</sub>, T<sub>L</sub>)</code> and <code class="inline">max = max(Y<sub>H</sub>, T<sub>H</sub>)</code>, yesterday's and today's ranges (plus the live LTP) all map onto one shared 0–100% scale, drawn as one canvas bar.</p>
+        <p class="note">With <code class="inline">min = min(Y<sub>L</sub>, T<sub>L</sub>)</code> and <code class="inline">max = max(Y<sub>H</sub>, T<sub>H</sub>)</code>, yesterday's and today's ranges (plus the live LTP) all map onto one shared 0–100% scale, drawn as one canvas bar (<code class="inline">calculations.range_map</code>, mirrored client-side in <code class="inline">rangeMap.js</code>).</p>
       </div>
     </div>
 
     <h3>Breakout quality gates — C1 only</h3>
     <p class="sub">C2–C4 are pure structural breaks with no filter. A <b>C1</b> (opening-range) breakout additionally
-      has to pass both of these before the signal is allowed to fire:</p>
+      has to pass both of these before the signal is allowed to fire (checked inside <code class="inline">process_incoming_tick</code>, which discards a would-be C1 signal that fails either gate):</p>
     <div class="steps">
       <div class="step ok">
         <div class="num">1</div>
         <div class="body">
           <h4>First-candle-extreme-intact</h4>
-          <p>The very first 5-minute candle's low (bullish) — or high (bearish) — must still be the day's extreme
-            <i>so far</i>, i.e. never undercut/overtaken since. A trend-cleanliness check: it rules out a first
-            candle that was itself later invalidated by a bigger move the other way.</p>
+          <p><code class="inline">first_candle_extreme_intact(bullish, candle1_high, candle1_low, today_high, today_low)</code>
+            — for a bullish breakout, <code class="inline">today_low &gt;= candle1_low</code> (the first 5-min candle's low must
+            still be the day's low so far); the mirror check on <code class="inline">candle1_high</code>/<code class="inline">today_high</code>
+            for a bearish breakout. Fails closed (returns <code class="inline">False</code>) if the candle-1 reference is
+            still at its 0.0 default.</p>
         </div>
       </div>
       <div class="step ok">
         <div class="num">2</div>
         <div class="body">
           <h4>Two-sided range</h4>
-          <p>Among the six 5-minute candles making up the 09:15–09:45 window, at least one must close red and one
-            green. Rules out a stock that simply gapped and ran one direction non-stop for 30 minutes — no genuine
-            range was ever established to "break out" of.</p>
+          <p><code class="inline">has_two_sided_range(candles)</code> — among the six 5-minute candles making up the
+            09:15–09:45 window (requires ≥6 or returns <code class="inline">False</code>), at least one candle must
+            close red (<code class="inline">close &lt; open</code>) and at least one green (<code class="inline">close &gt; open</code>).
+            Rules out a stock that simply gapped and ran one direction non-stop for 30 minutes.</p>
         </div>
       </div>
     </div>
-    <div class="callout info"><div class="cico">🧵</div><p><b>Tick-derived, not REST-derived.</b> Because <code class="inline">history()</code> is broken on this account (see <a href="#data">Ingestion</a>), <code class="inline">candle_aggregator.py</code> builds the C1–C4 boundaries and the two quality-gate inputs live from the tick stream itself — same formulas, different data source. It also separately records every completed 5-minute candle across the whole session (09:15–15:30) into <code class="inline">candle_history</code> for future backtesting — kept in an entirely separate code path so that addition can never regress the signal logic above.</p></div>
+    <div class="callout info"><div class="cico">🧵</div><p><b>Tick-derived, not REST-derived.</b> Because <code class="inline">history()</code> is broken on this account (see <a href="#data">Ingestion</a>), <code class="inline">candle_aggregator.py</code> builds the C1–C4 boundaries and the two quality-gate inputs live from the tick stream itself — same formulas, different data source. It also separately records every completed 5-minute candle across the whole session (09:15–15:30), <b>including per-bucket volume and tick-rule delta</b>, into <code class="inline">candle_history</code> — kept in an entirely separate code path so that addition (originally backtest groundwork, now also the entire data source for CVD and the Smart Money Engine) can never regress the signal logic above.</p></div>
 
-    <div class="callout good"><div class="cico">✓</div><p><b>Verified.</b> The engine suite passes its unit tests — pct-change, RS, day-range, dual-range map, VWAP, ORB breakout &amp; precedence, and the momentum score below all have dedicated test files exercised on every deploy.</p></div>
+    <h3>Full per-tick sequence — <code class="inline">process_incoming_tick(...)</code>, in order</h3>
+    <ol style="color:var(--muted);font-size:13.5px;padding-left:20px">
+      <li>Seed <code class="inline">prev_close</code> once, if not already set.</li>
+      <li><code class="inline">stock["ltp"] = ltp</code>.</li>
+      <li>If volume is truthy: update VWAP, then commit <code class="inline">stock["volume"]</code>.</li>
+      <li>Overwrite <code class="inline">upper_ckt</code>/<code class="inline">lower_ckt</code>/<code class="inline">tot_buy_qty</code>/<code class="inline">tot_sell_qty</code> if truthy.</li>
+      <li>Expand <code class="inline">today_high</code>/<code class="inline">today_low</code> (guarded against a zeroed backfill).</li>
+      <li>Recompute <code class="inline">pct_change</code>, <code class="inline">day_range_pos</code>, <code class="inline">relative_strength</code>.</li>
+      <li><code class="inline">candle_aggregator.on_tick(stock, ltp, now_ist)</code> — ORB bounds + day/opening-range candle tracking.</li>
+      <li><code class="inline">evaluate_orb(...)</code> → candidate new signal.</li>
+      <li>If the candidate is a C1 signal, gate it through both quality checks above; discard if either fails.</li>
+      <li>Commit the signal/signal_time if one survived.</li>
+      <li><i>(outside the lock)</i> <code class="inline">order_monitor.on_tick_threadsafe(...)</code> fires paper-trading SL/Target/TSL checks for this symbol.</li>
+    </ol>
+
+    <div class="callout good"><div class="cico">✓</div><p><b>Verified.</b> The engine suite passes its unit tests — pct-change, RS, day-range, dual-range map, VWAP, ORB breakout &amp; precedence, the Momentum Score, the Smart Money Engine, CVD tick-rule, trailing-stop, brokerage, and margin math all have dedicated test files exercised on every deploy (66 backend tests as of this report).</p></div>
   </section>
 
-  <!-- SCORE -->
+  <!-- 08 SCORE -->
   <section id="score">
-    <div class="eyebrow">06 — Composite score</div>
+    <div class="eyebrow">08 — Composite score #1</div>
     <h2>Momentum score &amp; the "Recommended" tag</h2>
-    <p class="sub">A single 0–100 composite that ranks every currently-signaled stock, computed identically in two
-      places from one ported formula: client-side (JS) for the on-screen tag, and server-side (Python) on a
-      schedule for automated checkpoint alerts.</p>
+    <p class="sub">A 0–100 composite that ranks every currently-signaled stock, computed identically in two
+      places from one ported formula: client-side (<code class="inline">momentumScore.js</code>) for the on-screen tag, and
+      server-side (<code class="inline">momentum_score.py</code>) on a schedule for automated Telegram checkpoint alerts.
+      This is the older of the app's two recommendation engines — see <a href="#smartmoney">Smart Money Engine</a> for the newer, history-driven one.</p>
 
     <h3>Hard filter — applied before any scoring</h3>
     <div class="callout warn"><div class="cico">⛔</div><p>Score is forced to <b>0</b> if there's no active signal, or if the signal direction disagrees with NIFTY's own move right now — a Bull signal needs NIFTY %change ≥ 0; a Bear signal needs NIFTY %change ≤ 0. On a day NIFTY is anywhere near flat, this alone disqualifies roughly half the signaled universe outright, regardless of how strong the individual setup looks.</p></div>
@@ -636,89 +738,418 @@ frame = build_frame(prev, curr, seq=next_seq)  <span class="tok-c"># None if not
       <thead><tr><th>Component</th><th>Weight</th><th>Formula</th><th>What it rewards</th></tr></thead>
       <tbody>
         <tr><td>RS vs NIFTY</td><td><code>30%</code></td><td><code>clamp(signed RS × 10, 0, 100)</code></td><td>Outperforming the index in the signal's direction</td></tr>
-        <tr><td>RS vs sector</td><td><code>15%</code></td><td><code>clamp(signed sector-RS × 10, 0, 100)</code></td><td>Outperforming its own sector peers, not just the index</td></tr>
-        <tr><td>Volume percentile</td><td><code>20%</code></td><td>percentile rank of traded value among all signaled stocks</td><td>Real money behind the move, not a thin-volume drift</td></tr>
-        <tr><td>VWAP side</td><td><code>15%</code></td><td><code>100</code> if on the "right side" of VWAP for the direction, else <code>0</code></td><td>Trading with the day's volume-weighted trend, not against it</td></tr>
+        <tr><td>RS vs sector</td><td><code>15%</code></td><td><code>clamp(signed sector-RS × 10, 0, 100)</code>, sector-RS = pct_change − sector_mean_pct</td><td>Outperforming its own fine-grained industry peers (see §13), not just the index</td></tr>
+        <tr><td>Traded-value percentile</td><td><code>20%</code></td><td>percentile rank of <code>ltp×volume</code> among all currently-signaled stocks (bull or bear, any direction)</td><td>Real money behind the move, not a thin-volume drift</td></tr>
+        <tr><td>VWAP side</td><td><code>15%</code></td><td><code>100</code> if on the "right side" of VWAP for the direction, else <code>0</code> (binary)</td><td>Trading with the day's volume-weighted trend, not against it</td></tr>
         <tr><td>Signal freshness</td><td><code>10%</code></td><td><code>C1=100 · C2=75 · C3=50 · C4=25</code></td><td>Earlier breakouts over later, staler ones</td></tr>
-        <tr><td>Extension penalty</td><td><code>10%</code></td><td><code>100 − 2×|day_range_pos − 50|</code></td><td>Room left to run — peaks at the midpoint of today's range, decays toward either edge</td></tr>
+        <tr><td>Extension penalty</td><td><code>10%</code></td><td><code>clamp(100 − 2×|day_range_pos − 50|, 0, 100)</code></td><td>Room left to run — peaks at the midpoint of today's range, decays toward either edge</td></tr>
       </tbody>
     </table>
 
     <div class="grid c2" style="margin-top:20px">
       <div class="card">
         <h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">🏅</span>Confidence floor</h4>
-        <p>Only the top <b>3</b> stocks scoring <b>≥ 60</b> get the Recommended tag. Below that, the tag simply
+        <p>Only the top <b>3</b> (<code class="inline">MAX_PICKS</code>) stocks scoring <b>≥ 60</b> (<code class="inline">CONFIDENCE_FLOOR</code>) get the Recommended tag. Below that, the tag simply
           doesn't appear — a quiet/indecisive market can legitimately produce zero picks all day.</p>
       </div>
       <div class="card">
         <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">⏱</span>Checkpoint-locked</h4>
-        <p>Recomputed every tick underneath, but the <i>displayed</i> picks only re-lock every 30 minutes (09:45,
-          10:15, 10:45…) to avoid flickering — so the tag can be up to ~30 minutes stale relative to the live number.</p>
+        <p>Recomputed every tick underneath, but the <i>displayed</i> picks (frontend, via <code class="inline">useRecommendedStocks</code>) only re-lock every 30 minutes, aligned to the ORB candle boundaries — so the tag can be up to ~30 minutes stale relative to the live number, deliberately, to avoid flicker.</p>
       </div>
     </div>
-    <div class="callout info"><div class="cico">📈</div><p><b>What this score does <i>not</i> know.</b> It measures how strong the current move looks right now — it has no concept of chart structure, prior peaks, or "this already failed once today." A stock mid-double-top can still score well right up until it reverses.</p></div>
+    <div class="callout info"><div class="cico">📈</div><p><b>What this score does <i>not</i> know.</b> It measures how strong the current move looks right now — it has no concept of chart structure, prior peaks, or "this already failed once today." A stock mid-double-top can still score well right up until it reverses. It also has no concept of institutional order flow, historical volume context, or turnover normalization — that's exactly the gap the Smart Money Engine below was built to fill.</p></div>
   </section>
 
-  <!-- FILTERS -->
-  <section id="filters">
-    <div class="eyebrow">07 — Screen controls</div>
-    <h2>Filters, sorts &amp; on-row warnings</h2>
-    <p class="sub">All client-side, computed over whatever the WebSocket store currently holds — no extra network
-      call per filter change.</p>
+  <!-- 09 SMART MONEY -->
+  <section id="smartmoney">
+    <div class="eyebrow">09 — Composite score #2</div>
+    <h2>Smart Money Engine — pre-breakout cross-sectional ranking</h2>
+    <p class="sub">A second, independently-computed 0–100 composite, deliberately isolated from every screen and
+      engine above: its own router, its own asyncio background loop, its own tab. It never writes back into
+      <code class="inline">MarketState</code> and reads <code class="inline">candle_history</code> read-only — nothing
+      here can regress the Momentum Score, ORB signals, or any other screen.</p>
+
+    <h3>Why it exists</h3>
+    <p class="sub">Absolute volume is misleading — intraday volume naturally forms a U-shape (high at open/close, dead
+      at midday), so a "high volume" reading at 11:30am and one at 9:20am aren't comparable. The Smart Money Engine
+      instead compares each 5-minute bucket only against the <b>same time slot</b> on that symbol's own last
+      <code class="inline">LOOKBACK_DAYS</code> (20) trading days — a stock's 11:30am volume today vs. its own
+      historical 11:30am average, not vs. some other time of day.</p>
+
+    <div class="grid c2">
+      <div class="formula">
+        <div class="label">Metric 1 · weight 50%</div>
+        <h4>Fresh Turnover Ratio</h4>
+        <div class="eq">Fresh Turnover = Close × bucket Volume &nbsp;·&nbsp; Ratio = FT / avg(FT<sub>same slot, last 20d</sub>)</div>
+        <p class="note">Uses the latest 5-min bucket's Close (the spec's own documented fallback — no true per-bucket
+          VWAP is tracked, to avoid a second per-tick accumulator on the hot path) × its volume, divided by that same
+          slot's historical average turnover. Normalizes money flow so large-caps don't dominate purely on absolute size.</p>
+      </div>
+      <div class="formula">
+        <div class="label">Metric 2 · weight 30%</div>
+        <h4>RVOL (Relative Volume)</h4>
+        <div class="eq">RVOL = bucket Volume / avg(Volume<sub>same slot, last 20d</sub>)</div>
+        <p class="note">Same same-slot-history principle, applied to raw traded quantity instead of turnover.</p>
+      </div>
+      <div class="formula">
+        <div class="label">Metric 3 · weight 20%</div>
+        <h4>Relative Strength vs NIFTY (today-so-far)</h4>
+        <div class="eq">RS = round(Return<sub>stock</sub> − Return<sub>NIFTY</sub>, 2)&nbsp;&nbsp;·&nbsp;&nbsp;Return = (latest Close − today's Open)/today's Open × 100</div>
+        <p class="note"><b>Deliberately different</b> from Engine A in §07 — that one is anchored on <i>yesterday's
+          close</i>; this one is anchored on <i>today's own open</i> (the first 5-min bucket's open price). Both stock
+          and NIFTY returns use the exact same formula, both fed from <code class="inline">candle_history</code> rows
+          (NIFTY's own 5-min OHLC is captured via <code class="inline">candle_aggregator.on_index_tick</code>, added
+          specifically to support this calculation).</p>
+      </div>
+      <div class="formula">
+        <div class="label">Composite</div>
+        <h4>Smart Money Score</h4>
+        <div class="eq">Score = round(0.50×pctile(FTR) + 0.30×pctile(RVOL) + 0.20×pctile(RS), 1)</div>
+        <p class="note">Each raw metric is converted to a 0–100 percentile rank <i>within the eligible cross-section
+          only</i> (stocks that clear the history-depth bar below) before weighting — so metrics on wildly different
+          scales (a ratio around 1.0 vs. a % figure) combine fairly.</p>
+      </div>
+    </div>
+
+    <h3>History bootstrapping — the one real constraint</h3>
+    <div class="callout warn"><div class="cico">⏳</div><p>A symbol needs at least <code class="inline">MIN_HISTORY_DAYS</code> (3) trading days of same-slot history before its ratio metrics are trusted at all — below that, <code class="inline">fresh_turnover_ratio</code>/<code class="inline">rvol</code> stay <code class="inline">None</code> and the symbol is excluded from ranking entirely (not scored with a misleading placeholder). Full confidence is reached at <code class="inline">LOOKBACK_DAYS</code> (20) days. Because <code class="inline">candle_history</code>'s volume column only started populating recently, the tab surfaces <code class="inline">eligible_symbols</code>/<code class="inline">total_symbols</code> and a per-row <code class="inline">days_history</code> count explicitly, with a "building history" banner shown whenever zero symbols are yet eligible — this is a real data constraint, not a bug, and rankings visibly improve in depth and reliability day by day.</p></div>
+
+    <h3>Scheduling — an independent asyncio loop, not the cron scheduler</h3>
+    <pre><span class="tok-c"># smart_money.py — started once from main.py's lifespan, cancelled on shutdown</span>
+<span class="tok-k">async def</span> run_loop():
+    <span class="tok-k">while</span> <span class="tok-k">True</span>:
+        <span class="tok-k">await</span> compute_rankings()          <span class="tok-c"># reads candle_history + market_state, writes only _latest</span>
+        <span class="tok-k">await</span> asyncio.sleep(<span class="tok-n">300</span>)         <span class="tok-c"># RECOMPUTE_INTERVAL_SECONDS — matches the spec's own 5-min cadence</span></pre>
+    <p class="sub">Computes once immediately on startup (so the tab isn't empty for a full 5 minutes after a restart),
+      then every 5 minutes forever, swallowing per-iteration exceptions so one bad cycle never kills the loop. Kept as
+      a native asyncio task rather than an APScheduler thread job (see <a href="#process">Process Model</a>) precisely
+      because it only does async DB reads — no blocking SDK involved — so it can't stall or be stalled by the
+      thread-based FYERS engine.</p>
+
     <table>
-      <thead><tr><th>Control</th><th>Options</th></tr></thead>
+      <thead><tr><th>Endpoint</th><th>Returns</th></tr></thead>
       <tbody>
-        <tr><td>Breakout signal</td><td>All / Bull / Bear</td></tr>
-        <tr><td>Sector</td><td>Any sector group present in the current universe</td></tr>
-        <tr><td>Sort</td><td>Breakout-qualified-first (default, then most-recent signal time, then RS as tiebreak) · RS ▼/▲ · % Change ▼ · Day-range-% ▼ · Symbol A–Z</td></tr>
-        <tr><td>Signal-time cutoff</td><td>Only show signals that fired by a chosen 15-minute mark of the day</td></tr>
+        <tr><td><code>GET /api/smart-money/top10</code></td><td><code>{computed_at, market_open, total_symbols, eligible_symbols, min_history_days, lookback_days, top:[{symbol, sector, score, fresh_turnover_ratio, rvol, relative_strength, *_percentile, days_history}, …]}</code> — top 10 (<code class="inline">TOP_N</code>) by score, descending.</td></tr>
       </tbody>
     </table>
-    <h3>On-row warning badges</h3>
-    <div class="pill-row">
-      <span class="badge b-amber">Extended</span> <span class="mut" style="font-size:13px">day_range_pos ≥ 85% or ≤ 15% — near today's high/low, little room left for a fresh entry</span>
+    <div class="callout good"><div class="cico">✓</div><p><b>Explicitly a watchlist filter, not a trade signal.</b> Both the module's own docstring and the SmartMoneyScreen UI copy state this outright — appearing in the Top 10 means "worth watching," entries still require the user's own structural trigger (ORB break, PDH break, etc.) before acting.</p></div>
+  </section>
+
+  <!-- 10 CVD -->
+  <section id="cvd">
+    <div class="eyebrow">10 — Order-flow proxy</div>
+    <h2>Cumulative Volume Delta (CVD)</h2>
+    <p class="sub">A tick-rule approximation of buy vs. sell pressure — not true order-flow (FYERS' feed carries no
+      bid/ask-crossed trade classification), but a directionally useful proxy computed with zero extra API cost from
+      data already flowing through the tick pipeline.</p>
+
+    <div class="formula">
+      <div class="label">Tick rule</div>
+      <h4>Per-tick signed volume delta — <code class="inline">candle_aggregator._tick_delta</code></h4>
+      <div class="eq">vol_delta = max(0, volume − prev_volume)</div>
+      <p class="note">Then classified by price direction since the last tick: <b>uptick</b> → <code class="inline">+vol_delta</code> (buy-side), <b>downtick</b> → <code class="inline">−vol_delta</code> (sell-side), <b>unchanged price</b> → <code class="inline">0</code>. Both the signed delta and the raw unsigned <code class="inline">vol_delta</code> are returned — the latter separately accumulated as the bucket's traded volume (feeding RVOL/Fresh-Turnover in §09).</p>
     </div>
-    <div class="pill-row" style="margin-top:10px">
-      <span class="badge b-red">⚠ Against-trend</span> <span class="mut" style="font-size:13px">signal direction disagrees with NIFTY's current move — the same rule as the momentum-score hard filter, surfaced on the row itself even before scoring</span>
+
+    <h3>Storage vs. display — two different "cumulative"s</h3>
+    <div class="grid c2">
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">🗄</span>What's persisted</h4>
+        <p><code class="inline">candle_history.delta</code> stores the signed delta accumulated <i>within each individual 5-min bucket only</i> — reset to zero at the start of every new bucket, not a running intraday total.</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">📈</span>What's displayed</h4>
+        <p>The Charts tab's CVD histogram (<code class="inline">CandleChart.jsx</code>) computes the true running total client-side — <code class="inline">cumulative += candle.delta</code> across the whole fetched day — so the chart shows the actual intraday CVD trend, not per-bucket noise.</p>
+      </div>
+    </div>
+
+    <h3>Rendering — the crosshair-synced badge (not per-bar labels)</h3>
+    <p class="sub">An earlier version tried printing the cumulative value as text directly on each histogram bar —
+      abandoned as "too cluttered once zoomed out" (confirmed via an interactive HTML mockup comparison). The shipped
+      design instead:</p>
+    <ul style="color:var(--muted);font-size:13.5px;padding-left:20px">
+      <li>Colors each bar green/red by the <b>sign of the cumulative total</b> at that point (not the bar's own per-bucket delta) — a brief run of small down-ticks that hasn't erased the day's net buying still reads green.</li>
+      <li>Shows <b>zero text on the bars themselves</b>.</li>
+      <li>A small badge overlay (top-right of the chart) reads <code class="inline">CVD &lt;value&gt;</code>, showing the latest cumulative total at rest.</li>
+      <li><code class="inline">chart.subscribeCrosshairMove()</code> reads the histogram series' value at the hovered bar's time and swaps the badge to that bar's value (with a highlighted border) while hovering — reverting to "latest" on mouse-leave.</li>
+    </ul>
+  </section>
+
+  <!-- 11 SCREENS -->
+  <section id="screens">
+    <div class="eyebrow">11 — Client surface</div>
+    <h2>The seven screens</h2>
+    <p class="sub">One tab bar, no router — <code class="inline">Dashboard</code> (in <code class="inline">App.jsx</code>) holds
+      <code class="inline">activeTab</code> as plain state and renders exactly one screen at a time inside a
+      <code class="inline">framer-motion</code> fade/slide transition. Every screen below (except Smart Money) consumes
+      the same live <code class="inline">stocks</code> array, derived once in <code class="inline">Dashboard</code> from
+      <code class="inline">marketStore</code>.</p>
+
+    <div class="grid c2">
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">📊</span>Ranking</h4>
+        <p>Full watchlist table. Filters: signal (Bull/Bear), sector, signal-time cutoff (15-min marks), symbol search. Sorts: breakout-qualified-first (default), RS ▲/▼, % change, day-range %, A–Z. Rows show the "Recommended" badge and an against-trend warning; each has a Trade button and an "Open in Charts" icon.</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(239,68,68,0.14);color:#f87171">🔥</span>Heatmap</h4>
+        <p>Sector/stock treemap (<code class="inline">d3-hierarchy</code>-powered <code class="inline">Treemap</code> component) — tile size = total traded value, color = %change (sector avg or per-stock). Click a sector to drill down to its member stocks; "Back to All Sectors" to return.</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">💡</span>Insights</h4>
+        <p>A dashboard-of-widgets, all derived purely from the live snapshot: Market Breadth, Buy/Sell Pressure, Sector Leaderboard, Breakout Leaderboard, Sector Rotation scatter (mean %change vs. mean RS, quadrant-labeled), Circuit Proximity (within 2% of upper/lower circuit), New Highs/Lows (day-range ≥95%/≤5%), and Top Gainers/Losers/Most-Active/RS-leaders (top 8 each).</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(250,204,21,0.14);color:#facc15">⭐</span>Watchlist</h4>
+        <p>User's starred stocks (own <code class="inline">localStorage["watchlist"]</code> key, deliberately separate from the Charts tab's wishlist). Search-filtered table of starred stocks plus a "top 20 by |%change|" browse-and-add section below it.</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">📈</span>Charts</h4>
+        <p>Scrollable, virtualized feed of live candlestick+CVD charts, one per stock, 2-column on desktop. Filters: sector, wishlist-only, symbol search (Strategy filter reserved/disabled for a future use). Deep dive in §12.</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">🧠</span>Smart Money</h4>
+        <p>The only screen that doesn't consume the live <code class="inline">stocks</code> prop — polls <code class="inline">/api/smart-money/top10</code> every 30s independently. Top-10 table with a score bar, Fresh Turnover/RVOL ratios, RS vs NIFTY, and a history-depth indicator per row. Explicit "watchlist filter, not a trade signal" framing.</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">🧪</span>Positions (Paper Trading)</h4>
+        <p>Three sub-tabs — Trade (order ticket + open positions), History (closed/cancelled orders, date-filtered), Reports (charges summary, exports, equity curve). Full detail in §14. Nav tab badges with the live open-position count even if this screen has never been opened.</p>
+      </div>
+    </div>
+
+    <h3>Cross-screen navigation — "Open in Charts"</h3>
+    <p class="sub">Ranking, Watchlist, and Smart Money each expose an "Open in Charts" icon per row. Clicking it calls
+      <code class="inline">Dashboard.openInCharts(symbol)</code>, which sets both <code class="inline">activeTab="charts"</code>
+      and a lifted <code class="inline">chartsFocusSymbol</code> state in one call — <code class="inline">ChartsScreen</code>
+      then clears its own filters, scrolls the matching <code class="inline">#chart-row-&lt;SYMBOL&gt;</code> element into view, and reports back so the focus state clears.</p>
+  </section>
+
+  <!-- 12 CHARTS DEEP DIVE -->
+  <section id="charts">
+    <div class="eyebrow">12 — Charting technology</div>
+    <h2>Charts tab — implementation deep dive</h2>
+
+    <h3>Two rendering technologies, deliberately</h3>
+    <div class="grid c2">
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">📉</span>lightweight-charts (Charts tab)</h4>
+        <p>Full interactive chart — pan/zoom/crosshair, two panes (candlesticks 3:1 stretch, CVD histogram 1:1), reference price lines, live theme recoloring. One instance per stock, created once and updated imperatively (never torn down on data change, to preserve pan/zoom state).</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">🖼</span>Hand-rolled Canvas (table rows)</h4>
+        <p><code class="inline">MiniCandlestick.jsx</code> — a tiny 200×36px DPR-scaled sparkline used inline in <code class="inline">WatchlistRow</code>. No axes/zoom/CVD, fixed 75-slot width (the whole 09:15–15:30 session at 5-min resolution) so density stays constant through the day. Cheap enough to render 100+ per table.</p>
+      </div>
+    </div>
+
+    <h3>CandleChart.jsx — series &amp; panes</h3>
+    <ul style="color:var(--muted);font-size:13.5px;padding-left:20px">
+      <li><b>Pane 0 — CandlestickSeries.</b> Up/down colors read live from CSS variables <code class="inline">--bull-strong</code>/<code class="inline">--bear-strong</code> (theme-aware, not hardcoded).</li>
+      <li><b>Pane 1 — HistogramSeries (CVD).</b> <code class="inline">priceFormat:{type:"volume"}</code>, stretch-factored 1 vs. pane 0's 3.</li>
+      <li><b>Autoscale provider.</b> <code class="inline">series.applyOptions({autoscaleInfoProvider})</code> widens the candlestick series' auto-computed price range to also cover the reference-level values — otherwise a level line outside the candles' own high/low would silently scroll off the visible axis.</li>
+      <li><b>Reference price lines</b> (<code class="inline">createPriceLine</code>, dashed): Opening-Range High (green), Opening-Range Low (red), Previous-Day High/Low (amber), <b>Pivot</b> (violet) — <code class="inline">(prev_high + prev_low + prev_close)/3</code>, the classic floor-trader pivot, computed in <code class="inline">candle_query.get_levels()</code>, only when all three inputs are available.</li>
+      <li><b>Time axis correctness.</b> lightweight-charts renders UTCTimestamp labels in UTC regardless of the browser's own timezone — <code class="inline">bucketToTime()</code> builds the epoch from UTC-midnight-plus-bucket-minutes rather than the browser's local wall clock, fixing an earlier bug where 09:15 IST rendered as 03:45.</li>
+    </ul>
+
+    <h3>Data path &amp; virtualization</h3>
+    <div class="steps">
+      <div class="step ok"><div class="num">1</div><div class="body"><h4>Lazy mount</h4><p><code class="inline">useInViewport()</code> (IntersectionObserver, 800px overscan margin) — a chart only actually renders once scrolled near-into-view; otherwise a same-height placeholder holds its spot. Avoids ever mounting 200+ live chart instances at once.</p></div></div>
+      <div class="step ok"><div class="num">2</div><div class="body"><h4>Initial fetch</h4><p><code class="inline">useSymbolCandles(symbol)</code> checks an in-memory cache, else <code class="inline">GET /api/charts/candles/{symbol}</code> → <code class="inline">candle_query.get_today_candles()</code>, which merges persisted <code class="inline">candle_history</code> rows with the still-forming in-progress bucket from <code class="inline">candle_aggregator.get_in_progress()</code> (tagged <code class="inline">is_live:true</code>).</p></div></div>
+      <div class="step ok"><div class="num">3</div><div class="body"><h4>Live tick merge</h4><p>Subsequent ticks (<code class="inline">useStock(symbol)</code>) are folded into the last candle client-side via the shared <code class="inline">candleMerge.js</code>, plus a local tick-rule delta mirror (<code class="inline">mergeTickWithDelta</code>) matching the backend's own CVD rule — so the currently-open bucket updates live without re-fetching.</p></div></div>
+    </div>
+
+    <h3>Wishlist ("+" icon)</h3>
+    <p class="sub"><code class="inline">chartsWishlistStore.js</code> — its own <code class="inline">useSyncExternalStore</code> store backed by <code class="inline">localStorage["chartsWishlist"]</code>, explicitly kept separate from the Watchlist screen's own <code class="inline">localStorage["watchlist"]</code> key so the two "starred" concepts never collide.</p>
+  </section>
+
+  <!-- 13 SECTORS -->
+  <section id="sectors">
+    <div class="eyebrow">13 — Taxonomy</div>
+    <h2>Dual sector taxonomy — display vs. scoring</h2>
+    <p class="sub">Two separate sector maps exist on purpose, on both backend and frontend, because one taxonomy
+      can't serve both jobs well at once.</p>
+    <div class="grid c2">
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">🖥</span><code class="inline">WATCHLIST</code> sector (display)</h4>
+        <p>210 entries, coarse labels matching a companion tool's own taxonomy: <i>Nifty 50, Bank, Pvt Bank, Psu Bank, Fin Service, It, Auto, Pharma, Fmcg, Energy, Metal, Realty, Cement, Midcap Select, Others.</i> Drives every visible Sector filter/dropdown across Ranking, Charts, Heatmap, Watchlist.</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">🧮</span><code class="inline">INDUSTRY_GROUP</code> sector (scoring)</h4>
+        <p>A separate, finer-grained 210-entry map (pre-2026-08-06 taxonomy: <i>Energy, Power, Capital Goods, Consumer Durables, Infra, Pvt Banks, PSU Banks, NBFC, Insurance, Capital Markets, ...</i>) used <b>only</b> by <code class="inline">momentum_score.py</code>'s RS-vs-sector component, mirrored on the frontend as <code class="inline">industryGroup.js</code> for <code class="inline">momentumScore.js</code>.</p>
+      </div>
+    </div>
+    <div class="callout warn"><div class="cico">⚠️</div><p><b>Why not just one taxonomy.</b> The display taxonomy's "Bank" bucket, for example, lumps private and PSU banks that behave very differently intraday; using it for RS-vs-sector scoring would dilute the signal by comparing a stock against too-dissimilar peers. The finer <code class="inline">INDUSTRY_GROUP</code> preserves scoring quality while the coarser <code class="inline">WATCHLIST</code> sector stays what users actually see and filter by.</p></div>
+  </section>
+
+  <!-- 14 PAPER TRADING -->
+  <section id="paper">
+    <div class="eyebrow">14 — Simulated execution</div>
+    <h2>Paper trading engine</h2>
+    <p class="sub">A fully separate subsystem from the live market-data path — its own Postgres tables, its own
+      router, its own per-tick hook (<code class="inline">order_monitor.on_tick_threadsafe</code>) fired from inside
+      <code class="inline">process_incoming_tick</code> but otherwise independent. Every user gets a virtual wallet
+      (₹1,00,000 starting balance) and can place MARKET/LIMIT orders with optional SL/Target/trailing-stop brackets
+      against live prices, at simulated Indian-market brokerage/tax rates.</p>
+
+    <h3>Order lifecycle</h3>
+    <div class="steps">
+      <div class="step ok"><div class="num">1</div><div class="body"><h4>Place</h4><p><code class="inline">POST /api/paper/orders</code> — MARKET fills immediately at LTP; LIMIT queues as <code class="inline">PENDING</code>. Required margin is checked/locked against the wallet up front.</p></div></div>
+      <div class="step ok"><div class="num">2</div><div class="body"><h4>Monitor (every tick)</h4><p><code class="inline">order_monitor.py</code>: for pending LIMIT orders, <code class="inline">_limit_hit()</code> checks fill; for open positions, <code class="inline">_ratchet_trailing_stop()</code> runs first (updates the trailing peak/SL if a TSL is configured), then <code class="inline">_bracket_hit()</code> checks SL/Target — in that order, so a stop just moved by the ratchet is honored on the very same tick.</p></div></div>
+      <div class="step ok"><div class="num">3</div><div class="body"><h4>Close</h4><p>Manual (<code class="inline">POST /orders/{id}/close</code>), or automatic on SL/Target/end-of-day square-off (15:30 cron). Computes realized P&amp;L, brokerage/tax charges, and <code class="inline">net_pnl = realized_pnl − total_charges</code>; credits <code class="inline">margin_locked + net_pnl</code> back to the wallet. Non-manual closes fire a Telegram alert.</p></div></div>
+    </div>
+
+    <div class="grid c2">
+      <div class="formula">
+        <div class="label">Margin</div>
+        <h4>Simulated 5× intraday leverage</h4>
+        <div class="eq">required_margin = round(entry_price × quantity / 5, 2)</div>
+        <p class="note"><code class="inline">max_affordable_qty(balance, ltp) = int(balance × 5 / ltp)</code> — a flat approximation, not a real per-stock SPAN/exposure margin model.</p>
+      </div>
+      <div class="formula">
+        <div class="label">P&amp;L</div>
+        <h4>Unrealized / realized P&amp;L</h4>
+        <div class="eq">PnL = direction × (exit − entry) × qty&nbsp;&nbsp;<span class="mut">direction: +1 BUY / −1 SELL</span></div>
+        <p class="note">Same formula for both — unrealized substitutes the live LTP for "exit," realized uses the actual close price.</p>
+      </div>
+      <div class="formula">
+        <div class="label">Trailing stop</div>
+        <h4>Ratchet mechanics — <code class="inline">trailing_stop.py</code></h4>
+        <div class="eq">peak = max(peak, LTP) [BUY]&nbsp;&nbsp;·&nbsp;&nbsp;SL_candidate = peak − offset</div>
+        <p class="note">Offset = <code class="inline">peak × tsl_value/100</code> (PERCENT) or a flat <code class="inline">tsl_value</code> (POINTS). <code class="inline">ratchet_sl()</code> only ever moves the stop favorably (<code class="inline">max</code> for BUY, <code class="inline">min</code> for SELL) — never against the position. Single-tier only (one type/value per order; no multi-phase R-based staging).</p>
+      </div>
+      <div class="formula">
+        <div class="label">Charges</div>
+        <h4>Brokerage &amp; statutory charges — <code class="inline">brokerage.py</code></h4>
+        <div class="eq">brokerage/leg = min(turnover × 0.03%, ₹20)</div>
+        <p class="note">Plus STT 0.025% (sell-leg turnover only), exchange txn 0.00297% (both legs), SEBI ₹10/crore (both legs), stamp duty 0.015% (buy-leg turnover only), GST 18% on (brokerage + exchange charges) — all per the real Indian intraday-equity charge structure, computed per closed trade.</p>
+      </div>
+    </div>
+
+    <h3>Order ticket &amp; risk controls (UI)</h3>
+    <p class="sub"><code class="inline">PlaceOrderForm</code> — symbol, quantity, side, order type, optional limit price, optional SL/Target, optional trailing-stop (<code class="inline">TslFields</code>, shared with <code class="inline">EditPositionModal</code>), and a free-text <b>journal note</b> field ("Why this trade? Setup, conviction, plan…"). Live margin lookup on every symbol/qty change. Two-step submit: a confirmation panel echoes the full order back, with an amber high-risk warning if the order would use &gt;25% of available balance.</p>
+
+    <h3>History, reports &amp; exports</h3>
+    <div class="grid c3">
+      <div class="card"><h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">📜</span>Order History</h4><p>Closed/cancelled orders, date-range filterable, close-reason labels (Manual/SL/Target/Square-off), a full charges-breakdown tooltip, and journal notes surfaced via a sticky-note icon tooltip per row — the closest thing to a trade "journal" in the app.</p></div>
+      <div class="card"><h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">🧾</span>Charges Summary</h4><p>Client-side aggregate (brokerage/STT/stamp-duty/exchange+SEBI/GST/total/net P&amp;L) over whatever date-filtered orders are already loaded — no separate backend aggregate endpoint.</p></div>
+      <div class="card"><h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">📤</span>Excel Exports</h4><p><code class="inline">GET /api/paper/orders/export?section=...</code> streams a server-generated <code class="inline">.xlsx</code> (openpyxl) — Orders / P&amp;L / Tax / Brokerage / Combined, date-range scoped.</p></div>
+    </div>
+    <p class="sub" style="margin-top:14px">The Reports sub-tab also renders a hand-rolled SVG <b>equity curve</b> — cumulative realized P&amp;L over closed trades only (unrealized P&amp;L from open positions isn't plotted, since it has no fixed historical x-position; it only appears as a live stat tile in the always-visible Wallet Summary card, alongside Add-Funds / Reset-Wallet controls).</p>
+  </section>
+
+  <!-- 15 FRONTEND STATE -->
+  <section id="frontend">
+    <div class="eyebrow">15 — Client architecture</div>
+    <h2>Frontend state management &amp; rendering</h2>
+    <p class="sub">Built for a stable frame rate across 200+ live rows, and to survive a mid-session page reload
+      without a blank screen. No Redux/Zustand — everything is hand-rolled on top of React's own
+      <code class="inline">useSyncExternalStore</code>.</p>
+
+    <h3>Stores</h3>
+    <table>
+      <thead><tr><th>Store</th><th>Pattern</th><th>Holds</th></tr></thead>
+      <tbody>
+        <tr><td><code>marketStore.js</code></td><td><code>useSyncExternalStore</code>, <b>per-symbol</b> subscriber sets</td><td>Live stocks Map, symbol list, meta (market/connection/fyers/nifty). A tick on one symbol only re-renders that symbol's own subscribed rows, not the whole table.</td></tr>
+        <tr><td><code>ordersStore.js</code></td><td><code>useSyncExternalStore</code>, one shared subscriber set</td><td>Paper-trading positions/history/summary — always fetched and rendered together as one small dataset.</td></tr>
+        <tr><td><code>chartsWishlistStore.js</code></td><td><code>useSyncExternalStore</code>, backed by <code>localStorage</code></td><td>Charts tab's own wishlist Set, deliberately separate from the Watchlist screen's plain-state <code>localStorage["watchlist"]</code>.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Key hooks</h3>
+    <table>
+      <thead><tr><th>Hook</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>useMarketStream()</code></td><td>Owns a module-level singleton WebSocket (survives component remounts). Sequence-gap detection → resync; 30s-silence heartbeat timeout → force-reconnect; exponential backoff (500ms→10s cap); reference-counted acquire/release; localStorage snapshot + candle caches for instant cold-start paint.</td></tr>
+        <tr><td><code>useStock(symbol)</code> / <code>useSymbols()</code> / <code>useMarketMeta()</code></td><td>Thin <code>useSyncExternalStore</code> reads over <code>marketStore</code>.</td></tr>
+        <tr><td><code>useRecommendedStocks(stocks, niftyPct)</code></td><td>Runs <code>momentumScore.js</code> across the universe, but memoizes the returned symbol list keyed <i>only</i> on a 30-min checkpoint bucket — not on live score changes — to prevent the Recommended tag from flickering tick-to-tick.</td></tr>
+        <tr><td><code>useSymbolCandles(symbol)</code></td><td>Charts tab per-symbol data: cache → REST fetch → live tick merge + local CVD mirror.</td></tr>
+        <tr><td><code>useInViewport()</code></td><td>Generic IntersectionObserver wrapper (800px overscan), Charts tab's virtualization primitive.</td></tr>
+        <tr><td><code>usePaperTradingSync()</code> / <code>usePositionsCount()</code></td><td>5s / 20s polls respectively — catch server-side fills (SL/Target/TSL) that happen with no user action; the count poll works even if Paper Trading has never been opened.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Load sequence, in order</h3>
+    <div class="steps">
+      <div class="step ok"><div class="num">1</div><div class="body"><h4>Auth gate</h4><p><code class="inline">GET /api/auth/me</code> on mount decides Login vs Dashboard.</p></div></div>
+      <div class="step ok"><div class="num">2</div><div class="body"><h4>Instant paint from localStorage</h4><p>The last cached snapshot + client-built candles render immediately, before any network round-trip resolves.</p></div></div>
+      <div class="step ok"><div class="num">3</div><div class="body"><h4>WebSocket connect</h4><p>The first message is always a full <code class="inline">snapshot</code>, overwriting the warm cache with live truth.</p></div></div>
+      <div class="step ok"><div class="num">4</div><div class="body"><h4>Live deltas, surgical re-renders</h4><p>Every subsequent message is a small <code class="inline">delta</code> — only changed fields, fanned out per-symbol.</p></div></div>
+      <div class="step ok"><div class="num">5</div><div class="body"><h4>Client-side candle building</h4><p>The mini-candlestick sparkline is built purely from the LTP stream, 5-min-bucketed, cached to its own day-stamped localStorage key.</p></div></div>
+      <div class="step ok"><div class="num">6</div><div class="body"><h4>Self-healing</h4><p>Sequence gap → resync request; 30s silence → force reconnect with backoff.</p></div></div>
+    </div>
+
+    <h3>Frontend math mirrors (deliberate duplication)</h3>
+    <p class="sub">Several backend calculations are re-implemented in JS so certain UI computations don't require a
+      round-trip — kept in sync by convention/parallel unit tests, not a shared codebase: <code class="inline">momentumScore.js</code>
+      (mirrors <code class="inline">momentum_score.py</code>), <code class="inline">industryGroup.js</code> (mirrors <code class="inline">config.py</code>'s
+      <code class="inline">INDUSTRY_GROUP</code>), <code class="inline">rangeMap.js</code> (mirrors <code class="inline">calculations.range_map</code>),
+      <code class="inline">candleMerge.js</code>'s tick-to-candle folding (mirrors the shape of <code class="inline">candle_aggregator.py</code>'s bucket logic).</p>
+
+    <h3>Theming &amp; responsive patterns</h3>
+    <div class="grid c2">
+      <div class="card"><h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">🌗</span>Theme</h4><p>Plain React Context (not a store), seeded from <code class="inline">localStorage["td-theme"]</code>, toggles a <code class="inline">dark</code>/<code class="inline">light</code> class on <code class="inline">&lt;html&gt;</code>; CSS custom properties (not Tailwind config) carry the actual color tokens, read live by Canvas/chart code so a theme switch repaints without a remount.</p></div>
+      <div class="card"><h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">📱</span>Dual-markup rows</h4><p>Every data table (Watchlist rows, Position rows, Order history) renders two <code class="inline">&lt;tr&gt;</code>s per record — a <code class="inline">hidden md:table-row</code> desktop row and a <code class="inline">md:hidden</code> mobile card row inside one <code class="inline">&lt;td colSpan&gt;</code> — keeping the surrounding <code class="inline">&lt;table&gt;</code> structurally valid at every breakpoint.</p></div>
     </div>
   </section>
 
-  <!-- STORAGE -->
+  <!-- 16 STORAGE -->
   <section id="storage">
-    <div class="eyebrow">08 — Persistence</div>
-    <h2>What's actually stored in the database</h2>
-    <p class="sub">Almost nothing about the live market data is persisted. Everything in <a href="#math">Calculations</a>
-      and <a href="#score">Recommended</a> above — LTP, RS, VWAP, signals, momentum scores — lives only in RAM
-      (<code class="inline">MarketState</code>) and is <b>wiped on every backend restart</b>.</p>
+    <div class="eyebrow">16 — Persistence</div>
+    <h2>Storage architecture &amp; complete DB schema</h2>
+    <p class="sub">Most live market data is never persisted at all — it lives only in RAM and is wiped on every
+      backend restart. Postgres exists for trade record-keeping and the growing candle archive that now powers both
+      CVD and the Smart Money Engine.</p>
+
     <table>
       <thead><tr><th>Data</th><th>Where it lives</th><th>Survives a restart?</th></tr></thead>
       <tbody>
         <tr><td>Live LTP, RS, VWAP, signals, momentum scores</td><td><code>MarketState</code> — plain Python dicts in RAM</td><td>No</td></tr>
-        <tr><td>5-min OHLC candles, whole session</td><td>Postgres — <code>candle_history</code></td><td>Yes (backtest groundwork)</td></tr>
-        <tr><td>Simulated (paper) orders &amp; positions</td><td>Postgres — <code>paper_orders</code></td><td>Yes</td></tr>
+        <tr><td>5-min OHLC + volume + tick-rule delta, every symbol, whole session</td><td>Postgres — <code>candle_history</code></td><td>Yes — powers CVD, Smart Money, and future backtesting</td></tr>
+        <tr><td>Simulated (paper) orders &amp; positions, brokerage/charges, journal notes, trailing-stop state</td><td>Postgres — <code>paper_orders</code></td><td>Yes</td></tr>
         <tr><td>Simulated wallet balance</td><td>Postgres — <code>paper_wallets</code></td><td>Yes</td></tr>
+        <tr><td>Smart Money's latest computed ranking</td><td>In-process module variable (<code>smart_money._latest</code>)</td><td>No — recomputed within 5 min of any restart</td></tr>
         <tr><td>FYERS access/refresh tokens</td><td>Local disk file — <code>.token_cache.json</code> (not the DB)</td><td>Yes, same-day / ~15-day</td></tr>
-        <tr><td>Dashboard login session</td><td>Signed cookie (<code>itsdangerous</code>) — no server-side session table</td><td>Yes, ~14 days per cookie</td></tr>
+        <tr><td>Dashboard login session</td><td>Signed cookie (Starlette <code>SessionMiddleware</code>) — no server-side session table</td><td>Yes, cookie-lifetime dependent</td></tr>
         <tr><td>User accounts</td><td>Supabase Auth (managed externally, not our own tables)</td><td>Yes</td></tr>
       </tbody>
     </table>
-    <div class="callout info"><div class="cico">💽</div><p>In short: the database's job is <i>trade record-keeping and future backtest data</i>, not live market state. The entire signal/scoring engine could run with zero database connectivity at all — Postgres only gets involved once you place a simulated order or once a 5-minute candle needs recording.</p></div>
+
+    <h3>Complete migration history (<code class="inline">backend/migrations/</code>, hand-run in Supabase's SQL Editor — no ORM/migration framework)</h3>
+    <table>
+      <thead><tr><th>File</th><th>Adds</th></tr></thead>
+      <tbody>
+        <tr><td><code>001_orders.sql</code></td><td><code>paper_wallets</code> (user_id PK, balance) and <code>paper_orders</code> (full order shape: symbol, side, quantity, order_type, limit/sl/target/entry/exit price, margin_locked, status, close_reason, realized_pnl, timestamps) + RLS policies + indexes on <code>(user_id,status)</code>/<code>(symbol,status)</code>/<code>(user_id,placed_at desc)</code>.</td></tr>
+        <tr><td><code>002_trailing_stop.sql</code></td><td><code>tsl_type</code>, <code>tsl_value</code>, <code>peak_price</code> on <code>paper_orders</code>.</td></tr>
+        <tr><td><code>003_charges.sql</code></td><td><code>brokerage</code>, <code>stt</code>, <code>exchange_charges</code>, <code>sebi_charges</code>, <code>stamp_duty</code>, <code>gst</code>, <code>total_charges</code>, <code>net_pnl</code> on <code>paper_orders</code>.</td></tr>
+        <tr><td><code>004_notes.sql</code></td><td><code>notes text</code> on <code>paper_orders</code> — the journal-note field.</td></tr>
+        <tr><td><code>005_candle_history.sql</code></td><td>New table <code>candle_history</code> (symbol, bucket_date, bucket_minute, OHLC, unique on symbol+date+minute) + index on <code>(symbol, bucket_date)</code>.</td></tr>
+        <tr><td><code>006_candle_delta.sql</code></td><td><code>delta</code> on <code>candle_history</code> — tick-rule CVD per bucket.</td></tr>
+        <tr><td><code>007_candle_volume.sql</code></td><td><code>volume</code> on <code>candle_history</code> — enables RVOL/Fresh-Turnover for the Smart Money Engine.</td></tr>
+      </tbody>
+    </table>
+
+    <h3><code class="inline">MarketState</code> — the complete in-RAM shape</h3>
+    <p class="sub">One dict per symbol (210 entries, keyed by short symbol) plus one <code class="inline">nifty</code> dict, all under a single <code class="inline">threading.RLock</code>:</p>
+    <div class="pill-row">
+      <span class="pill">symbol</span><span class="pill">fy_symbol</span><span class="pill">sector</span><span class="pill">prev_close</span>
+      <span class="pill">yesterday_low/high</span><span class="pill">today_low/high</span><span class="pill">ltp</span><span class="pill">pct_change</span>
+      <span class="pill">volume</span><span class="pill">upper_ckt/lower_ckt</span><span class="pill">tot_buy_qty/tot_sell_qty</span>
+      <span class="pill">day_range_pos</span><span class="pill">relative_strength</span><span class="pill">vwap_cum_pv/vwap_cum_vol/vwap</span>
+      <span class="pill">orb {C1..C4}</span><span class="pill">candle1_high/low</span><span class="pill">two_sided_ok</span>
+      <span class="pill">signal</span><span class="pill">signal_time</span>
+    </div>
+    <div class="callout info"><div class="cico">💽</div><p>In short: the database's job is <i>trade record-keeping and a historical candle archive</i>, not live market state. The signal/scoring engines described in §07–§09 could run with zero database connectivity — Postgres only gets involved once a candle bucket completes, or a simulated order is placed.</p></div>
   </section>
 
-  <!-- PROCESS MODEL -->
+  <!-- 17 PROCESS MODEL -->
   <section id="process">
-    <div class="eyebrow">09 — Concurrency</div>
-    <h2>Process model — one service, not microservices</h2>
+    <div class="eyebrow">17 — Concurrency</div>
+    <h2>Process model — one service, two scheduling mechanisms</h2>
     <p class="sub">There is exactly <b>one</b> deployed backend service (<code class="inline">tradedashboard-backend</code>,
-      one systemd unit, one Python interpreter). Inside that single process, a few concurrent workers all read and
-      write the <i>same</i> in-memory <code class="inline">MarketState</code> object, coordinated by one
-      <code class="inline">threading.RLock</code> — there is no separate "fetcher" service handing data to a
-      separate "storage" service over a network hop.</p>
+      one systemd unit, one Python interpreter). Inside it, a few concurrent workers all read/write the <i>same</i>
+      in-memory <code class="inline">MarketState</code>, coordinated by one <code class="inline">threading.RLock</code>.</p>
 
     <div class="grid c2">
       <div class="card">
         <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">🔁</span>Main asyncio event loop</h4>
-        <p>Serves HTTP + the browser's <code class="inline">/ws/stream</code> WebSocket, runs the <code class="inline">Broadcaster</code> task, owns the paper-trading Postgres connection pool.</p>
+        <p>Serves HTTP + <code class="inline">/ws/stream</code>, runs the <code class="inline">Broadcaster</code> task, owns the asyncpg Postgres pool, and now also runs the Smart Money <code class="inline">run_loop()</code> background task.</p>
       </div>
       <div class="card">
         <h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">🧵</span>FYERS ingest thread</h4>
@@ -726,87 +1157,119 @@ frame = build_frame(prev, curr, seq=next_seq)  <span class="tok-c"># None if not
       </div>
       <div class="card">
         <h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">⏰</span>APScheduler background thread</h4>
-        <p>Cron-style jobs: daily login, market open/close, opening-range refresh, checkpoint score digests — see <a href="#lifecycle">Lifecycle</a>.</p>
+        <p><code class="inline">BackgroundScheduler</code> — cron-style jobs on their own worker thread(s), outside the asyncio loop: daily login, market open/close, opening-range refresh, momentum-score checkpoint digests.</p>
       </div>
       <div class="card">
-        <h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">🗄</span>Postgres connection pool</h4>
-        <p><code class="inline">asyncpg</code> pool on the main event loop, used only by the paper-trading router and the candle-history writer — never by the live-tick path.</p>
+        <h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">🧠</span>Smart Money asyncio task</h4>
+        <p>Native <code class="inline">asyncio.create_task</code>, not a thread — reads <code class="inline">candle_history</code>/<code class="inline">market_state</code> read-only via async DB calls, recomputes every 5 min, writes only its own module-level cache.</p>
       </div>
     </div>
 
-    <div class="callout good"><div class="cico">✓</div><p><b>Why one process, on purpose.</b> The entire point of <code class="inline">MarketState</code> is a single shared source of truth that every reader — the broadcaster, the momentum score, the order monitor — can read <i>instantly, in-process</i>, with no network hop or serialization cost. Splitting "fetch" and "store" into separate deployed services would mean shipping every one of thousands of ticks/minute over a network boundary before anything downstream could use it — unnecessary latency and operational complexity for a single-operator dashboard at this scale.</p></div>
+    <div class="callout good"><div class="cico">✓</div><p><b>Why two scheduling mechanisms, on purpose.</b> APScheduler's thread-based jobs exist because the FYERS websocket SDK is a <i>blocking</i> client (<code class="inline">ws.connect()</code> blocks, run inside its own <code class="inline">threading.Thread</code>) and <code class="inline">MarketState</code>'s lock is a plain <code class="inline">threading.RLock</code> built for exactly that cross-thread pattern. The Smart Money loop, by contrast, does nothing but async-safe DB reads — a native asyncio task is simpler, and crucially, a bug in it can never stall or crash the thread-based engine (or vice versa). Splitting "fetch" and "store" into separately <i>deployed</i> services was never on the table: the whole point of <code class="inline">MarketState</code> is a single shared source of truth every reader can access instantly, in-process, with no network hop.</p></div>
   </section>
 
-  <!-- FRONTEND -->
-  <section id="frontend">
-    <div class="eyebrow">10 — Client</div>
-    <h2>Frontend: how &amp; when data loads into the UI</h2>
-    <p class="sub">Built for a stable frame rate across 170+ live rows, and to survive a mid-session page reload
-      without a blank screen.</p>
-
-    <h3>Load sequence, in order</h3>
-    <div class="steps">
-      <div class="step ok"><div class="num">1</div><div class="body"><h4>Auth gate</h4><p><code class="inline">GET /api/auth/me</code> on mount decides Login screen vs Dashboard, based on the signed session cookie.</p></div></div>
-      <div class="step ok"><div class="num">2</div><div class="body"><h4>Instant paint from localStorage</h4><p>Before any network round-trip resolves, the last cached <code class="inline">snapshot</code> frame (and the day's client-built candles) are read straight from <code class="inline">localStorage</code> so the screen is never blank — even if slightly stale.</p></div></div>
-      <div class="step ok"><div class="num">3</div><div class="body"><h4>WebSocket connect</h4><p><code class="inline">useMarketStream()</code> opens <code class="inline">/ws/stream</code>. The very first message is always a full <code class="inline">snapshot</code> frame, which immediately overwrites the warm cache with live truth.</p></div></div>
-      <div class="step ok"><div class="num">4</div><div class="body"><h4>Live deltas, surgical re-renders</h4><p>Every message after that is a small <code class="inline">delta</code> — only the fields that actually changed. The store fans updates out per-symbol (<code class="inline">useSyncExternalStore</code>), so a tick on one stock only re-renders that one row, not the whole table.</p></div></div>
-      <div class="step ok"><div class="num">5</div><div class="body"><h4>Client-side candle building</h4><p>The mini-candlestick chart is built purely from the LTP stream itself, tick-by-tick, in 5-minute buckets — no separate history fetch. Persisted to its own localStorage key so a reload mid-session doesn't lose the day's candles (discarded automatically if the cached day doesn't match today).</p></div></div>
-      <div class="step ok"><div class="num">6</div><div class="body"><h4>Self-healing</h4><p>A sequence-number gap on a delta triggers a <code class="inline">resync</code> request for a fresh snapshot; 30 seconds of silence (no heartbeat) force-closes and reconnects with exponential backoff.</p></div></div>
-    </div>
-
-    <h3>Rendering techniques</h3>
-    <div class="grid c4">
-      <div class="card"><h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">🎨</span>Canvas bars</h4><p>Pre-normalized coordinates rasterized on <code class="inline">&lt;canvas&gt;</code> — no per-pixel DOM, DPR-aware.</p></div>
-      <div class="card"><h4><span class="ic" style="background:rgba(139,92,246,0.14);color:#a78bfa">🧩</span>React.memo rows</h4><p>Re-renders isolated to rows whose data actually changed.</p></div>
-      <div class="card"><h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">🔎</span>Filters &amp; sort</h4><p>Signal · sector · day-range · signal-time, all client-side via <code class="inline">useMemo</code>.</p></div>
-      <div class="card"><h4><span class="ic" style="background:rgba(245,158,11,0.14);color:#fbbf24">📴</span>Offline cache</h4><p>Each snapshot mirrored to <code class="inline">localStorage</code>; on drop/standby it renders the last snapshot with a Closed/Offline badge.</p></div>
-    </div>
+  <!-- 18 NOTIFICATIONS -->
+  <section id="notifications">
+    <div class="eyebrow">18 — Alerts</div>
+    <h2>Telegram notifications</h2>
+    <p class="sub"><code class="inline">telegram_notify.send_message(text)</code> is a no-op whenever <code class="inline">TELEGRAM_BOT_TOKEN</code>/<code class="inline">TELEGRAM_CHAT_ID</code> are unset (same disable convention used elsewhere in <code class="inline">config.py</code>) — otherwise POSTs to the Telegram Bot API with <code class="inline">parse_mode:"Markdown"</code>, swallowing all exceptions so a notification failure never breaks the caller.</p>
+    <table>
+      <thead><tr><th>Trigger</th><th>Runs on</th><th>Message</th></tr></thead>
+      <tbody>
+        <tr><td>Paper position closed by SL / Target / end-of-day square-off <i>(never on a manual close — "the user already knows")</i></td><td>Asyncio loop, hopped to a thread via <code class="inline">run_in_executor</code></td><td>🔴/🟢/🟠 + side/qty/symbol @ exit (entry X), then Gross / Charges / Net P&amp;L</td></tr>
+        <tr><td>Momentum-score "Recommended" picks changed at a 30-min checkpoint, and at least one clears the confidence floor</td><td>APScheduler worker thread (direct call, no executor hop needed)</td><td>⭐ Recommended (HH:MM IST): one line per pick, symbol + score</td></tr>
+      </tbody>
+    </table>
   </section>
 
-  <!-- LIFECYCLE -->
+  <!-- 19 LIFECYCLE -->
   <section id="lifecycle">
-    <div class="eyebrow">11 — Operations</div>
+    <div class="eyebrow">19 — Operations</div>
     <h2>Daily lifecycle (APScheduler, IST)</h2>
-    <p class="sub">If the process boots mid-session, it jumps straight to the correct state instead of waiting for the next cron tick.</p>
+    <p class="sub">If the process boots mid-session, it jumps straight to the correct state instead of waiting for the next cron tick. The Smart Money loop (§09) runs on its own independent 5-minute cadence throughout, unaffected by this schedule.</p>
     <div class="steps">
-      <div class="step"><div class="num" style="background:linear-gradient(135deg,#78350f,#3a1d05);border-color:#a16207;color:#fde68a">☀</div><div class="body"><h4>08:45 — Daily token refresh</h4><p>Force-refresh a token (tries the refresh-token grant first, falls back to full TOTP login) — Mon–Fri.</p></div></div>
+      <div class="step"><div class="num" style="background:linear-gradient(135deg,#78350f,#3a1d05);border-color:#a16207;color:#fde68a">☀</div><div class="body"><h4>08:45 — Daily token refresh</h4><p>Force-refresh a FYERS token (refresh-token grant first, TOTP fallback) — Mon–Fri.</p></div></div>
       <div class="step"><div class="num" style="background:linear-gradient(135deg,#14532d,#06210f);border-color:#1f7a3d;color:#bbf7d0">▶</div><div class="body"><h4>09:15 — Market open</h4><p>REST backfill, flip <code class="inline">market_open = true</code>, launch the websocket ingest thread.</p></div></div>
-      <div class="step"><div class="num" style="background:linear-gradient(135deg,#1e3a8a,#0b1b3a);border-color:#2b4d8a;color:#cfe0ff">↻</div><div class="body"><h4>09:46 — Opening-range refresh</h4><p>Now that 09:15–09:45 has fully printed, re-seed the C1 ORB boundaries + the two breakout-quality gates in case the engine booted mid-candle.</p></div></div>
-      <div class="step"><div class="num" style="background:linear-gradient(135deg,#1e3a8a,#0b1b3a);border-color:#2b4d8a;color:#cfe0ff">≈</div><div class="body"><h4>09:15–15:30 — Live</h4><p>Ticks stream continuously; the Broadcaster fans delta frames to all WebSocket subscribers every 250 ms. The momentum-score checkpoint re-locks at 09:45 and every 30 min through 15:15.</p></div></div>
+      <div class="step"><div class="num" style="background:linear-gradient(135deg,#1e3a8a,#0b1b3a);border-color:#2b4d8a;color:#cfe0ff">↻</div><div class="body"><h4>09:46 — Opening-range refresh</h4><p>Re-seed the C1 ORB boundaries + the two breakout-quality gates in case the engine booted mid-candle.</p></div></div>
+      <div class="step"><div class="num" style="background:linear-gradient(135deg,#1e3a8a,#0b1b3a);border-color:#2b4d8a;color:#cfe0ff">≈</div><div class="body"><h4>09:15–15:30 — Live</h4><p>Ticks stream continuously; the Broadcaster fans delta frames every 250 ms; the Momentum-Score checkpoint re-locks at 09:45 and every 30 min through 15:15 (digest fires on change); Smart Money recomputes every 5 minutes independently throughout.</p></div></div>
       <div class="step"><div class="num" style="background:linear-gradient(135deg,#3f0d0d,#210606);border-color:#7f1d1d;color:#fecaca">■</div><div class="body"><h4>15:30 — Market close</h4><p>Close the websocket to conserve bandwidth (standby), square off any still-open simulated positions, and flush the day's last partial 5-min candle bucket to storage.</p></div></div>
     </div>
     <div class="callout info"><div class="cico">🧪</div><p><b>Dev override.</b> <code class="inline">FORCE_MARKET_OPEN=true</code> in <code class="inline">.env</code> runs the engine regardless of the clock to exercise the full pipeline outside market hours.</p></div>
   </section>
 
-  <!-- FILES -->
+  <!-- 20 DEPLOY -->
+  <section id="deploy">
+    <div class="eyebrow">20 — CI/CD</div>
+    <h2>Deployment pipeline</h2>
+    <p class="sub">GitHub Actions builds/validates on a clean runner; only if that passes does it SSH into the
+      production VM and hand off to a self-contained safety script that re-validates a second time before ever
+      touching the live service.</p>
+
+    <h3>GitHub Actions (<code class="inline">.github/workflows/deploy.yml</code>)</h3>
+    <p class="sub">Triggers on push to <code class="inline">main</code> or manual dispatch. <code class="inline">concurrency.group: deploy-to-vm</code> with <code class="inline">cancel-in-progress:false</code> — never two deploys racing (the VM script also takes its own file lock, belt-and-suspenders).</p>
+    <div class="grid c2">
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(59,130,246,0.14);color:#60a5fa">1</span><code class="inline">validate</code> job</h4>
+        <p>Fresh Ubuntu runner: frontend <code class="inline">npm ci &amp;&amp; npm run build</code> (asserts <code class="inline">dist/index.html</code> exists), backend deps install, an import smoke-test (<code class="inline">import app.main</code> + the FYERS SDK), and <code class="inline">pytest tests/ -q</code>. If this fails, <code class="inline">deploy</code> never starts — the live VM is never touched.</p>
+      </div>
+      <div class="card">
+        <h4><span class="ic" style="background:rgba(34,197,94,0.14);color:#4ade80">2</span><code class="inline">deploy</code> job (<code class="inline">needs: validate</code>)</h4>
+        <p>SSHes in (<code class="inline">appleboy/ssh-action</code>). Captures <code class="inline">PREV_SHA</code> <i>before</i> <code class="inline">git reset --hard origin/main</code> moves HEAD (so rollback has something to roll back <i>to</i>), then hands off to <code class="inline">deploy/deploy.sh</code>.</p>
+      </div>
+    </div>
+
+    <h3><code class="inline">deploy/deploy.sh</code> — the safety model, in order</h3>
+    <div class="steps">
+      <div class="step ok"><div class="num">0</div><div class="body"><h4>Lock &amp; snapshot</h4><p><code class="inline">flock -n</code> on a lock file (refuses to run if another deploy is in progress); records pre-deploy <code class="inline">/api/health</code> for the FYERS-continuity check in step 4.</p></div></div>
+      <div class="step ok"><div class="num">1</div><div class="body"><h4>Pull</h4><p><code class="inline">git fetch &amp;&amp; git reset --hard origin/main</code>.</p></div></div>
+      <div class="step ok"><div class="num">2</div><div class="body"><h4>Validate again, before touching the live service</h4><p>Reinstall backend deps → import check → <code class="inline">pytest</code> — any failure here rolls back immediately; the running backend was never stopped.</p></div></div>
+      <div class="step ok"><div class="num">3</div><div class="body"><h4>Atomic frontend swap</h4><p>Build fresh into <code class="inline">dist.new</code>, verify it, then <code class="inline">mv dist dist.prev &amp;&amp; mv dist.new dist</code> — the backup (<code class="inline">dist.prev</code>) is kept until the whole deploy succeeds.</p></div></div>
+      <div class="step ok"><div class="num">4</div><div class="body"><h4>Restart + health-check loop</h4><p><code class="inline">systemctl restart</code>, then poll <code class="inline">/api/health</code> up to <b>25× at 2s intervals (50s total)</b> — widened after a real incident where a 210-symbol REST 429-retry storm blew past the original 30s window. Also verifies FYERS' auth status survived the restart, not just that the process is up.</p></div></div>
+      <div class="step ok"><div class="num">5</div><div class="body"><h4>Reload Caddy, clean up</h4><p><code class="inline">systemctl reload caddy</code> (safe no-op unless the Caddyfile changed); on success, disarms the rollback trap and deletes <code class="inline">dist.prev</code>.</p></div></div>
+    </div>
+    <div class="callout warn"><div class="cico">↩️</div><p><b>Automatic rollback.</b> Any failure from step 2 onward triggers <code class="inline">do_rollback()</code>: <code class="inline">git reset --hard $PREV_SHA</code>, reinstall deps for that commit, restore <code class="inline">dist.prev</code> if present, restart, and run the <i>same</i> 25×2s health-check loop on the rollback itself — deliberately given equal patience to the primary path, after an incident where a single-shot rollback check failed to catch a genuinely-healthy-but-slow restart.</p></div>
+  </section>
+
+  <!-- 21 FILES -->
   <section id="files">
-    <div class="eyebrow">12 — Map</div>
+    <div class="eyebrow">21 — Map</div>
     <h2>Module map</h2>
     <table>
-      <thead><tr><th style="width:30%">File</th><th>Responsibility</th></tr></thead>
+      <thead><tr><th style="width:28%">File</th><th>Responsibility</th></tr></thead>
       <tbody>
-        <tr><td><code>app/config.py</code></td><td>Env vars, 170-symbol watchlist, session timings, ORB windows, symbol helpers</td></tr>
+        <tr><td><code>app/config.py</code></td><td>Env vars, 210-symbol <code>WATCHLIST</code> (display sector), <code>INDUSTRY_GROUP</code> (scoring sector), session timings, <code>ORB_CANDLES</code>, symbol helpers</td></tr>
         <tr><td><code>app/state.py</code></td><td>Thread-safe in-memory <code>MarketState</code> (RLock) — the single shared source of truth</td></tr>
-        <tr><td><code>app/auth.py</code></td><td>Token fallback chain: cache → refresh-token → TOTP login; on-disk token cache</td></tr>
-        <tr><td><code>app/calculations.py</code></td><td>RS(Nifty) · RS(sector) · VWAP · ORB · day-range % · dual-range map, + the tick processor</td></tr>
-        <tr><td><code>app/candle_aggregator.py</code></td><td>Tick-derived ORB boundaries/quality-gate seeding + all-day 5-min candle recording</td></tr>
-        <tr><td><code>app/candle_history.py</code></td><td>Persists completed 5-min candles to Postgres (backtest groundwork)</td></tr>
+        <tr><td><code>app/auth.py</code></td><td>FYERS token fallback chain: cache → refresh-token → TOTP login; on-disk token cache</td></tr>
+        <tr><td><code>app/security.py</code> / <code>app/supabase_auth.py</code></td><td>Dashboard session (cookie) + Supabase JWKS verification</td></tr>
+        <tr><td><code>app/calculations.py</code></td><td>RS(Nifty) · VWAP · ORB · quality gates · day-range % · dual-range map, + the tick processor</td></tr>
+        <tr><td><code>app/candle_aggregator.py</code></td><td>Tick-derived ORB/quality-gate seeding, CVD tick-rule, per-bucket volume, all-day 5-min candle recording (stocks + NIFTY index)</td></tr>
+        <tr><td><code>app/candle_history.py</code></td><td>Persists/reads 5-min candles; historical same-slot stats query for Smart Money</td></tr>
+        <tr><td><code>app/candle_query.py</code></td><td>Merges persisted + in-progress candles and computes reference levels (incl. pivot) for the Charts tab</td></tr>
         <tr><td><code>app/momentum_score.py</code></td><td>Server-side port of the "Recommended" composite score, run on a schedule</td></tr>
+        <tr><td><code>app/smart_money.py</code></td><td>Smart Money Engine: Fresh Turnover Ratio / RVOL / RS percentile-ranking, its own asyncio loop + router</td></tr>
         <tr><td><code>app/fyers_service.py</code></td><td>REST backfill + websocket subscription/ingestion (lifecycle-managed)</td></tr>
         <tr><td><code>app/broadcaster.py</code></td><td>Snapshot/delta diffing + 250 ms fan-out to browser WebSocket subscribers</td></tr>
-        <tr><td><code>app/scheduler.py</code></td><td>All cron jobs: daily login, market open/close, ORB refresh, score checkpoints</td></tr>
-        <tr><td><code>app/main.py</code></td><td>FastAPI app: <code>/ws/stream</code>, snapshot, health, lifespan wiring</td></tr>
-        <tr><td><code>app/paper_trading.py</code>, <code>paper_margin.py</code>, <code>paper_pnl.py</code>, <code>brokerage.py</code>, <code>trailing_stop.py</code>, <code>order_monitor.py</code></td><td>Simulated order/position engine — separate from the live market-data path above</td></tr>
-        <tr><td><code>manual_auth.py</code></td><td>One-time browser consent for a new FYERS app</td></tr>
-        <tr><td><code>diagnose_login.py</code> · <code>check_totp.py</code></td><td>Login diagnostics (safe, credential-masked)</td></tr>
-        <tr><td><code>frontend/src/hooks/useMarketStream.js</code></td><td>Singleton WebSocket controller, localStorage cache, client-side candle building</td></tr>
-        <tr><td><code>frontend/src/utils/momentumScore.js</code></td><td>Client-side mirror of the Recommended-score formula (identical to the Python port)</td></tr>
+        <tr><td><code>app/scheduler.py</code></td><td>APScheduler cron jobs: daily login, market open/close, ORB refresh, score checkpoints</td></tr>
+        <tr><td><code>app/charts.py</code></td><td><code>/api/charts</code> router — one route, today's candles + levels for a symbol</td></tr>
+        <tr><td><code>app/paper_trading.py</code></td><td><code>/api/paper</code> router — orders, positions, wallet, history, exports</td></tr>
+        <tr><td><code>app/order_monitor.py</code></td><td>Per-tick SL/Target/TSL/limit-fill checks for open paper orders</td></tr>
+        <tr><td><code>app/trailing_stop.py</code>, <code>brokerage.py</code>, <code>paper_pnl.py</code>, <code>paper_margin.py</code></td><td>Pure paper-trading math: ratchet TSL, brokerage/tax, P&amp;L, margin/leverage</td></tr>
+        <tr><td><code>app/telegram_notify.py</code></td><td>Best-effort Telegram alerts for paper-trade closes and Recommended-digest checkpoints</td></tr>
+        <tr><td><code>app/logging_config.py</code></td><td><code>logging.basicConfig</code> to stdout — journald captures it on the VM, no file handler needed</td></tr>
+        <tr><td><code>app/main.py</code></td><td>FastAPI app: routers, <code>/ws/stream</code>, snapshot, health, lifespan wiring (scheduler + broadcaster + Smart Money loop)</td></tr>
+        <tr><td><code>manual_auth.py</code> · <code>diagnose_login.py</code> · <code>check_totp.py</code></td><td>One-time FYERS app consent + credential-masked login diagnostics</td></tr>
+        <tr><td><code>frontend/src/App.jsx</code></td><td>Auth gate, Dashboard shell, tab bar, all 7 screens' mount points</td></tr>
+        <tr><td><code>frontend/src/hooks/useMarketStream.js</code></td><td>Singleton WebSocket controller, localStorage caches, client-side candle building</td></tr>
+        <tr><td><code>frontend/src/components/CandleChart.jsx</code></td><td>lightweight-charts wrapper: candles + CVD pane + reference lines + crosshair badge</td></tr>
+        <tr><td><code>frontend/src/screens/SmartMoneyScreen.jsx</code></td><td>Independent-polling Smart Money Top-10 tab</td></tr>
+        <tr><td><code>frontend/src/utils/momentumScore.js</code>, <code>industryGroup.js</code></td><td>Client-side mirrors of the Recommended-score formula + scoring-sector map</td></tr>
+        <tr><td><code>frontend/src/components/paper-trading/*</code></td><td>Order ticket, positions table, history, charges/exports/equity-curve reports</td></tr>
       </tbody>
     </table>
   </section>
 
   <footer>
-    TradeDashboard · FYERS API v3 · FastAPI + React · Architecture report updated
+    TradeDashboard · FYERS API v3 · FastAPI + React · Complete architecture rewrite covering all 7 screens, both scoring engines, CVD, paper trading, and the deployment pipeline.
   </footer>
 </main>
 </body>

@@ -15,6 +15,7 @@ import Card from "../components/ui/Card.jsx";
 import CandleChart from "../components/CandleChart.jsx";
 import QuickTradeModal from "../components/paper-trading/QuickTradeModal.jsx";
 import { useInViewport } from "../hooks/useInViewport.js";
+import { usePositions } from "../hooks/useOrders.js";
 import { useSymbolCandles } from "../hooks/useSymbolCandles.js";
 import {
   chartsWishlistStore,
@@ -103,6 +104,10 @@ function ChartRow({ stock }) {
 
 function ChartRowBody({ symbol }) {
   const { candles, levels, loading } = useSymbolCandles(symbol);
+  const positions = usePositions();
+  const position = positions.find(
+    (p) => p.symbol === symbol && p.status === "OPEN",
+  );
 
   if (loading && candles.length === 0) {
     return (
@@ -125,12 +130,17 @@ function ChartRowBody({ symbol }) {
     );
   }
   return (
-    <CandleChart candles={candles} levels={levels} height={CHART_HEIGHT} />
+    <CandleChart
+      candles={candles}
+      levels={levels}
+      position={position}
+      height={CHART_HEIGHT}
+    />
   );
 }
 
 export default function ChartsScreen({ stocks, focusSymbol, onFocusHandled }) {
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
   const [strategy, setStrategy] = useState("all");
   const [selectedSector, setSelectedSector] = useState("All sectors");
   const [wishlistOnly, setWishlistOnly] = useState(false);

@@ -279,20 +279,12 @@ function Dashboard({ user, onLogout }) {
             transition={{ duration: 0.18, ease: "easeOut" }}
           >
             {activeTab === "ranking" && (
-              <RankingScreen
-                stocks={stocks}
-                nifty={nifty}
-                onOpenChart={openInCharts}
-              />
+              <RankingScreen stocks={stocks} nifty={nifty} />
             )}
             {activeTab === "heatmap" && <HeatmapScreen stocks={stocks} />}
             {activeTab === "insights" && <InsightsScreen stocks={stocks} />}
             {activeTab === "watchlist" && (
-              <WatchlistScreen
-                stocks={stocks}
-                nifty={nifty}
-                onOpenChart={openInCharts}
-              />
+              <WatchlistScreen stocks={stocks} nifty={nifty} />
             )}
             {activeTab === "charts" && (
               <ChartsScreen

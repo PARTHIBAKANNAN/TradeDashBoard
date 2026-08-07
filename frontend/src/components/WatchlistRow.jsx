@@ -8,7 +8,9 @@ import {
   Sparkles,
   LineChart,
 } from "lucide-react";
+import ChartModal from "./ChartModal.jsx";
 import MiniCandlestick from "./MiniCandlestick.jsx";
+import PriceRangeBar from "./PriceRangeBar.jsx";
 import QuickTradeModal from "./paper-trading/QuickTradeModal.jsx";
 import { useStock } from "../hooks/useMarketStream.js";
 import { rangeMap } from "../lib/rangeMap.js";
@@ -23,11 +25,13 @@ const WatchlistRow = React.memo(
     leading,
     niftyPctChange = 0,
     isRecommended = false,
-    onOpenChart,
   }) => {
     const stockFromHook = useStock(symbol || propStock?.symbol);
     const stock = stockFromHook || propStock;
     const [tradeOpen, setTradeOpen] = useState(false);
+    // Opens the full chart in-place instead of jumping to the Charts tab —
+    // same CandleChart, same reference lines, no navigation.
+    const [chartOpen, setChartOpen] = useState(false);
 
     const ranges = useMemo(() => {
       if (!stock) return null;
@@ -120,11 +124,13 @@ const WatchlistRow = React.memo(
             </div>
           </td>
 
-          {/* Mini candlestick chart — today's session, built live from ticks */}
+          {/* Mini candlestick chart — today's session, built live from ticks —
+              plus the today-vs-prev-day price range bar underneath. */}
           <td className="py-3 px-4 text-center">
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center gap-1.5">
               <MiniCandlestick candles={stock.candles} />
-              <div className="text-[10px] text-faint font-mono mt-1 flex items-center gap-1">
+              <PriceRangeBar ranges={ranges} isPositive={isPositive} />
+              <div className="text-[10px] text-faint font-mono flex items-center gap-1">
                 {stock.day_range_pos}% of day range
                 {isExtended && (
                   <span
@@ -184,15 +190,13 @@ const WatchlistRow = React.memo(
           {/* Quick paper-trade entry point */}
           <td className="py-3 px-4 text-center">
             <div className="inline-flex items-center gap-1.5">
-              {onOpenChart && (
-                <button
-                  onClick={() => onOpenChart(stock.symbol)}
-                  title="Open in Charts"
-                  className="inline-flex items-center rounded-lg border border-subtle bg-surface3 p-1.5 text-muted hover:text-accent-blue hover:border-accent-blue/40 transition-colors"
-                >
-                  <LineChart size={13} />
-                </button>
-              )}
+              <button
+                onClick={() => setChartOpen(true)}
+                title="Open chart"
+                className="inline-flex items-center rounded-lg border border-subtle bg-surface3 p-1.5 text-muted hover:text-accent-blue hover:border-accent-blue/40 transition-colors"
+              >
+                <LineChart size={13} />
+              </button>
               <button
                 onClick={() => setTradeOpen(true)}
                 title="Paper trade this stock"
@@ -201,6 +205,9 @@ const WatchlistRow = React.memo(
                 <Rocket size={11} /> Trade
               </button>
             </div>
+            {chartOpen && (
+              <ChartModal symbol={stock.symbol} onClose={() => setChartOpen(false)} />
+            )}
             {tradeOpen && (
               <QuickTradeModal
                 symbol={stock.symbol}
@@ -286,6 +293,10 @@ const WatchlistRow = React.memo(
               </span>
             </div>
 
+            <div className="mt-2">
+              <PriceRangeBar ranges={ranges} isPositive={isPositive} />
+            </div>
+
             <div className="mt-2 flex items-center justify-between gap-2">
               <div className="text-[10px] text-faint font-mono flex items-center gap-1">
                 {stock.day_range_pos}% of day range
@@ -294,15 +305,13 @@ const WatchlistRow = React.memo(
                 )}
               </div>
               <div className="flex items-center gap-1.5">
-                {onOpenChart && (
-                  <button
-                    onClick={() => onOpenChart(stock.symbol)}
-                    title="Open in Charts"
-                    className="inline-flex items-center rounded-lg border border-subtle bg-surface3 p-1.5 text-muted hover:text-accent-blue hover:border-accent-blue/40 transition-colors"
-                  >
-                    <LineChart size={13} />
-                  </button>
-                )}
+                <button
+                  onClick={() => setChartOpen(true)}
+                  title="Open chart"
+                  className="inline-flex items-center rounded-lg border border-subtle bg-surface3 p-1.5 text-muted hover:text-accent-blue hover:border-accent-blue/40 transition-colors"
+                >
+                  <LineChart size={13} />
+                </button>
                 <button
                   onClick={() => setTradeOpen(true)}
                   title="Paper trade this stock"

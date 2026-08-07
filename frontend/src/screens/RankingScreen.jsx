@@ -49,8 +49,8 @@ const SORTS = {
   sym: { label: "Symbol A-Z", fn: (a, b) => a.symbol.localeCompare(b.symbol) },
 };
 
-export default function RankingScreen({ stocks, nifty, onOpenChart }) {
-  const [showFilters, setShowFilters] = useState(true);
+export default function RankingScreen({ stocks, nifty }) {
+  const [showFilters, setShowFilters] = useState(false);
   const [selectedSignal, setSelectedSignal] = useState("All signals");
   const [selectedSector, setSelectedSector] = useState("All sectors");
   const [signalTimeIndex, setSignalTimeIndex] = useState(0);
@@ -264,7 +264,6 @@ export default function RankingScreen({ stocks, nifty, onOpenChart }) {
                       index={i}
                       niftyPctChange={nifty?.pct_change || 0}
                       isRecommended={recommended.includes(stock.symbol)}
-                      onOpenChart={onOpenChart}
                     />
                   ))}
                 </tbody>

@@ -9,6 +9,7 @@ Uses APScheduler on the IST timezone. On startup, if the process boots
 mid-session, the engine is brought straight to the correct state.
 """
 
+import asyncio
 import logging
 import threading
 from datetime import datetime
@@ -16,8 +17,8 @@ from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from . import (auth, candle_aggregator, config, momentum_score, paper_trading,
-               telegram_notify)
+from . import (auth, candle_aggregator, candle_history, config,
+               momentum_score, order_monitor, paper_trading, telegram_notify)
 from .config import IST, MARKET_CLOSE, MARKET_OPEN
 from .fyers_service import data_engine
 from .state import market_state
@@ -142,6 +143,13 @@ def _daily_login():
         return
     data_engine.set_token(token)
     logger.info("Daily token refreshed.")
+    # Refresh yesterday's high/low/close (and, pre-market, a "last known" LTP)
+    # from candle_history — this account's REST backfill can't do it (-403),
+    # and this cron runs on its own thread, so hop onto the asyncio loop the
+    # same way candle_aggregator._persist_bucket does.
+    loop = order_monitor.get_loop()
+    if loop is not None:
+        asyncio.run_coroutine_threadsafe(candle_history.seed_missing_state(market_state), loop)
     # If the socket is live, rebuild it so the new token takes effect (the token
     # is baked into the connection string at connect time).
     if config.DATA_ENGINE_ENABLED and data_engine.running:

@@ -26,7 +26,7 @@ from .logging_config import configure_logging
 
 configure_logging()
 
-from . import auth, charts, config, paper_trading, security, smart_money
+from . import auth, candle_history, charts, config, paper_trading, security, smart_money
 from .broadcaster import Broadcaster, build_frame, snapshot_from_state
 from .fyers_service import data_engine
 from .scheduler import (ensure_engine_running, init_scheduler, is_market_open,
@@ -55,6 +55,12 @@ async def lifespan(app: FastAPI):
     await asyncio.to_thread(init_scheduler)
     await broadcaster.start()
     await paper_trading.init_pool()
+    # Backfills "last known" LTP/prev-day-range from candle_history for any
+    # field a restart (or this account's permanently-broken REST backfill)
+    # left at 0 — see candle_history.seed_missing_state's own docstring.
+    # Re-run daily at 08:45 IST too (scheduler.py's _daily_login), since the
+    # REST gap never fixes itself even on a long-running, never-restarted process.
+    await candle_history.seed_missing_state(market_state)
     # Fully isolated from the scheduler/broadcaster above — its own asyncio
     # background loop, reads candle_history read-only, writes nothing back
     # into MarketState. See smart_money.py.
