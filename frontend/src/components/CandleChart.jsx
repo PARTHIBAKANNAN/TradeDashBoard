@@ -67,7 +67,12 @@ const LEVEL_LINES = [
 // in the Charts feed, not once per data update) and updated imperatively —
 // remounting it per tick/data-change would reset pan/zoom state and feel
 // jarring instead of seamless.
-export default function CandleChart({ candles, levels, position, height = 360 }) {
+export default function CandleChart({
+  candles,
+  levels,
+  position,
+  height = 360,
+}) {
   const { theme } = useTheme();
   const containerRef = useRef(null);
   const chartRef = useRef(null);
@@ -153,7 +158,10 @@ export default function CandleChart({ candles, levels, position, height = 360 })
       autoscaleInfoProvider: (original) => {
         const res = original();
         if (!res || !res.priceRange) return res;
-        const values = [...levelValuesRef.current, ...positionValuesRef.current];
+        const values = [
+          ...levelValuesRef.current,
+          ...positionValuesRef.current,
+        ];
         if (!values.length) return res;
         const minValue = Math.min(res.priceRange.minValue, ...values);
         const maxValue = Math.max(res.priceRange.maxValue, ...values);
@@ -209,7 +217,9 @@ export default function CandleChart({ candles, levels, position, height = 360 })
       labelsVisibleRef.current = shouldShow;
       applyDeltaMarkers();
     };
-    chart.timeScale().subscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
+    chart
+      .timeScale()
+      .subscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
 
     chartRef.current = chart;
     seriesRef.current = series;
@@ -218,7 +228,9 @@ export default function CandleChart({ candles, levels, position, height = 360 })
 
     return () => {
       chart.unsubscribeCrosshairMove(onCrosshairMove);
-      chart.timeScale().unsubscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
+      chart
+        .timeScale()
+        .unsubscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;

@@ -17,8 +17,8 @@ from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from . import (auth, candle_aggregator, candle_history, config,
-               momentum_score, order_monitor, paper_trading, telegram_notify)
+from . import (auth, candle_aggregator, candle_history, config, momentum_score,
+               order_monitor, paper_trading, telegram_notify)
 from .config import IST, MARKET_CLOSE, MARKET_OPEN
 from .fyers_service import data_engine
 from .state import market_state

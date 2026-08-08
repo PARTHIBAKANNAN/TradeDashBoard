@@ -143,8 +143,7 @@ async def get_startup_snapshot() -> dict[str, dict]:
     if pool is None:
         return {}
     async with pool.acquire() as conn:
-        rows = await conn.fetch(
-            """
+        rows = await conn.fetch("""
             with ranked_dates as (
                 select symbol, bucket_date,
                        row_number() over (partition by symbol order by bucket_date desc) as rn
@@ -158,8 +157,7 @@ async def get_startup_snapshot() -> dict[str, dict]:
             join ranked_dates rd on rd.symbol = c.symbol and rd.bucket_date = c.bucket_date
             where rd.rn <= 2
             group by c.symbol, rd.rn
-            """
-        )
+            """)
     out: dict[str, dict] = {}
     for r in rows:
         entry = out.setdefault(r["symbol"], {})
@@ -199,9 +197,17 @@ async def seed_missing_state(market_state) -> None:
             # bucket today; until then, d0 is really "yesterday" from today's
             # point of view, and d1 is the day before that.
             if snap.get("d0_date") == today:
-                y_high, y_low, y_close = snap.get("d1_high"), snap.get("d1_low"), snap.get("d1_close")
+                y_high, y_low, y_close = (
+                    snap.get("d1_high"),
+                    snap.get("d1_low"),
+                    snap.get("d1_close"),
+                )
             else:
-                y_high, y_low, y_close = snap.get("d0_high"), snap.get("d0_low"), snap.get("d0_close")
+                y_high, y_low, y_close = (
+                    snap.get("d0_high"),
+                    snap.get("d0_low"),
+                    snap.get("d0_close"),
+                )
                 if not stock["ltp"] and snap.get("d0_close"):
                     stock["ltp"] = snap["d0_close"]
                 if not stock["prev_close"] and snap.get("d1_close"):

@@ -45,13 +45,17 @@ export default function ChartModal({ symbol, onClose }) {
                       stock.pct_change >= 0 ? "text-bull" : "text-bear"
                     }`}
                   >
-                    {stock.ltp?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}{" "}
+                    {stock.ltp?.toLocaleString("en-IN", {
+                      minimumFractionDigits: 2,
+                    })}{" "}
                     ({stock.pct_change >= 0 ? "+" : ""}
                     {stock.pct_change}%)
                   </span>
                 )}
                 {stock?.sector && (
-                  <span className="text-xs text-faint truncate">{stock.sector}</span>
+                  <span className="text-xs text-faint truncate">
+                    {stock.sector}
+                  </span>
                 )}
               </div>
               <button

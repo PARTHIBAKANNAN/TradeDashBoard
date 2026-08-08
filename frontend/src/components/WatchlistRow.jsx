@@ -206,7 +206,10 @@ const WatchlistRow = React.memo(
               </button>
             </div>
             {chartOpen && (
-              <ChartModal symbol={stock.symbol} onClose={() => setChartOpen(false)} />
+              <ChartModal
+                symbol={stock.symbol}
+                onClose={() => setChartOpen(false)}
+              />
             )}
             {tradeOpen && (
               <QuickTradeModal
