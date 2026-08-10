@@ -9,8 +9,9 @@ import {
 import { useTheme } from "../contexts/ThemeContext.jsx";
 
 // Build a UTC timestamp for lightweight-charts from a calendar date + bucket
-// (minutes since midnight). The library renders in UTC, so we must express
-// IST times as UTC-equivalent offsets: IST = UTC+5:30, so subtract 5h30m.
+// (minutes since midnight in IST). Stores the IST hours & minutes directly as UTC
+// wall-clock time so the chart displays exact IST timestamps (09:15 IST)
+// regardless of local browser or server timezone.
 // bucketDate: "YYYY-MM-DD" string or null (falls back to today)
 // bucketMinute: minutes since midnight in IST
 function bucketToTimestamp(bucketDate, bucketMinute) {
@@ -23,11 +24,9 @@ function bucketToTimestamp(bucketDate, bucketMinute) {
     month = now.getMonth() + 1;
     day = now.getDate();
   }
-  // UTC midnight for this calendar date, then add IST bucket offset.
-  // IST is UTC+5:30 = 330 minutes ahead, so IST 09:15 = UTC 03:45.
-  const utcMidnightMs = Date.UTC(year, month - 1, day, 0, 0, 0, 0);
-  const istOffsetSeconds = 5 * 3600 + 30 * 60; // 19800s
-  return Math.floor(utcMidnightMs / 1000) + bucketMinute * 60 - istOffsetSeconds;
+  const hours = Math.floor(bucketMinute / 60);
+  const minutes = bucketMinute % 60;
+  return Math.floor(Date.UTC(year, month - 1, day, hours, minutes, 0) / 1000);
 }
 
 // IST open / close expressed as UTC timestamps for a given calendar date —
@@ -147,7 +146,32 @@ export default function CandleChart({
           color: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
         },
       },
-      timeScale: { timeVisible: true, secondsVisible: false },
+      localization: {
+        timeFormatter: (timestamp) => {
+          const d = new Date(timestamp * 1000);
+          const h = String(d.getUTCHours()).padStart(2, "0");
+          const m = String(d.getUTCMinutes()).padStart(2, "0");
+          return `${h}:${m}`;
+        },
+      },
+      timeScale: {
+        timeVisible: true,
+        secondsVisible: false,
+        tickMarkFormatter: (time, tickMarkType) => {
+          const d = new Date(time * 1000);
+          const h = String(d.getUTCHours()).padStart(2, "0");
+          const m = String(d.getUTCMinutes()).padStart(2, "0");
+          const months = [
+            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+          ];
+          if (tickMarkType === 0) return `${d.getUTCFullYear()}`;
+          if (tickMarkType === 1 || tickMarkType === 2) {
+            return `${d.getUTCDate()} ${months[d.getUTCMonth()]} ${h}:${m}`;
+          }
+          return `${h}:${m}`;
+        },
+      },
     });
     const series = chart.addSeries(CandlestickSeries, {
       upColor: up,
