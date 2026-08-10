@@ -143,6 +143,8 @@ def _cleanup_old_candles():
     days (~21 trading days), enforcing the rolling retention cap. Runs 5 min
     after market close so flush_all() has already persisted the day's last
     bucket before we touch the table."""
+    from . import candle_history, order_monitor
+
     loop = order_monitor.get_loop()
     if loop is None:
         logger.info("retention: DB pool not available; skipping candle cleanup.")
@@ -155,6 +157,8 @@ def _cleanup_old_candles():
 
 
 def _daily_login():
+    from . import candle_history, order_monitor
+
     token = auth.get_access_token(force_refresh=True)
     if not token:
         logger.warning("Daily token refresh failed — MANUAL LOGIN required.")
