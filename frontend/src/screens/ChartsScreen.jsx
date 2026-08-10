@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   LineChart,
   SlidersHorizontal,
@@ -10,9 +10,13 @@ import {
   Check,
   Search,
   Rocket,
+  Maximize2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import Card from "../components/ui/Card.jsx";
 import CandleChart from "../components/CandleChart.jsx";
+import ChartModal from "../components/ChartModal.jsx";
 import QuickTradeModal from "../components/paper-trading/QuickTradeModal.jsx";
 import { useInViewport } from "../hooks/useInViewport.js";
 import { usePositions } from "../hooks/useOrders.js";
@@ -21,6 +25,20 @@ import {
   chartsWishlistStore,
   useChartsWishlist,
 } from "../store/chartsWishlistStore.js";
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Returns "YYYY-MM-DD" for `n` calendar days ago (0 = today). */
+function daysAgo(n) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Today's ISO date string. */
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 function FilterGroup({ label, icon: Icon, children }) {
   return (
@@ -36,10 +54,34 @@ function FilterGroup({ label, icon: Icon, children }) {
 
 const CHART_HEIGHT = 320;
 
-function ChartRow({ stock }) {
+// ── ChartRow ──────────────────────────────────────────────────────────────────
+
+function ChartRow({ stock, onExpand }) {
   const [ref, inView] = useInViewport();
   const wishlisted = useChartsWishlist().has(stock.symbol);
   const [tradeOpen, setTradeOpen] = useState(false);
+  // "today" or "YYYY-MM-DD" for historical navigation.
+  const [viewDate, setViewDate] = useState("today");
+  const isToday = viewDate === "today";
+
+  const goBack = useCallback(() => {
+    const base = isToday ? todayStr() : viewDate;
+    // Step back 1 calendar day; the backend will serve whatever's in DB for
+    // that date (skipping weekends automatically — it just returns empty if
+    // no data exists for that date, which we handle in ChartRowBody).
+    const prev = daysAgo(
+      Math.max(1, Math.round((Date.now() - new Date(base).getTime()) / 86400000) + 1),
+    );
+    setViewDate(prev);
+  }, [isToday, viewDate]);
+
+  const goToToday = useCallback(() => setViewDate("today"), []);
+
+  // ₹ point change
+  const pointChange =
+    stock.ltp != null && stock.prev_close != null
+      ? stock.ltp - stock.prev_close
+      : null;
 
   return (
     <div
@@ -47,23 +89,66 @@ function ChartRow({ stock }) {
       ref={ref}
       className="rounded-xl border border-subtle bg-surface2/70 backdrop-blur-xl shadow-card overflow-hidden"
     >
+      {/* Header */}
       <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-subtle">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="font-bold text-primary">{stock.symbol}</span>
+            <span className="font-mono text-xs font-semibold text-primary">
+              {stock.ltp?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+            </span>
+            {pointChange != null && (
+              <span
+                className={`font-mono text-xs font-semibold ${
+                  pointChange >= 0 ? "text-bull" : "text-bear"
+                }`}
+              >
+                {pointChange >= 0 ? "▲" : "▼"}{" "}
+                {Math.abs(pointChange).toLocaleString("en-IN", {
+                  minimumFractionDigits: 2,
+                })}
+              </span>
+            )}
             <span
               className={`text-xs font-mono font-semibold ${
                 stock.pct_change >= 0 ? "text-bull" : "text-bear"
               }`}
             >
-              {stock.ltp?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}{" "}
               ({stock.pct_change >= 0 ? "+" : ""}
               {stock.pct_change}%)
             </span>
           </div>
           <div className="text-[11px] text-faint truncate">{stock.sector}</div>
         </div>
+
         <div className="flex items-center gap-1.5 flex-shrink-0">
+          {/* ◀ Prev / Today ▶ navigation */}
+          <button
+            onClick={goBack}
+            title="Previous day"
+            className="w-7 h-7 grid place-items-center rounded-lg border border-subtle bg-surface3 text-muted hover:text-accent-blue hover:border-accent-blue/40 transition-colors"
+          >
+            <ChevronLeft size={13} />
+          </button>
+          {!isToday && (
+            <button
+              onClick={goToToday}
+              title="Back to today"
+              className="px-2 py-1 text-[10px] font-bold rounded-lg border border-accent-blue/40 bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20 transition-colors"
+            >
+              Today
+            </button>
+          )}
+
+          {/* Expand to modal */}
+          <button
+            onClick={() => onExpand(stock.symbol)}
+            title="Open full-screen chart"
+            className="w-7 h-7 grid place-items-center rounded-lg border border-subtle bg-surface3 text-muted hover:text-accent-blue hover:border-accent-blue/40 transition-colors"
+          >
+            <Maximize2 size={13} />
+          </button>
+
           <button
             onClick={() => setTradeOpen(true)}
             title="Paper trade this stock"
@@ -83,6 +168,7 @@ function ChartRow({ stock }) {
             {wishlisted ? <Check size={13} /> : <Plus size={13} />}
           </button>
         </div>
+
         {tradeOpen && (
           <QuickTradeModal
             symbol={stock.symbol}
@@ -92,7 +178,7 @@ function ChartRow({ stock }) {
       </div>
 
       {inView ? (
-        <ChartRowBody symbol={stock.symbol} />
+        <ChartRowBody symbol={stock.symbol} viewDate={viewDate} />
       ) : (
         <div
           style={{ height: CHART_HEIGHT }}
@@ -105,8 +191,11 @@ function ChartRow({ stock }) {
   );
 }
 
-function ChartRowBody({ symbol }) {
-  const { candles, levels, loading } = useSymbolCandles(symbol);
+// ── ChartRowBody ──────────────────────────────────────────────────────────────
+
+function ChartRowBody({ symbol, viewDate }) {
+  const { candles, levels, loading, isPreviousDay, candleDate } =
+    useSymbolCandles(symbol, viewDate);
   const positions = usePositions();
   const position = positions.find(
     (p) => p.symbol === symbol && p.status === "OPEN",
@@ -128,7 +217,7 @@ function ChartRowBody({ symbol }) {
         style={{ height: CHART_HEIGHT }}
         className="grid place-items-center text-faint text-xs"
       >
-        No candles yet today
+        No candle data available for this date.
       </div>
     );
   }
@@ -138,9 +227,14 @@ function ChartRowBody({ symbol }) {
       levels={levels}
       position={position}
       height={CHART_HEIGHT}
+      multiDay={false}
+      candleDate={candleDate}
+      isPreviousDay={isPreviousDay}
     />
   );
 }
+
+// ── ChartsScreen ──────────────────────────────────────────────────────────────
 
 export default function ChartsScreen({ stocks, focusSymbol, onFocusHandled }) {
   const [showFilters, setShowFilters] = useState(false);
@@ -149,6 +243,7 @@ export default function ChartsScreen({ stocks, focusSymbol, onFocusHandled }) {
   const [wishlistOnly, setWishlistOnly] = useState(false);
   const [search, setSearch] = useState("");
   const wishlist = useChartsWishlist();
+  const [expandedSymbol, setExpandedSymbol] = useState(null);
 
   const sectors = useMemo(() => {
     const set = new Set((stocks || []).map((s) => s.sector));
@@ -167,8 +262,6 @@ export default function ChartsScreen({ stocks, focusSymbol, onFocusHandled }) {
       .sort((a, b) => a.symbol.localeCompare(b.symbol));
   }, [stocks, selectedSector, wishlistOnly, wishlist, search]);
 
-  // Jumping here from Ranking/Watchlist ("open in Charts") should always
-  // reveal the target stock even if a stale filter would otherwise hide it.
   useEffect(() => {
     if (!focusSymbol) return;
     setSelectedSector("All sectors");
@@ -182,6 +275,15 @@ export default function ChartsScreen({ stocks, focusSymbol, onFocusHandled }) {
     }, 60);
     return () => clearTimeout(timer);
   }, [focusSymbol]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Close modal on Escape key.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") setExpandedSymbol(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const filterCard = (
     <Card
@@ -236,7 +338,16 @@ export default function ChartsScreen({ stocks, focusSymbol, onFocusHandled }) {
 
   return (
     <div className="min-h-screen bg-surface">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 flex gap-6">
+      {/* Full-screen modal */}
+      {expandedSymbol && (
+        <ChartModal
+          symbol={expandedSymbol}
+          stock={stocks?.find((s) => s.symbol === expandedSymbol)}
+          onClose={() => setExpandedSymbol(null)}
+        />
+      )}
+
+      <div className="mx-auto max-w-[1920px] w-full px-4 sm:px-6 py-4 flex gap-6">
         {showFilters && (
           <>
             <div
@@ -292,7 +403,11 @@ export default function ChartsScreen({ stocks, focusSymbol, onFocusHandled }) {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {filteredStocks.map((stock) => (
-              <ChartRow key={stock.symbol} stock={stock} />
+              <ChartRow
+                key={stock.symbol}
+                stock={stock}
+                onExpand={setExpandedSymbol}
+              />
             ))}
             {filteredStocks.length === 0 && (
               <div className="col-span-full py-12 text-center text-faint text-sm">

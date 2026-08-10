@@ -8,31 +8,48 @@ import {
 } from "lightweight-charts";
 import { useTheme } from "../contexts/ThemeContext.jsx";
 
-// `bucket` is minutes-since-midnight IST. lightweight-charts renders
-// UTCTimestamp labels in UTC, NOT the browser's local timezone (confirmed via
-// the reported bug: 09:15 IST was rendering as 03:45) — so building the
-// epoch from the browser's *local* wall-clock (as this used to) only round-
-// trips correctly when the browser's local zone happens to be UTC. Building
-// it from UTC components instead makes the library's UTC-labeled display
-// show the correct IST time regardless of the browser's own timezone.
-function bucketToTime(bucket) {
-  const now = new Date();
-  const utcMidnight = Date.UTC(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    0,
-    0,
-    0,
-    0,
-  );
-  return Math.floor(utcMidnight / 1000) + bucket * 60;
+// Build a UTC timestamp for lightweight-charts from a calendar date + bucket
+// (minutes since midnight). The library renders in UTC, so we must express
+// IST times as UTC-equivalent offsets: IST = UTC+5:30, so subtract 5h30m.
+// bucketDate: "YYYY-MM-DD" string or null (falls back to today)
+// bucketMinute: minutes since midnight in IST
+function bucketToTimestamp(bucketDate, bucketMinute) {
+  let year, month, day;
+  if (bucketDate) {
+    [year, month, day] = bucketDate.split("-").map(Number);
+  } else {
+    const now = new Date();
+    year = now.getFullYear();
+    month = now.getMonth() + 1;
+    day = now.getDate();
+  }
+  // UTC midnight for this calendar date, then add IST bucket offset.
+  // IST is UTC+5:30 = 330 minutes ahead, so IST 09:15 = UTC 03:45.
+  const utcMidnightMs = Date.UTC(year, month - 1, day, 0, 0, 0, 0);
+  const istOffsetSeconds = 5 * 3600 + 30 * 60; // 19800s
+  return Math.floor(utcMidnightMs / 1000) + bucketMinute * 60 - istOffsetSeconds;
+}
+
+// IST open / close expressed as UTC timestamps for a given calendar date —
+// used to pin the visible range to a full trading day (Groww-style).
+function dayBoundaries(bucketDate) {
+  const open = bucketToTimestamp(bucketDate, 9 * 60 + 15);  // 09:15 IST
+  const close = bucketToTimestamp(bucketDate, 15 * 60 + 30); // 15:30 IST
+  return { open, close };
 }
 
 function readCandleColors() {
   const styles = getComputedStyle(document.documentElement);
-  const up = `rgb(${styles.getPropertyValue("--bull-strong").trim() || "16 185 129"})`;
-  const down = `rgb(${styles.getPropertyValue("--bear-strong").trim() || "244 63 94"})`;
+  const getRgb = (prop, fallback) => {
+    const raw = (styles.getPropertyValue(prop) || "").trim();
+    if (!raw) return fallback;
+    if (raw.startsWith("#") || raw.startsWith("rgb")) return raw;
+    const formatted = raw.replace(/\s+/g, ", ");
+    return `rgb(${formatted})`;
+  };
+
+  const up = getRgb("--bull-strong", "rgb(16, 185, 129)");
+  const down = getRgb("--bear-strong", "rgb(244, 63, 94)");
   return { up, down };
 }
 
@@ -44,16 +61,8 @@ function formatDelta(value) {
   return `${sign}${Math.round(abs)}`;
 }
 
-// Per-candle CVD value labels — coexists with the crosshair badge above,
-// per-bar labels for when you're zoomed in enough to read them, the badge for
-// a glance/hover at any zoom. Below this many pixels per bar the text would
-// overlap between adjacent bars, so it's hidden entirely rather than shrunk
-// to illegible size.
 const MIN_PX_PER_BAR_FOR_LABELS = 32;
 
-// Opening-range (09:15-09:45), previous-day high/low + pivot, drawn full
-// chart width — all already computed by the existing signal engine, just
-// exposed here.
 const LEVEL_LINES = [
   { key: "opening_range_high", color: "#22c55e", title: "OR High" },
   { key: "opening_range_low", color: "#ef4444", title: "OR Low" },
@@ -62,16 +71,23 @@ const LEVEL_LINES = [
   { key: "pivot", color: "#8b5cf6", title: "Pivot" },
 ];
 
-// Real candlestick chart with pan/zoom/crosshair, backed by lightweight-charts.
-// The chart instance is created ONCE per mount (i.e. once per scroll-into-view
-// in the Charts feed, not once per data update) and updated imperatively —
-// remounting it per tick/data-change would reset pan/zoom state and feel
-// jarring instead of seamless.
+// Real candlestick chart backed by lightweight-charts. Created once per mount.
+// Props:
+//   candles      — array of {bucket_date?, bucket_minute, open, high, low, close, delta}
+//   levels       — {opening_range_high, opening_range_low, prev_day_high, prev_day_low, pivot}
+//   position     — open paper-trade position for Entry/SL/Target lines
+//   height       — CSS height in px (default 360)
+//   multiDay     — if true, do NOT pin the visible range to a single day; show all data
+//   candleDate   — "YYYY-MM-DD" string for the currently displayed day (for axis pin + badge)
+//   isPreviousDay — if true, show an amber "PREV DAY" badge
 export default function CandleChart({
   candles,
   levels,
   position,
   height = 360,
+  multiDay = false,
+  candleDate = null,
+  isPreviousDay = false,
 }) {
   const { theme } = useTheme();
   const containerRef = useRef(null);
@@ -85,25 +101,15 @@ export default function CandleChart({
   const positionLinesRef = useRef([]);
   const levelValuesRef = useRef([]);
   const positionValuesRef = useRef([]);
-  // Guards against resetting the user's pan/zoom on every live tick — see the
-  // candle-data effect below for why this exists.
   const candlesInitializedRef = useRef(false);
   const prevCandleCountRef = useRef(0);
   const deltaInitializedRef = useRef(false);
   const prevDeltaCountRef = useRef(0);
   const deltaThemeRef = useRef(theme);
   const levelsFitRef = useRef(false);
-  // CVD badge: no text ever sits on the bars themselves (that was tried and
-  // found too cluttered once zoomed out) — instead a small legend shows the
-  // LATEST cumulative value at rest, and live-tracks whatever bar is under
-  // the crosshair while hovering.
   const [latestDelta, setLatestDelta] = useState(0);
   const [hoveredDelta, setHoveredDelta] = useState(null);
 
-  // Rebuilds the per-bar CVD text markers from whatever was last computed
-  // (deltaDataRef) and the current zoom state (labelsVisibleRef) — called
-  // both when new candle data arrives and when the user zooms/pans. Reads
-  // only refs, so it's safe to call from a closure captured at any render.
   function applyDeltaMarkers() {
     const markers = deltaMarkersRef.current;
     if (!markers) return;
@@ -151,27 +157,19 @@ export default function CandleChart({
       wickUpColor: up,
       wickDownColor: down,
     });
-    // Reference-line prices aren't included in the series' autoscale range by
-    // default, so a line outside the candles' own high/low gets scrolled off
-    // the visible price axis. Widen the computed range to also cover them.
     series.applyOptions({
       autoscaleInfoProvider: (original) => {
         const res = original();
         if (!res || !res.priceRange) return res;
-        const values = [
-          ...levelValuesRef.current,
-          ...positionValuesRef.current,
-        ];
+        // Only include active paper trade position lines in autoscale if present,
+        // so distant reference levels don't squish the candles into a tiny strip.
+        const values = [...positionValuesRef.current];
         if (!values.length) return res;
         const minValue = Math.min(res.priceRange.minValue, ...values);
         const maxValue = Math.max(res.priceRange.maxValue, ...values);
         return { priceRange: { minValue, maxValue }, margins: res.margins };
       },
     });
-    // Cumulative-delta histogram in its own pane below the candles — a
-    // separate price scale, not overlaid on the price axis. Per-bar color is
-    // set individually in the data itself (unlike the candlestick series),
-    // so no up/down color options are needed here.
     const deltaSeries = chart.addSeries(
       HistogramSeries,
       {
@@ -185,13 +183,8 @@ export default function CandleChart({
     if (panes[0]) panes[0].setStretchFactor(3);
     if (panes[1]) panes[1].setStretchFactor(1);
 
-    // Text-only per-bar CVD labels (size: 0 hides the marker shape itself,
-    // leaving just the text) — shown/hidden based on zoom, see
-    // handleVisibleRangeChange below.
     const deltaMarkers = createSeriesMarkers(deltaSeries, []);
 
-    // Drives the badge's "hovering" state — reading the delta series' value
-    // at the crosshair's time instead of annotating every bar.
     const onCrosshairMove = (param) => {
       if (!param.time) {
         setHoveredDelta(null);
@@ -202,8 +195,6 @@ export default function CandleChart({
     };
     chart.subscribeCrosshairMove(onCrosshairMove);
 
-    // Per-bar labels only render once bars are wide enough on screen to hold
-    // text without overlapping neighbors — recomputed on every pan/zoom.
     const handleVisibleRangeChange = () => {
       const ts = chartRef.current?.timeScale();
       if (!ts) return;
@@ -239,11 +230,9 @@ export default function CandleChart({
       priceLinesRef.current = [];
       positionLinesRef.current = [];
     };
-    // Deliberately create-once: theme/candles/levels are applied imperatively
-    // in the effects below instead of tearing down and rebuilding the chart.
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Theme change -> recolor in place, no chart recreation.
+  // Theme change → recolor in place.
   useEffect(() => {
     if (!seriesRef.current || !chartRef.current) return;
     const { up, down } = readCandleColors();
@@ -257,9 +246,7 @@ export default function CandleChart({
       wickDownColor: down,
     });
     chartRef.current.applyOptions({
-      layout: {
-        textColor: isDark ? "#a1a1aa" : "#52525b",
-      },
+      layout: { textColor: isDark ? "#a1a1aa" : "#52525b" },
       grid: {
         horzLines: {
           color: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
@@ -268,23 +255,12 @@ export default function CandleChart({
     });
   }, [theme]);
 
-  // Candle data. A live tick merges into the *last* candle on essentially
-  // every broadcast during market hours — calling setData()+fitContent() on
-  // every one of those (as this used to) forcibly reset any pan/zoom the
-  // user had just done, which is exactly why zooming only "worked" after
-  // market close (once `candles` stopped changing). Now: setData()+
-  // fitContent() only ever run once, on the first non-empty load; every
-  // later change that's just "the last bar updated" or "exactly one new bar
-  // appended" (the normal tick/rollover case) uses series.update(), which
-  // lightweight-charts is explicitly designed to handle without touching
-  // the current viewport. A bigger jump (e.g. a cache refetch bringing back
-  // many bars at once) falls back to a full setData(), still without
-  // forcing a re-fit.
+  // Candle data. First load → setData + fit/pin. Subsequent updates → series.update().
   useEffect(() => {
     if (!seriesRef.current) return;
     const data = (candles || [])
       .map((c) => ({
-        time: bucketToTime(c.bucket),
+        time: bucketToTimestamp(c.bucket_date || candleDate, c.bucket_minute),
         open: c.open,
         high: c.high,
         low: c.low,
@@ -296,7 +272,21 @@ export default function CandleChart({
     const prevLen = prevCandleCountRef.current;
     if (!candlesInitializedRef.current) {
       seriesRef.current.setData(data);
-      chartRef.current?.timeScale().fitContent();
+      if (multiDay) {
+        // Multi-day mode: show all data, let user pan/zoom freely.
+        chartRef.current?.timeScale().fitContent();
+      } else {
+        // Single-day mode (Groww-style): pin x-axis to full trading day
+        // (09:15–15:30 IST) so candles appear small on the left with the
+        // full day's time axis visible even when only 1–2 candles exist.
+        const date = (candles[0]?.bucket_date) || candleDate || null;
+        const { open, close } = dayBoundaries(date);
+        try {
+          chartRef.current?.timeScale().setVisibleRange({ from: open, to: close });
+        } catch {
+          chartRef.current?.timeScale().fitContent();
+        }
+      }
       candlesInitializedRef.current = true;
     } else if (data.length === prevLen || data.length === prevLen + 1) {
       seriesRef.current.update(data[data.length - 1]);
@@ -304,12 +294,9 @@ export default function CandleChart({
       seriesRef.current.setData(data);
     }
     prevCandleCountRef.current = data.length;
-  }, [candles]);
+  }, [candles]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Cumulative tick-rule delta, one histogram bar per candle — colored by
-  // the sign of the running total, not the per-bar delta, so a string of
-  // small down-ticks that hasn't yet erased the day's net buying still
-  // reads green (matches how the reference tool colors it).
+  // CVD histogram.
   useEffect(() => {
     if (!deltaSeriesRef.current) return;
     const { up, down } = readCandleColors();
@@ -318,7 +305,7 @@ export default function CandleChart({
       .map((c) => {
         cumulative += c.delta || 0;
         return {
-          time: bucketToTime(c.bucket),
+          time: bucketToTimestamp(c.bucket_date || candleDate, c.bucket_minute),
           value: cumulative,
           color: cumulative >= 0 ? up : down,
         };
@@ -328,10 +315,6 @@ export default function CandleChart({
     deltaDataRef.current = data;
     if (data.length === 0) return;
 
-    // Same incremental-update reasoning as the candle effect above — a full
-    // setData() every tick is unnecessary churn. Exception: a theme change
-    // needs every bar recolored (color is baked into each point), not just
-    // the last one, so that always forces a full rebuild.
     const prevLen = prevDeltaCountRef.current;
     const themeChanged = deltaThemeRef.current !== theme;
     deltaThemeRef.current = theme;
@@ -345,9 +328,9 @@ export default function CandleChart({
     }
     prevDeltaCountRef.current = data.length;
     applyDeltaMarkers();
-  }, [candles, theme]);
+  }, [candles, theme]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Reference-line levels (opening range, prev-day high/low, pivot).
+  // Reference-level lines (OR High/Low, Prev Day High/Low, Pivot).
   useEffect(() => {
     const series = seriesRef.current;
     if (!series) return;
@@ -365,30 +348,16 @@ export default function CandleChart({
             color,
             lineWidth: 1,
             lineStyle: LineStyle.Dashed,
-            axisLabelVisible: true,
+            axisLabelVisible: false, // Keep price axis scale clean & un-cluttered
             title,
           }),
         );
       });
     }
     levelValuesRef.current = values;
-    // `levels` is only set once per symbol (on the initial fetch, not on
-    // every tick) so this doesn't actually contribute to the zoom-reset bug
-    // the candle-data effect above had — but guard it the same way anyway,
-    // so a future change to when `levels` updates can't reintroduce it.
-    if (!levelsFitRef.current && values.length) {
-      chartRef.current?.timeScale().fitContent();
-      levelsFitRef.current = true;
-    }
   }, [levels]);
 
-  // Open paper-trade position lines (Entry / SL-or-TSL / Target). Drawn the
-  // same way as the reference levels above, just sourced from an order
-  // instead of the signal engine. The TSL case needs no special handling —
-  // the backend's ratchet mechanism moves the same `sl_price` field as it
-  // trails, so this line naturally follows it live (at whatever cadence the
-  // position data itself refreshes); "TSL" vs "SL" below is purely a label
-  // choice based on `position.tsl_type`.
+  // Open paper-trade position lines.
   useEffect(() => {
     const series = seriesRef.current;
     if (!series) return;
@@ -436,6 +405,7 @@ export default function CandleChart({
 
   return (
     <div className="relative w-full h-full">
+      {/* CVD badge */}
       <div
         className={`absolute top-1.5 right-2.5 z-10 pointer-events-none rounded-md border px-2 py-0.5 text-[10px] font-mono font-bold transition-colors ${
           isHovering
@@ -445,6 +415,12 @@ export default function CandleChart({
       >
         CVD {formatDelta(displayDelta)}
       </div>
+      {/* Previous-day badge */}
+      {isPreviousDay && (
+        <div className="absolute top-1.5 left-2.5 z-10 pointer-events-none rounded-md border border-accent-amber/40 bg-accent-amber/10 px-2 py-0.5 text-[10px] font-bold text-accent-amber">
+          PREV DAY{candleDate ? ` — ${candleDate}` : ""}
+        </div>
+      )}
       <div ref={containerRef} style={{ height }} className="w-full" />
     </div>
   );

@@ -265,7 +265,7 @@ function Dashboard({ user, onLogout }) {
 
       <div className="flex-1 overflow-auto">
         {fyersConnected === false && (
-          <div className="mx-auto max-w-7xl px-6 pt-6">
+          <div className="mx-auto max-w-[1920px] w-full px-4 sm:px-6 pt-4">
             <ConnectFyersBanner />
           </div>
         )}
@@ -336,19 +336,17 @@ function TopNavbar({
 
   return (
     <nav className="sticky top-0 z-50 border-b border-subtle bg-surface2/95 backdrop-blur-xl shadow-sm">
-      <div className="mx-auto max-w-full px-4 sm:px-6 py-4">
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-          {/* Logo & Status */}
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-blue to-accent-violet grid place-items-center font-bold text-white text-sm">
+      <div className="mx-auto max-w-[1920px] w-full px-4 sm:px-6 py-2 flex items-center justify-between gap-4">
+        {/* Left: Brand & Status & Navigation Tabs */}
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-accent-blue to-accent-violet grid place-items-center font-bold text-white text-xs shadow-glow-sm">
               T
             </div>
-            <div>
-              <h1 className="text-sm font-bold tracking-tight bg-gradient-to-r from-accent-violet to-accent-blue bg-clip-text text-transparent">
-                Live Price Action
-              </h1>
-            </div>
-            <div className="flex items-center gap-2 ml-4 pl-4 border-l border-subtle">
+            <h1 className="text-xs font-bold tracking-tight bg-gradient-to-r from-accent-violet to-accent-blue bg-clip-text text-transparent hidden sm:block">
+              Live Price Action
+            </h1>
+            <div className="flex items-center gap-1.5 ml-1 pl-2.5 border-l border-subtle">
               <span
                 className={`w-2 h-2 rounded-full ${
                   connected && marketOpen
@@ -357,7 +355,7 @@ function TopNavbar({
                 }`}
               />
               <span
-                className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${
+                className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
                   marketOpen
                     ? "bg-green-950 text-green-400"
                     : "bg-surface3 text-muted"
@@ -368,66 +366,67 @@ function TopNavbar({
             </div>
           </div>
 
-          {/* Right side: Benchmark & User */}
-          <div className="flex items-center gap-4 sm:gap-6">
-            {/* Nifty ticker detail: sheds on the smallest screens, room is tight */}
-            <div className="text-right hidden sm:block">
-              <div className="text-[10px] text-faint font-bold uppercase">
-                NIFTY 50
-              </div>
-              <div className="font-mono text-sm font-bold">
-                <span className="text-primary">
-                  {nifty.ltp?.toLocaleString("en-IN", {
-                    minimumFractionDigits: 2,
-                  })}
-                </span>
-                <span
-                  className={`ml-2 ${nifty.pct_change >= 0 ? "text-green-400" : "text-red-400"}`}
-                >
-                  {nifty.pct_change >= 0 ? "+" : ""}
-                  {nifty.pct_change}%
-                </span>
-              </div>
-            </div>
-
-            <div className="border-l border-subtle pl-4 sm:pl-6 flex items-center gap-3 sm:gap-4">
-              <div className="text-right hidden md:block">
-                <div className="text-xs text-faint">{user}</div>
-                <button
-                  onClick={onLogout}
-                  className="text-xs font-bold text-muted hover:text-primary transition-colors"
-                >
-                  Log out
-                </button>
-              </div>
+          {/* Navigation Tabs */}
+          <div className="flex items-center gap-1 overflow-x-auto py-0.5 border-l border-subtle pl-2.5">
+            {tabs.map((tab) => (
               <button
-                onClick={onLogout}
-                title="Log out"
-                className="md:hidden w-8 h-8 grid place-items-center rounded-lg border border-subtle bg-surface3 text-muted hover:text-primary transition-colors"
+                key={tab.key}
+                onClick={() => onTabChange(tab.key)}
+                className={`px-3 py-1.5 text-xs font-semibold whitespace-nowrap rounded-lg transition-all ${
+                  activeTab === tab.key
+                    ? "bg-accent-blue/15 text-accent-blue border border-accent-blue/30 shadow-sm"
+                    : "text-muted hover:text-primary hover:bg-surface3/60"
+                }`}
               >
-                <LogOut size={14} />
+                <span className="mr-1.5">{tab.icon}</span>
+                {tab.label}
               </button>
-              <ThemeToggle />
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* Horizontal Tabs — scrolls instead of clipping on narrow screens */}
-        <div className="flex gap-0.5 overflow-x-auto">
-          {tabs.map((tab) => (
+        {/* Right side: Benchmark & User */}
+        <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
+          <div className="text-right hidden md:block">
+            <div className="text-[9px] text-faint font-bold uppercase tracking-wider">
+              NIFTY 50
+            </div>
+            <div className="font-mono text-xs font-bold">
+              <span className="text-primary">
+                {nifty.ltp?.toLocaleString("en-IN", {
+                  minimumFractionDigits: 2,
+                })}
+              </span>
+              <span
+                className={`ml-1.5 ${nifty.pct_change >= 0 ? "text-green-400" : "text-red-400"}`}
+              >
+                {nifty.pct_change >= 0 ? "+" : ""}
+                {nifty.pct_change}%
+              </span>
+            </div>
+          </div>
+
+          <div className="border-l border-subtle pl-3 flex items-center gap-3">
+            <div className="text-right hidden lg:block">
+              <div className="text-[11px] text-faint truncate max-w-[130px]">
+                {user}
+              </div>
+              <button
+                onClick={onLogout}
+                className="text-[10px] font-bold text-muted hover:text-primary transition-colors"
+              >
+                Log out
+              </button>
+            </div>
             <button
-              key={tab.key}
-              onClick={() => onTabChange(tab.key)}
-              className={`px-4 py-2.5 text-sm font-semibold whitespace-nowrap transition-colors border-b-2 ${
-                activeTab === tab.key
-                  ? "border-accent-blue text-accent-blue bg-surface3/40"
-                  : "border-transparent text-muted hover:text-primary hover:bg-surface3/20"
-              }`}
+              onClick={onLogout}
+              title="Log out"
+              className="lg:hidden w-7 h-7 grid place-items-center rounded-lg border border-subtle bg-surface3 text-muted hover:text-primary transition-colors"
             >
-              <span className="mr-2">{tab.icon}</span>
-              {tab.label}
+              <LogOut size={13} />
             </button>
-          ))}
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </nav>

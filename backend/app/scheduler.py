@@ -4,6 +4,8 @@ Time-aware orchestration:
   * 08:45 IST daily  -> refresh the access token programmatically (TOTP).
   * 09:15 IST daily  -> backfill + start the websocket feed.
   * 15:30 IST daily  -> stop the websocket to conserve bandwidth (standby).
+  * 15:35 IST daily  -> delete candle_history rows older than 30 calendar
+                        days (~21 trading days) — rolling retention cap.
 
 Uses APScheduler on the IST timezone. On startup, if the process boots
 mid-session, the engine is brought straight to the correct state.
@@ -12,7 +14,7 @@ mid-session, the engine is brought straight to the correct state.
 import asyncio
 import logging
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -136,6 +138,22 @@ def _market_close():
     candle_aggregator.flush_all()
 
 
+def _cleanup_old_candles():
+    """15:35 IST cron job — deletes candle_history rows older than 30 calendar
+    days (~21 trading days), enforcing the rolling retention cap. Runs 5 min
+    after market close so flush_all() has already persisted the day's last
+    bucket before we touch the table."""
+    loop = order_monitor.get_loop()
+    if loop is None:
+        logger.info("retention: DB pool not available; skipping candle cleanup.")
+        return
+    today = datetime.now(IST).date()
+    cutoff = today - timedelta(days=30)  # 30 calendar days ≈ 21 trading days
+    asyncio.run_coroutine_threadsafe(
+        candle_history.delete_candles_older_than(cutoff), loop
+    )
+
+
 def _daily_login():
     token = auth.get_access_token(force_refresh=True)
     if not token:
@@ -209,6 +227,13 @@ def init_scheduler():
         _recommended_digest,
         CronTrigger(day_of_week="mon-fri", hour=15, minute=15, timezone=IST),
         id="recommended_digest_1515",
+        replace_existing=True,
+    )
+    # 15:35 candle history retention cleanup (~21 trading days rolling window)
+    scheduler.add_job(
+        _cleanup_old_candles,
+        CronTrigger(day_of_week="mon-fri", hour=15, minute=35, timezone=IST),
+        id="candle_retention_cleanup",
         replace_existing=True,
     )
     scheduler.start()

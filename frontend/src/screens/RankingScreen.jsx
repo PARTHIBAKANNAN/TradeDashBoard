@@ -176,7 +176,7 @@ export default function RankingScreen({ stocks, nifty }) {
 
   return (
     <div className="min-h-screen bg-surface">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 flex gap-6">
+      <div className="mx-auto max-w-[1920px] w-full px-4 sm:px-6 py-4 flex gap-6">
         {/* Filters — inline sidebar on lg+, slide-over drawer below lg */}
         {showFilters && (
           <>

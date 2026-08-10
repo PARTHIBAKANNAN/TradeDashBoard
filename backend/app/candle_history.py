@@ -64,6 +64,71 @@ async def get_candles(symbol: str, bucket_date) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+async def get_candles_range(
+    symbol: str, from_date, to_date
+) -> list[dict]:
+    """Every completed 5-min candle for `symbol` between `from_date` and
+    `to_date` (inclusive), ordered oldest first. Used by the multi-day modal
+    endpoint and the prev-day fallback in candle_query.py."""
+    from . import paper_trading
+
+    pool = paper_trading.get_pool()
+    if pool is None:
+        return []
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "select bucket_date, bucket_minute, open, high, low, close, delta, volume "
+            "from public.candle_history "
+            "where symbol=$1 and bucket_date >= $2 and bucket_date <= $3 "
+            "order by bucket_date, bucket_minute",
+            symbol,
+            from_date,
+            to_date,
+        )
+    return [dict(r) for r in rows]
+
+
+async def get_latest_candle_date(symbol: str):
+    """Returns the most recent `bucket_date` stored for `symbol`, or None
+    if no candles exist yet. Used by the prev-day fallback: when today has no
+    data (pre-market / weekend), serve the last available day instead."""
+    from . import paper_trading
+
+    pool = paper_trading.get_pool()
+    if pool is None:
+        return None
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "select max(bucket_date) as latest_date from public.candle_history "
+            "where symbol=$1",
+            symbol,
+        )
+    return row["latest_date"] if row else None
+
+
+async def delete_candles_older_than(cutoff_date) -> int:
+    """Deletes all rows with `bucket_date < cutoff_date`. Returns the number
+    of rows deleted. Called by the 15:35 IST scheduler job for 21-day
+    rolling retention (cutoff = today - 30 calendar days ≈ 21 trading days)."""
+    from . import paper_trading
+
+    pool = paper_trading.get_pool()
+    if pool is None:
+        return 0
+    async with pool.acquire() as conn:
+        result = await conn.execute(
+            "delete from public.candle_history where bucket_date < $1",
+            cutoff_date,
+        )
+    # asyncpg returns "DELETE N" as a string
+    try:
+        deleted = int(result.split()[-1])
+    except (ValueError, IndexError, AttributeError):
+        deleted = 0
+    logger.info("retention: deleted %d candle rows older than %s", deleted, cutoff_date)
+    return deleted
+
+
 async def get_today_all_symbols(bucket_date) -> dict[str, list[dict]]:
     """Every completed 5-min candle for EVERY symbol on `bucket_date`, grouped
     by symbol, oldest-first within each group — one query for the whole

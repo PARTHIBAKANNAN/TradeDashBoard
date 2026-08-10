@@ -30,7 +30,7 @@ export default function WatchlistScreen({ stocks, nifty }) {
 
   return (
     <div className="min-h-screen bg-surface">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6">
+      <div className="mx-auto max-w-[1920px] w-full px-4 sm:px-6 py-4">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-4">

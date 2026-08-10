@@ -32,8 +32,15 @@ const MiniCandlestick = React.memo(({ candles }) => {
     if (!candles || candles.length === 0) return;
 
     const styles = getComputedStyle(document.documentElement);
-    const upColor = `rgb(${styles.getPropertyValue("--bull-strong").trim() || "16 185 129"})`;
-    const downColor = `rgb(${styles.getPropertyValue("--bear-strong").trim() || "244 63 94"})`;
+    const getRgb = (prop, fallback) => {
+      const raw = (styles.getPropertyValue(prop) || "").trim();
+      if (!raw) return fallback;
+      if (raw.startsWith("#") || raw.startsWith("rgb")) return raw;
+      const formatted = raw.replace(/\s+/g, ", ");
+      return `rgb(${formatted})`;
+    };
+    const upColor = getRgb("--bull-strong", "rgb(16, 185, 129)");
+    const downColor = getRgb("--bear-strong", "rgb(244, 63, 94)");
 
     const highs = candles.map((c) => c.high);
     const lows = candles.map((c) => c.low);
