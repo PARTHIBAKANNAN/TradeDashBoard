@@ -93,7 +93,9 @@ export function useSymbolCandles(symbol, viewDate = "today") {
         if (!cancelled) setLoading(false);
       });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [symbol, viewDate]);
 
   // Live tick merging — only active when viewing today's data.
@@ -116,9 +118,19 @@ export function useSymbolCandles(symbol, viewDate = "today") {
 
     setCandles((prev) => {
       if (!prev.length) return prev;
-      const next = mergeTickWithDelta(prev, ltp, candleBucket(new Date()), tickDelta);
+      const next = mergeTickWithDelta(
+        prev,
+        ltp,
+        candleBucket(new Date()),
+        tickDelta,
+      );
       const cacheKey = `${symbol}__today`;
-      setCached(cacheKey, { candles: next, levels, isPreviousDay: false, candleDate });
+      setCached(cacheKey, {
+        candles: next,
+        levels,
+        isPreviousDay: false,
+        candleDate,
+      });
       return next;
     });
   }, [stock?.ltp, symbol]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -146,9 +158,12 @@ export function useMultiDayCandles(symbol, days = 21) {
     let cancelled = false;
     setLoading(true);
 
-    fetch(`/api/charts/candles/${encodeURIComponent(symbol)}/history?days=${days}`, {
-      credentials: "include",
-    })
+    fetch(
+      `/api/charts/candles/${encodeURIComponent(symbol)}/history?days=${days}`,
+      {
+        credentials: "include",
+      },
+    )
       .then((r) => {
         if (!r.ok) throw new Error(`Request failed (${r.status})`);
         return r.json();
@@ -177,7 +192,9 @@ export function useMultiDayCandles(symbol, days = 21) {
         if (!cancelled) setLoading(false);
       });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [symbol, days]);
 
   // Live tick merging on the last bar (only when today's data is present).

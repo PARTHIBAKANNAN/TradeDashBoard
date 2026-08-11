@@ -70,7 +70,10 @@ function ChartRow({ stock, onExpand }) {
     // that date (skipping weekends automatically — it just returns empty if
     // no data exists for that date, which we handle in ChartRowBody).
     const prev = daysAgo(
-      Math.max(1, Math.round((Date.now() - new Date(base).getTime()) / 86400000) + 1),
+      Math.max(
+        1,
+        Math.round((Date.now() - new Date(base).getTime()) / 86400000) + 1,
+      ),
     );
     setViewDate(prev);
   }, [isToday, viewDate]);

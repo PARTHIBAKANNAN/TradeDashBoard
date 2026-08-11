@@ -1,4 +1,10 @@
-import React, { useCallback, useMemo, useRef, useState, useEffect } from "react";
+import React, {
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  useEffect,
+} from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
@@ -10,7 +16,7 @@ import { usePositions } from "../hooks/useOrders.js";
 // ── Resolution definitions ────────────────────────────────────────────────────
 
 const RESOLUTIONS = [
-  { label: "5m",  minutes: 5  },
+  { label: "5m", minutes: 5 },
   { label: "15m", minutes: 15 },
   { label: "30m", minutes: 30 },
   { label: "1hr", minutes: 60 },
@@ -215,7 +221,8 @@ export default function ChartModal({ symbol, stock: stockProp, onClose }) {
             {/* ── Footer: data info ─────────────────────────────────────── */}
             <div className="flex items-center justify-between px-5 py-2 border-t border-subtle bg-surface2/60 backdrop-blur text-[11px] text-faint flex-shrink-0">
               <span>
-                {aggregated.length} bars · up to 21 trading days · 5-min source data
+                {aggregated.length} bars · up to 21 trading days · 5-min source
+                data
               </span>
               {isPreviousDay && candleDate && (
                 <span className="text-accent-amber font-semibold">

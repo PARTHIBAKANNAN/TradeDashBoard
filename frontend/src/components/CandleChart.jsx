@@ -32,7 +32,7 @@ function bucketToTimestamp(bucketDate, bucketMinute) {
 // IST open / close expressed as UTC timestamps for a given calendar date —
 // used to pin the visible range to a full trading day (Groww-style).
 function dayBoundaries(bucketDate) {
-  const open = bucketToTimestamp(bucketDate, 9 * 60 + 15);  // 09:15 IST
+  const open = bucketToTimestamp(bucketDate, 9 * 60 + 15); // 09:15 IST
   const close = bucketToTimestamp(bucketDate, 15 * 60 + 30); // 15:30 IST
   return { open, close };
 }
@@ -162,8 +162,18 @@ export default function CandleChart({
           const h = String(d.getUTCHours()).padStart(2, "0");
           const m = String(d.getUTCMinutes()).padStart(2, "0");
           const months = [
-            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
           ];
           if (tickMarkType === 0) return `${d.getUTCFullYear()}`;
           if (tickMarkType === 1 || tickMarkType === 2) {
@@ -303,10 +313,12 @@ export default function CandleChart({
         // Single-day mode (Groww-style): pin x-axis to full trading day
         // (09:15–15:30 IST) so candles appear small on the left with the
         // full day's time axis visible even when only 1–2 candles exist.
-        const date = (candles[0]?.bucket_date) || candleDate || null;
+        const date = candles[0]?.bucket_date || candleDate || null;
         const { open, close } = dayBoundaries(date);
         try {
-          chartRef.current?.timeScale().setVisibleRange({ from: open, to: close });
+          chartRef.current
+            ?.timeScale()
+            .setVisibleRange({ from: open, to: close });
         } catch {
           chartRef.current?.timeScale().fitContent();
         }

@@ -151,9 +151,7 @@ def _cleanup_old_candles():
         return
     today = datetime.now(IST).date()
     cutoff = today - timedelta(days=30)  # 30 calendar days ≈ 21 trading days
-    asyncio.run_coroutine_threadsafe(
-        candle_history.delete_candles_older_than(cutoff), loop
-    )
+    asyncio.run_coroutine_threadsafe(candle_history.delete_candles_older_than(cutoff), loop)
 
 
 def _daily_login():

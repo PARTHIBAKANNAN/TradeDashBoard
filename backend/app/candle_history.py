@@ -64,9 +64,7 @@ async def get_candles(symbol: str, bucket_date) -> list[dict]:
     return [dict(r) for r in rows]
 
 
-async def get_candles_range(
-    symbol: str, from_date, to_date
-) -> list[dict]:
+async def get_candles_range(symbol: str, from_date, to_date) -> list[dict]:
     """Every completed 5-min candle for `symbol` between `from_date` and
     `to_date` (inclusive), ordered oldest first. Used by the multi-day modal
     endpoint and the prev-day fallback in candle_query.py."""
@@ -99,8 +97,7 @@ async def get_latest_candle_date(symbol: str):
         return None
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
-            "select max(bucket_date) as latest_date from public.candle_history "
-            "where symbol=$1",
+            "select max(bucket_date) as latest_date from public.candle_history " "where symbol=$1",
             symbol,
         )
     return row["latest_date"] if row else None

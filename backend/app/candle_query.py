@@ -14,7 +14,7 @@ in-progress bucket for today's data. Past-day fetches are immutable (no live
 bucket appended). All three share get_levels() for overlay lines.
 """
 
-from datetime import datetime, date, timedelta
+from datetime import date, datetime, timedelta
 
 from . import candle_aggregator, candle_history
 from .config import IST
@@ -41,18 +41,24 @@ def _append_live(candles: list, symbol: str, today: date) -> list:
     bucket_minute, (o, h, l, c), delta = live[1], live[2], live[3]
     today_str = today.isoformat()
     # Don't duplicate if the last persisted row already covers this bucket.
-    if candles and candles[-1]["bucket_minute"] == bucket_minute and candles[-1]["bucket_date"] == today_str:
+    if (
+        candles
+        and candles[-1]["bucket_minute"] == bucket_minute
+        and candles[-1]["bucket_date"] == today_str
+    ):
         return candles
-    candles.append({
-        "bucket_date": today_str,
-        "bucket_minute": bucket_minute,
-        "open": o,
-        "high": h,
-        "low": l,
-        "close": c,
-        "delta": delta,
-        "is_live": True,
-    })
+    candles.append(
+        {
+            "bucket_date": today_str,
+            "bucket_minute": bucket_minute,
+            "open": o,
+            "high": h,
+            "low": l,
+            "close": c,
+            "delta": delta,
+            "is_live": True,
+        }
+    )
     return candles
 
 
@@ -117,7 +123,14 @@ async def get_multi_day_candles(symbol: str, days: int = 21) -> dict:
     from_date = today - timedelta(days=days * 2)
     rows = await candle_history.get_candles_range(symbol, from_date, today)
     candles = [
-        _format_row(r, r["bucket_date"].isoformat() if hasattr(r["bucket_date"], "isoformat") else str(r["bucket_date"]))
+        _format_row(
+            r,
+            (
+                r["bucket_date"].isoformat()
+                if hasattr(r["bucket_date"], "isoformat")
+                else str(r["bucket_date"])
+            ),
+        )
         for r in rows
     ]
     candles = _append_live(candles, symbol, today)
@@ -142,9 +155,7 @@ def get_levels(stock: dict) -> dict:
     prev_low = stock.get("yesterday_low") or None
     prev_close = stock.get("prev_close") or None
     pivot = (
-        (prev_high + prev_low + prev_close) / 3
-        if prev_high and prev_low and prev_close
-        else None
+        (prev_high + prev_low + prev_close) / 3 if prev_high and prev_low and prev_close else None
     )
     return {
         "opening_range_high": c1.get("high"),

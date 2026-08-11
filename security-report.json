@@ -31,7 +31,7 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "account": "",
         "local_database_path": null,
         "safety_version": "3.8.1",
-        "timestamp": "2026-08-10 10:10:13",
+        "timestamp": "2026-08-11 09:53:04",
         "packages_found": 13,
         "vulnerabilities_found": 14,
         "vulnerabilities_ignored": 0,
@@ -56,7 +56,7 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "git": {
             "branch": "main",
             "tag": "",
-            "commit": "932c38088b4b99dedabaea9effc4f1bcd5dfd8a6",
+            "commit": "1089f4f2aea08529717614f1a846faf708c690d1",
             "dirty": "True",
             "origin": "https://github.com/PARTHIBAKANNAN/TradeDashBoard"
         },
@@ -221,14 +221,14 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         },
         "asyncpg": {
             "name": "asyncpg",
-            "version": "0.30.0",
+            "version": null,
             "requirements": [
                 {
-                    "raw": "asyncpg==0.30.0  # direct Postgres access to Supabase's DB (paper trading)",
+                    "raw": "asyncpg>=0.30.0  # direct Postgres access to Supabase's DB (paper trading)",
                     "extras": [],
                     "marker": null,
                     "name": "asyncpg",
-                    "specifier": "==0.30.0",
+                    "specifier": ">=0.30.0",
                     "url": null,
                     "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
                 }
@@ -784,7 +784,12 @@ We highly encourage switching to the new `scan` command which is easier to use, 
             "more_info_url": "https://getsafety.com/p/pypi/requests/97c/"
         }
     },
-    "announcements": [],
+    "announcements": [
+        {
+            "type": "warning",
+            "message": "Warning: asyncpg is unpinned. Safety by default does not report on potential vulnerabilities in unpinned packages. It is recommended to pin your dependencies unless this is a library meant for distribution. To learn more about reporting these, specifier range handling, and options for scanning unpinned packages visit https://docs.pyup.io/docs/safety-range-specs"
+        }
+    ],
     "vulnerabilities": [
         {
             "vulnerability_id": "86217",
