@@ -157,6 +157,11 @@ export default function CandleChart({
       timeScale: {
         timeVisible: true,
         secondsVisible: false,
+        barSpacing: 8,
+        minBarSpacing: 3,
+        fixLeftEdge: !multiDay,
+        lockVisibleTimeRangeOnResize: true,
+        rightOffset: 12,
         tickMarkFormatter: (time, tickMarkType) => {
           const d = new Date(time * 1000);
           const h = String(d.getUTCHours()).padStart(2, "0");
@@ -310,24 +315,29 @@ export default function CandleChart({
         // Multi-day mode: show all data, let user pan/zoom freely.
         chartRef.current?.timeScale().fitContent();
       } else {
-        // Single-day mode (Groww-style): pin x-axis to full trading day
-        // (09:15–15:30 IST) so candles appear small on the left with the
-        // full day's time axis visible even when only 1–2 candles exist.
-        const date = candles[0]?.bucket_date || candleDate || null;
-        const { open, close } = dayBoundaries(date);
-        try {
-          chartRef.current
-            ?.timeScale()
-            .setVisibleRange({ from: open, to: close });
-        } catch {
-          chartRef.current?.timeScale().fitContent();
-        }
+        // Single-day mode: fixed barSpacing and left edge fixed so candles
+        // maintain fixed width and render left-to-right from 09:15 IST.
+        chartRef.current?.timeScale().applyOptions({
+          barSpacing: 8,
+          minBarSpacing: 3,
+          fixLeftEdge: true,
+          rightOffset: 12,
+        });
+        chartRef.current?.timeScale().scrollToPosition(0, false);
       }
       candlesInitializedRef.current = true;
     } else if (data.length === prevLen || data.length === prevLen + 1) {
       seriesRef.current.update(data[data.length - 1]);
     } else {
       seriesRef.current.setData(data);
+      if (!multiDay) {
+        chartRef.current?.timeScale().applyOptions({
+          barSpacing: 8,
+          minBarSpacing: 3,
+          fixLeftEdge: true,
+          rightOffset: 12,
+        });
+      }
     }
     prevCandleCountRef.current = data.length;
   }, [candles]); // eslint-disable-line react-hooks/exhaustive-deps

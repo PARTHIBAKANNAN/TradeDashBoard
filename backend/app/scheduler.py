@@ -163,6 +163,9 @@ def _daily_login():
         return
     data_engine.set_token(token)
     logger.info("Daily token refreshed.")
+    # Reset signals across all stocks at 08:45 AM auth token refresh for the new daily session
+    market_state.reset_signals()
+    logger.info("Market state signals reset for the new session.")
     # Refresh yesterday's high/low/close (and, pre-market, a "last known" LTP)
     # from candle_history — this account's REST backfill can't do it (-403),
     # and this cron runs on its own thread, so hop onto the asyncio loop the

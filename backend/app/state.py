@@ -72,6 +72,17 @@ class MarketState:
     def lock(self):
         return self._lock
 
+    def reset_signals(self):
+        """Reset signal indicators across all tracked stocks for a new daily trading session."""
+        with self._lock:
+            for stock in self.stocks.values():
+                stock["signal"] = "None"
+                stock["signal_time"] = ""
+                stock["orb"] = {}
+                stock["candle1_high"] = 0.0
+                stock["candle1_low"] = 0.0
+                stock["two_sided_ok"] = False
+
     def get_stock(self, short_sym: str) -> Optional[dict]:
         return self.stocks.get(short_sym)
 
