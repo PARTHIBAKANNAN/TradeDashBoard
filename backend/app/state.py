@@ -66,6 +66,12 @@ class MarketState:
                 "two_sided_ok": False,
                 "signal": "None",
                 "signal_time": "",
+                # Live order-book imbalance from the DepthUpdate socket
+                # (depth_manager.py): bid_value − ask_value, where each value
+                # is Σ(price × quantity) across the 5 book levels received.
+                # Positive → more rupee-value queued on the buy side.
+                # Zero when the symbol is not on the depth subscription.
+                "depth_delta": 0.0,
             }
 
     # ---- context-managed access ----
@@ -82,6 +88,7 @@ class MarketState:
                 stock["candle1_high"] = 0.0
                 stock["candle1_low"] = 0.0
                 stock["two_sided_ok"] = False
+                stock["depth_delta"] = 0.0
 
     def get_stock(self, short_sym: str) -> Optional[dict]:
         return self.stocks.get(short_sym)

@@ -34,6 +34,10 @@ SNAPSHOT_STOCK_FIELDS: tuple[str, ...] = (
     "today_low",
     "today_high",
     "vwap",
+    # Live order-book imbalance from the DepthUpdate socket (depth_manager.py).
+    # 0.0 for symbols not on the depth subscription; non-zero only for the
+    # top-N active symbols where bid/ask data is available.
+    "depth_delta",
 )
 # Fields whose values are compared to detect a delta (identity fields excluded).
 DIFFABLE_STOCK_FIELDS: tuple[str, ...] = tuple(

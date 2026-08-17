@@ -19,8 +19,8 @@ from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from . import (auth, candle_aggregator, candle_history, config, momentum_score,
-               order_monitor, paper_trading, telegram_notify)
+from . import (auth, candle_aggregator, candle_history, config, depth_manager,
+               momentum_score, order_monitor, paper_trading, telegram_notify)
 from .config import IST, MARKET_CLOSE, MARKET_OPEN
 from .fyers_service import data_engine
 from .state import market_state
@@ -68,6 +68,9 @@ def _start_engine():
     data_engine.backfill()
     market_state.market_open = True
     _launch_ws_thread()
+    # Start the DepthUpdate socket on its own daemon thread after the main WS
+    # is running so resubscribe() can read live state scores immediately.
+    depth_manager.start(data_engine.access_token)
     _last_recommended.clear()  # fresh day, don't let yesterday's picks suppress today's digest
     logger.info("Data engine started on '%s' (single-WS owner).", config.INSTANCE_NAME)
 
@@ -123,6 +126,7 @@ def _recommended_digest():
 
 def _stop_engine():
     data_engine.stop_websocket()
+    depth_manager.stop()
     market_state.market_open = False
     logger.info("Data engine stopped (market closed / standby).")
 
@@ -173,12 +177,13 @@ def _daily_login():
     loop = order_monitor.get_loop()
     if loop is not None:
         asyncio.run_coroutine_threadsafe(candle_history.seed_missing_state(market_state), loop)
-    # If the socket is live, rebuild it so the new token takes effect (the token
-    # is baked into the connection string at connect time).
+    # If the socket is live, rebuild both sockets so the new token takes effect
+    # (the token is baked into the WS connection string at connect time).
     if config.DATA_ENGINE_ENABLED and data_engine.running:
-        logger.info("Rebuilding websocket with the refreshed token ...")
+        logger.info("Rebuilding websockets with the refreshed token ...")
         data_engine.stop_websocket()
         _launch_ws_thread()
+        depth_manager.restart(token)
 
 
 scheduler = BackgroundScheduler(timezone=IST)
@@ -232,6 +237,15 @@ def init_scheduler():
         _recommended_digest,
         CronTrigger(day_of_week="mon-fri", hour=15, minute=15, timezone=IST),
         id="recommended_digest_1515",
+        replace_existing=True,
+    )
+    # Every 2 min Mon-Fri — rotate depth subscription to the freshest top-N.
+    # resubscribe() is a no-op when the depth socket is not running, so this
+    # cron fires outside market hours harmlessly.
+    scheduler.add_job(
+        depth_manager.resubscribe,
+        CronTrigger(day_of_week="mon-fri", hour="9-15", minute="*/2", timezone=IST),
+        id="depth_resubscribe",
         replace_existing=True,
     )
     # 15:35 candle history retention cleanup (~21 trading days rolling window)

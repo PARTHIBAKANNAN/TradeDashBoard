@@ -24,6 +24,7 @@ def _stock(symbol="RELIANCE", ltp=100.0, pct_change=0.0, day_range_pos=50.0):
         "yesterday_high": 110.0,
         "today_low": 95.0,
         "today_high": 105.0,
+        "depth_delta": 0.0,
     }
 
 
