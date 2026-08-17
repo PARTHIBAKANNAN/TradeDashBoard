@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Brain, Info, LineChart, RefreshCw } from "lucide-react";
+import { Brain, Info, LineChart, RefreshCw, Rocket } from "lucide-react";
+import ChartModal from "../components/ChartModal.jsx";
+import QuickTradeModal from "../components/paper-trading/QuickTradeModal.jsx";
 
 const POLL_INTERVAL_MS = 30_000;
 
@@ -29,9 +31,13 @@ function ScoreBar({ score }) {
   );
 }
 
-export default function SmartMoneyScreen({ onOpenChart }) {
+export default function SmartMoneyScreen() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+
+  // Modal state — one state variable drives both modals; null = closed.
+  const [chartSymbol, setChartSymbol] = useState(null);
+  const [tradeSymbol, setTradeSymbol] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -138,7 +144,13 @@ export default function SmartMoneyScreen({ onOpenChart }) {
                   <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-center">
                     History
                   </th>
-                  <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-center" />
+                  {/* Chart + Trade action buttons */}
+                  <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-center">
+                    Chart
+                  </th>
+                  <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-center">
+                    Trade
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -175,16 +187,27 @@ export default function SmartMoneyScreen({ onOpenChart }) {
                         {row.days_history}/{lookback}d
                       </span>
                     </td>
+
+                    {/* Chart button — opens ChartModal inline */}
                     <td className="py-3 px-4 text-center">
-                      {onOpenChart && (
-                        <button
-                          onClick={() => onOpenChart(row.symbol)}
-                          title="Open in Charts"
-                          className="inline-flex items-center rounded-lg border border-subtle bg-surface3 p-1.5 text-muted hover:text-accent-blue hover:border-accent-blue/40 transition-colors"
-                        >
-                          <LineChart size={13} />
-                        </button>
-                      )}
+                      <button
+                        onClick={() => setChartSymbol(row.symbol)}
+                        title="View chart"
+                        className="inline-flex items-center rounded-lg border border-subtle bg-surface3 p-1.5 text-muted hover:text-accent-blue hover:border-accent-blue/40 transition-colors"
+                      >
+                        <LineChart size={13} />
+                      </button>
+                    </td>
+
+                    {/* Trade button — opens QuickTradeModal */}
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        onClick={() => setTradeSymbol(row.symbol)}
+                        title="Quick trade"
+                        className="inline-flex items-center rounded-lg border border-subtle bg-surface3 p-1.5 text-muted hover:text-bull hover:border-bull/40 transition-colors"
+                      >
+                        <Rocket size={13} />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -200,6 +223,20 @@ export default function SmartMoneyScreen({ onOpenChart }) {
           )}
         </div>
       </div>
+
+      {/* Chart modal — portalled, full-screen */}
+      {chartSymbol && (
+        <ChartModal
+          symbol={chartSymbol}
+          onClose={() => setChartSymbol(null)}
+        />
+      )}
+
+      {/* Quick Trade modal — portalled, scrollable */}
+      <QuickTradeModal
+        symbol={tradeSymbol}
+        onClose={() => setTradeSymbol(null)}
+      />
     </div>
   );
 }

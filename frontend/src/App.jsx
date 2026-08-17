@@ -294,7 +294,7 @@ function Dashboard({ user, onLogout }) {
               />
             )}
             {activeTab === "smart-money" && (
-              <SmartMoneyScreen onOpenChart={openInCharts} />
+              <SmartMoneyScreen />
             )}
             {activeTab === "paper-trading" && (
               <PaperTradingScreen stocks={stocks} />
