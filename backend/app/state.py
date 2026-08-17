@@ -89,6 +89,11 @@ class MarketState:
                 stock["candle1_low"] = 0.0
                 stock["two_sided_ok"] = False
                 stock["depth_delta"] = 0.0
+                # Intraday-derived ranking columns — zeroed so the Ranking tab
+                # shows a clean slate before the first live tick of the new day
+                # rather than carrying yesterday's RS / % change values forward.
+                stock["relative_strength"] = 0.0
+                stock["pct_change"] = 0.0
 
     def get_stock(self, short_sym: str) -> Optional[dict]:
         return self.stocks.get(short_sym)
