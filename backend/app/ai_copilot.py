@@ -297,3 +297,46 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
         "is_fallback": True,
         "timestamp": datetime.now(IST).strftime("%H:%M:%S IST"),
     }
+
+
+def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
+    """
+    Automated background worker: Audits a newly triggered breakout signal
+    using Gemini 3.6 Flash and sends a rich Telegram alert with Entry, SL,
+    Target, TSL, and Rationale.
+    """
+    from . import telegram_notify
+
+    logger.info("ai_copilot: auditing signal %s for %s ...", signal, sym)
+    res = analyze_trade_setup(sym)
+
+    dec = res.get("decision", "SKIP")
+    score = res.get("confidence_score", 0)
+    entry = res.get("suggested_entry", 0.0)
+    sl = res.get("suggested_sl", 0.0)
+    target = res.get("suggested_target", 0.0)
+    tsl_t = res.get("tsl_type", "PERCENT")
+    tsl_v = res.get("tsl_value", 0.5)
+    rationale = res.get("rationale", [])
+
+    icon = "🚀" if "BUY" in dec else "🔻" if "SELL" in dec else "⚠️"
+    lines = [
+        f"{icon} *AI TRADE COPILOT ALERT*",
+        f"*Stock:* `{sym}` | *Signal:* `{signal}` ({signal_time})",
+        f"*AI Decision:* `{dec}` ({score}% confidence)",
+        "",
+        f"📍 *Entry:* ₹{entry:.2f}",
+        f"🛑 *Stop Loss:* ₹{sl:.2f}",
+        f"🎯 *Target:* ₹{target:.2f}",
+        f"🔄 *Trailing SL:* {tsl_t} {tsl_v}",
+    ]
+    if rationale:
+        lines.append("")
+        lines.append("*AI Rationale:*")
+        for r in rationale[:2]:
+            lines.append(f"• {r}")
+
+    text = "\n".join(lines)
+    logger.info("ai_copilot: pushing Telegram alert for %s", sym)
+    telegram_notify.send_message(text)
+

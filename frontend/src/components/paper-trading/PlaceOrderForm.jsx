@@ -230,7 +230,7 @@ export default function PlaceOrderForm({
             <select
               value={symbol}
               onChange={(e) => setSymbol(e.target.value)}
-              className="w-full bg-surface3 border border-strong rounded-lg p-2 text-sm focus:outline-none focus:border-accent-blue"
+              className="w-full bg-surface3 border border-strong rounded-lg p-2 text-sm text-primary font-bold focus:outline-none focus:border-accent-blue"
             >
               {symbols.map((s) => (
                 <option key={s} value={s}>
@@ -250,7 +250,7 @@ export default function PlaceOrderForm({
             step={1}
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
-            className="w-full bg-surface3 border border-strong rounded-lg p-2 text-sm font-mono focus:outline-none focus:border-accent-blue"
+            className="w-full bg-surface3 border border-strong rounded-lg p-2 text-sm text-primary font-mono focus:outline-none focus:border-accent-blue"
           />
         </div>
       </div>
@@ -312,7 +312,7 @@ export default function PlaceOrderForm({
             value={limitPrice}
             onChange={(e) => setLimitPrice(e.target.value)}
             placeholder={margin?.ltp ? String(margin.ltp) : ""}
-            className="w-full bg-surface3 border border-strong rounded-lg p-2 text-sm font-mono focus:outline-none focus:border-accent-blue"
+            className="w-full bg-surface3 border border-strong rounded-lg p-2 text-sm text-primary font-mono focus:outline-none focus:border-accent-blue"
           />
         </div>
       )}
@@ -327,7 +327,7 @@ export default function PlaceOrderForm({
             step="0.05"
             value={slPrice}
             onChange={(e) => setSlPrice(e.target.value)}
-            className="w-full bg-surface3 border border-strong rounded-lg p-2 text-sm font-mono focus:outline-none focus:border-accent-blue"
+            className="w-full bg-surface3 border border-strong rounded-lg p-2 text-sm text-primary font-mono focus:outline-none focus:border-accent-blue"
           />
         </div>
         <div>
@@ -339,7 +339,7 @@ export default function PlaceOrderForm({
             step="0.05"
             value={targetPrice}
             onChange={(e) => setTargetPrice(e.target.value)}
-            className="w-full bg-surface3 border border-strong rounded-lg p-2 text-sm font-mono focus:outline-none focus:border-accent-blue"
+            className="w-full bg-surface3 border border-strong rounded-lg p-2 text-sm text-primary font-mono focus:outline-none focus:border-accent-blue"
           />
         </div>
       </div>
@@ -361,7 +361,7 @@ export default function PlaceOrderForm({
           onChange={(e) => setNotes(e.target.value)}
           rows={2}
           placeholder="Why this trade? Setup, conviction, plan…"
-          className="w-full bg-surface3 border border-strong rounded-lg p-2 text-sm focus:outline-none focus:border-accent-blue resize-none"
+          className="w-full bg-surface3 border border-strong rounded-lg p-2 text-sm text-primary focus:outline-none focus:border-accent-blue resize-none"
         />
       </div>
 

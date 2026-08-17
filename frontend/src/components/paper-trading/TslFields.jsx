@@ -43,7 +43,7 @@ export default function TslFields({
           placeholder={
             tslType === "PERCENT" ? "Trail % e.g. 1.5" : "Trail ₹ e.g. 20"
           }
-          className="mt-2 w-full bg-surface3 border border-strong rounded-lg p-2 text-sm font-mono focus:outline-none focus:border-accent-blue"
+          className="mt-2 w-full bg-surface3 border border-strong rounded-lg p-2 text-sm text-primary font-mono focus:outline-none focus:border-accent-blue"
         />
       )}
     </div>
