@@ -146,8 +146,77 @@ export default function PlaceOrderForm({
     }
   };
 
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState(null);
+
+  const fetchAiAnalysis = async () => {
+    if (!symbol) return;
+    setAiLoading(true);
+    try {
+      const res = await fetch("/api/ai/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symbol }),
+        credentials: "include",
+      });
+      const data = await res.json();
+      setAiResult(data);
+      if (data.suggested_sl) setSlPrice(String(data.suggested_sl));
+      if (data.suggested_target) setTargetPrice(String(data.suggested_target));
+      if (data.tsl_type) setTslType(data.tsl_type);
+      if (data.tsl_value) setTslValue(String(data.tsl_value));
+    } catch {
+      setAiResult({ decision: "ERROR", rationale: ["AI service temporary error."] });
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   return (
     <form onSubmit={submit} className="space-y-3">
+      {/* AI Copilot Widget */}
+      <div className="rounded-xl border border-accent-blue/30 bg-accent-blue/10 p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-accent-blue">
+            <span>🤖 AI Copilot (Gemini 3.6 Flash)</span>
+          </div>
+          <button
+            type="button"
+            onClick={fetchAiAnalysis}
+            disabled={aiLoading}
+            className="px-2 py-1 rounded bg-accent-blue/20 hover:bg-accent-blue/30 border border-accent-blue/40 text-[11px] font-bold text-accent-blue transition-colors flex items-center gap-1"
+          >
+            {aiLoading ? <Loader2 size={11} className="animate-spin" /> : null}
+            {aiLoading ? "Analyzing..." : "Audit & Auto-fill"}
+          </button>
+        </div>
+
+        {aiResult && (
+          <div className="space-y-1.5 pt-1 text-xs border-t border-accent-blue/20">
+            <div className="flex items-center justify-between font-mono">
+              <span className="text-muted">Decision:</span>
+              <span
+                className={`font-bold ${
+                  aiResult.decision?.includes("BUY")
+                    ? "text-bull"
+                    : aiResult.decision?.includes("SELL")
+                    ? "text-bear"
+                    : "text-accent-amber"
+                }`}
+              >
+                {aiResult.decision} ({aiResult.confidence_score}% score)
+              </span>
+            </div>
+            {aiResult.rationale && (
+              <ul className="text-[11px] text-faint list-disc list-inside space-y-0.5">
+                {aiResult.rationale.map((r, idx) => (
+                  <li key={idx}>{r}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-[10px] font-bold text-muted uppercase tracking-wider mb-1.5">

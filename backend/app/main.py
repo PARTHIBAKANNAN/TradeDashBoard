@@ -164,7 +164,23 @@ h1{{color:{color};margin:0 0 8px}}a{{color:#3b82f6}}</style></head>
 <body><div class="card"><h1>{title}</h1><p>{msg}</p><p><a href="/">Back to dashboard</a></p></div></body></html>"""
 
 
-# ----------------- data routes (login-gated) -----------------
+# ----------------- AI Copilot routes (login-gated) -----------------
+from . import ai_copilot
+
+
+@app.get("/api/ai/premarket-bias", dependencies=[Depends(require_login)])
+async def ai_premarket_bias():
+    return ai_copilot.get_premarket_briefing()
+
+
+@app.post("/api/ai/analyze", dependencies=[Depends(require_login)])
+async def ai_analyze_stock(body: dict):
+    sym = body.get("symbol", "").strip().upper()
+    if not sym:
+        return JSONResponse({"error": "Symbol is required"}, status_code=400)
+    return ai_copilot.analyze_trade_setup(sym)
+
+
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "market_open": is_market_open(), **auth.auth_status()}

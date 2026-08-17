@@ -39,6 +39,15 @@ export default function SmartMoneyScreen() {
   const [chartSymbol, setChartSymbol] = useState(null);
   const [tradeSymbol, setTradeSymbol] = useState(null);
 
+  const [aiBriefing, setAiBriefing] = useState(null);
+
+  useEffect(() => {
+    fetch("/api/ai/premarket-bias", { credentials: "include" })
+      .then((r) => r.json())
+      .then((j) => setAiBriefing(j))
+      .catch(() => setAiBriefing(null));
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     const load = () => {
@@ -89,6 +98,29 @@ export default function SmartMoneyScreen() {
             </div>
           )}
         </div>
+
+        {/* AI Pre-Market Briefing Banner */}
+        {aiBriefing && (
+          <div className="mb-4 rounded-xl border border-accent-blue/40 bg-accent-blue/10 p-4 space-y-2 text-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded font-bold uppercase tracking-wider text-[10px] bg-accent-blue text-white">
+                  AI Pre-Market Bias: {aiBriefing.bias}
+                </span>
+                <span className="text-[11px] text-faint">
+                  Updated {aiBriefing.updated_at || "Today"}
+                </span>
+              </div>
+            </div>
+            <p className="text-primary font-medium">{aiBriefing.summary}</p>
+            {aiBriefing.key_risks?.length > 0 && (
+              <div className="text-[11px] text-faint">
+                <span className="font-bold text-accent-amber">Key Risks: </span>
+                {aiBriefing.key_risks.join(" • ")}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="mb-4 flex items-start gap-2 rounded-xl border border-accent-blue/30 bg-accent-blue/10 px-4 py-3 text-xs text-primary">
           <Info size={14} className="text-accent-blue flex-shrink-0 mt-0.5" />

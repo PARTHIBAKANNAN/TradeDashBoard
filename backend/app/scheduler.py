@@ -19,7 +19,7 @@ from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from . import (auth, candle_aggregator, candle_history, config, depth_manager,
+from . import (ai_copilot, auth, candle_aggregator, candle_history, config, depth_manager,
                momentum_score, order_monitor, paper_trading, telegram_notify)
 from .config import IST, MARKET_CLOSE, MARKET_OPEN
 from .fyers_service import data_engine
@@ -170,6 +170,11 @@ def _daily_login():
     # Reset signals across all stocks at 08:45 AM auth token refresh for the new daily session
     market_state.reset_signals()
     logger.info("Market state signals reset for the new session.")
+    # Run pre-market briefing to establish daily bias & sector focus
+    try:
+        ai_copilot.run_premarket_briefing()
+    except Exception:
+        logger.exception("Failed to run premarket AI briefing")
     # Refresh yesterday's high/low/close (and, pre-market, a "last known" LTP)
     # from candle_history — this account's REST backfill can't do it (-403),
     # and this cron runs on its own thread, so hop onto the asyncio loop the
