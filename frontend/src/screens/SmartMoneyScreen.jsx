@@ -226,10 +226,7 @@ export default function SmartMoneyScreen() {
 
       {/* Chart modal — portalled, full-screen */}
       {chartSymbol && (
-        <ChartModal
-          symbol={chartSymbol}
-          onClose={() => setChartSymbol(null)}
-        />
+        <ChartModal symbol={chartSymbol} onClose={() => setChartSymbol(null)} />
       )}
 
       {/* Quick Trade modal — portalled, scrollable */}

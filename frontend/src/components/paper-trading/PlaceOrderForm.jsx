@@ -166,7 +166,10 @@ export default function PlaceOrderForm({
       if (data.tsl_type) setTslType(data.tsl_type);
       if (data.tsl_value) setTslValue(String(data.tsl_value));
     } catch {
-      setAiResult({ decision: "ERROR", rationale: ["AI service temporary error."] });
+      setAiResult({
+        decision: "ERROR",
+        rationale: ["AI service temporary error."],
+      });
     } finally {
       setAiLoading(false);
     }
@@ -200,8 +203,8 @@ export default function PlaceOrderForm({
                   aiResult.decision?.includes("BUY")
                     ? "text-bull"
                     : aiResult.decision?.includes("SELL")
-                    ? "text-bear"
-                    : "text-accent-amber"
+                      ? "text-bear"
+                      : "text-accent-amber"
                 }`}
               >
                 {aiResult.decision} ({aiResult.confidence_score}% score)

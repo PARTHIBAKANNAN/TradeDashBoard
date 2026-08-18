@@ -14,13 +14,14 @@ heuristic fallbacks without crashing the app or stopping execution.
 import json
 import logging
 import os
-import urllib.request
 import urllib.parse
+import urllib.request
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 try:
     from dotenv import load_dotenv
+
     # Load backend/.env or root .env automatically
     load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
     load_dotenv(".env")
@@ -98,6 +99,7 @@ def call_gemini(prompt: str, system_instruction: Optional[str] = None) -> Option
 
 # ── 1. Pre-Market Daily Briefing (08:45 AM) ───────────────────────────────────
 
+
 def run_premarket_briefing() -> Dict[str, Any]:
     """
     Fetch pre-market context and compute daily market bias & risk events.
@@ -114,12 +116,12 @@ def run_premarket_briefing() -> Dict[str, Any]:
     prompt = (
         f"Today is {today_str} (IST). Analyze current global market conditions for NSE India trading.\n"
         "Provide a JSON object with these keys:\n"
-        '{\n'
+        "{\n"
         '  "bias": "BULLISH" | "BEARISH" | "SIDEWAYS_CHOPSY",\n'
         '  "summary": "2-sentence executive summary of pre-market cues",\n'
         '  "key_risks": ["Risk 1", "Risk 2"],\n'
         '  "sector_focus": ["Sectors to watch positive/negative"]\n'
-        '}'
+        "}"
     )
 
     raw_response = call_gemini(prompt, system_instruction=system_prompt)
@@ -134,7 +136,9 @@ def run_premarket_briefing() -> Dict[str, Any]:
                 "sector_focus": parsed.get("sector_focus", []),
                 "updated_at": datetime.now(IST).strftime("%H:%M:%S IST"),
             }
-            logger.info("ai_copilot: pre-market briefing computed: bias=%s", _premarket_cache["bias"])
+            logger.info(
+                "ai_copilot: pre-market briefing computed: bias=%s", _premarket_cache["bias"]
+            )
             return _premarket_cache
         except Exception as e:
             logger.error("ai_copilot: failed to parse premarket JSON: %s", e)
@@ -158,14 +162,15 @@ def get_premarket_briefing() -> Dict[str, Any]:
 
 # ── 2. Live Signal Audit & Dynamic Trade Plan ──────────────────────────────────
 
+
 def compile_symbol_context(sym: str) -> Dict[str, Any]:
     """
     Compile deep, multi-layered context package for a single stock from live market_state
     and candle_history to send to Gemini.
     """
-    from .state import market_state
     from .candle_aggregator import _day_candles
     from .depth_manager import get_book_delta, is_depth_subscribed
+    from .state import market_state
 
     stock_data = {}
     nifty_data = {}
@@ -176,12 +181,16 @@ def compile_symbol_context(sym: str) -> Dict[str, Any]:
         nifty_data = dict(market_state.nifty)
 
     # Fetch today's full 5-min candles from memory
-    candles = list(_day_candles.get(sym, {}).values()) if isinstance(_day_candles.get(sym), dict) else []
+    candles = (
+        list(_day_candles.get(sym, {}).values()) if isinstance(_day_candles.get(sym), dict) else []
+    )
     book_delta = get_book_delta(sym)
 
     now_ist = datetime.now(IST)
     session_minute = (now_ist.hour - 9) * 60 + (now_ist.minute - 15)
-    time_window = "PRIME_MORNING (09:15-11:30)" if session_minute <= 135 else "MID_LATE_SESSION (11:30-15:30)"
+    time_window = (
+        "PRIME_MORNING (09:15-11:30)" if session_minute <= 135 else "MID_LATE_SESSION (11:30-15:30)"
+    )
 
     return {
         "symbol": sym,
@@ -206,13 +215,17 @@ def compile_symbol_context(sym: str) -> Dict[str, Any]:
             "signal": stock_data.get("signal", "None"),
             "signal_time": stock_data.get("signal_time", ""),
             "depth_subscribed": is_depth_subscribed(sym),
-            "depth_delta_rupee_val": book_delta if book_delta is not None else stock_data.get("depth_delta", 0.0),
+            "depth_delta_rupee_val": (
+                book_delta if book_delta is not None else stock_data.get("depth_delta", 0.0)
+            ),
             "tot_buy_qty": stock_data.get("tot_buy_qty", 0),
             "tot_sell_qty": stock_data.get("tot_sell_qty", 0),
         },
         "premarket_bias": _premarket_cache.get("bias", "NEUTRAL"),
         "recent_5m_candles_count": len(candles),
-        "recent_5m_candles_sample": candles[-6:] if candles else [],  # last 6 candles for prompt brevity
+        "recent_5m_candles_sample": (
+            candles[-6:] if candles else []
+        ),  # last 6 candles for prompt brevity
     }
 
 
@@ -327,7 +340,11 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
 
         dedup_key = f"{today}:{sym}:{signal}"
         if dedup_key in _notified_signals_today:
-            logger.info("ai_copilot: signal %s for %s already notified today; skipping duplicate alert", signal, sym)
+            logger.info(
+                "ai_copilot: signal %s for %s already notified today; skipping duplicate alert",
+                signal,
+                sym,
+            )
             return
         _notified_signals_today.add(dedup_key)
 
@@ -365,4 +382,3 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
     text = "\n".join(lines)
     logger.info("ai_copilot: pushing Telegram alert for %s", sym)
     telegram_notify.send_message(text)
-

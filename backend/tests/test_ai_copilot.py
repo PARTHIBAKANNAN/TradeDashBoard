@@ -4,9 +4,9 @@ Unit tests for app.ai_copilot — tests context compilation, pre-market cache, a
 Run from backend/:  python -m pytest tests/test_ai_copilot.py -v
 """
 
-from unittest.mock import patch, MagicMock
-import pytest
+from unittest.mock import MagicMock, patch
 
+import pytest
 from app import ai_copilot
 
 

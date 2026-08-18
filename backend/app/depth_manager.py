@@ -33,7 +33,8 @@ from typing import Optional
 from fyers_apiv3.FyersWebsocket import data_ws
 
 from . import config, order_monitor
-from .config import CLIENT_ID, short_symbol as _short_symbol
+from .config import CLIENT_ID
+from .config import short_symbol as _short_symbol
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +46,8 @@ DEPTH_TOP_N: int = 10
 _lock = threading.Lock()
 _ws: Optional[data_ws.FyersDataSocket] = None
 _running: bool = False
-_depth_set: set[str] = set()                            # short symbols currently subscribed
-_last_book: dict[str, tuple[float, float]] = {}         # sym → (bid_val, ask_val)
+_depth_set: set[str] = set()  # short symbols currently subscribed
+_last_book: dict[str, tuple[float, float]] = {}  # sym → (bid_val, ask_val)
 
 # Logged once on the very first depth message to confirm actual Fyers field
 # names before processing begins — makes field-name mismatches easy to spot.
@@ -54,6 +55,7 @@ _first_message_logged: bool = False
 
 
 # ── public API ────────────────────────────────────────────────────────────────
+
 
 def get_book_delta(sym: str) -> Optional[float]:
     """
@@ -77,6 +79,7 @@ def is_depth_subscribed(sym: str) -> bool:
 
 
 # ── depth message handler ─────────────────────────────────────────────────────
+
 
 def _on_depth_message(msg: dict) -> None:
     global _first_message_logged
@@ -114,6 +117,7 @@ def _on_depth_message(msg: dict) -> None:
     # Write live snapshot into market_state so the existing SSE broadcaster
     # carries depth_delta to the frontend with zero extra plumbing.
     from .state import market_state
+
     with market_state.lock():
         stock = market_state.get_stock(sym)
         if stock is not None:
@@ -121,6 +125,7 @@ def _on_depth_message(msg: dict) -> None:
 
 
 # ── symbol scoring ────────────────────────────────────────────────────────────
+
 
 def _score_symbol(stock: dict, forced_syms: set[str]) -> float:
     """
@@ -165,10 +170,7 @@ def _select_top_symbols(n: int) -> set[str]:
     from .state import market_state
 
     # Paper positions forced in (open brackets + pending limits).
-    forced = (
-        set(order_monitor._open_brackets.keys())
-        | set(order_monitor._pending_limits.keys())
-    )
+    forced = set(order_monitor._open_brackets.keys()) | set(order_monitor._pending_limits.keys())
 
     with market_state.lock():
         stocks = list(market_state.stocks.values())
@@ -179,6 +181,7 @@ def _select_top_symbols(n: int) -> set[str]:
 
 
 # ── dynamic resubscription ────────────────────────────────────────────────────
+
 
 def resubscribe() -> None:
     """
@@ -202,10 +205,11 @@ def resubscribe() -> None:
 
     # Map short symbols → full Fyers symbols for the API call.
     from .state import market_state
+
     with market_state.lock():
         fy_map = {s["symbol"]: s["fy_symbol"] for s in market_state.stocks.values()}
 
-    fy_to_add  = [fy_map[s] for s in to_add  if s in fy_map]
+    fy_to_add = [fy_map[s] for s in to_add if s in fy_map]
     fy_to_drop = [fy_map[s] for s in to_drop if s in fy_map]
 
     try:
@@ -232,6 +236,7 @@ def resubscribe() -> None:
         # Clear depth_delta in state for symbols that left the subscription
         # so the frontend shows 0 (not a stale non-zero value).
         from .state import market_state
+
         with market_state.lock():
             for sym in to_drop:
                 stock = market_state.get_stock(sym)
@@ -240,6 +245,7 @@ def resubscribe() -> None:
 
 
 # ── lifecycle ─────────────────────────────────────────────────────────────────
+
 
 def on_socket_open(ws) -> None:
     """Called from fyers_service.py on_open to subscribe initial top 10 depth symbols."""
@@ -251,6 +257,7 @@ def on_socket_open(ws) -> None:
 
     initial = _select_top_symbols(DEPTH_TOP_N)
     from .state import market_state
+
     with market_state.lock():
         fy_map = {s["symbol"]: s["fy_symbol"] for s in market_state.stocks.values()}
 
@@ -262,7 +269,11 @@ def on_socket_open(ws) -> None:
         _depth_set.clear()
         _depth_set.update(initial)
 
-    logger.info("depth_manager: depth subscription on shared socket for %d symbol(s): %s", len(initial), sorted(initial))
+    logger.info(
+        "depth_manager: depth subscription on shared socket for %d symbol(s): %s",
+        len(initial),
+        sorted(initial),
+    )
 
 
 def handle_depth_msg(msg: dict) -> None:
@@ -290,6 +301,7 @@ def stop() -> None:
 
     try:
         from .state import market_state
+
         with market_state.lock():
             for s in market_state.stocks.values():
                 s["depth_delta"] = 0.0

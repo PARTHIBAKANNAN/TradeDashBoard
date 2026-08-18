@@ -242,7 +242,9 @@ def process_incoming_tick(
             stock["signal_time"] = signal_time
             # Trigger background AI Copilot audit + Telegram alert (non-blocking)
             import threading
+
             from . import ai_copilot
+
             threading.Thread(
                 target=ai_copilot.audit_and_notify_signal,
                 args=(short_sym, signal, signal_time),

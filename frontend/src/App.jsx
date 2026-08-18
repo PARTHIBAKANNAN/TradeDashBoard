@@ -294,9 +294,7 @@ function Dashboard({ user, onLogout }) {
                 onFocusHandled={() => setChartsFocusSymbol(null)}
               />
             )}
-            {activeTab === "smart-money" && (
-              <SmartMoneyScreen />
-            )}
+            {activeTab === "smart-money" && <SmartMoneyScreen />}
             {activeTab === "paper-trading" && (
               <PaperTradingScreen stocks={stocks} />
             )}
@@ -413,7 +411,9 @@ function TopNavbar({
               <button
                 onClick={async () => {
                   try {
-                    const r = await fetch("/api/auth/login-url", { credentials: "include" });
+                    const r = await fetch("/api/auth/login-url", {
+                      credentials: "include",
+                    });
                     const j = await r.json();
                     if (j.url) window.open(j.url, "_blank", "noopener");
                   } catch {

@@ -4,20 +4,13 @@ Unit tests for depth_manager — pure logic, no Fyers socket required.
 Run from backend/:  python -m pytest tests/test_depth_manager.py -v
 """
 
-from app.depth_manager import (
-    DEPTH_TOP_N,
-    _on_depth_message,
-    _score_symbol,
-    _select_top_symbols,
-    get_book_delta,
-    is_depth_subscribed,
-    _last_book,
-    _depth_set,
-    _lock,
-)
-
+from app.depth_manager import (DEPTH_TOP_N, _depth_set, _last_book, _lock,
+                               _on_depth_message, _score_symbol,
+                               _select_top_symbols, get_book_delta,
+                               is_depth_subscribed)
 
 # ── helpers ───────────────────────────────────────────────────────────────────
+
 
 def _clear_state():
     """Reset module-level state between tests."""
@@ -55,6 +48,7 @@ def _depth_msg(symbol, bids, asks):
 
 # ── get_book_delta ────────────────────────────────────────────────────────────
 
+
 def test_get_book_delta_returns_none_when_no_data():
     _clear_state()
     assert get_book_delta("RELIANCE") is None
@@ -83,6 +77,7 @@ def test_get_book_delta_zero_when_balanced():
 
 # ── is_depth_subscribed ───────────────────────────────────────────────────────
 
+
 def test_is_depth_subscribed_false_when_not_in_set():
     _clear_state()
     assert is_depth_subscribed("RELIANCE") is False
@@ -97,6 +92,7 @@ def test_is_depth_subscribed_true_when_in_set():
 
 # ── _on_depth_message (without market_state write) ───────────────────────────
 
+
 def test_on_depth_message_computes_bid_ask_values():
     _clear_state()
     # Bid: 100×500 + 99×1000 = 149,000
@@ -109,6 +105,7 @@ def test_on_depth_message_computes_bid_ask_values():
     # _on_depth_message does `from .state import market_state` inside the
     # function body, so we patch the object at its source module.
     import unittest.mock as mock
+
     with mock.patch("app.state.market_state") as ms:
         ms.lock.return_value.__enter__ = lambda s: s
         ms.lock.return_value.__exit__ = mock.Mock(return_value=False)
@@ -124,6 +121,7 @@ def test_on_depth_message_computes_bid_ask_values():
 def test_on_depth_message_missing_symbol_is_ignored():
     _clear_state()
     import unittest.mock as mock
+
     with mock.patch("app.state.market_state"):
         _on_depth_message({"bids": [], "asks": []})  # no 'symbol' key
     with _lock:
@@ -133,6 +131,7 @@ def test_on_depth_message_missing_symbol_is_ignored():
 def test_on_depth_message_empty_book_gives_zero_values():
     _clear_state()
     import unittest.mock as mock
+
     with mock.patch("app.state.market_state") as ms:
         ms.lock.return_value.__enter__ = lambda s: s
         ms.lock.return_value.__exit__ = mock.Mock(return_value=False)
@@ -145,6 +144,7 @@ def test_on_depth_message_empty_book_gives_zero_values():
 
 
 # ── _score_symbol ─────────────────────────────────────────────────────────────
+
 
 def test_score_zero_for_quiet_stock():
     stock = _make_stock(pct_change=0.0, relative_strength=0.0)
@@ -185,6 +185,7 @@ def test_score_balanced_queue_adds_zero():
 
 
 # ── DEPTH_TOP_N constant ──────────────────────────────────────────────────────
+
 
 def test_depth_top_n_is_positive_integer():
     assert isinstance(DEPTH_TOP_N, int) and DEPTH_TOP_N > 0

@@ -370,8 +370,11 @@ class DataEngine:
         def on_message(msg):
             try:
                 # Route depth updates (which contain bids/asks or depth type) to depth_manager
-                if isinstance(msg, dict) and ("bids" in msg or "asks" in msg or msg.get("type") == "depth"):
+                if isinstance(msg, dict) and (
+                    "bids" in msg or "asks" in msg or msg.get("type") == "depth"
+                ):
                     from . import depth_manager
+
                     depth_manager.handle_depth_msg(msg)
                 else:
                     self._handle_tick(msg)
@@ -385,6 +388,7 @@ class DataEngine:
             # Subscribe top 10 depth symbols on the SAME socket
             try:
                 from . import depth_manager
+
                 depth_manager.on_socket_open(self.ws)
             except Exception:
                 logger.exception("ws: depth subscription failed on_open")
