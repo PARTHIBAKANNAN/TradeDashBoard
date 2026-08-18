@@ -241,125 +241,58 @@ def resubscribe() -> None:
 
 # ── lifecycle ─────────────────────────────────────────────────────────────────
 
-def _ws_thread(token: str) -> None:
-    """Blocking entry-point for the depth daemon thread."""
+def on_socket_open(ws) -> None:
+    """Called from fyers_service.py on_open to subscribe initial top 10 depth symbols."""
     global _ws, _running, _first_message_logged
-
-    def on_open() -> None:
-        logger.info("depth_manager: socket open — performing initial subscription.")
-        initial = _select_top_symbols(DEPTH_TOP_N)
-
-        from .state import market_state
-        with market_state.lock():
-            fy_map = {s["symbol"]: s["fy_symbol"] for s in market_state.stocks.values()}
-
-        fy_syms = [fy_map[s] for s in initial if s in fy_map]
-        if fy_syms:
-            with _lock:
-                ws = _ws
-            if ws:
-                ws.subscribe(symbols=fy_syms, data_type="DepthUpdate")
-
-        with _lock:
-            _depth_set.clear()
-            _depth_set.update(initial)
-
-        logger.info(
-            "depth_manager: initial depth subscription: %d symbol(s): %s",
-            len(initial), sorted(initial),
-        )
-        with _lock:
-            ws = _ws
-        if ws:
-            ws.keep_running()
-
-    def on_message(msg: dict) -> None:
-        try:
-            _on_depth_message(msg)
-        except Exception:
-            logger.exception("depth_manager: on_message error")
-
-    def on_error(msg) -> None:
-        logger.warning("depth_manager: socket error: %s", msg)
-
-    def on_close(msg) -> None:
-        logger.info("depth_manager: socket closed: %s", msg)
-        global _running
-        with _lock:
-            pass  # _running already set to False by stop() or reconnect handles it
-        _running = False
-
-    ws = data_ws.FyersDataSocket(
-        access_token=f"{CLIENT_ID}:{token}",
-        log_path="",
-        litemode=False,
-        write_to_file=False,
-        reconnect=True,
-        on_connect=on_open,
-        on_close=on_close,
-        on_error=on_error,
-        on_message=on_message,
-    )
-
     with _lock:
         _ws = ws
+        _running = True
         _first_message_logged = False
 
-    logger.info("depth_manager: connecting DepthUpdate socket ...")
-    ws.connect()  # blocking — returns only when socket closes permanently
+    initial = _select_top_symbols(DEPTH_TOP_N)
+    from .state import market_state
+    with market_state.lock():
+        fy_map = {s["symbol"]: s["fy_symbol"] for s in market_state.stocks.values()}
+
+    fy_syms = [fy_map[s] for s in initial if s in fy_map]
+    if fy_syms and ws:
+        ws.subscribe(symbols=fy_syms, data_type="DepthUpdate")
+
+    with _lock:
+        _depth_set.clear()
+        _depth_set.update(initial)
+
+    logger.info("depth_manager: depth subscription on shared socket for %d symbol(s): %s", len(initial), sorted(initial))
+
+
+def handle_depth_msg(msg: dict) -> None:
+    """Called from fyers_service.py on_message for depth packets."""
+    try:
+        _on_depth_message(msg)
+    except Exception:
+        logger.exception("depth_manager: handle_depth_msg error")
 
 
 def start(token: str) -> None:
-    """
-    Open the DepthUpdate socket on a background daemon thread.
-    No-op if ``DATA_ENGINE_ENABLED`` is false (dev instances) or if already
-    running. Safe to call from any thread.
-    """
+    """No-op stub for backwards compatibility; lifecycle managed via shared data_engine ws."""
     global _running
-
-    if not config.DATA_ENGINE_ENABLED:
-        logger.info("depth_manager: DATA_ENGINE_ENABLED=false; depth socket not started.")
-        return
-
-    with _lock:
-        if _running:
-            return
-        _running = True
-
-    threading.Thread(
-        target=_ws_thread,
-        args=(token,),
-        daemon=True,
-        name="fyers-depth-ws",
-    ).start()
+    _running = True
 
 
 def stop() -> None:
-    """
-    Close the DepthUpdate socket and clear all state. Safe to call from any
-    thread; no-op if the socket was never started.
-    """
+    """Clear depth tracking state on shutdown."""
     global _running, _ws
-
     with _lock:
-        ws = _ws
         _ws = None
         _running = False
         _depth_set.clear()
         _last_book.clear()
 
-    if ws is not None:
-        try:
-            ws.close_connection()
-        except Exception:
-            logger.exception("depth_manager: error closing socket")
-
-    # Zero out depth_delta on all stocks so the frontend shows clean 0s.
     try:
         from .state import market_state
         with market_state.lock():
-            for stock in market_state.stocks.values():
-                stock["depth_delta"] = 0.0
+            for s in market_state.stocks.values():
+                s["depth_delta"] = 0.0
     except Exception:
         pass
 

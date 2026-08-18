@@ -369,14 +369,25 @@ class DataEngine:
 
         def on_message(msg):
             try:
-                self._handle_tick(msg)
+                # Route depth updates (which contain bids/asks or depth type) to depth_manager
+                if isinstance(msg, dict) and ("bids" in msg or "asks" in msg or msg.get("type") == "depth"):
+                    from . import depth_manager
+                    depth_manager.handle_depth_msg(msg)
+                else:
+                    self._handle_tick(msg)
             except Exception:  # noqa: BLE001
                 logger.exception("ws: tick handler error")
 
         def on_open():
             symbols = self.valid_symbols or ALL_SYMBOLS
-            logger.info("ws: subscribing to %d symbols ...", len(symbols))
+            logger.info("ws: subscribing to %d symbols for SymbolUpdate...", len(symbols))
             self.ws.subscribe(symbols=symbols, data_type="SymbolUpdate")
+            # Subscribe top 10 depth symbols on the SAME socket
+            try:
+                from . import depth_manager
+                depth_manager.on_socket_open(self.ws)
+            except Exception:
+                logger.exception("ws: depth subscription failed on_open")
             self.ws.keep_running()
 
         def on_error(msg):
