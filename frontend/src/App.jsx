@@ -261,6 +261,7 @@ function Dashboard({ user, onLogout }) {
         nifty={nifty}
         marketOpen={marketOpen}
         connected={connected}
+        fyersConnected={fyersConnected}
       />
 
       <div className="flex-1 overflow-auto">
@@ -315,6 +316,7 @@ function TopNavbar({
   nifty,
   marketOpen,
   connected,
+  fyersConnected,
 }) {
   const openPositionsCount = usePositionsCount();
   const tabs = [
@@ -407,6 +409,24 @@ function TopNavbar({
           </div>
 
           <div className="border-l border-subtle pl-3 flex items-center gap-3">
+            {!fyersConnected && (
+              <button
+                onClick={async () => {
+                  try {
+                    const r = await fetch("/api/auth/login-url", { credentials: "include" });
+                    const j = await r.json();
+                    if (j.url) window.open(j.url, "_blank", "noopener");
+                  } catch {
+                    /* ignore */
+                  }
+                }}
+                className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded bg-accent-amber text-black hover:brightness-110 transition-colors"
+                title="Connect FYERS broker account"
+              >
+                <span>Connect FYERS</span>
+                <ArrowUpRight size={11} />
+              </button>
+            )}
             <div className="text-right hidden lg:block">
               <div className="text-[11px] text-faint truncate max-w-[130px]">
                 {user}

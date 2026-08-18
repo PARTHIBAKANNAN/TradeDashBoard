@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 def _live_snapshot() -> dict:
     """Snapshot provider for the Broadcaster: reads state + patches fyers flag."""
     snap = snapshot_from_state(market_state)
-    snap["fyers_connected"] = auth.auth_status()["authenticated"]
+    snap["fyers_connected"] = bool(data_engine.running and auth.auth_status()["authenticated"])
     return snap
 
 
