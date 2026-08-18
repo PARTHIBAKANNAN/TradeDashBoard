@@ -66,13 +66,20 @@ def _get_api_key() -> str:
     return os.getenv("GEMINI_API_KEY", GEMINI_API_KEY)
 
 
-def call_gemini(prompt: str, system_instruction: Optional[str] = None) -> Optional[str]:
+def call_gemini(
+    prompt: str,
+    system_instruction: Optional[str] = None,
+    enable_search: bool = False,
+) -> Optional[str]:
     """
     Call Google Gemini REST API directly using standard urllib (no heavy SDK needed).
     Returns raw text output from the model or None on failure.
 
     Rate-limited: acquires a module-level semaphore and sleeps 2 s after release
     to prevent burst HTTP 429 on Gemini Free Tier (15 RPM).
+
+    If enable_search is True, Google Search Grounding is attached so the model
+    retrieves real-time live web facts (used for the 08:45 AM pre-market briefing).
     """
     api_key = _get_api_key()
     if not api_key:
@@ -87,9 +94,15 @@ def call_gemini(prompt: str, system_instruction: Optional[str] = None) -> Option
         "contents": contents,
         "generationConfig": {
             "temperature": 0.2,
-            "responseMimeType": "application/json",
         },
     }
+
+    if not enable_search:
+        # Structured JSON output is enforced for live signal audits
+        payload["generationConfig"]["responseMimeType"] = "application/json"
+    else:
+        # Enable Google Search Grounding for real-time web retrieval
+        payload["tools"] = [{"googleSearch": {}}]
 
     if system_instruction:
         payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
@@ -103,7 +116,7 @@ def call_gemini(prompt: str, system_instruction: Optional[str] = None) -> Option
                 headers={"Content-Type": "application/json"},
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=25) as resp:
+            with urllib.request.urlopen(req, timeout=30) as resp:
                 body = json.loads(resp.read().decode("utf-8"))
                 candidates = body.get("candidates", [])
                 if candidates:
@@ -122,9 +135,38 @@ def call_gemini(prompt: str, system_instruction: Optional[str] = None) -> Option
 # ── 1. Pre-Market Daily Briefing (08:45 AM) ───────────────────────────────────
 
 
+def _extract_json(text: str) -> Optional[Dict[str, Any]]:
+    """Helper to parse JSON even if wrapped in markdown codeblocks or surrounded by text."""
+    if not text:
+        return None
+    cleaned = text.strip()
+    # Remove markdown code block if present
+    if cleaned.startswith("```"):
+        lines = cleaned.split("\n")
+        if lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].startswith("```"):
+            lines = lines[:-1]
+        cleaned = "\n".join(lines).strip()
+    try:
+        return json.loads(cleaned)
+    except Exception:
+        # Fallback: regex search for the outermost {...}
+        import re
+        match = re.search(r"(\{.*\})", cleaned, re.DOTALL)
+        if match:
+            try:
+                return json.loads(match.group(1))
+            except Exception:
+                pass
+    return None
+
+
 def run_premarket_briefing() -> Dict[str, Any]:
     """
     Fetch pre-market context and compute daily market bias & risk events.
+    Uses Google Search Grounding to pull REAL-TIME live news, Gift Nifty,
+    US market close, and Asian market cues.
     Called by scheduler at 08:45 AM Mon-Fri.
     """
     global _premarket_cache
@@ -132,38 +174,46 @@ def run_premarket_briefing() -> Dict[str, Any]:
 
     system_prompt = (
         "You are an expert Indian stock market pre-market analyst. "
-        "Return valid JSON only matching the schema requested."
+        "Use Google Search to find today's real pre-market cues: Gift Nifty / SGX Nifty level, "
+        "US market close (Dow Jones, S&P 500, Nasdaq), Asian markets (Nikkei, Hang Seng), "
+        "Crude oil prices, and major Indian corporate/macro news today. "
+        "Synthesize the real facts and output a single valid JSON object."
     )
 
     prompt = (
-        f"Today is {today_str} (IST). Analyze current global market conditions for NSE India trading.\n"
-        "Provide a JSON object with these keys:\n"
+        f"Today is {today_str} (IST). Search the web for current live pre-market cues for NSE India.\n"
+        "1. Check Gift Nifty live indication (points / % change).\n"
+        "2. Check overnight US market close and Asian market performance.\n"
+        "3. Check major Indian market news or earnings events for today.\n\n"
+        "Provide a JSON object with these EXACT keys:\n"
         "{\n"
         '  "bias": "BULLISH" | "BEARISH" | "SIDEWAYS_CHOPSY",\n'
-        '  "summary": "2-sentence executive summary of pre-market cues",\n'
-        '  "key_risks": ["Risk 1", "Risk 2"],\n'
-        '  "sector_focus": ["Sectors to watch positive/negative"]\n'
+        '  "summary": "2-sentence factual summary with real numbers (e.g. Gift Nifty at +X pts, US closed up/down)",\n'
+        '  "key_risks": ["Risk 1 with facts", "Risk 2 with facts"],\n'
+        '  "sector_focus": ["Leading sectors to watch today based on news/cues"]\n'
         "}"
     )
 
-    raw_response = call_gemini(prompt, system_instruction=system_prompt)
+    raw_response = call_gemini(prompt, system_instruction=system_prompt, enable_search=True)
     if raw_response:
-        try:
-            parsed = json.loads(raw_response)
+        parsed = _extract_json(raw_response)
+        if parsed:
             _premarket_cache = {
                 "date": today_str,
                 "bias": parsed.get("bias", "NEUTRAL"),
-                "summary": parsed.get("summary", "Analysis completed."),
+                "summary": parsed.get("summary", "Analysis completed with live market grounding."),
                 "key_risks": parsed.get("key_risks", []),
                 "sector_focus": parsed.get("sector_focus", []),
+                "is_grounded": True,
                 "updated_at": datetime.now(IST).strftime("%H:%M:%S IST"),
             }
             logger.info(
-                "ai_copilot: pre-market briefing computed: bias=%s", _premarket_cache["bias"]
+                "ai_copilot: pre-market briefing computed with Google Search Grounding: bias=%s",
+                _premarket_cache["bias"],
             )
             return _premarket_cache
-        except Exception as e:
-            logger.error("ai_copilot: failed to parse premarket JSON: %s", e)
+        else:
+            logger.warning("ai_copilot: failed to parse grounded premarket JSON: %s", raw_response[:200])
 
     # Fallback default if API key missing or call fails
     _premarket_cache = {
@@ -172,6 +222,7 @@ def run_premarket_briefing() -> Dict[str, Any]:
         "summary": "Default pre-market bias: Trade strict technical triggers.",
         "key_risks": ["Standard intraday volatility"],
         "sector_focus": ["All F&O stocks"],
+        "is_grounded": False,
         "updated_at": datetime.now(IST).strftime("%H:%M:%S IST"),
     }
     return _premarket_cache
