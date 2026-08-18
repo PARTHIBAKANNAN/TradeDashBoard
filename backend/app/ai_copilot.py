@@ -299,12 +299,38 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
     }
 
 
+import threading
+from datetime import date
+
+_notified_lock = threading.Lock()
+_notified_signals_today: set[str] = set()
+_last_reset_date: date | None = None
+
+
 def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
     """
     Automated background worker: Audits a newly triggered breakout signal
     using Gemini 3.6 Flash and sends a rich Telegram alert with Entry, SL,
     Target, TSL, and Rationale.
+    Deduplicates alerts so each symbol + signal is notified AT MOST ONCE per day.
     """
+    if not config.ENABLE_AI_TELEGRAM_ALERTS:
+        logger.info("ai_copilot: ENABLE_AI_TELEGRAM_ALERTS is false; skipping alert for %s", sym)
+        return
+
+    today = datetime.now(IST).date()
+    global _last_reset_date
+    with _notified_lock:
+        if _last_reset_date != today:
+            _notified_signals_today.clear()
+            _last_reset_date = today
+
+        dedup_key = f"{today}:{sym}:{signal}"
+        if dedup_key in _notified_signals_today:
+            logger.info("ai_copilot: signal %s for %s already notified today; skipping duplicate alert", signal, sym)
+            return
+        _notified_signals_today.add(dedup_key)
+
     from . import telegram_notify
 
     logger.info("ai_copilot: auditing signal %s for %s ...", signal, sym)

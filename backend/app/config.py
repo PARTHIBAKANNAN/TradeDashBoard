@@ -62,6 +62,7 @@ SUPABASE_DB_URL = os.getenv("SUPABASE_DB_URL", "")
 # Both empty disables Telegram alerts entirely (no-op, same as SUPABASE_DB_URL).
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
+ENABLE_AI_TELEGRAM_ALERTS = os.getenv("ENABLE_AI_TELEGRAM_ALERTS", "true").lower() in ("true", "1", "yes")
 
 # ----------------- Token cache & refresh -----------------
 # Location where the daily access token is cached (env-configurable → mount a volume when hosted).
