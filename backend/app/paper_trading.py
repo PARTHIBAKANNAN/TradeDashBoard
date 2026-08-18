@@ -68,6 +68,144 @@ async def close_pool() -> None:
         _pool = None
 
 
+# --------------- Programmatic auto paper trade (called by AI Copilot, no HTTP context) ---------------
+
+async def place_auto_paper_order(
+    user_id: str,
+    symbol: str,
+    side: str,
+    quantity: int,
+    sl_price: float | None,
+    target_price: float | None,
+    tsl_type: str | None,
+    tsl_value: float | None,
+    notes: str | None = None,
+) -> dict | None:
+    """
+    Place a MARKET paper order programmatically (no FastAPI Request needed).
+    Used by ai_copilot.py's background thread when a trade passes both Quant
+    and AI gates.  Returns the serialized order row or None on failure.
+
+    Unlike the HTTP endpoint, this never raises HTTPException — callers should
+    treat a None return as a non-fatal failure (logged at WARNING level).
+    """
+    pool = get_pool()
+    if pool is None:
+        logger.warning("place_auto_paper_order: pool not ready, skipping auto trade for %s", symbol)
+        return None
+    if not user_id:
+        logger.warning("place_auto_paper_order: AUTO_PAPER_USER_ID not set, skipping")
+        return None
+
+    stock = market_state.get_stock(symbol)
+    if stock is None:
+        logger.warning("place_auto_paper_order: unknown symbol %s", symbol)
+        return None
+    ltp = stock.get("ltp") or 0.0
+    if not ltp:
+        logger.warning("place_auto_paper_order: no live price for %s, skipping", symbol)
+        return None
+
+    margin = paper_margin.required_margin(ltp, quantity)
+    peak_price = ltp if tsl_type else None
+
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            # Ensure wallet row exists for this user
+            await conn.execute(
+                "insert into public.paper_wallets (user_id) values ($1) on conflict (user_id) do nothing",
+                user_id,
+            )
+            wallet = await conn.fetchrow(
+                "select balance from public.paper_wallets where user_id=$1 for update",
+                user_id,
+            )
+            if wallet is None or float(wallet["balance"]) < margin:
+                logger.warning(
+                    "place_auto_paper_order: insufficient margin for %s (need %.2f, have %.2f)",
+                    symbol,
+                    margin,
+                    float(wallet["balance"]) if wallet else 0.0,
+                )
+                return None
+            await conn.execute(
+                "update public.paper_wallets set balance = balance - $1, updated_at = now() "
+                "where user_id = $2",
+                margin,
+                user_id,
+            )
+            row = await conn.fetchrow(
+                "insert into public.paper_orders "
+                "(user_id, symbol, side, quantity, order_type, sl_price, target_price, "
+                "tsl_type, tsl_value, peak_price, entry_price, margin_locked, notes, status, filled_at) "
+                "values ($1,$2,$3,$4,'MARKET',$5,$6,$7,$8,$9,$10,$11,$12,'OPEN', now()) returning *",
+                user_id,
+                symbol,
+                side,
+                quantity,
+                sl_price,
+                target_price,
+                tsl_type,
+                tsl_value,
+                peak_price,
+                ltp,
+                margin,
+                notes,
+            )
+    if sl_price or target_price or tsl_type:
+        order_monitor.register_open_bracket(dict(row))
+    logger.info(
+        "place_auto_paper_order: %s %s %d qty @ %.2f | SL=%.2f Target=%.2f",
+        side, symbol, quantity, ltp, sl_price or 0.0, target_price or 0.0,
+    )
+    return _serialize(dict(row))
+
+
+def place_auto_paper_order_sync(
+    user_id: str,
+    symbol: str,
+    side: str,
+    quantity: int,
+    sl_price: float | None,
+    target_price: float | None,
+    tsl_type: str | None,
+    tsl_value: float | None,
+    notes: str | None = None,
+) -> dict | None:
+    """
+    Thread-safe synchronous wrapper around place_auto_paper_order.
+    Submits the coroutine to the asyncio event loop that owns the DB pool
+    (tracked by order_monitor) and blocks until it completes (up to 15 s).
+    Safe to call from any background thread (e.g. ai_copilot audit thread).
+    """
+    loop = order_monitor.get_loop()
+    if loop is None:
+        logger.warning("place_auto_paper_order_sync: event loop not available")
+        return None
+    import asyncio
+    future = asyncio.run_coroutine_threadsafe(
+        place_auto_paper_order(
+            user_id=user_id,
+            symbol=symbol,
+            side=side,
+            quantity=quantity,
+            sl_price=sl_price,
+            target_price=target_price,
+            tsl_type=tsl_type,
+            tsl_value=tsl_value,
+            notes=notes,
+        ),
+        loop,
+    )
+    try:
+        return future.result(timeout=15)
+    except Exception:
+        logger.exception("place_auto_paper_order_sync: order placement failed for %s", symbol)
+        return None
+
+
+
+
 def _serialize(row: dict) -> dict:
     out = {}
     for k, v in row.items():

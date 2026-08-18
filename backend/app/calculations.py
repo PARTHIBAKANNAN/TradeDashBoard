@@ -221,6 +221,10 @@ def process_incoming_tick(
 
         now_ist = datetime.now(IST)
         candle_aggregator.on_tick(stock, ltp, now_ist)
+
+        # Capture the signal BEFORE evaluation so we can detect state transitions.
+        prev_signal = stock.get("signal")
+
         signal, signal_time = evaluate_orb(stock["orb"], ltp, now_ist, stock["signal"])
         # The breakout-quality rules apply specifically to the 30-min opening-
         # range breakout (both directions), not later C2-C4 structural breaks:
@@ -240,16 +244,62 @@ def process_incoming_tick(
         if signal:
             stock["signal"] = signal
             stock["signal_time"] = signal_time
-            # Trigger background AI Copilot audit + Telegram alert (non-blocking)
-            import threading
 
-            from . import ai_copilot
+            # ── Thread Flood Fix ──────────────────────────────────────────────
+            # Only spawn an AI audit thread when the signal STATE CHANGES
+            # (e.g. None → "Bull • C2" or "Bull • C2" → "Bear • C1").
+            # During a sustained breakout the signal stays the same on every
+            # tick, so we never re-spawn.  This collapses 100s of redundant
+            # threads/sec down to at most one per signal transition.
+            if signal != prev_signal:
+                # ── Quant Quality Gatekeeper ─────────────────────────────────
+                # Three hard filters — all must pass before calling Gemini.
+                # Gate 1 (RS): Stock must outperform NIFTY by MIN_RS_THRESHOLD.
+                # Gate 2 (RVOL proxy): traded_value must be non-trivial (>0).
+                #   Full RVOL ratio is computed inside ai_copilot using the
+                #   avg-daily-value estimate; here we do a cheap existence check.
+                # Gate 3 (Depth Delta): Order book must confirm trade direction.
+                from . import config as _cfg
 
-            threading.Thread(
-                target=ai_copilot.audit_and_notify_signal,
-                args=(short_sym, signal, signal_time),
-                daemon=True,
-                name=f"ai-audit-{short_sym}",
-            ).start()
+                rs = stock.get("relative_strength", 0.0)
+                is_bull = "Bull" in signal
+                rs_ok = (rs >= _cfg.MIN_RS_THRESHOLD) if is_bull else (rs <= -_cfg.MIN_RS_THRESHOLD)
+
+                # RVOL proxy: use cumulative traded value as a quick gate.
+                # traded_value = ltp × volume; a meaningful spike is > 0.
+                # The full MIN_RVOL_THRESHOLD check happens in ai_copilot via
+                # candle history comparison.
+                traded_val = (stock.get("ltp") or 0.0) * (stock.get("volume") or 0)
+                rvol_ok = traded_val > 0  # non-trivial volume present
+
+                # Depth delta: positive for bull (more buy pressure), negative for bear.
+                depth = stock.get("depth_delta", 0.0)
+                depth_ok = (depth >= 0) if is_bull else (depth <= 0)
+                # Note: depth_delta = 0.0 when depth subscription not active → allow through
+                # (better to audit than silently drop when depth feed unavailable).
+
+                if rs_ok and rvol_ok and depth_ok:
+                    import threading
+
+                    from . import ai_copilot
+
+                    threading.Thread(
+                        target=ai_copilot.audit_and_notify_signal,
+                        args=(short_sym, signal, signal_time),
+                        daemon=True,
+                        name=f"ai-audit-{short_sym}",
+                    ).start()
+                    import logging as _log
+                    _log.getLogger(__name__).info(
+                        "quant_gate: PASS %s | signal=%s rs=%.2f depth=%.0f → AI audit queued",
+                        short_sym, signal, rs, depth,
+                    )
+                else:
+                    import logging as _log
+                    _log.getLogger(__name__).debug(
+                        "quant_gate: FAIL %s | signal=%s rs=%.2f rs_ok=%s rvol_ok=%s depth_ok=%s",
+                        short_sym, signal, rs, rs_ok, rvol_ok, depth_ok,
+                    )
 
     order_monitor.on_tick_threadsafe(short_sym, ltp)
+

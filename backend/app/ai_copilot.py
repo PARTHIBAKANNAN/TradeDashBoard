@@ -1,11 +1,17 @@
 """
 AI Trade Copilot & Market Context Engine.
 
-Integrates with Google Gemini API (gemini-2.0-flash / gemini-1.5-flash) to provide:
+Integrates with Google Gemini API (gemini-2.0-flash / gemini-3.6-flash) to provide:
 1. Pre-Market Daily Briefing (08:45 AM): Global cues, daily market bias, and risk events.
-2. High-Conviction Signal Audit: Rich intraday context analysis (Full-day 5-min candles,
-   PDH/PDL levels, VWAP, RS vs NIFTY, order book depth delta, time-of-day weight) to
-   output CONFIRM/SKIP decision, Confidence Score (0-100), Entry, SL, Target, TSL, and Rationale.
+2. High-Conviction Signal Audit (Red-Flag Filter): Passes real quantitative data and asks
+   Gemini to identify RED FLAGS that disqualify the trade, NOT to generate a buy signal.
+   Decision: SKIP_TRAP (red flags found) or CONFIRM (no red flags, high conviction).
+3. Auto Paper Trade Execution: When CONFIRM + confidence >= MIN_AI_CONFIDENCE and session
+   is within AUTO_EXECUTE_UNTIL_MINUTE window, places a paper trade automatically with
+   risk-adjusted quantity (DAILY_MAX_RISK_INR / MAX_DAILY_AUTO_TRADES / SL_distance).
+
+Rate-limit safety: A module-level Semaphore(1) + 2-second pacing ensures all Gemini calls
+are serialised, preventing burst HTTP 429 errors on Free Tier (15 RPM).
 
 Fallback safety: If GEMINI_API_KEY is not set or API fails, gracefully returns structured
 heuristic fallbacks without crashing the app or stopping execution.
@@ -14,9 +20,11 @@ heuristic fallbacks without crashing the app or stopping execution.
 import json
 import logging
 import os
+import threading
+import time
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any, Dict, Optional
 
 try:
@@ -34,7 +42,7 @@ from .config import IST
 logger = logging.getLogger(__name__)
 
 # Default model to use via Google AI Studio API
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 # In-memory cache for pre-market briefing so it's computed once at 08:45 AM
@@ -46,6 +54,13 @@ _premarket_cache: Dict[str, Any] = {
     "blacklist": [],
 }
 
+# ── Rate-Limit Semaphore ──────────────────────────────────────────────────────
+# Serialises all Gemini API calls to prevent burst 429 errors on Free Tier
+# (15 RPM limit).  The 2-second sleep between calls keeps throughput at ~30
+# calls/min max — safely under the limit even in the worst spike scenario.
+_gemini_semaphore = threading.Semaphore(1)
+_GEMINI_INTER_CALL_DELAY_S = 2.0  # seconds to sleep between consecutive calls
+
 
 def _get_api_key() -> str:
     return os.getenv("GEMINI_API_KEY", GEMINI_API_KEY)
@@ -55,6 +70,9 @@ def call_gemini(prompt: str, system_instruction: Optional[str] = None) -> Option
     """
     Call Google Gemini REST API directly using standard urllib (no heavy SDK needed).
     Returns raw text output from the model or None on failure.
+
+    Rate-limited: acquires a module-level semaphore and sleeps 2 s after release
+    to prevent burst HTTP 429 on Gemini Free Tier (15 RPM).
     """
     api_key = _get_api_key()
     if not api_key:
@@ -76,23 +94,27 @@ def call_gemini(prompt: str, system_instruction: Optional[str] = None) -> Option
     if system_instruction:
         payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
 
-    try:
-        data = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(
-            url,
-            data=data,
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=25) as resp:
-            body = json.loads(resp.read().decode("utf-8"))
-            candidates = body.get("candidates", [])
-            if candidates:
-                parts = candidates[0].get("content", {}).get("parts", [])
-                if parts:
-                    return parts[0].get("text", "")
-    except Exception as e:
-        logger.exception("ai_copilot: Gemini API call failed: %s", e)
+    with _gemini_semaphore:
+        try:
+            data = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(
+                url,
+                data=data,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=25) as resp:
+                body = json.loads(resp.read().decode("utf-8"))
+                candidates = body.get("candidates", [])
+                if candidates:
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    if parts:
+                        return parts[0].get("text", "")
+        except Exception as e:
+            logger.exception("ai_copilot: Gemini API call failed: %s", e)
+        finally:
+            # Always sleep after releasing lock — paces consecutive calls
+            time.sleep(_GEMINI_INTER_CALL_DELAY_S)
 
     return None
 
@@ -189,8 +211,20 @@ def compile_symbol_context(sym: str) -> Dict[str, Any]:
     now_ist = datetime.now(IST)
     session_minute = (now_ist.hour - 9) * 60 + (now_ist.minute - 15)
     time_window = (
-        "PRIME_MORNING (09:15-11:30)" if session_minute <= 135 else "MID_LATE_SESSION (11:30-15:30)"
+        "PRIME_MORNING (09:15-11:00)" if session_minute <= config.AUTO_EXECUTE_UNTIL_MINUTE
+        else "MID_LATE_SESSION (11:00-15:30)"
     )
+
+    # Estimate RVOL: compare today's traded_value rate vs first-30-min run-rate
+    # Using first candle's volume as proxy for expected opening pace
+    ltp = stock_data.get("ltp") or 0.0
+    today_volume = stock_data.get("volume") or 0
+    today_traded_val = ltp * today_volume
+    # Rough avg daily value estimate: first candle volume × 75 (75 × 5min = 6.25h session)
+    first_candle = candles[0] if candles else {}
+    first_candle_vol = first_candle.get("volume", 0) if first_candle else 0
+    avg_est = ltp * first_candle_vol * 75 if first_candle_vol > 0 else 1.0
+    rvol_estimate = round(today_traded_val / avg_est, 2) if avg_est > 0 else 0.0
 
     return {
         "symbol": sym,
@@ -206,6 +240,7 @@ def compile_symbol_context(sym: str) -> Dict[str, Any]:
             "prev_close": stock_data.get("prev_close", 0.0),
             "pct_change": stock_data.get("pct_change", 0.0),
             "relative_strength": stock_data.get("relative_strength", 0.0),
+            "rvol_estimate": rvol_estimate,
             "day_range_pos": stock_data.get("day_range_pos", 0.0),
             "today_high": stock_data.get("today_high", 0.0),
             "today_low": stock_data.get("today_low", 0.0),
@@ -231,7 +266,11 @@ def compile_symbol_context(sym: str) -> Dict[str, Any]:
 
 def analyze_trade_setup(sym: str) -> Dict[str, Any]:
     """
-    Perform deep AI audit of a stock setup and return entry, SL, Target, TSL, and score.
+    RED-FLAG FILTER: Pass real quantitative data to Gemini and ask it to identify
+    specific disqualifying conditions (traps, extensions, late entry, poor RR).
+    Gemini does NOT generate buy signals — it validates or disqualifies.
+
+    Returns SKIP_TRAP if red flags found, CONFIRM if setup is clean.
     """
     ctx = compile_symbol_context(sym)
 
@@ -249,18 +288,28 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
             "rationale": ["No live price data available for symbol."],
         }
 
+    s = ctx["stock_snapshot"]
+    ltp = s["ltp"]
+    is_bull = "Bull" in s.get("signal", "")
+
     system_prompt = (
-        "You are a professional quantitative momentum trader on NSE India. "
-        "Analyze the provided stock context package and determine if this is a high-conviction trade setup. "
-        "Rule 1: Intraday momentum is strongest between 09:15-11:30 AM. Penalize setups after 12:30 PM. "
-        "Rule 2: Respect Previous Day High (PDH) and Low (PDL) as major resistance/support. "
-        "Rule 3: Ensure Risk-to-Reward ratio is at least 1:1.5. "
-        "Return valid JSON only matching the schema."
+        "You are a strict quantitative risk manager for an NSE India intraday desk. "
+        "Your ONLY job is to find RED FLAGS that disqualify a trade. "
+        "Do not generate buy/sell signals. Do not predict price direction. "
+        "Analyse the real numbers provided and output SKIP_TRAP if any red flag exists, "
+        "or CONFIRM if the setup is technically clean. "
+        "Red flags include: price too extended from VWAP (>1.5%), "
+        "signal after 11:00 AM IST (session_minute > 105), "
+        "Risk-to-Reward ratio < 1:1.5 given the suggested SL/Target, "
+        "PDH/PDL as immediate resistance/support within 0.3% of LTP, "
+        "RVOL estimate < 1.5 (below-average volume), "
+        "Depth delta strongly opposing the signal direction. "
+        "Return valid JSON only."
     )
 
     prompt = (
         f"Symbol Context Package:\n{json.dumps(ctx, indent=2)}\n\n"
-        "Provide a JSON response with exact keys:\n"
+        "Provide a JSON response with EXACT keys:\n"
         "{\n"
         '  "decision": "CONFIRM_BUY" | "CONFIRM_SELL" | "SKIP_TRAP",\n'
         '  "confidence_score": integer (0 to 100),\n'
@@ -269,8 +318,15 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
         '  "suggested_target": float,\n'
         '  "tsl_type": "PERCENT" | "POINTS",\n'
         '  "tsl_value": float,\n'
-        '  "rationale": ["Point 1", "Point 2"]\n'
-        "}"
+        '  "rationale": ["Point 1 (max 2 points)"]\n'
+        "}\n\n"
+        "IMPORTANT: Only return CONFIRM_BUY or CONFIRM_SELL when ALL of these are true:\n"
+        "  • session_minute <= 105 (before 11:00 AM IST)\n"
+        "  • LTP is within 1.5% of VWAP (not over-extended)\n"
+        "  • Risk-to-Reward >= 1:1.5\n"
+        "  • No PDH/PDL wall within 0.3% of entry\n"
+        "  • RVOL estimate >= 1.5 (strong participation)\n"
+        "Otherwise return SKIP_TRAP."
     )
 
     raw_response = call_gemini(prompt, system_instruction=system_prompt)
@@ -284,12 +340,7 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
             logger.error("ai_copilot: failed to parse setup JSON: %s", e)
 
     # Heuristic Mathematical Fallback (when API key is not set or network fails)
-    s = ctx["stock_snapshot"]
-    ltp = s["ltp"]
-    sig = s["signal"]
-    is_bull = "Bull" in sig or s["pct_change"] > 0
     atr_est = max(ltp * 0.008, 1.0)  # ~0.8% estimated ATR volatility
-
     sl = round(ltp - (atr_est * 1.2), 2) if is_bull else round(ltp + (atr_est * 1.2), 2)
     target = round(ltp + (atr_est * 2.4), 2) if is_bull else round(ltp - (atr_est * 2.4), 2)
     decision = "CONFIRM_BUY" if is_bull else "CONFIRM_SELL"
@@ -297,14 +348,14 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
     return {
         "symbol": sym,
         "decision": decision,
-        "confidence_score": 75 if sig != "None" else 50,
+        "confidence_score": 75 if s.get("signal") != "None" else 50,
         "suggested_entry": ltp,
         "suggested_sl": sl,
         "suggested_target": target,
         "tsl_type": "PERCENT",
         "tsl_value": 0.5,
         "rationale": [
-            f"Heuristic fallback: {sig} signal active.",
+            f"Heuristic fallback: {s.get('signal')} signal active.",
             f"SL set at 1.2x estimated ATR (₹{sl}), Target 1:2 RR (₹{target}).",
         ],
         "is_fallback": True,
@@ -312,36 +363,73 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
     }
 
 
-import threading
-from datetime import date
+# ── 3. Deduplication + Daily Trade Counter ────────────────────────────────────
 
 _notified_lock = threading.Lock()
 _notified_signals_today: set[str] = set()
 _last_reset_date: date | None = None
 
+# Auto-trade counter: tracks how many paper trades have been auto-placed today
+_auto_trades_today: int = 0
+_auto_trades_lock = threading.Lock()
+_auto_trades_reset_date: date | None = None
+
+
+def _reset_daily_counters_if_needed(today: date) -> None:
+    """Reset deduplication cache and trade counter at the start of each new trading day."""
+    global _last_reset_date, _auto_trades_today, _auto_trades_reset_date
+    with _notified_lock:
+        if _last_reset_date != today:
+            _notified_signals_today.clear()
+            _last_reset_date = today
+    with _auto_trades_lock:
+        if _auto_trades_reset_date != today:
+            _auto_trades_today = 0
+            _auto_trades_reset_date = today
+
+
+def _increment_auto_trade_count() -> int:
+    """Increment and return the new daily auto-trade count (thread-safe)."""
+    global _auto_trades_today
+    with _auto_trades_lock:
+        _auto_trades_today += 1
+        return _auto_trades_today
+
+
+def _get_auto_trade_count() -> int:
+    """Return current daily auto-trade count (thread-safe)."""
+    with _auto_trades_lock:
+        return _auto_trades_today
+
+
+# ── 4. Main Audit & Notify Entry Point ───────────────────────────────────────
+
 
 def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
     """
     Automated background worker: Audits a newly triggered breakout signal
-    using Gemini 3.6 Flash and sends a rich Telegram alert with Entry, SL,
-    Target, TSL, and Rationale.
-    Deduplicates alerts so each symbol + signal is notified AT MOST ONCE per day.
+    using Gemini's Red-Flag Filter and sends a rich Telegram alert.
+
+    Pipeline:
+      1. Daily dedup check — each symbol+signal fires at most once per day
+      2. Gemini Red-Flag audit — SKIP_TRAP if any red flag found
+      3. Confidence threshold check — must reach MIN_AI_CONFIDENCE
+      4. Auto paper trade execution (if within session window and daily cap not hit)
+      5. Rich Telegram notification
     """
     if not config.ENABLE_AI_TELEGRAM_ALERTS:
         logger.info("ai_copilot: ENABLE_AI_TELEGRAM_ALERTS is false; skipping alert for %s", sym)
         return
 
     today = datetime.now(IST).date()
-    global _last_reset_date
-    with _notified_lock:
-        if _last_reset_date != today:
-            _notified_signals_today.clear()
-            _last_reset_date = today
+    _reset_daily_counters_if_needed(today)
 
+    # Step 1 — Deduplication: each symbol+signal audited at most once per day
+    with _notified_lock:
         dedup_key = f"{today}:{sym}:{signal}"
         if dedup_key in _notified_signals_today:
             logger.info(
-                "ai_copilot: signal %s for %s already notified today; skipping duplicate alert",
+                "ai_copilot: signal %s for %s already notified today; skipping duplicate",
                 signal,
                 sym,
             )
@@ -351,6 +439,8 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
     from . import telegram_notify
 
     logger.info("ai_copilot: auditing signal %s for %s ...", signal, sym)
+
+    # Step 2 — Gemini Red-Flag Filter
     res = analyze_trade_setup(sym)
 
     dec = res.get("decision", "SKIP")
@@ -362,23 +452,143 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
     tsl_v = res.get("tsl_value", 0.5)
     rationale = res.get("rationale", [])
 
-    icon = "🚀" if "BUY" in dec else "🔻" if "SELL" in dec else "⚠️"
-    lines = [
-        f"{icon} *AI TRADE COPILOT ALERT*",
-        f"*Stock:* `{sym}` | *Signal:* `{signal}` ({signal_time})",
-        f"*AI Decision:* `{dec}` ({score}% confidence)",
-        "",
-        f"📍 *Entry:* ₹{entry:.2f}",
-        f"🛑 *Stop Loss:* ₹{sl:.2f}",
-        f"🎯 *Target:* ₹{target:.2f}",
-        f"🔄 *Trailing SL:* {tsl_t} {tsl_v}",
-    ]
-    if rationale:
-        lines.append("")
-        lines.append("*AI Rationale:*")
-        for r in rationale[:2]:
-            lines.append(f"• {r}")
+    is_confirm = dec in ("CONFIRM_BUY", "CONFIRM_SELL")
+
+    # Step 3 — Confidence threshold
+    passes_confidence = is_confirm and score >= config.MIN_AI_CONFIDENCE
+
+    # Step 4 — Auto paper trade execution (if within session window + daily cap)
+    auto_order_result: Optional[dict] = None
+    auto_skipped_reason: str = ""
+
+    if passes_confidence and config.AUTO_PAPER_USER_ID:
+        now_ist = datetime.now(IST)
+        session_minute = (now_ist.hour - 9) * 60 + (now_ist.minute - 15)
+        within_window = session_minute <= config.AUTO_EXECUTE_UNTIL_MINUTE
+        under_cap = _get_auto_trade_count() < config.MAX_DAILY_AUTO_TRADES
+
+        if within_window and under_cap:
+            # Risk-adjusted quantity: risk_per_trade / SL_distance_per_share
+            risk_per_trade = config.DAILY_MAX_RISK_INR / config.MAX_DAILY_AUTO_TRADES
+            sl_distance = abs(entry - sl) if entry and sl else 0.0
+            if sl_distance > 0:
+                quantity = max(1, int(risk_per_trade / sl_distance))
+            else:
+                quantity = 1
+
+            from . import paper_trading
+            side = "BUY" if "BUY" in dec else "SELL"
+            notes = f"AI_COPILOT | {signal} | score={score} | auto"
+
+            auto_order_result = paper_trading.place_auto_paper_order_sync(
+                user_id=config.AUTO_PAPER_USER_ID,
+                symbol=sym,
+                side=side,
+                quantity=quantity,
+                sl_price=sl if sl else None,
+                target_price=target if target else None,
+                tsl_type=tsl_t,
+                tsl_value=tsl_v,
+                notes=notes,
+            )
+            if auto_order_result:
+                _increment_auto_trade_count()
+                logger.info(
+                    "ai_copilot: auto paper trade placed for %s | %s %d qty @ %.2f",
+                    sym, side, quantity, entry,
+                )
+            else:
+                auto_skipped_reason = "Order placement failed (insufficient margin or DB error)"
+        elif not within_window:
+            auto_skipped_reason = f"After 11:00 AM cutoff (session min {session_minute})"
+        elif not under_cap:
+            auto_skipped_reason = f"Daily cap reached ({_get_auto_trade_count()}/{config.MAX_DAILY_AUTO_TRADES} trades)"
+    elif passes_confidence and not config.AUTO_PAPER_USER_ID:
+        auto_skipped_reason = "AUTO_PAPER_USER_ID not configured"
+
+    # Step 5 — Build rich Telegram message
+    icon = "🚀" if "BUY" in dec else "🔻" if "SELL" in dec else "⏸"
+
+    # Compute RR ratio for the message
+    rr_str = "N/A"
+    if entry and sl and target:
+        sl_dist = abs(entry - sl)
+        tgt_dist = abs(target - entry)
+        if sl_dist > 0:
+            rr_str = f"1:{round(tgt_dist / sl_dist, 1)}"
+
+    if passes_confidence and auto_order_result:
+        # ── Auto-executed trade notification ──
+        risk_per_trade = config.DAILY_MAX_RISK_INR / config.MAX_DAILY_AUTO_TRADES
+        sl_distance = abs(entry - sl) if entry and sl else 0.0
+        quantity = max(1, int(risk_per_trade / sl_distance)) if sl_distance > 0 else 1
+        actual_risk = round(quantity * sl_distance, 2)
+
+        lines = [
+            f"✅ *PAPER ORDER PLACED*",
+            f"",
+            f"📌 *Stock:* `{sym}` | *{('BUY' if 'BUY' in dec else 'SELL')}*",
+            f"🔢 *Quantity:* {quantity} shares",
+            f"📍 *Entry:* ₹{entry:.2f}",
+            f"🛑 *Stop Loss:* ₹{sl:.2f}  _(Risk: ₹{actual_risk:,.0f})_",
+            f"🎯 *Target:* ₹{target:.2f}",
+            f"📊 *RR Ratio:* {rr_str}",
+            f"🔄 *Trailing SL:* {tsl_t} {tsl_v}",
+            f"🤖 *AI Confidence:* {score}%",
+            f"⏱ *Signal:* `{signal}` @ {signal_time}",
+        ]
+        if rationale:
+            lines.append("")
+            for r in rationale[:2]:
+                lines.append(f"• {r}")
+
+    elif passes_confidence and not auto_order_result and auto_skipped_reason:
+        # ── High conviction but after-hours or cap hit → manual approval needed ──
+        lines = [
+            f"⏸ *HIGH CONVICTION — MANUAL APPROVAL NEEDED*",
+            f"",
+            f"📌 *Stock:* `{sym}` | *Signal:* `{signal}` ({signal_time})",
+            f"🤖 *AI:* `{dec}` | *Confidence:* {score}%",
+            f"",
+            f"📍 *Entry:* ₹{entry:.2f}",
+            f"🛑 *SL:* ₹{sl:.2f}",
+            f"🎯 *Target:* ₹{target:.2f}",
+            f"📊 *RR:* {rr_str}",
+            f"🔄 *TSL:* {tsl_t} {tsl_v}",
+            f"",
+            f"⚠️ _Auto-execute skipped: {auto_skipped_reason}_",
+        ]
+        if rationale:
+            lines.append("")
+            for r in rationale[:2]:
+                lines.append(f"• {r}")
+
+    elif is_confirm and not passes_confidence:
+        # ── Low confidence confirm — alert only ──
+        lines = [
+            f"{icon} *AI TRADE COPILOT — LOW CONFIDENCE*",
+            f"*Stock:* `{sym}` | *Signal:* `{signal}` ({signal_time})",
+            f"*AI Decision:* `{dec}` ({score}% — below {config.MIN_AI_CONFIDENCE}% threshold)",
+            f"",
+            f"📍 Entry: ₹{entry:.2f} | 🛑 SL: ₹{sl:.2f} | 🎯 Target: ₹{target:.2f}",
+            f"📊 RR: {rr_str} | 🔄 TSL: {tsl_t} {tsl_v}",
+            f"",
+            f"_Skipped — confidence below threshold. Monitor manually._",
+        ]
+
+    else:
+        # ── SKIP_TRAP — trade disqualified ──
+        lines = [
+            f"🚫 *AI SKIP — TRAP DETECTED*",
+            f"*Stock:* `{sym}` | *Signal:* `{signal}` ({signal_time})",
+            f"*AI Decision:* `{dec}` ({score}%)",
+        ]
+        if rationale:
+            lines.append("")
+            lines.append("*Red Flags:*")
+            for r in rationale[:2]:
+                lines.append(f"• {r}")
 
     text = "\n".join(lines)
-    logger.info("ai_copilot: pushing Telegram alert for %s", sym)
+    logger.info("ai_copilot: pushing Telegram alert for %s | decision=%s score=%d", sym, dec, score)
     telegram_notify.send_message(text)

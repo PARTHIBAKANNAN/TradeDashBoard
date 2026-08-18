@@ -68,6 +68,46 @@ ENABLE_AI_TELEGRAM_ALERTS = os.getenv("ENABLE_AI_TELEGRAM_ALERTS", "true").lower
     "yes",
 )
 
+# ----------------- Quant Gatekeeper — signal quality gates -----------------
+# All three gates must pass simultaneously before Gemini is called.
+# Configurable via .env so thresholds can be tightened during choppy markets
+# without a code deploy.
+#
+# MIN_RS_THRESHOLD: Minimum Intraday Relative Strength vs NIFTY (%).
+#   Bull signal → RS must be >= +MIN_RS_THRESHOLD (stock outperforming NIFTY).
+#   Bear signal → RS must be <= -MIN_RS_THRESHOLD (stock underperforming NIFTY).
+MIN_RS_THRESHOLD = float(os.getenv("MIN_RS_THRESHOLD", "0.50"))
+#
+# MIN_RVOL_THRESHOLD: Minimum relative volume ratio (today's traded value vs
+#   estimated average daily traded value).  A value > 1.0 means above-average
+#   participation; 2.0 means 2x normal volume — strong institutional interest.
+#   Computed as:  (today_traded_value / estimated_avg_daily_traded_value)
+#   where avg is approximated from the 9.15–9.45 AM volume run-rate.
+MIN_RVOL_THRESHOLD = float(os.getenv("MIN_RVOL_THRESHOLD", "2.0"))
+#
+# MIN_AI_CONFIDENCE: Gemini confidence score floor. Only execute (or alert) when
+#   score >= this value.  80 is conservatively high — treats all below-80 as noise.
+MIN_AI_CONFIDENCE = int(os.getenv("MIN_AI_CONFIDENCE", "80"))
+
+# ----------------- Auto paper trade execution -----------------
+# DAILY_MAX_RISK_INR: Maximum total risk (capital at stake) across ALL auto
+#   paper trades in a single trading day.  ₹2,000 = stop loss across all trades.
+DAILY_MAX_RISK_INR = float(os.getenv("DAILY_MAX_RISK_INR", "2000.0"))
+#
+# MAX_DAILY_AUTO_TRADES: Hard cap on the number of auto paper trades per day.
+#   Risk per trade = DAILY_MAX_RISK_INR / MAX_DAILY_AUTO_TRADES.
+MAX_DAILY_AUTO_TRADES = int(os.getenv("MAX_DAILY_AUTO_TRADES", "3"))
+#
+# AUTO_EXECUTE_UNTIL_MINUTE: Session minute cutoff for auto-execution.
+#   Session minute 0 = 09:15 AM.  105 = 11:00 AM.  After this, Gemini sends
+#   a Telegram alert but does NOT auto-place the order (manual approval needed).
+AUTO_EXECUTE_UNTIL_MINUTE = int(os.getenv("AUTO_EXECUTE_UNTIL_MINUTE", "105"))
+#
+# AUTO_PAPER_USER_ID: The user_id (from auth.users) under which auto paper
+#   trades are placed. Must match a valid user in the Supabase auth table.
+#   Leave empty to disable auto-execution even when all other gates pass.
+AUTO_PAPER_USER_ID = os.getenv("AUTO_PAPER_USER_ID", "")
+
 # ----------------- Token cache & refresh -----------------
 # Location where the daily access token is cached (env-configurable → mount a volume when hosted).
 TOKEN_CACHE_FILE = os.getenv(
