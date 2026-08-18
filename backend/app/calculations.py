@@ -207,11 +207,11 @@ def process_incoming_tick(
             stock["tot_buy_qty"] = tot_buy_qty
         if tot_sell_qty:
             stock["tot_sell_qty"] = tot_sell_qty
-        # Guard against zeroed backfill: only expand today's range once seeded.
-        if high:
-            stock["today_high"] = max(stock["today_high"] or high, high)
-        if low:
-            stock["today_low"] = min(stock["today_low"] or low, low)
+        # Expand today's high and low from tick high/low or LTP fallback
+        eff_high = max(high or 0, ltp)
+        eff_low = min(low or ltp, ltp) if low else ltp
+        stock["today_high"] = max(stock["today_high"] or eff_high, eff_high)
+        stock["today_low"] = min(stock["today_low"] or eff_low, eff_low)
 
         stock["pct_change"] = pct_change(ltp, stock["prev_close"])
         stock["day_range_pos"] = day_range_position(ltp, stock["today_low"], stock["today_high"])

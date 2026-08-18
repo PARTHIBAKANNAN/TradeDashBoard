@@ -100,10 +100,12 @@ class MarketState:
 
     def set_nifty(self, ltp=None, prev_close=None):
         with self._lock:
-            if prev_close is not None:
+            if prev_close and prev_close > 0:
                 self.nifty["prev_close"] = prev_close
             if ltp is not None:
                 self.nifty["ltp"] = ltp
+                if not self.nifty["prev_close"]:
+                    self.nifty["prev_close"] = ltp
             pc = self.nifty["prev_close"]
             if pc:
                 self.nifty["pct_change"] = round((self.nifty["ltp"] - pc) / pc * 100, 2)
