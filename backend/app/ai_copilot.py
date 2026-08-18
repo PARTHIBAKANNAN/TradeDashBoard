@@ -42,7 +42,7 @@ from .config import IST
 logger = logging.getLogger(__name__)
 
 # Default model to use via Google AI Studio API
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-flash-latest")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 # In-memory cache for pre-market briefing so it's computed once at 08:45 AM
