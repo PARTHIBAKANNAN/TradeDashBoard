@@ -270,12 +270,36 @@ def compile_symbol_context(sym: str) -> Dict[str, Any]:
         else "MID_LATE_SESSION (11:00-15:30)"
     )
 
-    # Estimate RVOL: compare today's traded_value rate vs first-30-min run-rate
-    # Using first candle's volume as proxy for expected opening pace
+    # ── Technical Indicators Calculation ──────────────────────────────────────
+    from .candle_aggregator import get_intraday_closes
+    from .momentum_score import build_sector_means, industry_group, nifty_group
+    from .technical_indicators import (
+        DEFENSIVE_SECTORS,
+        compute_ema,
+        compute_rsi,
+    )
+
     ltp = stock_data.get("ltp") or 0.0
+    closes = get_intraday_closes(sym)
+    prices = list(closes) if closes else ([ltp] if ltp else [])
+    if ltp and (not prices or prices[-1] != ltp):
+        prices.append(ltp)
+
+    rsi = compute_rsi(prices, 14)
+    ema_20 = compute_ema(prices, 20)
+    ema_50 = compute_ema(prices, 50)
+    vwap = stock_data.get("vwap", 0.0)
+    vwap_dist = round(abs(ltp - vwap) / vwap * 100, 2) if vwap and ltp else 0.0
+
+    ind_grp = industry_group(sym)
+    sec_grp = nifty_group(ind_grp)
+    all_stocks_list = list(market_state.stocks.values())
+    sec_means = build_sector_means(all_stocks_list)
+    sec_mean = sec_means.get(sec_grp, 0.0)
+
+    # Estimate RVOL: compare today's traded_value rate vs first-30-min run-rate
     today_volume = stock_data.get("volume") or 0
     today_traded_val = ltp * today_volume
-    # Rough avg daily value estimate: first candle volume × 75 (75 × 5min = 6.25h session)
     first_candle = candles[0] if candles else {}
     first_candle_vol = first_candle.get("volume", 0) if first_candle else 0
     avg_est = ltp * first_candle_vol * 75 if first_candle_vol > 0 else 1.0
@@ -311,6 +335,16 @@ def compile_symbol_context(sym: str) -> Dict[str, Any]:
             "tot_buy_qty": stock_data.get("tot_buy_qty", 0),
             "tot_sell_qty": stock_data.get("tot_sell_qty", 0),
         },
+        "technical_indicators": {
+            "rsi_14_5m": rsi,
+            "ema_20_5m": ema_20,
+            "ema_50_5m": ema_50,
+            "price_vs_ema20": "ABOVE" if ltp >= ema_20 else "BELOW",
+            "vwap_distance_pct": vwap_dist,
+            "sector_name": sec_grp,
+            "sector_mean_return_pct": sec_mean,
+            "is_defensive_sector": ind_grp in DEFENSIVE_SECTORS,
+        },
         "premarket_bias": _premarket_cache.get("bias", "NEUTRAL"),
         "recent_5m_candles_count": len(candles),
         "recent_5m_candles_sample": (
@@ -321,8 +355,8 @@ def compile_symbol_context(sym: str) -> Dict[str, Any]:
 
 def analyze_trade_setup(sym: str) -> Dict[str, Any]:
     """
-    RED-FLAG FILTER: Pass real quantitative data to Gemini and ask it to identify
-    specific disqualifying conditions (traps, extensions, late entry, poor RR).
+    RED-FLAG FILTER: Pass real quantitative data and 5-minute technical indicators
+    to Gemini and ask it to identify specific disqualifying conditions.
     Gemini does NOT generate buy signals — it validates or disqualifies.
 
     Returns SKIP_TRAP if red flags found, CONFIRM if setup is clean.
@@ -344,6 +378,7 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
         }
 
     s = ctx["stock_snapshot"]
+    ti = ctx.get("technical_indicators", {})
     ltp = s["ltp"]
     is_bull = "Bull" in s.get("signal", "")
 
@@ -351,14 +386,16 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
         "You are a strict quantitative risk manager for an NSE India intraday desk. "
         "Your ONLY job is to find RED FLAGS that disqualify a trade. "
         "Do not generate buy/sell signals. Do not predict price direction. "
-        "Analyse the real numbers provided and output SKIP_TRAP if any red flag exists, "
-        "or CONFIRM if the setup is technically clean. "
-        "Red flags include: price too extended from VWAP (>1.5%), "
-        "signal after 11:00 AM IST (session_minute > 105), "
-        "Risk-to-Reward ratio < 1:1.5 given the suggested SL/Target, "
-        "PDH/PDL as immediate resistance/support within 0.3% of LTP, "
-        "RVOL estimate < 1.5 (below-average volume), "
-        "Depth delta strongly opposing the signal direction. "
+        "Analyse the real numbers provided (RSI-14, 20 EMA, VWAP distance, Sector mean, RS) "
+        "and output SKIP_TRAP if any red flag exists, or CONFIRM if the setup is technically clean. "
+        "Red flags include: "
+        "• RSI overbought (>72 for buy) or oversold (<28 for sell), or weak momentum (<55 for buy / >45 for sell), "
+        "• Price below 20 EMA on a buy setup, or price above 20 EMA on a short setup, "
+        "• Sector index dragging against trade direction, "
+        "• Defensive sector (FMCG/PSU) with RS < 2.0%, "
+        "• Price too extended from VWAP (>1.2%), "
+        "• Risk-to-Reward ratio < 1:1.5 given the suggested structural SL/Target (minimum 1.0% SL buffer), "
+        "• Depth delta strongly opposing the signal direction. "
         "Return valid JSON only."
     )
 
@@ -375,12 +412,10 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
         '  "tsl_value": float,\n'
         '  "rationale": ["Point 1 (max 2 points)"]\n'
         "}\n\n"
-        "IMPORTANT: Only return CONFIRM_BUY or CONFIRM_SELL when ALL of these are true:\n"
-        "  • session_minute <= 105 (before 11:00 AM IST)\n"
-        "  • LTP is within 1.5% of VWAP (not over-extended)\n"
-        "  • Risk-to-Reward >= 1:1.5\n"
-        "  • No PDH/PDL wall within 0.3% of entry\n"
-        "  • RVOL estimate >= 1.5 (strong participation)\n"
+        "IMPORTANT RULES FOR CONFIRMATION:\n"
+        "  • Stop Loss MUST have at least 1.0% to 1.5% structural distance from entry (not razor-thin).\n"
+        "  • Target MUST be at least 1.5x to 2.0x the SL distance.\n"
+        "  • Only confirm when RSI is in healthy zone (55-72 for buy, 28-45 for sell) and 20 EMA aligns.\n"
         "Otherwise return SKIP_TRAP."
     )
 
