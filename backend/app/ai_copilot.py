@@ -395,9 +395,10 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
             logger.error("ai_copilot: failed to parse setup JSON: %s", e)
 
     # Heuristic Mathematical Fallback (when API key is not set or network fails)
-    atr_est = max(ltp * 0.008, 1.0)  # ~0.8% estimated ATR volatility
-    sl = round(ltp - (atr_est * 1.2), 2) if is_bull else round(ltp + (atr_est * 1.2), 2)
-    target = round(ltp + (atr_est * 2.4), 2) if is_bull else round(ltp - (atr_est * 2.4), 2)
+    # Ensure minimum 1.0% structural SL distance so normal 1-minute noise doesn't kill the trade
+    sl_buffer = max(ltp * 0.010, 2.0)  # 1.0% minimum buffer
+    sl = round(ltp - sl_buffer, 2) if is_bull else round(ltp + sl_buffer, 2)
+    target = round(ltp + (sl_buffer * 2.0), 2) if is_bull else round(ltp - (sl_buffer * 2.0), 2)
     decision = "CONFIRM_BUY" if is_bull else "CONFIRM_SELL"
 
     return {
@@ -411,7 +412,7 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
         "tsl_value": 0.5,
         "rationale": [
             f"Heuristic fallback: {s.get('signal')} signal active.",
-            f"SL set at 1.2x estimated ATR (₹{sl}), Target 1:2 RR (₹{target}).",
+            f"SL set at 1.0% structural buffer (₹{sl}), Target 1:2 RR (₹{target}).",
         ],
         "is_fallback": True,
         "timestamp": datetime.now(IST).strftime("%H:%M:%S IST"),
@@ -470,7 +471,7 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
       2. Gemini Red-Flag audit — SKIP_TRAP if any red flag found
       3. Confidence threshold check — must reach MIN_AI_CONFIDENCE
       4. Auto paper trade execution (if within session window and daily cap not hit)
-      5. Rich Telegram notification
+      5. Telegram notification (SENT ONLY ON EXECUTIONS OR HIGH CONVICTION)
     """
     if not config.ENABLE_AI_TELEGRAM_ALERTS:
         logger.info("ai_copilot: ENABLE_AI_TELEGRAM_ALERTS is false; skipping alert for %s", sym)
@@ -507,7 +508,7 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
     tsl_v = res.get("tsl_value", 0.5)
     rationale = res.get("rationale", [])
 
-    is_confirm = dec in ("CONFIRM_BUY", "CONFIRM_SELL")
+    is_confirm = ("BUY" in dec.upper() or "SELL" in dec.upper()) and "SKIP" not in dec.upper()
 
     # Step 3 — Confidence threshold
     passes_confidence = is_confirm and score >= config.MIN_AI_CONFIDENCE
@@ -565,10 +566,7 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
     elif passes_confidence and not config.AUTO_PAPER_USER_ID:
         auto_skipped_reason = "AUTO_PAPER_USER_ID not configured"
 
-    # Step 5 — Build rich Telegram message
-    icon = "🚀" if "BUY" in dec else "🔻" if "SELL" in dec else "⏸"
-
-    # Compute RR ratio for the message
+    # Step 5 — Telegram message (SILENT on low confidence / traps; alert ONLY on placed orders or manual review)
     rr_str = "N/A"
     if entry and sl and target:
         sl_dist = abs(entry - sl)
@@ -601,6 +599,10 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
             for r in rationale[:2]:
                 lines.append(f"• {r}")
 
+        text = "\n".join(lines)
+        logger.info("ai_copilot: pushing Telegram alert for placed order %s", sym)
+        telegram_notify.send_message(text)
+
     elif passes_confidence and not auto_order_result and auto_skipped_reason:
         # ── High conviction but after-hours or cap hit → manual approval needed ──
         lines = [
@@ -622,32 +624,11 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
             for r in rationale[:2]:
                 lines.append(f"• {r}")
 
-    elif is_confirm and not passes_confidence:
-        # ── Low confidence confirm — alert only ──
-        lines = [
-            f"{icon} *AI TRADE COPILOT — LOW CONFIDENCE*",
-            f"*Stock:* `{sym}` | *Signal:* `{signal}` ({signal_time})",
-            f"*AI Decision:* `{dec}` ({score}% — below {config.MIN_AI_CONFIDENCE}% threshold)",
-            f"",
-            f"📍 Entry: ₹{entry:.2f} | 🛑 SL: ₹{sl:.2f} | 🎯 Target: ₹{target:.2f}",
-            f"📊 RR: {rr_str} | 🔄 TSL: {tsl_t} {tsl_v}",
-            f"",
-            f"_Skipped — confidence below threshold. Monitor manually._",
-        ]
+        text = "\n".join(lines)
+        logger.info("ai_copilot: pushing Telegram manual approval alert for %s", sym)
+        telegram_notify.send_message(text)
 
     else:
-        # ── SKIP_TRAP — trade disqualified ──
-        lines = [
-            f"🚫 *AI SKIP — TRAP DETECTED*",
-            f"*Stock:* `{sym}` | *Signal:* `{signal}` ({signal_time})",
-            f"*AI Decision:* `{dec}` ({score}%)",
-        ]
-        if rationale:
-            lines.append("")
-            lines.append("*Red Flags:*")
-            for r in rationale[:2]:
-                lines.append(f"• {r}")
+        # Silent rejection for SKIP_TRAP or low-confidence — no Telegram spam
+        logger.info("ai_copilot: trade rejected (%s, %d%%) - silently ignored (no Telegram notification)", dec, score)
 
-    text = "\n".join(lines)
-    logger.info("ai_copilot: pushing Telegram alert for %s | decision=%s score=%d", sym, dec, score)
-    telegram_notify.send_message(text)

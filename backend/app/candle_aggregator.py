@@ -192,3 +192,17 @@ def get_in_progress(sym: str):
     never mutates _day_candles."""
     entry = _day_candles.get(sym)
     return (entry[0], entry[1], list(entry[2]), entry[3], entry[4]) if entry else None
+
+
+def get_intraday_closes(sym: str) -> list[float]:
+    """Return chronological list of today's 5m close prices for technical indicators."""
+    closes: list[float] = []
+    if sym in _opening_5min:
+        for b_min in sorted(_opening_5min[sym].keys()):
+            ohlc = _opening_5min[sym][b_min]
+            closes.append(float(ohlc[3]))
+    cur = _day_candles.get(sym)
+    if cur and cur[2]:
+        closes.append(float(cur[2][3]))
+    return closes
+

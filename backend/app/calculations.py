@@ -252,33 +252,36 @@ def process_incoming_tick(
             # tick, so we never re-spawn.  This collapses 100s of redundant
             # threads/sec down to at most one per signal transition.
             if signal != prev_signal:
-                # ── Quant Quality Gatekeeper ─────────────────────────────────
-                # Three hard filters — all must pass before calling Gemini.
-                # Gate 1 (RS): Stock must outperform NIFTY by MIN_RS_THRESHOLD.
-                # Gate 2 (RVOL proxy): traded_value must be non-trivial (>0).
-                #   Full RVOL ratio is computed inside ai_copilot using the
-                #   avg-daily-value estimate; here we do a cheap existence check.
-                # Gate 3 (Depth Delta): Order book must confirm trade direction.
-                from . import config as _cfg
+                # ── Multi-Factor Quant Gatekeeper ────────────────────────────
+                # Strict 4-tier filtering before AI is invoked:
+                # Tier 1: Sector momentum & defensive category gating (FMCG/PSU RS >= 2%)
+                # Tier 2: VWAP alignment & non-extension buffer (0.1% to 1.2%)
+                # Tier 3: 5m RSI (55-72 for buy, 28-45 for sell) & 20 EMA alignment
+                # Tier 4: Order book depth delta confirmation
+                from . import technical_indicators as _ti
 
-                rs = stock.get("relative_strength", 0.0)
-                is_bull = "Bull" in signal
-                rs_ok = (rs >= _cfg.MIN_RS_THRESHOLD) if is_bull else (rs <= -_cfg.MIN_RS_THRESHOLD)
+                all_stocks_list = list(state.stocks.values())
+                candle_closes = candle_aggregator.get_intraday_closes(short_sym)
 
-                # RVOL proxy: use cumulative traded value as a quick gate.
-                # traded_value = ltp × volume; a meaningful spike is > 0.
-                # The full MIN_RVOL_THRESHOLD check happens in ai_copilot via
-                # candle history comparison.
-                traded_val = (stock.get("ltp") or 0.0) * (stock.get("volume") or 0)
-                rvol_ok = traded_val > 0  # non-trivial volume present
+                passes_quant, fail_reason, metrics = _ti.validate_quant_filters(
+                    stock=stock,
+                    signal=signal,
+                    all_stocks=all_stocks_list,
+                    candle_closes=candle_closes,
+                )
 
-                # Depth delta: positive for bull (more buy pressure), negative for bear.
                 depth = stock.get("depth_delta", 0.0)
-                depth_ok = (depth >= 0) if is_bull else (depth <= 0)
-                # Note: depth_delta = 0.0 when depth subscription not active → allow through
-                # (better to audit than silently drop when depth feed unavailable).
+                is_bull = "Bull" in signal
+                # If depth is active (non-zero), ensure it agrees with trade direction
+                if depth != 0.0:
+                    if is_bull and depth < 0:
+                        passes_quant = False
+                        fail_reason = f"Depth delta opposing buy ({depth:.0f})"
+                    elif not is_bull and depth > 0:
+                        passes_quant = False
+                        fail_reason = f"Depth delta opposing sell ({depth:.0f})"
 
-                if rs_ok and rvol_ok and depth_ok:
+                if passes_quant:
                     import threading
 
                     from . import ai_copilot
@@ -290,25 +293,15 @@ def process_incoming_tick(
                         name=f"ai-audit-{short_sym}",
                     ).start()
                     import logging as _log
-
                     _log.getLogger(__name__).info(
-                        "quant_gate: PASS %s | signal=%s rs=%.2f depth=%.0f → AI audit queued",
-                        short_sym,
-                        signal,
-                        rs,
-                        depth,
+                        "quant_gate: PASS %s | signal=%s rs=%.2f rsi=%.1f vwap_dist=%.2f%% metrics=%s → AI audit queued",
+                        short_sym, signal, metrics.get("rs", 0.0), metrics.get("rsi", 50.0), metrics.get("vwap_dist_pct", 0.0), metrics,
                     )
                 else:
                     import logging as _log
-
                     _log.getLogger(__name__).debug(
-                        "quant_gate: FAIL %s | signal=%s rs=%.2f rs_ok=%s rvol_ok=%s depth_ok=%s",
-                        short_sym,
-                        signal,
-                        rs,
-                        rs_ok,
-                        rvol_ok,
-                        depth_ok,
+                        "quant_gate: REJECT %s | signal=%s | reason=%s",
+                        short_sym, signal, fail_reason,
                     )
 
     order_monitor.on_tick_threadsafe(short_sym, ltp)
