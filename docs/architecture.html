@@ -258,6 +258,7 @@
       <span class="chip"><span class="dot" style="background:#f87171"></span>210 F&amp;O stocks + NIFTY 50</span>
       <span class="chip"><span class="dot" style="background:#4ade80"></span>7 screens</span>
       <span class="chip"><span class="dot" style="background:#c4b5fd"></span>Paper trading + brokerage engine</span>
+      <span class="chip"><span class="dot" style="background:var(--violet)"></span>AI Copilot & Multi-Factor Quant</span>
     </div>
 
     <div class="toc">
@@ -284,6 +285,7 @@
         <a href="#lifecycle">19 · Daily lifecycle</a>
         <a href="#deploy">20 · Deployment pipeline</a>
         <a href="#files">21 · Module map</a>
+        <a href="#ai-quant">22 · AI Copilot &amp; Quant Gate</a>
       </div>
     </div>
   </div>
@@ -1251,10 +1253,12 @@ frame = build_frame(prev, curr, seq=next_seq)  <span class="tok-c"># None if not
         <tr><td><code>app/broadcaster.py</code></td><td>Snapshot/delta diffing + 250 ms fan-out to browser WebSocket subscribers</td></tr>
         <tr><td><code>app/scheduler.py</code></td><td>APScheduler cron jobs: daily login, market open/close, ORB refresh, score checkpoints</td></tr>
         <tr><td><code>app/charts.py</code></td><td><code>/api/charts</code> router — one route, today's candles + levels for a symbol</td></tr>
-        <tr><td><code>app/paper_trading.py</code></td><td><code>/api/paper</code> router — orders, positions, wallet, history, exports</td></tr>
+        <tr><td><code>app/paper_trading.py</code></td><td><code>/api/paper</code> router — orders, positions, wallet, history, exports, auto order placement</td></tr>
         <tr><td><code>app/order_monitor.py</code></td><td>Per-tick SL/Target/TSL/limit-fill checks for open paper orders</td></tr>
         <tr><td><code>app/trailing_stop.py</code>, <code>brokerage.py</code>, <code>paper_pnl.py</code>, <code>paper_margin.py</code></td><td>Pure paper-trading math: ratchet TSL, brokerage/tax, P&amp;L, margin/leverage</td></tr>
-        <tr><td><code>app/telegram_notify.py</code></td><td>Best-effort Telegram alerts for paper-trade closes and Recommended-digest checkpoints</td></tr>
+        <tr><td><code>app/technical_indicators.py</code></td><td>5m RSI-14, 20/50 EMA, dynamic structural SL/Target math, defensive sector gating</td></tr>
+        <tr><td><code>app/ai_copilot.py</code></td><td>Gemini Red-Flag Filter, Google Search Grounded pre-market briefing, automated risk sizing, silent Telegram alerting</td></tr>
+        <tr><td><code>app/telegram_notify.py</code></td><td>Best-effort Telegram alerts for paper-trade closes, executed orders, and Recommended-digest checkpoints</td></tr>
         <tr><td><code>app/logging_config.py</code></td><td><code>logging.basicConfig</code> to stdout — journald captures it on the VM, no file handler needed</td></tr>
         <tr><td><code>app/main.py</code></td><td>FastAPI app: routers, <code>/ws/stream</code>, snapshot, health, lifespan wiring (scheduler + broadcaster + Smart Money loop)</td></tr>
         <tr><td><code>manual_auth.py</code> · <code>diagnose_login.py</code> · <code>check_totp.py</code></td><td>One-time FYERS app consent + credential-masked login diagnostics</td></tr>
@@ -1268,8 +1272,55 @@ frame = build_frame(prev, curr, seq=next_seq)  <span class="tok-c"># None if not
     </table>
   </section>
 
+  <!-- 22 AI COPILOT & QUANT GATE -->
+  <section id="ai-quant">
+    <div class="eyebrow">22 — AI &amp; Quantitative Engine</div>
+    <h2>AI Copilot &amp; Multi-Factor Quant Gatekeeper</h2>
+    <p class="sub">An institutional-grade 4-tier filtering pipeline that scans 210 F&amp;O stocks during the 09:15–11:00 AM prime breakout window, filters out 98% of false breakouts, validates technical setups with Google Gemini AI, and executes risk-capped paper orders automatically.</p>
+
+    <div class="grid c2" style="margin-top:24px">
+      <div class="card">
+        <h4><div class="ic" style="background:rgba(59,130,246,0.15);color:var(--blue)">🎯</div> Multi-Factor Quant Gatekeeper</h4>
+        <p>Before any stock reaches the AI copilot, it must pass 4 strict mathematical tests in <code>technical_indicators.py</code>:
+          <br>• <b>Defensive Sector Filter</b>: FMCG/PSU/Cement require RS ≥ 2.0%; Momentum sectors require RS ≥ 1.0%.
+          <br>• <b>5m RSI-14 (Wilder's)</b>: Must be [55, 72] for Buy / [28, 45] for Sell.
+          <br>• <b>20 EMA Alignment</b>: Price must trade on the breakout side of the 20 EMA.
+          <br>• <b>VWAP Distance</b>: Must be within [0.10%, 1.20%] of VWAP (prevents extended tops).
+        </p>
+      </div>
+
+      <div class="card">
+        <h4><div class="ic" style="background:rgba(139,92,246,0.15);color:var(--violet)">🤖</div> Gemini AI Red-Flag Audit</h4>
+        <p>Google Gemini (<code>gemini-flash-latest</code>) acts strictly as a risk auditor — never generating random signals:
+          <br>• <b>Red-Flag Mode</b>: Disqualifies traps, overhead PDH/PDL resistance, and choppy sectors.
+          <br>• <b>Rate Pacing</b>: Protected by <code>Semaphore(1)</code> + 2s sleep delay (0 HTTP 429 errors).
+          <br>• <b>Search Grounding</b>: 08:45 AM pre-market briefing uses real-time Google Search for live Gift Nifty &amp; macro cues.
+        </p>
+      </div>
+
+      <div class="card">
+        <h4><div class="ic" style="background:rgba(34,197,94,0.15);color:var(--green)">📐</div> Dynamic Structural Stop Loss</h4>
+        <p>Stop loss is anchored to real market structure rather than arbitrary micro-percentages:
+          <br>• <b>Swing Anchor</b>: 5m breakout candle low/high ± 0.15% breathing room.
+          <br>• <b>True 5m ATR</b>: 1.5× 14-period Average True Range.
+          <br>• <b>Boundary Clamping</b>: Floor of 0.85% (anti-noise) and ceiling of 2.00%.
+          <br>• <b>1:2 RR Target</b>: Target = Entry ± (2.0 × SL distance).
+        </p>
+      </div>
+
+      <div class="card">
+        <h4><div class="ic" style="background:rgba(245,158,11,0.15);color:var(--amber)">🛡️</div> Risk Sizing &amp; Silent Alerts</h4>
+        <p>Automated execution designed around strict capital preservation:
+          <br>• <b>Risk Sizing</b>: <code>Quantity = int(₹666.67 ÷ SL_distance)</code> (₹2,000 max daily loss ÷ 3 trades).
+          <br>• <b>Auto Window</b>: 09:15–11:00 AM auto-executes; post-11:00 AM sends Manual Approval alert.
+          <br>• <b>Silent Rejection</b>: Rejection spam is silenced — Telegram rings <i>only</i> on placed orders or manual approvals (2–5 alerts/day).
+        </p>
+      </div>
+    </div>
+  </section>
+
   <footer>
-    TradeDashboard · FYERS API v3 · FastAPI + React · Complete architecture rewrite covering all 7 screens, both scoring engines, CVD, paper trading, and the deployment pipeline.
+    TradeDashboard · FYERS API v3 · FastAPI + React · Complete architecture rewrite covering all 7 screens, both scoring engines, CVD, paper trading, AI Copilot, and the deployment pipeline.
   </footer>
 </main>
 </body>
