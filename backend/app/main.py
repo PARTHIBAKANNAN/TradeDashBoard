@@ -43,7 +43,9 @@ def _live_snapshot() -> dict:
     is_auth = bool(auth.auth_status()["authenticated"])
     # Outside active market hours (e.g. 08:45-09:15 AM pre-market), valid auth is sufficient
     # During market hours (09:15-15:30), data_engine socket must also be actively running
-    snap["fyers_connected"] = is_auth if not market_state.market_open else bool(is_auth and data_engine.running)
+    snap["fyers_connected"] = (
+        is_auth if not market_state.market_open else bool(is_auth and data_engine.running)
+    )
     return snap
 
 

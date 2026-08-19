@@ -290,16 +290,25 @@ def process_incoming_tick(
                         name=f"ai-audit-{short_sym}",
                     ).start()
                     import logging as _log
+
                     _log.getLogger(__name__).info(
                         "quant_gate: PASS %s | signal=%s rs=%.2f depth=%.0f → AI audit queued",
-                        short_sym, signal, rs, depth,
+                        short_sym,
+                        signal,
+                        rs,
+                        depth,
                     )
                 else:
                     import logging as _log
+
                     _log.getLogger(__name__).debug(
                         "quant_gate: FAIL %s | signal=%s rs=%.2f rs_ok=%s rvol_ok=%s depth_ok=%s",
-                        short_sym, signal, rs, rs_ok, rvol_ok, depth_ok,
+                        short_sym,
+                        signal,
+                        rs,
+                        rs_ok,
+                        rvol_ok,
+                        depth_ok,
                     )
 
     order_monitor.on_tick_threadsafe(short_sym, ltp)
-

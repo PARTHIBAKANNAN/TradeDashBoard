@@ -70,6 +70,7 @@ async def close_pool() -> None:
 
 # --------------- Programmatic auto paper trade (called by AI Copilot, no HTTP context) ---------------
 
+
 async def place_auto_paper_order(
     user_id: str,
     symbol: str,
@@ -156,7 +157,12 @@ async def place_auto_paper_order(
         order_monitor.register_open_bracket(dict(row))
     logger.info(
         "place_auto_paper_order: %s %s %d qty @ %.2f | SL=%.2f Target=%.2f",
-        side, symbol, quantity, ltp, sl_price or 0.0, target_price or 0.0,
+        side,
+        symbol,
+        quantity,
+        ltp,
+        sl_price or 0.0,
+        target_price or 0.0,
     )
     return _serialize(dict(row))
 
@@ -183,6 +189,7 @@ def place_auto_paper_order_sync(
         logger.warning("place_auto_paper_order_sync: event loop not available")
         return None
     import asyncio
+
     future = asyncio.run_coroutine_threadsafe(
         place_auto_paper_order(
             user_id=user_id,
@@ -202,8 +209,6 @@ def place_auto_paper_order_sync(
     except Exception:
         logger.exception("place_auto_paper_order_sync: order placement failed for %s", symbol)
         return None
-
-
 
 
 def _serialize(row: dict) -> dict:

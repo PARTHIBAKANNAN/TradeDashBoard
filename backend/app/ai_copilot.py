@@ -153,6 +153,7 @@ def _extract_json(text: str) -> Optional[Dict[str, Any]]:
     except Exception:
         # Fallback: regex search for the outermost {...}
         import re
+
         match = re.search(r"(\{.*\})", cleaned, re.DOTALL)
         if match:
             try:
@@ -213,7 +214,9 @@ def run_premarket_briefing() -> Dict[str, Any]:
             )
             return _premarket_cache
         else:
-            logger.warning("ai_copilot: failed to parse grounded premarket JSON: %s", raw_response[:200])
+            logger.warning(
+                "ai_copilot: failed to parse grounded premarket JSON: %s", raw_response[:200]
+            )
 
     # Fallback default if API key missing or call fails
     _premarket_cache = {
@@ -262,7 +265,8 @@ def compile_symbol_context(sym: str) -> Dict[str, Any]:
     now_ist = datetime.now(IST)
     session_minute = (now_ist.hour - 9) * 60 + (now_ist.minute - 15)
     time_window = (
-        "PRIME_MORNING (09:15-11:00)" if session_minute <= config.AUTO_EXECUTE_UNTIL_MINUTE
+        "PRIME_MORNING (09:15-11:00)"
+        if session_minute <= config.AUTO_EXECUTE_UNTIL_MINUTE
         else "MID_LATE_SESSION (11:00-15:30)"
     )
 
@@ -528,6 +532,7 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
                 quantity = 1
 
             from . import paper_trading
+
             side = "BUY" if "BUY" in dec else "SELL"
             notes = f"AI_COPILOT | {signal} | score={score} | auto"
 
@@ -546,7 +551,10 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
                 _increment_auto_trade_count()
                 logger.info(
                     "ai_copilot: auto paper trade placed for %s | %s %d qty @ %.2f",
-                    sym, side, quantity, entry,
+                    sym,
+                    side,
+                    quantity,
+                    entry,
                 )
             else:
                 auto_skipped_reason = "Order placement failed (insufficient margin or DB error)"

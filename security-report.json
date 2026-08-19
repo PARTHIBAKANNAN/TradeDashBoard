@@ -31,7 +31,7 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "account": "",
         "local_database_path": null,
         "safety_version": "3.8.1",
-        "timestamp": "2026-08-18 09:23:56",
+        "timestamp": "2026-08-19 09:25:22",
         "packages_found": 13,
         "vulnerabilities_found": 14,
         "vulnerabilities_ignored": 0,
@@ -50,13 +50,13 @@ We highly encourage switching to the new `scan` command which is easier to use, 
             "os_type": "Linux",
             "os_release": "6.17.0-1022-azure",
             "os_description": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
-            "python_version": "3.11.15",
+            "python_version": "3.11.16",
             "safety_command": "check"
         },
         "git": {
             "branch": "main",
             "tag": "",
-            "commit": "79b2a6c92d923467756d0c9a80b8b2a319c6cee4",
+            "commit": "c4c1dd685f79dddccffc9fa8fa4c24286ff996d8",
             "dirty": "True",
             "origin": "https://github.com/PARTHIBAKANNAN/TradeDashBoard"
         },
@@ -859,39 +859,6 @@ We highly encourage switching to the new `scan` command which is easier to use, 
             "more_info_url": "https://getsafety.com/v/SFTY-20260327-04621/97c"
         },
         {
-            "vulnerability_id": "SFTY-20260615-96125",
-            "package_name": "cryptography",
-            "ignored": {},
-            "ignored_reason": null,
-            "ignored_expires": null,
-            "vulnerable_spec": [
-                ">=0.5.0,<48.0.1"
-            ],
-            "all_vulnerable_specs": [
-                ">=0.5.0,<48.0.1"
-            ],
-            "analyzed_version": "44.0.0",
-            "analyzed_requirement": {
-                "raw": "cryptography==44.0.0  # ES256/RS256 support for verifying Supabase JWTs",
-                "extras": [],
-                "marker": null,
-                "name": "cryptography",
-                "specifier": "==44.0.0",
-                "url": null,
-                "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
-            },
-            "advisory": "Affected versions of the `pyca/cryptography` package are vulnerable to Information Disclosure due to the inclusion of a statically linked copy of OpenSSL with known security issues. The vulnerability exists because the wheels distributed on PyPI include an outdated version of OpenSSL that contains a security flaw. An attacker can exploit this by leveraging the underlying OpenSSL vulnerability to potentially access sensitive information processed by applications using the affected `pyca/cryptography` wheels.",
-            "is_transitive": false,
-            "published_date": null,
-            "fixed_versions": [],
-            "closest_versions_without_known_vulnerabilities": [],
-            "resources": [],
-            "CVE": null,
-            "severity": null,
-            "affected_versions": [],
-            "more_info_url": "https://getsafety.com/v/SFTY-20260615-96125/97c"
-        },
-        {
             "vulnerability_id": "86217",
             "package_name": "cryptography",
             "ignored": {},
@@ -923,6 +890,39 @@ We highly encourage switching to the new `scan` command which is easier to use, 
             "severity": null,
             "affected_versions": [],
             "more_info_url": "https://getsafety.com/v/86217/97c"
+        },
+        {
+            "vulnerability_id": "SFTY-20260615-96125",
+            "package_name": "cryptography",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                ">=0.5.0,<48.0.1"
+            ],
+            "all_vulnerable_specs": [
+                ">=0.5.0,<48.0.1"
+            ],
+            "analyzed_version": "44.0.0",
+            "analyzed_requirement": {
+                "raw": "cryptography==44.0.0  # ES256/RS256 support for verifying Supabase JWTs",
+                "extras": [],
+                "marker": null,
+                "name": "cryptography",
+                "specifier": "==44.0.0",
+                "url": null,
+                "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
+            },
+            "advisory": "Affected versions of the `pyca/cryptography` package are vulnerable to Information Disclosure due to the inclusion of a statically linked copy of OpenSSL with known security issues. The vulnerability exists because the wheels distributed on PyPI include an outdated version of OpenSSL that contains a security flaw. An attacker can exploit this by leveraging the underlying OpenSSL vulnerability to potentially access sensitive information processed by applications using the affected `pyca/cryptography` wheels.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": null,
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://getsafety.com/v/SFTY-20260615-96125/97c"
         },
         {
             "vulnerability_id": "SFTY-20260615-88836",
