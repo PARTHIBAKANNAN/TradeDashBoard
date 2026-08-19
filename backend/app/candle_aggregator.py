@@ -206,3 +206,31 @@ def get_intraday_closes(sym: str) -> list[float]:
         closes.append(float(cur[2][3]))
     return closes
 
+
+def get_intraday_candles(sym: str) -> list[dict]:
+    """Return chronological list of today's 5m candles with full OHLC for ATR & Swing calculations."""
+    candles: list[dict] = []
+    if sym in _opening_5min:
+        for b_min in sorted(_opening_5min[sym].keys()):
+            ohlc = _opening_5min[sym][b_min]
+            candles.append({
+                "open": float(ohlc[0]),
+                "high": float(ohlc[1]),
+                "low": float(ohlc[2]),
+                "close": float(ohlc[3]),
+                "minute": b_min,
+            })
+    cur = _day_candles.get(sym)
+    if cur and cur[2]:
+        ohlc = cur[2]
+        candles.append({
+            "open": float(ohlc[0]),
+            "high": float(ohlc[1]),
+            "low": float(ohlc[2]),
+            "close": float(ohlc[3]),
+            "volume": float(cur[4]),
+            "minute": cur[1],
+        })
+    return candles
+
+

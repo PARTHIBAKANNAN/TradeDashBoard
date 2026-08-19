@@ -419,35 +419,44 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
         "Otherwise return SKIP_TRAP."
     )
 
+    from .candle_aggregator import get_intraday_candles
+    from .technical_indicators import compute_dynamic_trade_levels
+    dyn = compute_dynamic_trade_levels(s, s.get("signal", ""), get_intraday_candles(sym))
+
     raw_response = call_gemini(prompt, system_instruction=system_prompt)
     if raw_response:
         try:
             parsed = json.loads(raw_response)
             parsed["symbol"] = sym
             parsed["timestamp"] = datetime.now(IST).strftime("%H:%M:%S IST")
+            # Enforce dynamic minimum structural SL bounds (clamp to at least dyn["sl_distance"])
+            entry = float(parsed.get("suggested_entry") or ltp)
+            sl = float(parsed.get("suggested_sl") or 0.0)
+            if entry and sl:
+                actual_sl_dist = abs(entry - sl)
+                min_safe_sl = dyn["sl_distance"]
+                if actual_sl_dist < min_safe_sl:
+                    # Enforce structural minimum
+                    parsed["suggested_sl"] = round(entry - min_safe_sl, 2) if is_bull else round(entry + min_safe_sl, 2)
+                    parsed["suggested_target"] = round(entry + (min_safe_sl * 2.0), 2) if is_bull else round(entry - (min_safe_sl * 2.0), 2)
             return parsed
         except Exception as e:
             logger.error("ai_copilot: failed to parse setup JSON: %s", e)
 
     # Heuristic Mathematical Fallback (when API key is not set or network fails)
-    # Ensure minimum 1.0% structural SL distance so normal 1-minute noise doesn't kill the trade
-    sl_buffer = max(ltp * 0.010, 2.0)  # 1.0% minimum buffer
-    sl = round(ltp - sl_buffer, 2) if is_bull else round(ltp + sl_buffer, 2)
-    target = round(ltp + (sl_buffer * 2.0), 2) if is_bull else round(ltp - (sl_buffer * 2.0), 2)
-    decision = "CONFIRM_BUY" if is_bull else "CONFIRM_SELL"
-
+    # Uses true 5-minute ATR and recent swing high/low bounds with 1:2 RR
     return {
         "symbol": sym,
-        "decision": decision,
-        "confidence_score": 75 if s.get("signal") != "None" else 50,
-        "suggested_entry": ltp,
-        "suggested_sl": sl,
-        "suggested_target": target,
+        "decision": "CONFIRM_BUY" if is_bull else "CONFIRM_SELL",
+        "confidence_score": 80 if s.get("signal") != "None" else 50,
+        "suggested_entry": dyn["entry"],
+        "suggested_sl": dyn["sl"],
+        "suggested_target": dyn["target"],
         "tsl_type": "PERCENT",
         "tsl_value": 0.5,
         "rationale": [
-            f"Heuristic fallback: {s.get('signal')} signal active.",
-            f"SL set at 1.0% structural buffer (₹{sl}), Target 1:2 RR (₹{target}).",
+            f"Dynamic Structural Anchor: SL {dyn['sl_pct']:.2f}% (₹{dyn['sl']}), Target 1:2 RR (₹{dyn['target']}).",
+            f"Volatility Buffer: 1.5x 5m ATR (₹{dyn['atr_14']}) with swing protection.",
         ],
         "is_fallback": True,
         "timestamp": datetime.now(IST).strftime("%H:%M:%S IST"),
