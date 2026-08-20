@@ -48,12 +48,23 @@ const MiniCandlestick = React.memo(({ candles }) => {
     const min = Math.min(...lows);
     const span = max - min || max * 0.01 || 1; // flat-price guard
 
+    const FIRST_BUCKET_MIN = 555; // 09:15 in minutes = 9 * 60 + 15
+    const isChronological = candles.some(
+      (c) => c.bucket != null && c.bucket >= FIRST_BUCKET_MIN,
+    );
     const slotW = W / TOTAL_SLOTS;
-    const bodyW = Math.max(1, slotW * 0.62);
-    const y = (price) => H - 1 - ((price - min) / span) * (H - 2);
+    const bodyW = Math.max(1.8, slotW * 0.72);
+    const y = (price) => H - 2 - ((price - min) / span) * (H - 4);
 
-    candles.slice(0, TOTAL_SLOTS).forEach((c, i) => {
-      const x = i * slotW + slotW / 2;
+    candles.forEach((c, i) => {
+      let slotIndex = i;
+      if (isChronological && c.bucket != null && c.bucket >= FIRST_BUCKET_MIN) {
+        slotIndex = Math.min(
+          TOTAL_SLOTS - 1,
+          Math.max(0, Math.floor((c.bucket - FIRST_BUCKET_MIN) / 5)),
+        );
+      }
+      const x = slotIndex * slotW + slotW / 2;
       const isUp = c.close >= c.open;
       const color = isUp ? upColor : downColor;
 

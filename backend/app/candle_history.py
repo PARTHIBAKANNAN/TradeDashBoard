@@ -64,6 +64,34 @@ async def get_candles(symbol: str, bucket_date) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+async def get_all_today_candles(bucket_date) -> dict[str, list[dict]]:
+    """Every completed 5-min candle for all symbols on bucket_date, grouped by symbol."""
+    from . import paper_trading
+
+    pool = paper_trading.get_pool()
+    if pool is None:
+        return {}
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "select symbol, bucket_minute, open, high, low, close from public.candle_history "
+            "where bucket_date=$1 order by symbol, bucket_minute",
+            bucket_date,
+        )
+    res: dict[str, list[dict]] = {}
+    for r in rows:
+        sym = r["symbol"]
+        res.setdefault(sym, []).append(
+            {
+                "bucket": r["bucket_minute"],
+                "open": float(r["open"]),
+                "high": float(r["high"]),
+                "low": float(r["low"]),
+                "close": float(r["close"]),
+            }
+        )
+    return res
+
+
 async def get_candles_range(symbol: str, from_date, to_date) -> list[dict]:
     """Every completed 5-min candle for `symbol` between `from_date` and
     `to_date` (inclusive), ordered oldest first. Used by the multi-day modal

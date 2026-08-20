@@ -11,9 +11,31 @@ def update_peak(side: str, current_peak: float, ltp: float) -> float:
     return min(current_peak, ltp)
 
 
-def trailing_sl_price(side: str, peak: float, tsl_type: str, tsl_value: float) -> float:
-    offset = peak * (tsl_value / 100) if tsl_type == "PERCENT" else tsl_value
-    return round(peak - offset, 4) if side == "BUY" else round(peak + offset, 4)
+def trailing_sl_price(
+    side: str,
+    entry: float,
+    peak: float,
+    tsl_type: str,
+    tsl_value: float,
+    initial_sl: float | None = None,
+) -> float:
+    """
+    Computes candidate trailing SL price:
+    - Never tightens the initial structural Stop Loss below entry.
+    - For BUY: only lifts SL above initial_sl when peak > entry.
+    - For SELL: only lowers SL below initial_sl when peak < entry.
+    """
+    offset = peak * (tsl_value / 100.0) if tsl_type == "PERCENT" else tsl_value
+    if side == "BUY":
+        if peak <= entry and initial_sl is not None:
+            return initial_sl
+        trail = peak - offset
+        return round(max(trail, initial_sl) if initial_sl is not None else trail, 4)
+    else:
+        if peak >= entry and initial_sl is not None:
+            return initial_sl
+        trail = peak + offset
+        return round(min(trail, initial_sl) if initial_sl is not None else trail, 4)
 
 
 def ratchet_sl(side: str, current_sl: float | None, candidate_sl: float) -> float:
@@ -21,3 +43,4 @@ def ratchet_sl(side: str, current_sl: float | None, candidate_sl: float) -> floa
     if current_sl is None:
         return candidate_sl
     return max(current_sl, candidate_sl) if side == "BUY" else min(current_sl, candidate_sl)
+

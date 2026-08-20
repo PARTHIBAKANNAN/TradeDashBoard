@@ -18,15 +18,19 @@ def test_update_peak_sell():
 
 
 def test_trailing_sl_price_percent():
-    # BUY: 1% below a peak of 200 -> 198
-    assert trailing_sl_price("BUY", 200.0, "PERCENT", 1.0) == 198.0
-    # SELL: 1% above a peak (trough) of 200 -> 202
-    assert trailing_sl_price("SELL", 200.0, "PERCENT", 1.0) == 202.0
+    # BUY: entry 200, peak 205, 1% below peak -> 202.95
+    assert trailing_sl_price("BUY", 200.0, 205.0, "PERCENT", 1.0, 198.0) == 202.95
+    # BUY: entry 200, peak 200 (no move), initial SL 198 preserved -> 198.0
+    assert trailing_sl_price("BUY", 200.0, 200.0, "PERCENT", 1.0, 198.0) == 198.0
+    # SELL: entry 200, peak 195, 1% above peak -> 196.95
+    assert trailing_sl_price("SELL", 200.0, 195.0, "PERCENT", 1.0, 202.0) == 196.95
+    # SELL: entry 200, peak 200 (no move), initial SL 202 preserved -> 202.0
+    assert trailing_sl_price("SELL", 200.0, 200.0, "PERCENT", 1.0, 202.0) == 202.0
 
 
 def test_trailing_sl_price_points():
-    assert trailing_sl_price("BUY", 200.0, "POINTS", 20.0) == 180.0
-    assert trailing_sl_price("SELL", 200.0, "POINTS", 20.0) == 220.0
+    assert trailing_sl_price("BUY", 200.0, 220.0, "POINTS", 20.0, 180.0) == 200.0
+    assert trailing_sl_price("SELL", 200.0, 180.0, "POINTS", 20.0, 220.0) == 200.0
 
 
 def test_ratchet_sl_buy_never_retreats():

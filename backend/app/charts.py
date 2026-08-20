@@ -69,3 +69,10 @@ async def get_history_candles(
     result = await candle_query.get_multi_day_candles(symbol, days)
     result["levels"] = candle_query.get_levels(stock)
     return result
+
+
+@router.get("/all-mini-candles")
+async def get_all_mini_candles():
+    """All symbols' today 5-min candles in one batch to seed the watchlist mini-charts."""
+    return await candle_query.get_all_mini_candles()
+

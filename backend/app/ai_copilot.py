@@ -432,9 +432,7 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
             sl = float(parsed.get("suggested_sl") or 0.0)
             if entry and sl:
                 actual_sl_dist = abs(entry - sl)
-                min_safe_sl = dyn["sl_distance"]
                 if actual_sl_dist < min_safe_sl:
-                    # Enforce structural minimum
                     parsed["suggested_sl"] = (
                         round(entry - min_safe_sl, 2) if is_bull else round(entry + min_safe_sl, 2)
                     )
@@ -443,6 +441,9 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
                         if is_bull
                         else round(entry - (min_safe_sl * 2.0), 2)
                     )
+            # Enforce safe minimum 1.2% trailing buffer
+            parsed["tsl_type"] = parsed.get("tsl_type") or "PERCENT"
+            parsed["tsl_value"] = max(float(parsed.get("tsl_value") or 1.2), round(dyn["sl_pct"], 2), 1.2)
             return parsed
         except Exception as e:
             logger.error("ai_copilot: failed to parse setup JSON: %s", e)
@@ -457,7 +458,7 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
         "suggested_sl": dyn["sl"],
         "suggested_target": dyn["target"],
         "tsl_type": "PERCENT",
-        "tsl_value": 0.5,
+        "tsl_value": max(round(dyn["sl_pct"], 2), 1.2),
         "rationale": [
             f"Dynamic Structural Anchor: SL {dyn['sl_pct']:.2f}% (₹{dyn['sl']}), Target 1:2 RR (₹{dyn['target']}).",
             f"Volatility Buffer: 1.5x 5m ATR (₹{dyn['atr_14']}) with swing protection.",

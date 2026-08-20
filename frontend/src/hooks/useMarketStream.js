@@ -130,8 +130,39 @@ function processCandles(stocks) {
   }
 }
 
+let hasSeededCandles = false;
+
+async function seedAllMiniCandles() {
+  if (hasSeededCandles) return;
+  try {
+    const res = await fetch("/api/charts/all-mini-candles", { credentials: "include" });
+    if (res.ok) {
+      const all = await res.json();
+      hasSeededCandles = true;
+      for (const [sym, list] of Object.entries(all)) {
+        if (Array.isArray(list) && list.length > 0) {
+          candlesMap.set(sym, list);
+        }
+      }
+      persistCandles(true);
+      const curStocks = marketStore.getSnapshot().stocks;
+      if (curStocks && curStocks.length) {
+        for (const s of curStocks) {
+          if (candlesMap.has(s.symbol)) {
+            s.candles = candlesMap.get(s.symbol);
+          }
+        }
+        marketStore.applyFrame({ type: "delta", stocks: curStocks, seq: marketStore.getMeta().lastSeq });
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 function connect() {
   if (ws) return;
+  seedAllMiniCandles();
   const socket = new WebSocket(wsUrl());
   ws = socket;
 
@@ -139,6 +170,7 @@ function connect() {
     backoffMs = 500;
     marketStore.setConnected(true);
     armHeartbeat();
+    seedAllMiniCandles();
   };
 
   socket.onmessage = (ev) => {

@@ -81,12 +81,13 @@ def _ratchet_trailing_stop(order: dict, ltp: float) -> None:
     Runs before the bracket-hit check on the same tick so a stop crossed by
     this tick's own ratchet is caught immediately, not one tick late."""
     prev_peak = order.get("peak_price") or order["entry_price"]
+    entry_val = float(order["entry_price"])
     new_peak = trailing_stop.update_peak(order["side"], float(prev_peak), ltp)
+    prev_sl = float(order["sl_price"]) if order.get("sl_price") else None
     candidate = trailing_stop.trailing_sl_price(
-        order["side"], new_peak, order["tsl_type"], float(order["tsl_value"])
+        order["side"], entry_val, new_peak, order["tsl_type"], float(order["tsl_value"]), prev_sl
     )
-    prev_sl = order.get("sl_price")
-    new_sl = trailing_stop.ratchet_sl(order["side"], float(prev_sl) if prev_sl else None, candidate)
+    new_sl = trailing_stop.ratchet_sl(order["side"], prev_sl, candidate)
 
     changed = new_peak != prev_peak or new_sl != prev_sl
     order["peak_price"] = new_peak

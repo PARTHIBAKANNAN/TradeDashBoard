@@ -164,3 +164,33 @@ def get_levels(stock: dict) -> dict:
         "prev_day_low": prev_low,
         "pivot": pivot,
     }
+
+
+async def get_all_mini_candles() -> dict[str, list[dict]]:
+    """Fetch today's 5-minute candles for all symbols (completed Postgres + live in-progress)."""
+    from datetime import time as dt_time
+    from .state import market_state
+
+    now = datetime.now(IST)
+    today = now.date()
+
+    all_candles = await candle_history.get_all_today_candles(today)
+
+    # Merge live in-progress bucket if today is trading day
+    for sym in market_state.stocks.keys():
+        live = candle_aggregator.get_in_progress(sym)
+        if live and live[0] == today:
+            b_min, (o, h, l, c), _d = live[1], live[2], live[3]
+            sym_list = all_candles.setdefault(sym, [])
+            if not sym_list or sym_list[-1]["bucket"] != b_min:
+                sym_list.append(
+                    {
+                        "bucket": b_min,
+                        "open": o,
+                        "high": h,
+                        "low": l,
+                        "close": c,
+                    }
+                )
+    return all_candles
+
