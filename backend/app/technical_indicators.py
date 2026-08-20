@@ -11,8 +11,9 @@ Ensures only top 1-3 genuine momentum leaders in the market pass to the AI copil
 """
 
 from typing import Dict, List, Optional, Tuple
+
 from .config import INDUSTRY_GROUP
-from .momentum_score import nifty_group, industry_group, build_sector_means
+from .momentum_score import build_sector_means, industry_group, nifty_group
 
 # Defensive, low-beta sectors that tend to chop/mean-revert intraday.
 # These require an exceptional catalyst (RS >= 2.0%) to be considered.
@@ -86,6 +87,7 @@ def compute_rsi(prices: List[float], period: int = 14) -> float:
 
     if avg_loss == 0:
         return 100.0 if avg_gain > 0 else 50.0
+
 
 def compute_atr(candles: List[dict], period: int = 14) -> float:
     """
@@ -179,7 +181,6 @@ def compute_dynamic_trade_levels(
         "atr_14": atr_14,
         "rr_ratio": 2.0,
     }
-
 
 
 def validate_quant_filters(

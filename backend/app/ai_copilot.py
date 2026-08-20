@@ -273,11 +273,8 @@ def compile_symbol_context(sym: str) -> Dict[str, Any]:
     # ── Technical Indicators Calculation ──────────────────────────────────────
     from .candle_aggregator import get_intraday_closes
     from .momentum_score import build_sector_means, industry_group, nifty_group
-    from .technical_indicators import (
-        DEFENSIVE_SECTORS,
-        compute_ema,
-        compute_rsi,
-    )
+    from .technical_indicators import (DEFENSIVE_SECTORS, compute_ema,
+                                       compute_rsi)
 
     ltp = stock_data.get("ltp") or 0.0
     closes = get_intraday_closes(sym)
@@ -421,6 +418,7 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
 
     from .candle_aggregator import get_intraday_candles
     from .technical_indicators import compute_dynamic_trade_levels
+
     dyn = compute_dynamic_trade_levels(s, s.get("signal", ""), get_intraday_candles(sym))
 
     raw_response = call_gemini(prompt, system_instruction=system_prompt)
@@ -437,8 +435,14 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
                 min_safe_sl = dyn["sl_distance"]
                 if actual_sl_dist < min_safe_sl:
                     # Enforce structural minimum
-                    parsed["suggested_sl"] = round(entry - min_safe_sl, 2) if is_bull else round(entry + min_safe_sl, 2)
-                    parsed["suggested_target"] = round(entry + (min_safe_sl * 2.0), 2) if is_bull else round(entry - (min_safe_sl * 2.0), 2)
+                    parsed["suggested_sl"] = (
+                        round(entry - min_safe_sl, 2) if is_bull else round(entry + min_safe_sl, 2)
+                    )
+                    parsed["suggested_target"] = (
+                        round(entry + (min_safe_sl * 2.0), 2)
+                        if is_bull
+                        else round(entry - (min_safe_sl * 2.0), 2)
+                    )
             return parsed
         except Exception as e:
             logger.error("ai_copilot: failed to parse setup JSON: %s", e)
@@ -674,5 +678,8 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
 
     else:
         # Silent rejection for SKIP_TRAP or low-confidence — no Telegram spam
-        logger.info("ai_copilot: trade rejected (%s, %d%%) - silently ignored (no Telegram notification)", dec, score)
-
+        logger.info(
+            "ai_copilot: trade rejected (%s, %d%%) - silently ignored (no Telegram notification)",
+            dec,
+            score,
+        )
