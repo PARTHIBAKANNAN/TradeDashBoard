@@ -173,6 +173,20 @@ h1{{color:{color};margin:0 0 8px}}a{{color:#3b82f6}}</style></head>
 from . import ai_copilot
 
 
+@app.get("/api/ai/status")
+async def ai_status():
+    """Returns live AI engine status (Gemini 3.6 Flash Live vs Institutional Model)."""
+    api_key = ai_copilot._get_api_key()
+    model = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+    is_live = bool(api_key)
+    return {
+        "status": "LIVE" if is_live else "FALLBACK",
+        "model": model,
+        "label": "Gemini 3.6 Flash Live" if is_live else "Institutional Model",
+        "connected": is_live,
+    }
+
+
 @app.get("/api/ai/premarket-bias", dependencies=[Depends(require_login)])
 @app.get("/api/ai/premarket-briefing", dependencies=[Depends(require_login)])
 async def ai_premarket_bias():

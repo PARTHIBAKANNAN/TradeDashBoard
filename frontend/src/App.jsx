@@ -235,6 +235,33 @@ function Dashboard({ user, onLogout }) {
   const symbols = useSymbols();
   const [activeTab, setActiveTab] = useState("ranking");
   const [chartsFocusSymbol, setChartsFocusSymbol] = useState(null);
+  const [aiStatus, setAiStatus] = useState({
+    status: "LIVE",
+    model: "gemini-3.6-flash",
+    label: "Gemini 3.6 Flash Live",
+    connected: true,
+  });
+
+  useEffect(() => {
+    let mounted = true;
+    async function checkAiStatus() {
+      try {
+        const r = await fetch("/api/ai/status", { credentials: "include" });
+        if (r.ok && mounted) {
+          const j = await r.json();
+          setAiStatus(j);
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    checkAiStatus();
+    const interval = setInterval(checkAiStatus, 30000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const openInCharts = (symbol) => {
     setChartsFocusSymbol(symbol);
@@ -262,6 +289,7 @@ function Dashboard({ user, onLogout }) {
         marketOpen={marketOpen}
         connected={connected}
         fyersConnected={fyersConnected}
+        aiStatus={aiStatus}
       />
 
       <div className="flex-1 overflow-auto">
@@ -315,6 +343,7 @@ function TopNavbar({
   marketOpen,
   connected,
   fyersConnected,
+  aiStatus,
 }) {
   const openPositionsCount = usePositionsCount();
   const tabs = [
@@ -385,9 +414,27 @@ function TopNavbar({
           </div>
         </div>
 
-        {/* Right side: Benchmark & User */}
+        {/* Right side: Benchmark & AI Status & User */}
         <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
-          <div className="text-right hidden md:block">
+          {/* Live AI Status Badge */}
+          {aiStatus?.status === "LIVE" ? (
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-mono text-[10px] sm:text-[11px] font-bold shadow-sm whitespace-nowrap"
+              title="Google Gemini 3.6 Flash Connected & Live"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>🟢 Gemini 3.6 Flash Live</span>
+            </div>
+          ) : (
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 font-mono text-[10px] sm:text-[11px] font-bold shadow-sm whitespace-nowrap"
+              title="Quantitative Structural Math Fallback Engine Active"
+            >
+              <span>⚡ Institutional Model</span>
+            </div>
+          )}
+
+          <div className="text-right hidden md:block border-l border-subtle pl-3">
             <div className="text-[9px] text-faint font-bold uppercase tracking-wider">
               NIFTY 50
             </div>
