@@ -174,8 +174,18 @@ from . import ai_copilot
 
 
 @app.get("/api/ai/premarket-bias", dependencies=[Depends(require_login)])
+@app.get("/api/ai/premarket-briefing", dependencies=[Depends(require_login)])
 async def ai_premarket_bias():
     return ai_copilot.get_premarket_briefing()
+
+
+@app.post("/api/ai/premarket-briefing/refresh", dependencies=[Depends(require_login)])
+async def ai_refresh_premarket_briefing():
+    """Manual trigger to refresh pre-market cues and focus stock catalysts."""
+    import asyncio
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, ai_copilot.run_premarket_briefing)
+
 
 
 @app.post("/api/ai/analyze", dependencies=[Depends(require_login)])

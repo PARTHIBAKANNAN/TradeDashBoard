@@ -959,10 +959,17 @@ $$\text{Target Price} = \text{Entry} \pm (2.0 \times \text{SL Distance})$$
 
 ### 3. Risk-Adjusted Position Sizing
 
-$$\text{Quantity} = \max\left(1,\, \left\lfloor \frac{\text{Daily Risk Cap} \;/\; \text{Max Daily Trades}}{\text{SL Distance}} \right\rfloor\right) = \left\lfloor \frac{₹666.67}{\text{SL Distance}} \right\rfloor$$
+### 4. Institutional VWAP Retest & Pullback Engine
+
+In addition to multi-timeframe ORB breakouts, the engine identifies **Institutional VWAP Pullback & Retest Setups**:
+1. **Shallow Retest Zone**: $0.10\% \le \frac{|\text{LTP} - \text{VWAP}|}{\text{VWAP}} \times 100 \le 0.65\%$ (identifies non-extended institutional defense entries).
+2. **Sector Breadth Confirmation**:
+   $$\text{Sector Breadth} = \frac{\text{Advancing Constituents}}{\text{Total Sector Constituents}} \times 100 \ge 65\% \quad (\text{Buy})$$
+3. **Average Daily Range (ADR) Room**:
+   $$\text{Day Range Consumed} < 0.85 \times \text{ADR}_{14} \quad (\text{Guarantees ample room to run to target})$$
+4. **Pre-Market Catalyst Priority**: High-impact news stocks identified during the 08:45 AM Google Search Grounding scan bypass defensive sector restrictions and receive prioritized quant validation.
 
 ---
 
-*TradeDashboard · FYERS API v3 · FastAPI + React · Complete architecture rewrite covering all 7 screens, both scoring
-engines, CVD, paper trading, AI Copilot, and the deployment pipeline.*
+*TradeDashboard · FYERS API v3 · FastAPI + React · Complete architecture rewrite covering all 7 screens, both scoring engines, CVD, paper trading, AI Copilot, and the deployment pipeline.*
 

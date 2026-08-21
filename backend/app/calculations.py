@@ -241,6 +241,28 @@ def process_incoming_tick(
             )
             if not qualified:
                 signal, signal_time = None, None
+
+        # ── Institutional VWAP Retest Setup ───────────────────────────────────
+        # If no raw ORB breakout, check for high-probability shallow VWAP pullback & bounce
+        if not signal and stock.get("signal") not in ("Bull • VWAP Retest", "Bear • VWAP Retest"):
+            from . import ai_copilot, technical_indicators as _ti
+            premarket_focus = ai_copilot.get_premarket_briefing().get("focus_stocks", [])
+            all_stocks_list = list(state.stocks.values())
+            candle_closes = candle_aggregator.get_intraday_closes(short_sym)
+            is_retest, _retest_msg, retest_metrics = _ti.evaluate_vwap_retest_setup(
+                stock=stock,
+                all_stocks=all_stocks_list,
+                candle_closes=candle_closes,
+                premarket_focus=premarket_focus,
+            )
+            if is_retest:
+                signal = (
+                    "Bull • VWAP Retest"
+                    if "BUY" in retest_metrics.get("setup_type", "")
+                    else "Bear • VWAP Retest"
+                )
+                signal_time = now_ist.strftime("%H:%M")
+
         if signal:
             stock["signal"] = signal
             stock["signal_time"] = signal_time

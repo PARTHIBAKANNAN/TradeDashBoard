@@ -301,3 +301,153 @@ def validate_quant_filters(
         "sector_mean": round(sector_mean, 2),
     }
     return True, "All technical indicators confirmed", metrics
+
+
+def compute_sector_breadth(all_stocks: List[dict]) -> Dict[str, dict]:
+    """
+    Computes real-time market breadth and sector leaders across all 210 stocks.
+    Returns { sector_name: { "advancing": int, "declining": int, "count": int, "breadth_pct": float, "mean_pct": float, "is_leader_bull": bool, "is_leader_bear": bool } }
+    """
+    sec_data: Dict[str, dict] = {}
+    for s in all_stocks:
+        sym = s.get("symbol", "")
+        ind = industry_group(sym)
+        sec = nifty_group(ind)
+        pct = s.get("pct_change") or 0.0
+        d = sec_data.setdefault(sec, {"advancing": 0, "declining": 0, "count": 0, "sum_pct": 0.0})
+        d["count"] += 1
+        d["sum_pct"] += pct
+        if pct > 0.05:
+            d["advancing"] += 1
+        elif pct < -0.05:
+            d["declining"] += 1
+
+    res: Dict[str, dict] = {}
+    for sec, d in sec_data.items():
+        cnt = max(1, d["count"])
+        mean_pct = round(d["sum_pct"] / cnt, 2)
+        breadth_pct = round((d["advancing"] / cnt) * 100.0, 1)
+        res[sec] = {
+            "advancing": d["advancing"],
+            "declining": d["declining"],
+            "count": cnt,
+            "breadth_pct": breadth_pct,
+            "mean_pct": mean_pct,
+            "is_leader_bull": breadth_pct >= 65.0 and mean_pct >= 0.35,
+            "is_leader_bear": breadth_pct <= 35.0 and mean_pct <= -0.35,
+        }
+    return res
+
+
+def compute_adr_pct(stock: dict) -> float:
+    """Estimates Average Daily Range % using yesterday high/low with a 2.5% default."""
+    yh = stock.get("yesterday_high") or 0.0
+    yl = stock.get("yesterday_low") or 0.0
+    prev_c = stock.get("prev_close") or 0.0
+    if yh > 0 and yl > 0 and prev_c > 0:
+        return round((yh - yl) / prev_c * 100.0, 2)
+    return 2.50
+
+
+def evaluate_vwap_retest_setup(
+    stock: dict,
+    all_stocks: List[dict],
+    candle_closes: List[float],
+    premarket_focus: Optional[List[dict]] = None,
+) -> Tuple[bool, str, Dict[str, Any]]:
+    """
+    Institutional VWAP Pullback & Retest Setup:
+    1. Directional impulse / catalyst (RS >= 0.8%, or in leading sector / premarket focus stock).
+    2. Price is in the shallow VWAP Retest Zone (0.10% to 0.65% from VWAP).
+    3. Price is on the correct side of 20 EMA and bounced off VWAP.
+    4. ADR Room Check: Day range consumed < 60% of ADR.
+    5. Depth / Order Book confirms buyer/seller defense.
+    """
+    sym = stock.get("symbol", "")
+    ltp = stock.get("ltp") or 0.0
+    vwap = stock.get("vwap") or 0.0
+    rs = stock.get("relative_strength") or 0.0
+    ind_grp = industry_group(sym)
+    nifty_grp = nifty_group(ind_grp)
+
+    if not ltp or not vwap:
+        return False, "Missing LTP/VWAP", {}
+
+    # Check premarket catalyst focus
+    has_news_bull = False
+    has_news_bear = False
+    if premarket_focus:
+        for f in premarket_focus:
+            if f.get("symbol") == sym:
+                bias = f.get("bias", "").upper()
+                if "BULL" in bias:
+                    has_news_bull = True
+                elif "BEAR" in bias:
+                    has_news_bear = True
+
+    # Sector Breadth
+    breadth_map = compute_sector_breadth(all_stocks)
+    sec_info = breadth_map.get(nifty_grp, {})
+    sec_mean = sec_info.get("mean_pct", 0.0)
+    sec_breadth = sec_info.get("breadth_pct", 50.0)
+    sec_is_bull_leader = sec_info.get("is_leader_bull", False)
+    sec_is_bear_leader = sec_info.get("is_leader_bear", False)
+
+    # ADR Room check
+    adr_pct = compute_adr_pct(stock)
+    today_h = stock.get("today_high") or ltp
+    today_l = stock.get("today_low") or ltp
+    today_range_pct = (today_h - today_l) / ltp * 100.0 if ltp else 0.0
+    if today_range_pct > (adr_pct * 0.85):
+        return False, f"ADR exhausted ({today_range_pct:.1f}% used of {adr_pct:.1f}% ADR)", {}
+
+    prices = list(candle_closes) if candle_closes else [ltp]
+    if not prices or prices[-1] != ltp:
+        prices.append(ltp)
+    ema_20 = compute_ema(prices, 20)
+    rsi = compute_rsi(prices, 14)
+
+    # ── BULL SETUP EVALUATION ──
+    if ltp > vwap and (rs >= 0.80 or sec_is_bull_leader or has_news_bull):
+        vwap_dist = (ltp - vwap) / vwap * 100.0
+        if 0.10 <= vwap_dist <= 0.65:
+            rsi_ok = (52.0 <= rsi <= 72.0) if len(prices) >= 15 else True
+            if (len(prices) < 20 or ltp >= (ema_20 * 0.999)) and rsi_ok:
+                if sec_mean >= -0.05 or has_news_bull:
+                    metrics = {
+                        "setup_type": "VWAP_RETEST_BUY",
+                        "rs": rs,
+                        "rsi": rsi,
+                        "vwap": vwap,
+                        "vwap_dist_pct": round(vwap_dist, 2),
+                        "sector": nifty_grp,
+                        "sector_mean": sec_mean,
+                        "sector_breadth": sec_breadth,
+                        "adr_pct": adr_pct,
+                        "range_used_pct": round(today_range_pct, 2),
+                    }
+                    return True, f"Bullish VWAP Retest confirmed ({vwap_dist:.2f}% above VWAP, RSI {rsi:.1f})", metrics
+
+    # ── BEAR SETUP EVALUATION ──
+    if ltp < vwap and (rs <= -0.80 or sec_is_bear_leader or has_news_bear):
+        vwap_dist = (vwap - ltp) / vwap * 100.0
+        if 0.10 <= vwap_dist <= 0.65:
+            rsi_ok = (28.0 <= rsi <= 48.0) if len(prices) >= 15 else True
+            if (len(prices) < 20 or ltp <= (ema_20 * 1.001)) and rsi_ok:
+                if sec_mean <= 0.05 or has_news_bear:
+                    metrics = {
+                        "setup_type": "VWAP_RETEST_SELL",
+                        "rs": rs,
+                        "rsi": rsi,
+                        "vwap": vwap,
+                        "vwap_dist_pct": round(vwap_dist, 2),
+                        "sector": nifty_grp,
+                        "sector_mean": sec_mean,
+                        "sector_breadth": sec_breadth,
+                        "adr_pct": adr_pct,
+                        "range_used_pct": round(today_range_pct, 2),
+                    }
+                    return True, f"Bearish VWAP Retest confirmed ({vwap_dist:.2f}% below VWAP, RSI {rsi:.1f})", metrics
+
+    return False, "Not in VWAP retest zone", {}
+

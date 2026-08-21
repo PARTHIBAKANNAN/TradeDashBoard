@@ -1,4 +1,5 @@
 import React from "react";
+import PremarketBriefingCard from "./PremarketBriefingCard.jsx";
 import MarketBreadth from "./MarketBreadth.jsx";
 import SectorLeaderboard from "./SectorLeaderboard.jsx";
 import BreakoutLeaderboard from "./BreakoutLeaderboard.jsx";
@@ -13,6 +14,7 @@ import SectorRotationChart from "./SectorRotationChart.jsx";
 export default function Insights({ stocks }) {
   return (
     <div className="space-y-4">
+      <PremarketBriefingCard />
       <MarketBreadth stocks={stocks} />
       <BuySellPressure stocks={stocks} />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

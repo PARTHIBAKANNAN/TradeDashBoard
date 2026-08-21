@@ -165,33 +165,37 @@ def _extract_json(text: str) -> Optional[Dict[str, Any]]:
 
 def run_premarket_briefing() -> Dict[str, Any]:
     """
-    Fetch pre-market context and compute daily market bias & risk events.
+    Fetch pre-market context and compute daily market bias, sector catalysts & focus stocks.
     Uses Google Search Grounding to pull REAL-TIME live news, Gift Nifty,
-    US market close, and Asian market cues.
+    US market close, tech/macro events, and high-impact Indian stock catalysts.
     Called by scheduler at 08:45 AM Mon-Fri.
     """
     global _premarket_cache
     today_str = datetime.now(IST).strftime("%Y-%m-%d")
 
     system_prompt = (
-        "You are an expert Indian stock market pre-market analyst. "
-        "Use Google Search to find today's real pre-market cues: Gift Nifty / SGX Nifty level, "
-        "US market close (Dow Jones, S&P 500, Nasdaq), Asian markets (Nikkei, Hang Seng), "
-        "Crude oil prices, and major Indian corporate/macro news today. "
+        "You are an expert institutional Indian stock market strategist. "
+        "Use Google Search to find today's real pre-market cues: Gift Nifty level, "
+        "US market close (Dow, S&P 500, Nasdaq, Big Tech news), Asian markets (Nikkei, Hang Seng), "
+        "Crude oil prices, and high-impact news on specific Indian F&O stocks (earnings, block deals, global catalysts like AI models, FDA, orders). "
         "Synthesize the real facts and output a single valid JSON object."
     )
 
     prompt = (
         f"Today is {today_str} (IST). Search the web for current live pre-market cues for NSE India.\n"
         "1. Check Gift Nifty live indication (points / % change).\n"
-        "2. Check overnight US market close and Asian market performance.\n"
-        "3. Check major Indian market news or earnings events for today.\n\n"
+        "2. Check overnight US market close, tech sentiment (e.g. Nasdaq, AI announcements), and Asian markets.\n"
+        "3. Check specific Indian F&O stocks with major catalysts (results, global sector cues, upgrades/downgrades).\n\n"
         "Provide a JSON object with these EXACT keys:\n"
         "{\n"
         '  "bias": "BULLISH" | "BEARISH" | "SIDEWAYS_CHOPSY",\n'
         '  "summary": "2-sentence factual summary with real numbers (e.g. Gift Nifty at +X pts, US closed up/down)",\n'
-        '  "key_risks": ["Risk 1 with facts", "Risk 2 with facts"],\n'
-        '  "sector_focus": ["Leading sectors to watch today based on news/cues"]\n'
+        '  "leading_sectors": ["Top 1-2 sectors expected to outperform today based on cues"],\n'
+        '  "lagging_sectors": ["Top 1-2 sectors expected to underperform/drag today based on cues"],\n'
+        '  "focus_stocks": [\n'
+        '    {"symbol": "NSE_SYMBOL", "bias": "BULLISH" | "BEARISH", "catalyst": "Specific reason / news catalyst"}\n'
+        '  ],\n'
+        '  "key_risks": ["Risk 1 with facts", "Risk 2 with facts"]\n'
         "}"
     )
 
@@ -203,14 +207,18 @@ def run_premarket_briefing() -> Dict[str, Any]:
                 "date": today_str,
                 "bias": parsed.get("bias", "NEUTRAL"),
                 "summary": parsed.get("summary", "Analysis completed with live market grounding."),
+                "leading_sectors": parsed.get("leading_sectors", []),
+                "lagging_sectors": parsed.get("lagging_sectors", []),
+                "sector_focus": parsed.get("leading_sectors", []) + parsed.get("lagging_sectors", []),
+                "focus_stocks": parsed.get("focus_stocks", []),
                 "key_risks": parsed.get("key_risks", []),
-                "sector_focus": parsed.get("sector_focus", []),
                 "is_grounded": True,
                 "updated_at": datetime.now(IST).strftime("%H:%M:%S IST"),
             }
             logger.info(
-                "ai_copilot: pre-market briefing computed with Google Search Grounding: bias=%s",
+                "ai_copilot: pre-market briefing computed with Google Search Grounding: bias=%s focus_stocks=%s",
                 _premarket_cache["bias"],
+                len(_premarket_cache["focus_stocks"]),
             )
             return _premarket_cache
         else:
@@ -223,8 +231,11 @@ def run_premarket_briefing() -> Dict[str, Any]:
         "date": today_str,
         "bias": "NEUTRAL",
         "summary": "Default pre-market bias: Trade strict technical triggers.",
-        "key_risks": ["Standard intraday volatility"],
+        "leading_sectors": [],
+        "lagging_sectors": [],
         "sector_focus": ["All F&O stocks"],
+        "focus_stocks": [],
+        "key_risks": ["Standard intraday volatility"],
         "is_grounded": False,
         "updated_at": datetime.now(IST).strftime("%H:%M:%S IST"),
     }
@@ -273,12 +284,17 @@ def compile_symbol_context(sym: str) -> Dict[str, Any]:
     # ── Technical Indicators Calculation ──────────────────────────────────────
     from .candle_aggregator import get_intraday_closes
     from .momentum_score import build_sector_means, industry_group, nifty_group
-    from .technical_indicators import (DEFENSIVE_SECTORS, compute_ema,
-                                       compute_rsi)
+    from .technical_indicators import (
+        DEFENSIVE_SECTORS,
+        compute_adr_pct,
+        compute_ema,
+        compute_rsi,
+        compute_sector_breadth,
+    )
 
     ltp = stock_data.get("ltp") or 0.0
-    closes = get_intraday_closes(sym)
-    prices = list(closes) if closes else ([ltp] if ltp else [])
+    candle_closes = get_intraday_closes(sym)
+    prices = list(candle_closes) if candle_closes else ([ltp] if ltp else [])
     if ltp and (not prices or prices[-1] != ltp):
         prices.append(ltp)
 
@@ -291,8 +307,23 @@ def compile_symbol_context(sym: str) -> Dict[str, Any]:
     ind_grp = industry_group(sym)
     sec_grp = nifty_group(ind_grp)
     all_stocks_list = list(market_state.stocks.values())
-    sec_means = build_sector_means(all_stocks_list)
-    sec_mean = sec_means.get(sec_grp, 0.0)
+    breadth_map = compute_sector_breadth(all_stocks_list)
+    sec_info = breadth_map.get(sec_grp, {})
+    sec_mean = sec_info.get("mean_pct", 0.0)
+    sec_breadth = sec_info.get("breadth_pct", 50.0)
+
+    # ADR & Day range usage
+    adr_pct = compute_adr_pct(stock_data)
+    today_h = stock_data.get("today_high") or ltp
+    today_l = stock_data.get("today_low") or ltp
+    range_used_pct = round((today_h - today_l) / ltp * 100.0, 2) if ltp else 0.0
+
+    # Match premarket focus stock catalyst
+    focus_catalyst = None
+    for f in _premarket_cache.get("focus_stocks", []):
+        if f.get("symbol") == sym:
+            focus_catalyst = f
+            break
 
     # Estimate RVOL: compare today's traded_value rate vs first-30-min run-rate
     today_volume = stock_data.get("volume") or 0
@@ -340,8 +371,12 @@ def compile_symbol_context(sym: str) -> Dict[str, Any]:
             "vwap_distance_pct": vwap_dist,
             "sector_name": sec_grp,
             "sector_mean_return_pct": sec_mean,
+            "sector_breadth_pct": sec_breadth,
+            "adr_pct": adr_pct,
+            "range_used_pct": range_used_pct,
             "is_defensive_sector": ind_grp in DEFENSIVE_SECTORS,
         },
+        "premarket_catalyst": focus_catalyst,
         "premarket_bias": _premarket_cache.get("bias", "NEUTRAL"),
         "recent_5m_candles_count": len(candles),
         "recent_5m_candles_sample": (

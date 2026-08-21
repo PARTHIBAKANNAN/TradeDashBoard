@@ -54,7 +54,10 @@ def nifty_group(sector: str | None) -> str:
 
 
 def industry_group(symbol: str | None) -> str:
-    return INDUSTRY_GROUP.get(symbol or "", "")
+    if not symbol:
+        return ""
+    clean_sym = symbol.replace("NSE:", "").replace("-EQ", "").strip()
+    return INDUSTRY_GROUP.get(clean_sym, INDUSTRY_GROUP.get(symbol, ""))
 
 
 def _clamp(n: float, lo: float, hi: float) -> float:
