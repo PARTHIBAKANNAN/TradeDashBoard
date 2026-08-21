@@ -443,7 +443,9 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
                     )
             # Enforce safe minimum 1.2% trailing buffer
             parsed["tsl_type"] = parsed.get("tsl_type") or "PERCENT"
-            parsed["tsl_value"] = max(float(parsed.get("tsl_value") or 1.2), round(dyn["sl_pct"], 2), 1.2)
+            parsed["tsl_value"] = max(
+                float(parsed.get("tsl_value") or 1.2), round(dyn["sl_pct"], 2), 1.2
+            )
             return parsed
         except Exception as e:
             logger.error("ai_copilot: failed to parse setup JSON: %s", e)

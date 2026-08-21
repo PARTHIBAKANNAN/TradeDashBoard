@@ -43,4 +43,3 @@ def ratchet_sl(side: str, current_sl: float | None, candidate_sl: float) -> floa
     if current_sl is None:
         return candidate_sl
     return max(current_sl, candidate_sl) if side == "BUY" else min(current_sl, candidate_sl)
-

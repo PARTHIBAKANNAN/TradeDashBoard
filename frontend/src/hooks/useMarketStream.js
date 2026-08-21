@@ -135,7 +135,9 @@ let hasSeededCandles = false;
 async function seedAllMiniCandles() {
   if (hasSeededCandles) return;
   try {
-    const res = await fetch("/api/charts/all-mini-candles", { credentials: "include" });
+    const res = await fetch("/api/charts/all-mini-candles", {
+      credentials: "include",
+    });
     if (res.ok) {
       const all = await res.json();
       hasSeededCandles = true;
@@ -152,7 +154,11 @@ async function seedAllMiniCandles() {
             s.candles = candlesMap.get(s.symbol);
           }
         }
-        marketStore.applyFrame({ type: "delta", stocks: curStocks, seq: marketStore.getMeta().lastSeq });
+        marketStore.applyFrame({
+          type: "delta",
+          stocks: curStocks,
+          seq: marketStore.getMeta().lastSeq,
+        });
       }
     }
   } catch {

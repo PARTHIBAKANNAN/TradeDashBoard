@@ -169,6 +169,7 @@ def get_levels(stock: dict) -> dict:
 async def get_all_mini_candles() -> dict[str, list[dict]]:
     """Fetch today's 5-minute candles for all symbols (completed Postgres + live in-progress)."""
     from datetime import time as dt_time
+
     from .state import market_state
 
     now = datetime.now(IST)
@@ -193,4 +194,3 @@ async def get_all_mini_candles() -> dict[str, list[dict]]:
                     }
                 )
     return all_candles
-
