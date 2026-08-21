@@ -10,7 +10,9 @@ Computes mathematically rigorous technical signals for 5-minute intraday setups:
 Ensures only top 1-3 genuine momentum leaders in the market pass to the AI copilot.
 """
 
-from typing import Dict, List, Optional, Tuple
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional, Tuple
 
 from .config import INDUSTRY_GROUP
 from .momentum_score import build_sector_means, industry_group, nifty_group
