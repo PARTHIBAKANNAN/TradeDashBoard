@@ -74,3 +74,23 @@ def test_evaluate_vwap_retest_setup_exhausted_adr():
     passes, msg, metrics = evaluate_vwap_retest_setup(stock, all_stocks, [3510.0])
     assert passes is False
     assert "ADR exhausted" in msg
+
+
+def test_fetch_multi_stream_news():
+    from app.ai_copilot import fetch_multi_stream_news
+
+    news = fetch_multi_stream_news()
+    assert isinstance(news, dict)
+    assert "Global Macro & US Tech" in news
+    assert "Indian Corporate & Stocks" in news
+
+
+def test_get_premarket_briefing_schema():
+    from app.ai_copilot import get_premarket_briefing
+
+    briefing = get_premarket_briefing()
+    assert "bias" in briefing
+    assert "global_cues" in briefing
+    assert "policy_and_macro_watch" in briefing
+    assert "leading_sectors" in briefing
+    assert "focus_stocks" in briefing

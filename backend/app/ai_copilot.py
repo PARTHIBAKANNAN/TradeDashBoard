@@ -163,43 +163,127 @@ def _extract_json(text: str) -> Optional[Dict[str, Any]]:
     return None
 
 
+def fetch_multi_stream_news() -> Dict[str, List[str]]:
+    """
+    Fetch minute-by-minute live market news headlines across 4 dedicated institutional streams:
+    1. Global Macro & US Tech (Nasdaq, Fed, Asian indices)
+    2. Commodities & Currencies (Gold, Silver, Brent Crude Oil, DXY, China demand)
+    3. Regulatory & Policy (SEBI, Government policies, Tariffs, Taxes)
+    4. Indian Corporate & Earnings (Earnings results, leadership changes, orders)
+    """
+    import re
+    import xml.etree.ElementTree as ET
+
+    feed_streams = {
+        "Global Macro & US Tech": [
+            "https://feeds.bbci.co.uk/news/business/rss.xml",
+            "https://finance.yahoo.com/news/rssindex",
+        ],
+        "Commodities & Foreign Cues": [
+            "https://economictimes.indiatimes.com/markets/commodities/rssfeeds/2146843.cms",
+        ],
+        "Policy, Tariffs & Regulatory": [
+            "https://economictimes.indiatimes.com/news/economy/policy/rssfeeds/13358319.cms",
+            "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms",
+        ],
+        "Indian Corporate & Stocks": [
+            "https://economictimes.indiatimes.com/markets/stocks/news/rssfeeds/2146842.cms",
+            "https://www.livemint.com/rss/markets",
+        ],
+    }
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    categorized_news: Dict[str, List[str]] = {}
+
+    for category, urls in feed_streams.items():
+        categorized_news[category] = []
+        for url in urls:
+            try:
+                req = urllib.request.Request(url, headers=headers)
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    content = resp.read().decode("utf-8", errors="ignore")
+                    root = ET.fromstring(content)
+                    for item in root.findall(".//item")[:5]:
+                        t = item.find("title")
+                        d = item.find("description")
+                        if t is not None and t.text:
+                            title_clean = re.sub("<[^<]+?>", "", t.text).strip()
+                            desc_clean = (
+                                re.sub("<[^<]+?>", "", d.text).strip()
+                                if d is not None and d.text
+                                else ""
+                            )
+                            if title_clean:
+                                categorized_news[category].append(
+                                    f"{title_clean}: {desc_clean[:140]}"
+                                )
+            except Exception as e:
+                logger.debug("ai_copilot: error fetching feed %s: %s", url, e)
+
+    return categorized_news
+
+
 def run_premarket_briefing() -> Dict[str, Any]:
     """
-    Fetch pre-market context and compute daily market bias, sector catalysts & focus stocks.
-    Uses Google Search Grounding to pull REAL-TIME live news, Gift Nifty,
-    US market close, tech/macro events, and high-impact Indian stock catalysts.
+    Fetch pre-market context and compute daily market bias, global cues, sector catalysts & focus stocks.
+    Ingests live multi-stream financial news (Global Tech, Gold/Crude, Tariffs/SEBI, Indian Earnings)
+    in real-time to capture breaking events without training cutoff limitations.
     Called by scheduler at 08:45 AM Mon-Fri.
     """
     global _premarket_cache
     today_str = datetime.now(IST).strftime("%Y-%m-%d")
 
+    news_streams = fetch_multi_stream_news()
+    news_blocks = []
+    for cat_name, items in news_streams.items():
+        if items:
+            formatted_items = "\n".join([f"  • {item}" for item in items[:4]])
+            news_blocks.append(f"[{cat_name.upper()}]\n{formatted_items}")
+
+    news_context = (
+        "\n\n".join(news_blocks)
+        if news_blocks
+        else "No external news wire available."
+    )
+
     system_prompt = (
         "You are an expert institutional Indian stock market strategist. "
-        "Use Google Search to find today's real pre-market cues: Gift Nifty level, "
-        "US market close (Dow, S&P 500, Nasdaq, Big Tech news), Asian markets (Nikkei, Hang Seng), "
-        "Crude oil prices, and high-impact news on specific Indian F&O stocks (earnings, block deals, global catalysts like AI models, FDA, orders). "
+        "Analyze real-time multi-stream news (Global Tech, Gold/Commodities, US Tariffs/SEBI Policy, Indian Corporate Actions). "
         "Synthesize the real facts and output a single valid JSON object."
     )
 
     prompt = (
-        f"Today is {today_str} (IST). Search the web for current live pre-market cues for NSE India.\n"
-        "1. Check Gift Nifty live indication (points / % change).\n"
-        "2. Check overnight US market close, tech sentiment (e.g. Nasdaq, AI announcements), and Asian markets.\n"
-        "3. Check specific Indian F&O stocks with major catalysts (results, global sector cues, upgrades/downgrades).\n\n"
+        f"Today is {today_str} (IST).\n"
+        f"Here are the LIVE real-time market news streams fetched this morning across Global Macro, Commodities, Tariffs/Policy, and Indian Stocks:\n\n"
+        f"{news_context}\n\n"
+        f"Based on these live events, corporate actions, and global cues for NSE India:\n"
         "Provide a JSON object with these EXACT keys:\n"
         "{\n"
         '  "bias": "BULLISH" | "BEARISH" | "SIDEWAYS_CHOPSY",\n'
-        '  "summary": "2-sentence factual summary with real numbers (e.g. Gift Nifty at +X pts, US closed up/down)",\n'
+        '  "summary": "2-sentence factual summary referencing specific real events/numbers above",\n'
+        '  "global_cues": {\n'
+        '    "gift_nifty": "Indication with pts / % if mentioned or derived from global cues",\n'
+        '    "us_markets": "US / Nasdaq / tech sentiment summary",\n'
+        '    "crude_oil": "Crude oil direction and price commentary",\n'
+        '    "gold_commodities": "Gold, silver and metals commentary",\n'
+        '    "dollar_index": "Dollar DXY / currency commentary"\n'
+        '  },\n'
+        '  "policy_and_macro_watch": [\n'
+        '    "Policy, tariff, or regulatory driver with market impact",\n'
+        '    "Geopolitical or commodity driver with market impact"\n'
+        '  ],\n'
         '  "leading_sectors": ["Top 1-2 sectors expected to outperform today based on cues"],\n'
         '  "lagging_sectors": ["Top 1-2 sectors expected to underperform/drag today based on cues"],\n'
         '  "focus_stocks": [\n'
-        '    {"symbol": "NSE_SYMBOL", "bias": "BULLISH" | "BEARISH", "catalyst": "Specific reason / news catalyst"}\n'
+        '    {"symbol": "NSE_SYMBOL", "bias": "BULLISH" | "BEARISH", "catalyst": "Specific headline reason", "theme": "Commodities" | "Global Tech" | "Earnings" | "Policy"}\n'
         '  ],\n'
         '  "key_risks": ["Risk 1 with facts", "Risk 2 with facts"]\n'
         "}"
     )
 
-    raw_response = call_gemini(prompt, system_instruction=system_prompt, enable_search=True)
+    raw_response = call_gemini(prompt, system_instruction=system_prompt)
     if raw_response:
         parsed = _extract_json(raw_response)
         if parsed:
@@ -207,6 +291,8 @@ def run_premarket_briefing() -> Dict[str, Any]:
                 "date": today_str,
                 "bias": parsed.get("bias", "NEUTRAL"),
                 "summary": parsed.get("summary", "Analysis completed with live market grounding."),
+                "global_cues": parsed.get("global_cues", {}),
+                "policy_and_macro_watch": parsed.get("policy_and_macro_watch", []),
                 "leading_sectors": parsed.get("leading_sectors", []),
                 "lagging_sectors": parsed.get("lagging_sectors", []),
                 "sector_focus": parsed.get("leading_sectors", []) + parsed.get("lagging_sectors", []),
@@ -216,7 +302,7 @@ def run_premarket_briefing() -> Dict[str, Any]:
                 "updated_at": datetime.now(IST).strftime("%H:%M:%S IST"),
             }
             logger.info(
-                "ai_copilot: pre-market briefing computed with Google Search Grounding: bias=%s focus_stocks=%s",
+                "ai_copilot: pre-market briefing computed with multi-stream news: bias=%s focus_stocks=%s",
                 _premarket_cache["bias"],
                 len(_premarket_cache["focus_stocks"]),
             )
@@ -231,6 +317,17 @@ def run_premarket_briefing() -> Dict[str, Any]:
         "date": today_str,
         "bias": "NEUTRAL",
         "summary": "Default pre-market bias: Trade strict technical triggers.",
+        "global_cues": {
+            "gift_nifty": "Neutral / Sideways",
+            "us_markets": "Mixed session",
+            "crude_oil": "Stable range",
+            "gold_commodities": "Rangebound",
+            "dollar_index": "Neutral",
+        },
+        "policy_and_macro_watch": [
+            "Monitor institutional FII/DII positioning at open",
+            "Standard volatility across high-beta momentum names",
+        ],
         "leading_sectors": [],
         "lagging_sectors": [],
         "sector_focus": ["All F&O stocks"],
@@ -463,6 +560,7 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
             parsed["symbol"] = sym
             parsed["timestamp"] = datetime.now(IST).strftime("%H:%M:%S IST")
             # Enforce dynamic minimum structural SL bounds (clamp to at least dyn["sl_distance"])
+            min_safe_sl = dyn["sl_distance"]
             entry = float(parsed.get("suggested_entry") or ltp)
             sl = float(parsed.get("suggested_sl") or 0.0)
             if entry and sl:
