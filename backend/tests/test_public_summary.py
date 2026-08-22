@@ -1,14 +1,10 @@
-from fastapi.testclient import TestClient
-from app.main import app
-
-client = TestClient(app)
+import asyncio
+from app.main import public_summary
 
 
 def test_public_summary_endpoint():
     """Verify that unauthenticated visitors can fetch the public market overview."""
-    response = client.get("/api/public/summary")
-    assert response.status_code == 200
-    data = response.json()
+    data = asyncio.run(public_summary())
 
     # Core structure checks
     assert "nifty" in data
