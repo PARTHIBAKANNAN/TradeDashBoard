@@ -987,12 +987,12 @@ $$\text{Target Price} = \text{Entry} \pm (2.0 \times \text{SL Distance})$$
 A planned progression of institutional features scheduled for deployment during the paper trading phase:
 
 1. **Mid-Trade Protection & Proactive Management**:
-   * **Auto-Breakeven Ratchet**: Moves SL to `Entry + Buffer` once trade reaches $+1.0\text{R}$ to guarantee zero losses.
+   * **Auto-Breakeven Ratchet**: Moves SL to `Entry` once trade reaches $+1.0\text{R}$ to guarantee zero losses.
    * **Adverse Sector / Market Deterioration Alarm**: Real-time warnings if sector breadth or NIFTY flips while holding a position.
    * **Partial Profit Scale-Out**: Book $50\%$ profit at $1.5\text{R}$ target and let the remaining $50\%$ ride with the dynamic trailing SL.
 2. **Interactive Charting & Visual Execution Lines**:
-   * Green dashed Entry, Red Stop-Loss, and Blue Target lines rendered directly on the Lightweight Candlestick Chart.
-   * Institutional anchor overlays (PDH, PDL, PDC, VWAP $\pm 1\sigma, \pm 2\sigma$ bands, 15m Opening Range box).
+   * Green dashed Entry, Red Stop-Loss (emerald `🛡️ Breakeven SL` when risk-free), and Emerald Target lines rendered directly on the Lightweight Candlestick Chart.
+   * Institutional anchor overlays (PDH, PDL, PDC, VWAP bands, 15m Opening Range box).
    * Instant multi-timeframe candle switching (1m, 3m, 5m, 15m).
 3. **F&O Options Chain Confluence**:
    * Major Call resistance & Put support Open Interest (OI) strike wall detection.
@@ -1005,6 +1005,33 @@ A planned progression of institutional features scheduled for deployment during 
 
 ---
 
-*TradeDashboard · FYERS API v3 · FastAPI + React · Complete architecture rewrite covering all 7 screens, both scoring engines, CVD, paper trading, AI Copilot, Multi-Stream News Wire, and the deployment pipeline.*
+## 24 — Public Showcase & Promotional Index Layer
+
+A high-converting, dark-mode institutional landing page (`frontend/src/screens/LandingPage.jsx`) designed to showcase the platform's quantitative superpowers to prospective clients and public visitors without exposing private credentials, broker internals, or sensitive execution channels.
+
+```
+[ UNREGISTERED VISITOR ] ────► / (Root URL)
+                                     │
+                 ┌───────────────────┴───────────────────┐
+                 ▼                                       ▼
+    [ Public Landing Page ]                   [ Free Public Market Radar ]
+    ├── Futuristic 3D Visual Assets           ├── GET /api/public/summary
+    ├── 5 Core Superpower Showcases           ├── Live NIFTY 50 Benchmark
+    ├── Invite-Only Access Notice             ├── Market Advance/Decline Breadth
+    └── Request Onboarding Modal              └── Top Gainers / Losers Snapshot
+                 │
+                 ▼
+    [ Client Terminal Sign-In Modal ]
+    └── Supabase Auth ────► [ Full 7-Screen Quantitative Dashboard ]
+```
+
+### Key Security & Privacy Safeguards
+1. **Zero Broker Leaks**: Internal broker identities, API tokens, and connection credentials are strictly stripped from all public responses.
+2. **Read-Only Sanitized Metrics**: `/api/public/summary` outputs non-sensitive macro metrics (NIFTY benchmark, breadth counts, top percentage movers, global cues).
+3. **Invite-Only Onboarding**: Direct self-registration is disabled; prospective traders must request institutional access, which is provisioned via the backend database.
+
+---
+
+*TradeDashboard · FYERS API v3 · FastAPI + React · Complete architecture rewrite covering all 7 screens, both scoring engines, CVD, paper trading, AI Copilot, Multi-Stream News Wire, Public Showcase Layer, and the deployment pipeline.*
 
 

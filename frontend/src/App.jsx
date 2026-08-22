@@ -28,6 +28,8 @@ import WatchlistScreen from "./screens/WatchlistScreen.jsx";
 import ChartsScreen from "./screens/ChartsScreen.jsx";
 import SmartMoneyScreen from "./screens/SmartMoneyScreen.jsx";
 import PaperTradingScreen from "./screens/PaperTradingScreen.jsx";
+import LandingPage from "./screens/LandingPage.jsx";
+import ThemeToggle from "./components/ThemeToggle.jsx";
 
 // ---------------- Auth gate ----------------
 export default function App() {
@@ -58,7 +60,7 @@ export default function App() {
   };
 
   if (auth.loading) return <Splash />;
-  if (!auth.authenticated) return <Login onSuccess={check} />;
+  if (!auth.authenticated) return <LandingPage onLoginSuccess={check} />;
   return <Dashboard user={auth.user} onLogout={logout} />;
 }
 
@@ -81,19 +83,7 @@ function Splash() {
   );
 }
 
-// ---------------- Theme toggle ----------------
-function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme();
-  return (
-    <button
-      onClick={toggleTheme}
-      title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-      className="w-8 h-8 grid place-items-center rounded-lg border border-subtle bg-surface3 hover:bg-surface4 hover:border-strong transition-colors text-muted hover:text-primary"
-    >
-      {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
-    </button>
-  );
-}
+
 
 // ---------------- Login screen ----------------
 function Login({ onSuccess }) {
