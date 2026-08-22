@@ -17,6 +17,8 @@ Fallback safety: If GEMINI_API_KEY is not set or API fails, gracefully returns s
 heuristic fallbacks without crashing the app or stopping execution.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import os
@@ -25,7 +27,7 @@ import time
 import urllib.parse
 import urllib.request
 from datetime import date, datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 try:
     from dotenv import load_dotenv
