@@ -83,8 +83,6 @@ function Splash() {
   );
 }
 
-
-
 // ---------------- Login screen ----------------
 function Login({ onSuccess }) {
   const [email, setEmail] = useState("");
@@ -369,16 +367,18 @@ function TopNavbar({
             </h1>
             <div className="flex items-center gap-1.5 ml-1 pl-2.5 border-l border-subtle">
               <span
-                className={`w-2 h-2 rounded-full ${connected && marketOpen
+                className={`w-2 h-2 rounded-full ${
+                  connected && marketOpen
                     ? "bg-green-500 animate-pulse"
                     : "bg-faint"
-                  }`}
+                }`}
               />
               <span
-                className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${marketOpen
+                className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                  marketOpen
                     ? "bg-green-950 text-green-400"
                     : "bg-surface3 text-muted"
-                  }`}
+                }`}
               >
                 {marketOpen ? "Live" : connected ? "Closed" : "Offline"}
               </span>
@@ -391,10 +391,11 @@ function TopNavbar({
               <button
                 key={tab.key}
                 onClick={() => onTabChange(tab.key)}
-                className={`px-3 py-1.5 text-xs font-semibold whitespace-nowrap rounded-lg transition-all ${activeTab === tab.key
+                className={`px-3 py-1.5 text-xs font-semibold whitespace-nowrap rounded-lg transition-all ${
+                  activeTab === tab.key
                     ? "bg-accent-blue/15 text-accent-blue border border-accent-blue/30 shadow-sm"
                     : "text-muted hover:text-primary hover:bg-surface3/60"
-                  }`}
+                }`}
               >
                 <span className="mr-1.5">{tab.icon}</span>
                 {tab.label}

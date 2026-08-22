@@ -244,11 +244,7 @@ def run_premarket_briefing() -> Dict[str, Any]:
             formatted_items = "\n".join([f"  • {item}" for item in items[:4]])
             news_blocks.append(f"[{cat_name.upper()}]\n{formatted_items}")
 
-    news_context = (
-        "\n\n".join(news_blocks)
-        if news_blocks
-        else "No external news wire available."
-    )
+    news_context = "\n\n".join(news_blocks) if news_blocks else "No external news wire available."
 
     system_prompt = (
         "You are an expert institutional Indian stock market strategist. "
@@ -271,16 +267,16 @@ def run_premarket_briefing() -> Dict[str, Any]:
         '    "crude_oil": "Crude oil direction and price commentary",\n'
         '    "gold_commodities": "Gold, silver and metals commentary",\n'
         '    "dollar_index": "Dollar DXY / currency commentary"\n'
-        '  },\n'
+        "  },\n"
         '  "policy_and_macro_watch": [\n'
         '    "Policy, tariff, or regulatory driver with market impact",\n'
         '    "Geopolitical or commodity driver with market impact"\n'
-        '  ],\n'
+        "  ],\n"
         '  "leading_sectors": ["Top 1-2 sectors expected to outperform today based on cues"],\n'
         '  "lagging_sectors": ["Top 1-2 sectors expected to underperform/drag today based on cues"],\n'
         '  "focus_stocks": [\n'
         '    {"symbol": "NSE_SYMBOL", "bias": "BULLISH" | "BEARISH", "catalyst": "Specific headline reason", "theme": "Commodities" | "Global Tech" | "Earnings" | "Policy"}\n'
-        '  ],\n'
+        "  ],\n"
         '  "key_risks": ["Risk 1 with facts", "Risk 2 with facts"]\n'
         "}"
     )
@@ -297,7 +293,8 @@ def run_premarket_briefing() -> Dict[str, Any]:
                 "policy_and_macro_watch": parsed.get("policy_and_macro_watch", []),
                 "leading_sectors": parsed.get("leading_sectors", []),
                 "lagging_sectors": parsed.get("lagging_sectors", []),
-                "sector_focus": parsed.get("leading_sectors", []) + parsed.get("lagging_sectors", []),
+                "sector_focus": parsed.get("leading_sectors", [])
+                + parsed.get("lagging_sectors", []),
                 "focus_stocks": parsed.get("focus_stocks", []),
                 "key_risks": parsed.get("key_risks", []),
                 "is_grounded": True,
@@ -383,13 +380,9 @@ def compile_symbol_context(sym: str) -> Dict[str, Any]:
     # ── Technical Indicators Calculation ──────────────────────────────────────
     from .candle_aggregator import get_intraday_closes
     from .momentum_score import build_sector_means, industry_group, nifty_group
-    from .technical_indicators import (
-        DEFENSIVE_SECTORS,
-        compute_adr_pct,
-        compute_ema,
-        compute_rsi,
-        compute_sector_breadth,
-    )
+    from .technical_indicators import (DEFENSIVE_SECTORS, compute_adr_pct,
+                                       compute_ema, compute_rsi,
+                                       compute_sector_breadth)
 
     ltp = stock_data.get("ltp") or 0.0
     candle_closes = get_intraday_closes(sym)

@@ -4,11 +4,8 @@ Run with:
     python -m pytest backend/tests/test_vwap_retest_and_catalyst.py -v
 """
 
-from app.technical_indicators import (
-    compute_adr_pct,
-    compute_sector_breadth,
-    evaluate_vwap_retest_setup,
-)
+from app.technical_indicators import (compute_adr_pct, compute_sector_breadth,
+                                      evaluate_vwap_retest_setup)
 
 
 def test_compute_sector_breadth():

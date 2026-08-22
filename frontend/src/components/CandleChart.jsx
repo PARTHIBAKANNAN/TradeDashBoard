@@ -415,16 +415,16 @@ export default function CandleChart({
       const isBuy = position.side === "BUY";
       const entry = Number(position.entry_price);
       const sl = position.sl_price != null ? Number(position.sl_price) : null;
-      const target = position.target_price != null ? Number(position.target_price) : null;
+      const target =
+        position.target_price != null ? Number(position.target_price) : null;
 
-      const isBreakeven =
-        sl != null && (isBuy ? sl >= entry : sl <= entry);
+      const isBreakeven = sl != null && (isBuy ? sl >= entry : sl <= entry);
 
       const slTitle = isBreakeven
         ? `🛡️ Breakeven SL (${isBuy ? "Long" : "Short"})`
         : isTsl
-        ? `TSL (${isBuy ? "Long" : "Short"})`
-        : `SL (${isBuy ? "Long" : "Short"})`;
+          ? `TSL (${isBuy ? "Long" : "Short"})`
+          : `SL (${isBuy ? "Long" : "Short"})`;
       const slColor = isBreakeven ? "#10b981" : "#ef4444";
 
       const entries = [

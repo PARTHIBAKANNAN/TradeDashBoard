@@ -19,7 +19,9 @@ export default function PremarketBriefingCard() {
   async function fetchBriefing() {
     try {
       setLoading(true);
-      const res = await fetch("/api/ai/premarket-briefing", { credentials: "include" });
+      const res = await fetch("/api/ai/premarket-briefing", {
+        credentials: "include",
+      });
       if (res.ok) {
         const json = await res.json();
         setData(json);
@@ -69,8 +71,8 @@ export default function PremarketBriefingCard() {
     bias === "BULLISH"
       ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
       : bias === "BEARISH"
-      ? "bg-rose-500/15 text-rose-400 border-rose-500/30"
-      : "bg-amber-500/15 text-amber-400 border-amber-500/30";
+        ? "bg-rose-500/15 text-rose-400 border-rose-500/30"
+        : "bg-amber-500/15 text-amber-400 border-amber-500/30";
 
   const cues = data.global_cues || {};
   const policyWatch = data.policy_and_macro_watch || [];
@@ -95,7 +97,8 @@ export default function PremarketBriefingCard() {
               </span>
             </div>
             <p className="text-[11px] text-faint">
-              Real-time Global Tech, Commodities, Tariffs/SEBI & Indian Corporate Action Wire
+              Real-time Global Tech, Commodities, Tariffs/SEBI & Indian
+              Corporate Action Wire
             </p>
           </div>
         </div>
@@ -116,7 +119,10 @@ export default function PremarketBriefingCard() {
       </div>
 
       {/* Global Macro Cues Bar */}
-      {(cues.gift_nifty || cues.us_markets || cues.crude_oil || cues.gold_commodities) && (
+      {(cues.gift_nifty ||
+        cues.us_markets ||
+        cues.crude_oil ||
+        cues.gold_commodities) && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 text-[11px] font-mono">
           {cues.gift_nifty && (
             <div className="bg-surface2/60 border border-subtle rounded-xl p-2.5">
@@ -185,7 +191,10 @@ export default function PremarketBriefingCard() {
           </span>
           <div className="space-y-1">
             {policyWatch.map((item, idx) => (
-              <div key={idx} className="flex items-start gap-1.5 text-xs text-muted">
+              <div
+                key={idx}
+                className="flex items-start gap-1.5 text-xs text-muted"
+              >
                 <span className="text-amber-400">•</span>
                 <span>{item}</span>
               </div>
@@ -203,16 +212,20 @@ export default function PremarketBriefingCard() {
             Leading Sectors:
           </span>
           <div className="flex flex-wrap gap-1.5">
-            {(data.leading_sectors || data.sector_focus || []).map((sec, idx) => (
-              <span
-                key={idx}
-                className="bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-lg text-[11px] font-medium"
-              >
-                {sec}
-              </span>
-            ))}
+            {(data.leading_sectors || data.sector_focus || []).map(
+              (sec, idx) => (
+                <span
+                  key={idx}
+                  className="bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-lg text-[11px] font-medium"
+                >
+                  {sec}
+                </span>
+              ),
+            )}
             {(!data.leading_sectors || data.leading_sectors.length === 0) && (
-              <span className="text-faint text-[11px]">No specific sector leader flagged</span>
+              <span className="text-faint text-[11px]">
+                No specific sector leader flagged
+              </span>
             )}
           </div>
         </div>
@@ -233,7 +246,9 @@ export default function PremarketBriefingCard() {
               </span>
             ))}
             {(!data.lagging_sectors || data.lagging_sectors.length === 0) && (
-              <span className="text-faint text-[11px]">No sector drag flagged</span>
+              <span className="text-faint text-[11px]">
+                No sector drag flagged
+              </span>
             )}
           </div>
         </div>
@@ -260,7 +275,9 @@ export default function PremarketBriefingCard() {
                 >
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-primary font-mono">{item.symbol}</span>
+                      <span className="font-bold text-primary font-mono">
+                        {item.symbol}
+                      </span>
                       {item.theme && (
                         <span className="text-[9px] px-1.5 py-0.2 rounded bg-surface3 border border-subtle text-faint font-semibold">
                           {item.theme}
@@ -277,7 +294,9 @@ export default function PremarketBriefingCard() {
                       {item.bias}
                     </span>
                   </div>
-                  <p className="text-[11px] text-muted leading-relaxed">{item.catalyst}</p>
+                  <p className="text-[11px] text-muted leading-relaxed">
+                    {item.catalyst}
+                  </p>
                 </div>
               );
             })}

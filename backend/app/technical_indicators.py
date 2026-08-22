@@ -428,7 +428,11 @@ def evaluate_vwap_retest_setup(
                         "adr_pct": adr_pct,
                         "range_used_pct": round(today_range_pct, 2),
                     }
-                    return True, f"Bullish VWAP Retest confirmed ({vwap_dist:.2f}% above VWAP, RSI {rsi:.1f})", metrics
+                    return (
+                        True,
+                        f"Bullish VWAP Retest confirmed ({vwap_dist:.2f}% above VWAP, RSI {rsi:.1f})",
+                        metrics,
+                    )
 
     # ── BEAR SETUP EVALUATION ──
     if ltp < vwap and (rs <= -0.80 or sec_is_bear_leader or has_news_bear):
@@ -449,7 +453,10 @@ def evaluate_vwap_retest_setup(
                         "adr_pct": adr_pct,
                         "range_used_pct": round(today_range_pct, 2),
                     }
-                    return True, f"Bearish VWAP Retest confirmed ({vwap_dist:.2f}% below VWAP, RSI {rsi:.1f})", metrics
+                    return (
+                        True,
+                        f"Bearish VWAP Retest confirmed ({vwap_dist:.2f}% below VWAP, RSI {rsi:.1f})",
+                        metrics,
+                    )
 
     return False, "Not in VWAP retest zone", {}
-

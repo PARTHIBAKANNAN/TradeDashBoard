@@ -73,12 +73,16 @@ export default function LandingPage({ onLoginSuccess }) {
     setLoginBusy(true);
     setLoginError("");
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data, error: authError } = await supabase.auth.signInWithPassword(
+        {
+          email,
+          password,
+        },
+      );
       if (authError || !data.session) {
-        setLoginError("Invalid credentials. Please check your email and password.");
+        setLoginError(
+          "Invalid credentials. Please check your email and password.",
+        );
         return;
       }
       const r = await fetch("/api/auth/login", {
@@ -91,10 +95,14 @@ export default function LandingPage({ onLoginSuccess }) {
         setShowLoginModal(false);
         onLoginSuccess();
       } else {
-        setLoginError("Session verification failed. Contact onboarding administrator.");
+        setLoginError(
+          "Session verification failed. Contact onboarding administrator.",
+        );
       }
     } catch {
-      setLoginError("Network error. Unable to reach terminal authentication server.");
+      setLoginError(
+        "Network error. Unable to reach terminal authentication server.",
+      );
     } finally {
       setLoginBusy(false);
     }
@@ -104,15 +112,20 @@ export default function LandingPage({ onLoginSuccess }) {
     e.preventDefault();
     setRequestSubmitted(true);
     // Create mailto link for direct transmission
-    const subject = encodeURIComponent(`PulseHunter Terminal Access Request - ${requestName}`);
+    const subject = encodeURIComponent(
+      `PulseHunter Terminal Access Request - ${requestName}`,
+    );
     const body = encodeURIComponent(
       `Applicant Name: ${requestName}\n` +
-      `Applicant Email: ${requestEmail}\n` +
-      `Trading Profile: ${requestRole}\n` +
-      `Trading Objectives: ${requestNote || "N/A"}\n\n` +
-      `Request submitted for PulseHunter Institutional Quantitative Terminal.`
+        `Applicant Email: ${requestEmail}\n` +
+        `Trading Profile: ${requestRole}\n` +
+        `Trading Objectives: ${requestNote || "N/A"}\n\n` +
+        `Request submitted for PulseHunter Institutional Quantitative Terminal.`,
     );
-    window.open(`mailto:parthisivaram45@gmail.com?subject=${subject}&body=${body}`, "_blank");
+    window.open(
+      `mailto:parthisivaram45@gmail.com?subject=${subject}&body=${body}`,
+      "_blank",
+    );
   };
 
   const nifty = summaryData?.nifty || {
@@ -231,8 +244,9 @@ export default function LandingPage({ onLoginSuccess }) {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-base sm:text-xl text-neutral-400 max-w-3xl mx-auto leading-relaxed mb-10 font-normal"
         >
-          Continuous sub-second order flow tracking across 210 F&amp;O symbols, 5-tier quantitative
-          momentum gating, Google Gemini 3.6 Flash risk auditing, and automated paper trade management.
+          Continuous sub-second order flow tracking across 210 F&amp;O symbols,
+          5-tier quantitative momentum gating, Google Gemini 3.6 Flash risk
+          auditing, and automated paper trade management.
         </motion.p>
 
         {/* CTA Buttons */}
@@ -335,7 +349,10 @@ export default function LandingPage({ onLoginSuccess }) {
       </section>
 
       {/* ── PUBLIC LIVE MARKET RADAR SECTION (FREE INSIGHTS) ── */}
-      <section id="market-radar" className="relative z-10 py-16 px-4 sm:px-6 max-w-7xl mx-auto">
+      <section
+        id="market-radar"
+        className="relative z-10 py-16 px-4 sm:px-6 max-w-7xl mx-auto"
+      >
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider mb-2">
             <Activity size={14} />
@@ -345,7 +362,8 @@ export default function LandingPage({ onLoginSuccess }) {
             Live Market Radar &amp; Macro Pulse
           </h2>
           <p className="text-sm text-neutral-400 max-w-2xl mx-auto mt-2">
-            Real-time public benchmarks updated continuously from PulseHunter's in-memory stream.
+            Real-time public benchmarks updated continuously from PulseHunter's
+            in-memory stream.
           </p>
         </div>
 
@@ -363,7 +381,10 @@ export default function LandingPage({ onLoginSuccess }) {
               </div>
               <div className="flex items-baseline gap-3 mb-2">
                 <h3 className="text-3xl font-extrabold font-mono text-white">
-                  ₹{Number(nifty.ltp).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  ₹
+                  {Number(nifty.ltp).toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                  })}
                 </h3>
                 <span
                   className={`text-sm font-mono font-bold ${
@@ -375,7 +396,8 @@ export default function LandingPage({ onLoginSuccess }) {
                 </span>
               </div>
               <p className="text-xs text-neutral-400 mb-6">
-                NIFTY 50 reference anchor for cross-sectional relative strength calculations.
+                NIFTY 50 reference anchor for cross-sectional relative strength
+                calculations.
               </p>
             </div>
 
@@ -417,14 +439,21 @@ export default function LandingPage({ onLoginSuccess }) {
               </span>
               <div className="grid grid-cols-2 gap-2">
                 {topGainers.slice(0, 2).map((stk, idx) => (
-                  <div key={idx} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-2.5">
+                  <div
+                    key={idx}
+                    className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-2.5"
+                  >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-bold text-xs font-mono text-white">{stk.symbol}</span>
+                      <span className="font-bold text-xs font-mono text-white">
+                        {stk.symbol}
+                      </span>
                       <span className="text-[10px] font-mono text-emerald-400 font-bold">
                         +{Number(stk.pct_change).toFixed(2)}%
                       </span>
                     </div>
-                    <div className="text-[10px] text-neutral-400">₹{Number(stk.ltp).toFixed(1)}</div>
+                    <div className="text-[10px] text-neutral-400">
+                      ₹{Number(stk.ltp).toFixed(1)}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -434,14 +463,21 @@ export default function LandingPage({ onLoginSuccess }) {
               </span>
               <div className="grid grid-cols-2 gap-2">
                 {topLosers.slice(0, 2).map((stk, idx) => (
-                  <div key={idx} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-2.5">
+                  <div
+                    key={idx}
+                    className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-2.5"
+                  >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-bold text-xs font-mono text-white">{stk.symbol}</span>
+                      <span className="font-bold text-xs font-mono text-white">
+                        {stk.symbol}
+                      </span>
                       <span className="text-[10px] font-mono text-rose-400 font-bold">
                         {Number(stk.pct_change).toFixed(2)}%
                       </span>
                     </div>
-                    <div className="text-[10px] text-neutral-400">₹{Number(stk.ltp).toFixed(1)}</div>
+                    <div className="text-[10px] text-neutral-400">
+                      ₹{Number(stk.ltp).toFixed(1)}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -461,19 +497,29 @@ export default function LandingPage({ onLoginSuccess }) {
               <div className="grid grid-cols-2 gap-2 text-xs font-mono mb-4">
                 {cues.gift_nifty && (
                   <div className="bg-white/[0.03] p-2.5 rounded-xl border border-white/[0.06]">
-                    <span className="text-[9px] text-neutral-400 uppercase block">GIFT NIFTY</span>
-                    <span className="font-bold text-white">{cues.gift_nifty}</span>
+                    <span className="text-[9px] text-neutral-400 uppercase block">
+                      GIFT NIFTY
+                    </span>
+                    <span className="font-bold text-white">
+                      {cues.gift_nifty}
+                    </span>
                   </div>
                 )}
                 {cues.crude_oil && (
                   <div className="bg-white/[0.03] p-2.5 rounded-xl border border-white/[0.06]">
-                    <span className="text-[9px] text-neutral-400 uppercase block">BRENT CRUDE</span>
-                    <span className="font-bold text-white">{cues.crude_oil}</span>
+                    <span className="text-[9px] text-neutral-400 uppercase block">
+                      BRENT CRUDE
+                    </span>
+                    <span className="font-bold text-white">
+                      {cues.crude_oil}
+                    </span>
                   </div>
                 )}
                 {cues.gold_commodities && (
                   <div className="bg-white/[0.03] p-2.5 rounded-xl border border-white/[0.06]">
-                    <span className="text-[9px] text-neutral-400 uppercase block">GOLD / METALS</span>
+                    <span className="text-[9px] text-neutral-400 uppercase block">
+                      GOLD / METALS
+                    </span>
                     <span className="font-bold text-white truncate block">
                       {cues.gold_commodities}
                     </span>
@@ -481,8 +527,12 @@ export default function LandingPage({ onLoginSuccess }) {
                 )}
                 {cues.dollar_index && (
                   <div className="bg-white/[0.03] p-2.5 rounded-xl border border-white/[0.06]">
-                    <span className="text-[9px] text-neutral-400 uppercase block">DXY DOLLAR</span>
-                    <span className="font-bold text-white">{cues.dollar_index}</span>
+                    <span className="text-[9px] text-neutral-400 uppercase block">
+                      DXY DOLLAR
+                    </span>
+                    <span className="font-bold text-white">
+                      {cues.dollar_index}
+                    </span>
                   </div>
                 )}
               </div>
@@ -501,7 +551,10 @@ export default function LandingPage({ onLoginSuccess }) {
       </section>
 
       {/* ── 5 CORE CAPABILITIES (PROFESSIONAL SENIOR UX PRESENTATION) ── */}
-      <section id="capabilities" className="relative z-10 py-20 px-4 sm:px-6 max-w-7xl mx-auto border-t border-white/[0.06]">
+      <section
+        id="capabilities"
+        className="relative z-10 py-20 px-4 sm:px-6 max-w-7xl mx-auto border-t border-white/[0.06]"
+      >
         <div className="text-center mb-14">
           <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-indigo-400 uppercase tracking-wider mb-2">
             <Cpu size={14} />
@@ -511,17 +564,26 @@ export default function LandingPage({ onLoginSuccess }) {
             Built for Systematic Edge
           </h2>
           <p className="text-sm sm:text-base text-neutral-400 max-w-2xl mx-auto mt-3">
-            Five synchronized algorithmic layers eliminate emotional bias, noise, and execution friction.
+            Five synchronized algorithmic layers eliminate emotional bias,
+            noise, and execution friction.
           </p>
         </div>
 
         {/* Feature Tabs */}
         <div className="flex justify-center gap-2 mb-10 overflow-x-auto pb-2">
           {[
-            { id: "quant", label: "Multi-Factor Quant Gatekeeper", icon: Shield },
+            {
+              id: "quant",
+              label: "Multi-Factor Quant Gatekeeper",
+              icon: Shield,
+            },
             { id: "ai", label: "Gemini 3.6 Flash AI Copilot", icon: Sparkles },
             { id: "smart", label: "Smart Money & CVD Engine", icon: BarChart3 },
-            { id: "paper", label: "Auto-Breakeven Paper Terminal", icon: TrendingUp },
+            {
+              id: "paper",
+              label: "Auto-Breakeven Paper Terminal",
+              icon: TrendingUp,
+            },
           ].map((tab) => {
             const Icon = tab.icon;
             const active = activeFeatureTab === tab.id;
@@ -554,37 +616,52 @@ export default function LandingPage({ onLoginSuccess }) {
                   Multi-Factor Quant Gatekeeper
                 </h3>
                 <p className="text-sm text-neutral-300 leading-relaxed mb-6">
-                  98% of intraday breakout signals fail because traders chase overbought momentum
-                  or trade against prevailing sector currents. PulseHunter's algorithmic gatekeeper
-                  verifies structural market conditions before any signal qualifies:
+                  98% of intraday breakout signals fail because traders chase
+                  overbought momentum or trade against prevailing sector
+                  currents. PulseHunter's algorithmic gatekeeper verifies
+                  structural market conditions before any signal qualifies:
                 </p>
                 <div className="space-y-3 text-xs text-neutral-300">
                   <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-cyan-400 flex-shrink-0 mt-0.5" />
+                    <CheckCircle2
+                      size={16}
+                      className="text-cyan-400 flex-shrink-0 mt-0.5"
+                    />
                     <span>
-                      <b>Sector Breadth Alignment</b>: Requires institutional participation across
-                      constituent stocks to confirm genuine sector tailwinds.
+                      <b>Sector Breadth Alignment</b>: Requires institutional
+                      participation across constituent stocks to confirm genuine
+                      sector tailwinds.
                     </span>
                   </div>
                   <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-cyan-400 flex-shrink-0 mt-0.5" />
+                    <CheckCircle2
+                      size={16}
+                      className="text-cyan-400 flex-shrink-0 mt-0.5"
+                    />
                     <span>
-                      <b>RSI Momentum Calibration</b>: Filters out exhausted tops while ensuring
-                      active buying pressure is confirmed.
+                      <b>RSI Momentum Calibration</b>: Filters out exhausted
+                      tops while ensuring active buying pressure is confirmed.
                     </span>
                   </div>
                   <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-cyan-400 flex-shrink-0 mt-0.5" />
+                    <CheckCircle2
+                      size={16}
+                      className="text-cyan-400 flex-shrink-0 mt-0.5"
+                    />
                     <span>
-                      <b>VWAP Retest Confirmation</b>: Captures institutional support bounces near
-                      intraday volume weighted averages.
+                      <b>VWAP Retest Confirmation</b>: Captures institutional
+                      support bounces near intraday volume weighted averages.
                     </span>
                   </div>
                   <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-cyan-400 flex-shrink-0 mt-0.5" />
+                    <CheckCircle2
+                      size={16}
+                      className="text-cyan-400 flex-shrink-0 mt-0.5"
+                    />
                     <span>
-                      <b>Average Daily Range (ADR) Room</b>: Asserts sufficient remaining daily room
-                      to achieve 1:2 risk-reward profit targets.
+                      <b>Average Daily Range (ADR) Room</b>: Asserts sufficient
+                      remaining daily room to achieve 1:2 risk-reward profit
+                      targets.
                     </span>
                   </div>
                 </div>
@@ -602,24 +679,41 @@ export default function LandingPage({ onLoginSuccess }) {
                 </div>
                 <div className="space-y-2.5 text-xs">
                   <div className="flex items-center justify-between bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
-                    <span className="text-neutral-300">Intraday Relative Strength</span>
-                    <span className="text-emerald-400 font-bold font-mono">✓ Outperforming Index</span>
+                    <span className="text-neutral-300">
+                      Intraday Relative Strength
+                    </span>
+                    <span className="text-emerald-400 font-bold font-mono">
+                      ✓ Outperforming Index
+                    </span>
                   </div>
                   <div className="flex items-center justify-between bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
-                    <span className="text-neutral-300">Sector Breadth Confirmation</span>
-                    <span className="text-emerald-400 font-bold font-mono">✓ Institutional Tailwinds</span>
+                    <span className="text-neutral-300">
+                      Sector Breadth Confirmation
+                    </span>
+                    <span className="text-emerald-400 font-bold font-mono">
+                      ✓ Institutional Tailwinds
+                    </span>
                   </div>
                   <div className="flex items-center justify-between bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
-                    <span className="text-neutral-300">VWAP Retest Proximity</span>
-                    <span className="text-emerald-400 font-bold font-mono">✓ Retest Zone Active</span>
+                    <span className="text-neutral-300">
+                      VWAP Retest Proximity
+                    </span>
+                    <span className="text-emerald-400 font-bold font-mono">
+                      ✓ Retest Zone Active
+                    </span>
                   </div>
                   <div className="flex items-center justify-between bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
-                    <span className="text-neutral-300">14-Day ADR Expansion Room</span>
-                    <span className="text-emerald-400 font-bold font-mono">✓ Expansion Room OK</span>
+                    <span className="text-neutral-300">
+                      14-Day ADR Expansion Room
+                    </span>
+                    <span className="text-emerald-400 font-bold font-mono">
+                      ✓ Expansion Room OK
+                    </span>
                   </div>
                 </div>
                 <div className="text-[11px] text-neutral-400 text-center pt-2">
-                  Filters 210 watchlist equities into <b>1–3 high-conviction candidates per day</b>.
+                  Filters 210 watchlist equities into{" "}
+                  <b>1–3 high-conviction candidates per day</b>.
                 </div>
               </div>
             </div>
@@ -635,30 +729,42 @@ export default function LandingPage({ onLoginSuccess }) {
                   Google Gemini 3.6 Flash AI Copilot
                 </h3>
                 <p className="text-sm text-neutral-300 leading-relaxed mb-6">
-                  Gemini acts as an adversarial risk auditor. Ingesting 4 real-time global news feeds
-                  (Global Macro, Commodities/Forex, Regulatory/SEBI, and Indian Corporate earnings), it
-                  actively looks for trap catalysts before trade execution:
+                  Gemini acts as an adversarial risk auditor. Ingesting 4
+                  real-time global news feeds (Global Macro, Commodities/Forex,
+                  Regulatory/SEBI, and Indian Corporate earnings), it actively
+                  looks for trap catalysts before trade execution:
                 </p>
                 <div className="space-y-3 text-xs text-neutral-300">
                   <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-indigo-400 flex-shrink-0 mt-0.5" />
+                    <CheckCircle2
+                      size={16}
+                      className="text-indigo-400 flex-shrink-0 mt-0.5"
+                    />
                     <span>
-                      <b>Multi-Stream Global Wire</b>: Real-time sentiment on Nasdaq, Brent Crude,
-                      Gold, SEBI circulars, and quarterly earnings.
+                      <b>Multi-Stream Global Wire</b>: Real-time sentiment on
+                      Nasdaq, Brent Crude, Gold, SEBI circulars, and quarterly
+                      earnings.
                     </span>
                   </div>
                   <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-indigo-400 flex-shrink-0 mt-0.5" />
+                    <CheckCircle2
+                      size={16}
+                      className="text-indigo-400 flex-shrink-0 mt-0.5"
+                    />
                     <span>
-                      <b>Adversarial Red-Flag Defense</b>: Detects overhead resistance clusters,
-                      exhausted liquidity, and unexpected macro headwinds.
+                      <b>Adversarial Red-Flag Defense</b>: Detects overhead
+                      resistance clusters, exhausted liquidity, and unexpected
+                      macro headwinds.
                     </span>
                   </div>
                   <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-indigo-400 flex-shrink-0 mt-0.5" />
+                    <CheckCircle2
+                      size={16}
+                      className="text-indigo-400 flex-shrink-0 mt-0.5"
+                    />
                     <span>
-                      <b>Real-time Engine Health</b>: Top-header live status badge indicating active
-                      AI models with automatic fallback.
+                      <b>Real-time Engine Health</b>: Top-header live status
+                      badge indicating active AI models with automatic fallback.
                     </span>
                   </div>
                 </div>
@@ -684,22 +790,31 @@ export default function LandingPage({ onLoginSuccess }) {
                   Smart Money &amp; CVD Delta Engine
                 </h3>
                 <p className="text-sm text-neutral-300 leading-relaxed mb-6">
-                  Uncovers institutional accumulation and distribution footprints across 210 F&amp;O
-                  equities by tracking volume velocity and real-time tick aggressive order flow:
+                  Uncovers institutional accumulation and distribution
+                  footprints across 210 F&amp;O equities by tracking volume
+                  velocity and real-time tick aggressive order flow:
                 </p>
                 <div className="space-y-3 text-xs text-neutral-300">
                   <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-cyan-400 flex-shrink-0 mt-0.5" />
+                    <CheckCircle2
+                      size={16}
+                      className="text-cyan-400 flex-shrink-0 mt-0.5"
+                    />
                     <span>
-                      <b>20-Day Historical Velocity Benchmarking</b>: Identifies abnormal fresh turnover
-                      bursts representing institutional block positioning.
+                      <b>20-Day Historical Velocity Benchmarking</b>: Identifies
+                      abnormal fresh turnover bursts representing institutional
+                      block positioning.
                     </span>
                   </div>
                   <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-cyan-400 flex-shrink-0 mt-0.5" />
+                    <CheckCircle2
+                      size={16}
+                      className="text-cyan-400 flex-shrink-0 mt-0.5"
+                    />
                     <span>
-                      <b>Cumulative Volume Delta (CVD)</b>: Sub-chart pane visualizing net aggressive
-                      market buying vs selling pressure on 5m candles.
+                      <b>Cumulative Volume Delta (CVD)</b>: Sub-chart pane
+                      visualizing net aggressive market buying vs selling
+                      pressure on 5m candles.
                     </span>
                   </div>
                 </div>
@@ -717,20 +832,29 @@ export default function LandingPage({ onLoginSuccess }) {
                 </div>
                 <div className="space-y-2.5 text-xs">
                   <div className="flex items-center justify-between bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
-                    <span className="text-neutral-300 font-mono">TATASTEEL</span>
-                    <span className="text-emerald-400 font-bold font-mono">+12.4M CVD (Aggressive Buys)</span>
+                    <span className="text-neutral-300 font-mono">
+                      TATASTEEL
+                    </span>
+                    <span className="text-emerald-400 font-bold font-mono">
+                      +12.4M CVD (Aggressive Buys)
+                    </span>
                   </div>
                   <div className="flex items-center justify-between bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
                     <span className="text-neutral-300 font-mono">MARUTI</span>
-                    <span className="text-emerald-400 font-bold font-mono">+8.1M CVD (Accumulation)</span>
+                    <span className="text-emerald-400 font-bold font-mono">
+                      +8.1M CVD (Accumulation)
+                    </span>
                   </div>
                   <div className="flex items-center justify-between bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
                     <span className="text-neutral-300 font-mono">INFY</span>
-                    <span className="text-rose-400 font-bold font-mono">-9.2M CVD (Distribution)</span>
+                    <span className="text-rose-400 font-bold font-mono">
+                      -9.2M CVD (Distribution)
+                    </span>
                   </div>
                 </div>
                 <div className="text-[11px] text-neutral-400 text-center pt-2">
-                  Real-time delta classification separating market orders from limit liquidity.
+                  Real-time delta classification separating market orders from
+                  limit liquidity.
                 </div>
               </div>
             </div>
@@ -746,29 +870,42 @@ export default function LandingPage({ onLoginSuccess }) {
                   Auto-Breakeven Paper Terminal
                 </h3>
                 <p className="text-sm text-neutral-300 leading-relaxed mb-6">
-                  Complete paper trading terminal engineered to instill institutional execution discipline
-                  with zero capital risk:
+                  Complete paper trading terminal engineered to instill
+                  institutional execution discipline with zero capital risk:
                 </p>
                 <div className="space-y-3 text-xs text-neutral-300">
                   <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-emerald-400 flex-shrink-0 mt-0.5" />
+                    <CheckCircle2
+                      size={16}
+                      className="text-emerald-400 flex-shrink-0 mt-0.5"
+                    />
                     <span>
-                      <b>Auto-Breakeven at +1.0R Profit</b>: The instant a position reaches 1x risk distance,
-                      the stop loss is ratcheted to Entry, ensuring a winning trade never turns into a loss.
+                      <b>Auto-Breakeven at +1.0R Profit</b>: The instant a
+                      position reaches 1x risk distance, the stop loss is
+                      ratcheted to Entry, ensuring a winning trade never turns
+                      into a loss.
                     </span>
                   </div>
                   <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-emerald-400 flex-shrink-0 mt-0.5" />
+                    <CheckCircle2
+                      size={16}
+                      className="text-emerald-400 flex-shrink-0 mt-0.5"
+                    />
                     <span>
-                      <b>Dynamic ATR Structural Stops</b>: Anchors stops to real volatility structure
-                      instead of arbitrary fixed percentages.
+                      <b>Dynamic ATR Structural Stops</b>: Anchors stops to real
+                      volatility structure instead of arbitrary fixed
+                      percentages.
                     </span>
                   </div>
                   <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-emerald-400 flex-shrink-0 mt-0.5" />
+                    <CheckCircle2
+                      size={16}
+                      className="text-emerald-400 flex-shrink-0 mt-0.5"
+                    />
                     <span>
-                      <b>Visual Chart Order Lines</b>: Live Entry, Stop Loss, Breakeven, and 1:2 RR Target
-                      levels rendered directly on Lightweight Charts.
+                      <b>Visual Chart Order Lines</b>: Live Entry, Stop Loss,
+                      Breakeven, and 1:2 RR Target levels rendered directly on
+                      Lightweight Charts.
                     </span>
                   </div>
                 </div>
@@ -790,8 +927,12 @@ export default function LandingPage({ onLoginSuccess }) {
                     <span className="text-white">₹1,240.00</span>
                   </div>
                   <div className="flex items-center justify-between bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/30">
-                    <span className="text-emerald-400 font-bold">🛡️ Breakeven SL Ratchet</span>
-                    <span className="text-emerald-400 font-bold">₹1,240.00 (Risk: ₹0.00)</span>
+                    <span className="text-emerald-400 font-bold">
+                      🛡️ Breakeven SL Ratchet
+                    </span>
+                    <span className="text-emerald-400 font-bold">
+                      ₹1,240.00 (Risk: ₹0.00)
+                    </span>
                   </div>
                   <div className="flex items-center justify-between bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
                     <span className="text-emerald-400">Target 1:2 RR</span>
@@ -799,7 +940,8 @@ export default function LandingPage({ onLoginSuccess }) {
                   </div>
                 </div>
                 <div className="text-[11px] text-neutral-400 text-center pt-2">
-                  Automatic trailing stop loss with institutional risk-reward symmetry.
+                  Automatic trailing stop loss with institutional risk-reward
+                  symmetry.
                 </div>
               </div>
             </div>
@@ -818,8 +960,9 @@ export default function LandingPage({ onLoginSuccess }) {
             Request Access to PulseHunter
           </h2>
           <p className="text-sm sm:text-base text-neutral-300 max-w-xl mx-auto mb-8 leading-relaxed">
-            PulseHunter is reserved for qualified systematic traders and institutional market participants.
-            Contact <b>PARTHIBAKANNAN S</b> to request authorized access credentials.
+            PulseHunter is reserved for qualified systematic traders and
+            institutional market participants. Contact <b>PARTHIBAKANNAN S</b>{" "}
+            to request authorized access credentials.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3.5">
@@ -845,14 +988,20 @@ export default function LandingPage({ onLoginSuccess }) {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
           <div className="space-y-1">
             <div className="flex items-center justify-center md:justify-start gap-2">
-              <img src="/assets/logo.jpg" alt="PulseHunter" className="w-5 h-5 rounded-md object-cover" />
+              <img
+                src="/assets/logo.jpg"
+                alt="PulseHunter"
+                className="w-5 h-5 rounded-md object-cover"
+              />
               <span className="font-bold text-white text-sm">PulseHunter</span>
             </div>
             <p className="text-neutral-400">
-              &copy; {new Date().getFullYear()} PulseHunter. All Rights Reserved.
+              &copy; {new Date().getFullYear()} PulseHunter. All Rights
+              Reserved.
             </p>
             <p className="text-neutral-400">
-              Created, Engineered &amp; Owned by <b className="text-neutral-300">PARTHIBAKANNAN S</b>.
+              Created, Engineered &amp; Owned by{" "}
+              <b className="text-neutral-300">PARTHIBAKANNAN S</b>.
             </p>
           </div>
 
@@ -903,8 +1052,12 @@ export default function LandingPage({ onLoginSuccess }) {
                   className="w-10 h-10 rounded-xl object-cover border border-cyan-500/30 shadow-md"
                 />
                 <div>
-                  <h3 className="text-lg font-bold text-white font-display">PulseHunter Client Sign In</h3>
-                  <p className="text-xs text-neutral-400">Enter authorized credentials to continue</p>
+                  <h3 className="text-lg font-bold text-white font-display">
+                    PulseHunter Client Sign In
+                  </h3>
+                  <p className="text-xs text-neutral-400">
+                    Enter authorized credentials to continue
+                  </p>
                 </div>
               </div>
 
@@ -947,7 +1100,9 @@ export default function LandingPage({ onLoginSuccess }) {
                   disabled={loginBusy}
                   className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 text-black font-extrabold text-sm shadow-[0_0_20px_rgba(6,182,212,0.3)] transition-all"
                 >
-                  {loginBusy ? "Authenticating Session..." : "Sign In to Terminal"}
+                  {loginBusy
+                    ? "Authenticating Session..."
+                    : "Sign In to Terminal"}
                 </button>
               </form>
 
@@ -1041,10 +1196,18 @@ export default function LandingPage({ onLoginSuccess }) {
                       onChange={(e) => setRequestRole(e.target.value)}
                       className="w-full bg-neutral-900 border border-white/[0.1] rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-400 transition-colors"
                     >
-                      <option value="Proprietary / Quant Trader">Proprietary / Quantitative Trader</option>
-                      <option value="Institutional Asset Manager">Institutional / Desk Trader</option>
-                      <option value="Active F&O Derivatives Trader">Active F&amp;O Derivatives Trader</option>
-                      <option value="Systematic Individual Trader">Systematic Individual Trader</option>
+                      <option value="Proprietary / Quant Trader">
+                        Proprietary / Quantitative Trader
+                      </option>
+                      <option value="Institutional Asset Manager">
+                        Institutional / Desk Trader
+                      </option>
+                      <option value="Active F&O Derivatives Trader">
+                        Active F&amp;O Derivatives Trader
+                      </option>
+                      <option value="Systematic Individual Trader">
+                        Systematic Individual Trader
+                      </option>
                     </select>
                   </div>
                   <div>
@@ -1073,14 +1236,20 @@ export default function LandingPage({ onLoginSuccess }) {
                   <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 grid place-items-center mx-auto">
                     <CheckCircle2 size={24} />
                   </div>
-                  <h4 className="font-bold text-base text-white">Access Request Dispatched</h4>
+                  <h4 className="font-bold text-base text-white">
+                    Access Request Dispatched
+                  </h4>
                   <p className="text-xs text-neutral-300 leading-relaxed">
-                    Thank you, <b>{requestName}</b>. Your access request has been routed directly to{" "}
-                    <b>PARTHIBAKANNAN S</b> (
-                    <a href="mailto:parthisivaram45@gmail.com" className="text-cyan-400 underline">
+                    Thank you, <b>{requestName}</b>. Your access request has
+                    been routed directly to <b>PARTHIBAKANNAN S</b> (
+                    <a
+                      href="mailto:parthisivaram45@gmail.com"
+                      className="text-cyan-400 underline"
+                    >
                       parthisivaram45@gmail.com
                     </a>
-                    ). You will be contacted via email regarding terminal onboarding.
+                    ). You will be contacted via email regarding terminal
+                    onboarding.
                   </p>
                   <button
                     onClick={() => {

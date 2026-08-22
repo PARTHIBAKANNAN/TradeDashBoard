@@ -239,16 +239,24 @@ async def public_summary():
             "total": total_stocks,
             "advance_pct": round((advancing / total_stocks * 100), 1) if advancing > 0 else 63.8,
         },
-        "top_gainers": top_gainers if top_gainers else [
-            {"symbol": "TRENT", "sector": "Consumer", "ltp": 6920.0, "pct_change": 3.85},
-            {"symbol": "MARUTI", "sector": "Auto", "ltp": 12450.0, "pct_change": 2.40},
-            {"symbol": "TATASTEEL", "sector": "Metals", "ltp": 154.20, "pct_change": 1.95},
-        ],
-        "top_losers": top_losers if top_losers else [
-            {"symbol": "INFY", "sector": "IT", "ltp": 1820.0, "pct_change": -1.65},
-            {"symbol": "WIPRO", "sector": "IT", "ltp": 542.0, "pct_change": -1.20},
-            {"symbol": "HDFCBANK", "sector": "Banks", "ltp": 1640.0, "pct_change": -0.85},
-        ],
+        "top_gainers": (
+            top_gainers
+            if top_gainers
+            else [
+                {"symbol": "TRENT", "sector": "Consumer", "ltp": 6920.0, "pct_change": 3.85},
+                {"symbol": "MARUTI", "sector": "Auto", "ltp": 12450.0, "pct_change": 2.40},
+                {"symbol": "TATASTEEL", "sector": "Metals", "ltp": 154.20, "pct_change": 1.95},
+            ]
+        ),
+        "top_losers": (
+            top_losers
+            if top_losers
+            else [
+                {"symbol": "INFY", "sector": "IT", "ltp": 1820.0, "pct_change": -1.65},
+                {"symbol": "WIPRO", "sector": "IT", "ltp": 542.0, "pct_change": -1.20},
+                {"symbol": "HDFCBANK", "sector": "Banks", "ltp": 1640.0, "pct_change": -0.85},
+            ]
+        ),
         "global_cues": briefing.get("global_cues", {}),
         "market_bias": briefing.get("bias", "MODERATELY_BULLISH"),
         "ai_summary": briefing.get(
@@ -274,9 +282,9 @@ async def ai_premarket_bias():
 async def ai_refresh_premarket_briefing():
     """Manual trigger to refresh pre-market cues and focus stock catalysts."""
     import asyncio
+
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, ai_copilot.run_premarket_briefing)
-
 
 
 @app.post("/api/ai/analyze", dependencies=[Depends(require_login)])
