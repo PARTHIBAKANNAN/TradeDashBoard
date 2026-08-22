@@ -359,11 +359,13 @@ function TopNavbar({
         {/* Left: Brand & Status & Navigation Tabs */}
         <div className="flex items-center gap-3 min-w-0">
           <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-accent-blue to-accent-violet grid place-items-center font-bold text-white text-xs shadow-glow-sm">
-              T
-            </div>
-            <h1 className="text-xs font-bold tracking-tight bg-gradient-to-r from-accent-violet to-accent-blue bg-clip-text text-transparent hidden sm:block">
-              Live Price Action
+            <img
+              src="/assets/logo.jpg"
+              alt="PulseHunter"
+              className="w-7 h-7 rounded-lg object-cover border border-accent-blue/30 shadow-glow-sm"
+            />
+            <h1 className="text-xs font-extrabold tracking-tight bg-gradient-to-r from-accent-blue via-cyan-400 to-accent-violet bg-clip-text text-transparent hidden sm:block font-display">
+              PulseHunter
             </h1>
             <div className="flex items-center gap-1.5 ml-1 pl-2.5 border-l border-subtle">
               <span
