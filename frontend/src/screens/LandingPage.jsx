@@ -31,6 +31,13 @@ import {
   HelpCircle,
   TrendingDown,
   RefreshCw,
+  Command,
+  Search,
+  Maximize2,
+  Check,
+  Server,
+  KeyRound,
+  FileText,
 } from "lucide-react";
 import { supabase } from "../lib/supabaseClient.js";
 import ThemeToggle from "../components/ThemeToggle.jsx";
@@ -40,6 +47,7 @@ export default function LandingPage({ onLoginSuccess }) {
   const [showAccessModal, setShowAccessModal] = useState(false);
   const [activeScreenTab, setActiveScreenTab] = useState("ranking");
   const [activeFeatureTab, setActiveFeatureTab] = useState("quant");
+  const [sandboxStock, setSandboxStock] = useState("TATASTEEL");
   const [openFaq, setOpenFaq] = useState(null);
   const [summaryData, setSummaryData] = useState(null);
 
@@ -138,6 +146,80 @@ export default function LandingPage({ onLoginSuccess }) {
   const topLosers = summaryData?.top_losers || [];
   const cues = summaryData?.global_cues || {};
 
+  // Ticker ribbon stocks
+  const tickerItems = [
+    { s: "NIFTY 50", p: "24,252.00", c: "+0.21%", up: true },
+    { s: "RELIANCE", p: "2,980.50", c: "+1.24%", up: true },
+    { s: "HDFCBANK", p: "1,652.10", c: "+0.45%", up: true },
+    { s: "TCS", p: "4,124.00", c: "-0.32%", up: false },
+    { s: "ICICIBANK", p: "1,184.20", c: "+1.52%", up: true },
+    { s: "INFY", p: "1,822.40", c: "-0.85%", up: false },
+    { s: "TATASTEEL", p: "156.40", c: "+2.15%", up: true },
+    { s: "MARUTI", p: "12,450.00", c: "+1.10%", up: true },
+    { s: "BHARTIARTL", p: "1,480.00", c: "+0.75%", up: true },
+    { s: "SBIN", p: "824.50", c: "+0.95%", up: true },
+    { s: "LT", p: "3,620.00", c: "+1.40%", up: true },
+    { s: "KOTAKBANK", p: "1,780.00", c: "+0.30%", up: true },
+  ];
+
+  // Sandbox data definitions
+  const sandboxConfigs = {
+    TATASTEEL: {
+      symbol: "TATASTEEL",
+      name: "Tata Steel Ltd",
+      ltp: "₹156.40",
+      change: "+2.15%",
+      isBullish: true,
+      tag: "Momentum Breakout",
+      sector: "Metals & Mining",
+      vwap: "₹154.20",
+      cvd: "+12.4M",
+      cvdDesc: "Aggressive Buy Accumulation",
+      signal: "QUALIFIED ALPHA SETUP",
+      signalColor: "emerald",
+      entry: "₹155.00",
+      sl: "🛡️ ₹155.00 (Risk Free)",
+      target: "₹159.00 (1:2 RR)",
+      aiVerdict: "Strong sector tailwinds in Metals. Sustained institutional volume above VWAP with zero overhead resistance.",
+    },
+    MARUTI: {
+      symbol: "MARUTI",
+      name: "Maruti Suzuki India",
+      ltp: "₹12,450.00",
+      change: "+1.10%",
+      isBullish: true,
+      tag: "VWAP Support Retest",
+      sector: "Automobile",
+      vwap: "₹12,380.00",
+      cvd: "+8.1M",
+      cvdDesc: "Steady Tick Inflow",
+      signal: "PULLBACK CONFIRMED",
+      signalColor: "cyan",
+      entry: "₹12,400.00",
+      sl: "🛡️ ₹12,400.00 (Breakeven Active)",
+      target: "₹12,680.00 (1:2 RR)",
+      aiVerdict: "Auto sector breadth advancing. High Relative Strength against benchmark with dynamic ATR buffer intact.",
+    },
+    INFY: {
+      symbol: "INFY",
+      name: "Infosys Limited",
+      ltp: "₹1,822.40",
+      change: "-0.85%",
+      isBullish: false,
+      tag: "Sector Headwind Filter",
+      sector: "Information Tech",
+      vwap: "₹1,840.00",
+      cvd: "-9.2M",
+      cvdDesc: "Aggressive Sell Pressure",
+      signal: "BLOCKED BY QUANT GATE",
+      signalColor: "rose",
+      entry: "N/A",
+      sl: "N/A",
+      target: "N/A",
+      aiVerdict: "Adversarial filter triggered: US Nasdaq tech weakness and persistent negative CVD tick flow.",
+    },
+  };
+
   const screens = [
     {
       id: "ranking",
@@ -187,6 +269,39 @@ export default function LandingPage({ onLoginSuccess }) {
       badge: "Capital Preservation",
       desc: "Institutional paper execution simulator with automated position sizing, dynamic ATR volatility stop-losses, and automatic breakeven ratcheting at +1.0R profit.",
       highlights: ["Zero-risk Auto-Breakeven floor at +1R", "Dynamic 1:2 Risk-Reward profit targets", "Real-time P&L mark-to-market ledger"],
+    },
+  ];
+
+  const comparisonData = [
+    {
+      feature: "Data Stream Speed",
+      retail: "1–5 second polling delay",
+      pulse: "250ms sub-second in-memory state delta stream",
+    },
+    {
+      feature: "Capital Preservation",
+      retail: "Manual, emotional stop adjustments",
+      pulse: "Automated +1.0R Breakeven ratchet guarantee",
+    },
+    {
+      feature: "Market Coverage",
+      retail: "Manual stock-by-stock browsing",
+      pulse: "Simultaneous 210 F&O cross-sectional scanning",
+    },
+    {
+      feature: "Catalyst Intelligence",
+      retail: "Delayed public news headlines",
+      pulse: "Google Gemini 3.6 Flash adversarial risk auditor",
+    },
+    {
+      feature: "Order Flow Delta",
+      retail: "Standard total volume bars",
+      pulse: "Cumulative Volume Delta (CVD) aggression meter",
+    },
+    {
+      feature: "Execution Sizing",
+      retail: "Arbitrary percentage stop losses",
+      pulse: "Dynamic ATR-calibrated 1:2 risk-reward sizing",
     },
   ];
 
@@ -256,16 +371,22 @@ export default function LandingPage({ onLoginSuccess }) {
               Market Radar
             </a>
             <a
+              href="#sandbox"
+              className="hidden md:inline-flex text-xs font-medium text-neutral-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/[0.04]"
+            >
+              Live Demo
+            </a>
+            <a
               href="#screens"
               className="hidden md:inline-flex text-xs font-medium text-neutral-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/[0.04]"
             >
-              Terminal Screens
+              Screens
             </a>
             <a
-              href="#capabilities"
-              className="hidden md:inline-flex text-xs font-medium text-neutral-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/[0.04]"
+              href="#comparison"
+              className="hidden lg:inline-flex text-xs font-medium text-neutral-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/[0.04]"
             >
-              Superpowers
+              Edge
             </a>
             <a
               href="#faq"
@@ -288,6 +409,22 @@ export default function LandingPage({ onLoginSuccess }) {
               <Lock size={12} className="stroke-[2.5]" />
               <span>Client Sign In</span>
             </button>
+          </div>
+        </div>
+
+        {/* ── LIVE INFINITE TICKER MARQUEE RIBBON ── */}
+        <div className="border-t border-white/[0.04] bg-neutral-950/60 overflow-hidden py-1.5 relative flex items-center">
+          <div className="flex gap-8 whitespace-nowrap animate-marquee font-mono text-[11px]">
+            {tickerItems.concat(tickerItems).map((item, idx) => (
+              <div key={idx} className="inline-flex items-center gap-2">
+                <span className="text-neutral-400 font-bold">{item.s}</span>
+                <span className="text-white">₹{item.p}</span>
+                <span className={`font-bold ${item.up ? "text-emerald-400" : "text-rose-400"}`}>
+                  {item.c}
+                </span>
+                <span className="text-neutral-700">·</span>
+              </div>
+            ))}
           </div>
         </div>
       </header>
@@ -596,6 +733,128 @@ export default function LandingPage({ onLoginSuccess }) {
         </div>
       </section>
 
+      {/* ── INTERACTIVE TERMINAL SANDBOX PREVIEW (HANDS-ON MOCKUP) ── */}
+      <section id="sandbox" className="relative z-10 py-20 px-4 sm:px-6 max-w-7xl mx-auto border-t border-white/[0.06]">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider mb-2">
+            <Eye size={14} />
+            <span>Interactive Terminal Sandbox</span>
+          </div>
+          <h2 className="text-3xl sm:text-5xl font-bold text-white font-display">
+            Experience PulseHunter in Action
+          </h2>
+          <p className="text-sm sm:text-base text-neutral-400 max-w-2xl mx-auto mt-3">
+            Select a candidate setup below to observe how PulseHunter's quant gate, order flow, and risk protection interact in real-time.
+          </p>
+        </div>
+
+        {/* Stock Selector Pill Bar */}
+        <div className="flex justify-center gap-3 mb-8">
+          {["TATASTEEL", "MARUTI", "INFY"].map((sym) => {
+            const cfg = sandboxConfigs[sym];
+            const active = sandboxStock === sym;
+            return (
+              <button
+                key={sym}
+                onClick={() => setSandboxStock(sym)}
+                className={`px-5 py-2.5 rounded-2xl text-xs font-bold font-mono transition-all flex items-center gap-2 ${
+                  active
+                    ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-extrabold shadow-[0_0_20px_rgba(6,182,212,0.35)]"
+                    : "bg-white/[0.03] text-neutral-400 hover:text-white border border-white/[0.08]"
+                }`}
+              >
+                <span>{cfg.symbol}</span>
+                <span className={`text-[10px] ${cfg.isBullish ? "text-emerald-400" : "text-rose-400"} ${active ? "!text-black font-black" : ""}`}>
+                  {cfg.change}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Interactive Live Card Container */}
+        {(() => {
+          const cfg = sandboxConfigs[sandboxStock];
+          return (
+            <motion.div
+              key={sandboxStock}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white/[0.025] backdrop-blur-2xl border border-white/[0.1] rounded-3xl p-6 sm:p-10 shadow-2xl max-w-5xl mx-auto"
+            >
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-6 border-b border-white/[0.06]">
+                <div>
+                  <div className="flex items-center gap-2.5 mb-1">
+                    <h3 className="text-2xl font-bold font-mono text-white">{cfg.symbol}</h3>
+                    <span className="text-xs text-neutral-400">· {cfg.name}</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/[0.05] border border-white/[0.1] text-neutral-300">
+                      {cfg.sector}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-3xl font-extrabold font-mono text-white">{cfg.ltp}</span>
+                    <span className={`text-sm font-mono font-bold ${cfg.isBullish ? "text-emerald-400" : "text-rose-400"}`}>
+                      {cfg.change}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold border ${
+                    cfg.signalColor === "emerald"
+                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                      : cfg.signalColor === "cyan"
+                      ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/30"
+                      : "bg-rose-500/10 text-rose-400 border-rose-500/30"
+                  }`}>
+                    {cfg.signal}
+                  </span>
+                </div>
+              </div>
+
+              {/* Dynamic Feature Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-6">
+                <div className="bg-neutral-950/70 border border-white/[0.06] rounded-2xl p-4">
+                  <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block mb-1">
+                    Intraday Order Flow (CVD)
+                  </span>
+                  <div className="text-lg font-bold font-mono text-white mb-0.5">{cfg.cvd}</div>
+                  <span className="text-xs text-cyan-400 font-medium">{cfg.cvdDesc}</span>
+                </div>
+
+                <div className="bg-neutral-950/70 border border-white/[0.06] rounded-2xl p-4">
+                  <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block mb-1">
+                    VWAP Reference Level
+                  </span>
+                  <div className="text-lg font-bold font-mono text-white mb-0.5">{cfg.vwap}</div>
+                  <span className="text-xs text-neutral-400">Institutional Volume Anchor</span>
+                </div>
+
+                <div className="bg-neutral-950/70 border border-white/[0.06] rounded-2xl p-4">
+                  <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block mb-1">
+                    Risk Protection Status
+                  </span>
+                  <div className="text-sm font-bold font-mono text-emerald-400 mb-0.5">{cfg.sl}</div>
+                  <span className="text-xs text-neutral-400">Target: {cfg.target}</span>
+                </div>
+              </div>
+
+              {/* AI Copilot Verdict Box */}
+              <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-2xl p-4 flex items-start gap-3">
+                <Sparkles size={18} className="text-cyan-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <span className="text-[11px] font-mono font-bold text-cyan-400 uppercase tracking-wider block mb-1">
+                    GEMINI 3.6 FLASH VERDICT &amp; CATALYST AUDIT
+                  </span>
+                  <p className="text-xs text-neutral-300 leading-relaxed">{cfg.aiVerdict}</p>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })()}
+      </section>
+
       {/* ── THE 7 TERMINAL SCREENS WALKTHROUGH ── */}
       <section id="screens" className="relative z-10 py-20 px-4 sm:px-6 max-w-7xl mx-auto border-t border-white/[0.06]">
         <div className="text-center mb-14">
@@ -669,354 +928,176 @@ export default function LandingPage({ onLoginSuccess }) {
         })}
       </section>
 
-      {/* ── 4-STEP SYSTEMATIC WORKFLOW ── */}
-      <section className="relative z-10 py-20 px-4 sm:px-6 max-w-7xl mx-auto border-t border-white/[0.06]">
+      {/* ── COMPARISON MATRIX SECTION ── */}
+      <section id="comparison" className="relative z-10 py-20 px-4 sm:px-6 max-w-5xl mx-auto border-t border-white/[0.06]">
         <div className="text-center mb-14">
-          <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-teal-400 uppercase tracking-wider mb-2">
-            <Compass size={14} />
-            <span>Execution Protocol</span>
+          <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-indigo-400 uppercase tracking-wider mb-2">
+            <Sliders size={14} />
+            <span>The Quantitative Edge</span>
           </div>
           <h2 className="text-3xl sm:text-5xl font-bold text-white font-display">
-            The 4-Step Quantitative Pipeline
+            Conventional Retail vs PulseHunter
           </h2>
-          <p className="text-sm sm:text-base text-neutral-400 max-w-2xl mx-auto mt-3">
-            How systematic momentum traders utilize PulseHunter from pre-market preparation to trade execution.
+          <p className="text-sm sm:text-base text-neutral-400 max-w-xl mx-auto mt-3">
+            Why systematic momentum trading outperforms manual chart-by-chart browsing.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white/[0.025] border border-white/[0.08] rounded-3xl p-6 relative">
-            <div className="text-xs font-mono font-bold text-cyan-400 mb-2">01 · 08:45 AM IST</div>
-            <h4 className="font-bold text-base text-white mb-2">Pre-Market Wire Synthesis</h4>
-            <p className="text-xs text-neutral-400 leading-relaxed">
-              Gemini AI digests global macro cues, Brent crude, metals, and Indian corporate catalysts to set the daily sector bias.
-            </p>
+        <div className="bg-white/[0.025] border border-white/[0.1] rounded-3xl overflow-hidden shadow-2xl">
+          <div className="grid grid-cols-3 bg-white/[0.04] border-b border-white/[0.08] p-4 text-xs font-mono font-bold">
+            <span className="text-neutral-400 uppercase">Capability</span>
+            <span className="text-neutral-400 uppercase">Conventional Retail</span>
+            <span className="text-cyan-400 uppercase">PulseHunter Terminal</span>
           </div>
-          <div className="bg-white/[0.025] border border-white/[0.08] rounded-3xl p-6 relative">
-            <div className="text-xs font-mono font-bold text-cyan-400 mb-2">02 · 09:15 AM IST</div>
-            <h4 className="font-bold text-base text-white mb-2">Intraday Momentum Scan</h4>
-            <p className="text-xs text-neutral-400 leading-relaxed">
-              210 F&amp;O symbols are continuously scanned for relative strength outperformance and day range expansion.
-            </p>
+          {comparisonData.map((row, idx) => (
+            <div
+              key={idx}
+              className={`grid grid-cols-3 p-4 text-xs items-center gap-3 border-b border-white/[0.04] ${
+                idx % 2 === 0 ? "bg-white/[0.01]" : "bg-transparent"
+              }`}
+            >
+              <span className="font-bold text-white">{row.feature}</span>
+              <span className="text-neutral-400">{row.retail}</span>
+              <span className="text-cyan-300 font-semibold flex items-center gap-1.5">
+                <Check size={14} className="text-cyan-400 flex-shrink-0" />
+                <span>{row.pulse}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── WHO PULSEHUNTER IS BUILT FOR ── */}
+      <section className="relative z-10 py-20 px-4 sm:px-6 max-w-7xl mx-auto border-t border-white/[0.06]">
+        <div className="text-center mb-14">
+          <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-emerald-400 uppercase tracking-wider mb-2">
+            <UserCheck size={14} />
+            <span>Target Profiles</span>
           </div>
-          <div className="bg-white/[0.025] border border-white/[0.08] rounded-3xl p-6 relative">
-            <div className="text-xs font-mono font-bold text-cyan-400 mb-2">03 · 09:45 AM IST</div>
-            <h4 className="font-bold text-base text-white mb-2">Order Flow Validation</h4>
-            <p className="text-xs text-neutral-400 leading-relaxed">
-              Candidate setups are cross-checked against 20-day fresh turnover velocity and Cumulative Volume Delta (CVD) aggression.
-            </p>
+          <h2 className="text-3xl sm:text-5xl font-bold text-white font-display">
+            Who Is PulseHunter Built For?
+          </h2>
+          <p className="text-sm sm:text-base text-neutral-400 max-w-2xl mx-auto mt-3">
+            Engineered for high-frequency discipline and systematic execution across three key participant profiles.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white/[0.025] border border-white/[0.08] rounded-3xl p-7 flex flex-col justify-between shadow-sm">
+            <div>
+              <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 grid place-items-center mb-4">
+                <BarChart3 size={20} />
+              </div>
+              <h4 className="text-xl font-bold text-white mb-2">Quantitative &amp; Systematic Traders</h4>
+              <p className="text-xs text-neutral-400 leading-relaxed mb-6">
+                Traders seeking statistical outperformance who want to trade strictly with the trend,
+                filtered by sector relative strength and confirmed volume accumulation.
+              </p>
+            </div>
+            <div className="text-xs text-cyan-400 font-mono font-bold flex items-center gap-1">
+              <span>Statistical Edge Focus</span>
+              <ArrowRight size={13} />
+            </div>
           </div>
-          <div className="bg-white/[0.025] border border-white/[0.08] rounded-3xl p-6 relative">
-            <div className="text-xs font-mono font-bold text-cyan-400 mb-2">04 · Execution</div>
-            <h4 className="font-bold text-base text-white mb-2">Protected Execution</h4>
-            <p className="text-xs text-neutral-400 leading-relaxed">
-              Orders are placed with automated 1.5x ATR stops and automatically ratcheted to Breakeven at +1.0R profit.
-            </p>
+
+          <div className="bg-white/[0.025] border border-white/[0.08] rounded-3xl p-7 flex flex-col justify-between shadow-sm">
+            <div>
+              <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 grid place-items-center mb-4">
+                <Flame size={20} />
+              </div>
+              <h4 className="text-xl font-bold text-white mb-2">Active F&amp;O Derivatives Desks</h4>
+              <p className="text-xs text-neutral-400 leading-relaxed mb-6">
+                Proprietary intraday scalpers who need sub-second Cumulative Volume Delta (CVD) order
+                flow to detect aggressive market participants in 210 F&amp;O stocks.
+              </p>
+            </div>
+            <div className="text-xs text-indigo-400 font-mono font-bold flex items-center gap-1">
+              <span>Order Flow Precision</span>
+              <ArrowRight size={13} />
+            </div>
+          </div>
+
+          <div className="bg-white/[0.025] border border-white/[0.08] rounded-3xl p-7 flex flex-col justify-between shadow-sm">
+            <div>
+              <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 grid place-items-center mb-4">
+                <Shield size={20} />
+              </div>
+              <h4 className="text-xl font-bold text-white mb-2">Disciplined Risk-First Traders</h4>
+              <p className="text-xs text-neutral-400 leading-relaxed mb-6">
+                Traders committed to eliminating revenge trading and emotional exits with automated
+                bracket order execution and automatic +1.0R Breakeven ratchets.
+              </p>
+            </div>
+            <div className="text-xs text-emerald-400 font-mono font-bold flex items-center gap-1">
+              <span>Zero-Loss Guarantee on 1R</span>
+              <ArrowRight size={13} />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── 5 SUPERPOWERS SECTION ── */}
-      <section id="capabilities" className="relative z-10 py-20 px-4 sm:px-6 max-w-7xl mx-auto border-t border-white/[0.06]">
-        <div className="text-center mb-14">
-          <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-indigo-400 uppercase tracking-wider mb-2">
-            <Cpu size={14} />
-            <span>Institutional Superpowers</span>
+      {/* ── KEYBOARD SHORTCUTS & INFRASTRUCTURE RIBBON ── */}
+      <section className="relative z-10 py-16 px-4 sm:px-6 max-w-7xl mx-auto border-t border-white/[0.06]">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+          <div>
+            <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider mb-2">
+              <Command size={14} />
+              <span>Keyboard-First Architecture</span>
+            </div>
+            <h3 className="text-2xl sm:text-3xl font-bold text-white font-display mb-4">
+              Engineered for Terminal Velocity
+            </h3>
+            <p className="text-sm text-neutral-300 leading-relaxed mb-6">
+              Navigate all 7 screens, search symbols, toggle themes, and expand charts with zero latency hotkeys.
+            </p>
+            <div className="grid grid-cols-2 gap-2.5 text-xs font-mono">
+              <div className="bg-white/[0.03] p-3 rounded-xl border border-white/[0.06] flex items-center justify-between">
+                <span className="text-neutral-400">Switch Screens</span>
+                <kbd className="px-2 py-0.5 rounded bg-white/[0.1] text-white font-bold">[1 - 7]</kbd>
+              </div>
+              <div className="bg-white/[0.03] p-3 rounded-xl border border-white/[0.06] flex items-center justify-between">
+                <span className="text-neutral-400">Universal Search</span>
+                <kbd className="px-2 py-0.5 rounded bg-white/[0.1] text-white font-bold">[/]</kbd>
+              </div>
+              <div className="bg-white/[0.03] p-3 rounded-xl border border-white/[0.06] flex items-center justify-between">
+                <span className="text-neutral-400">Focus Chart Pane</span>
+                <kbd className="px-2 py-0.5 rounded bg-white/[0.1] text-white font-bold">[Space]</kbd>
+              </div>
+              <div className="bg-white/[0.03] p-3 rounded-xl border border-white/[0.06] flex items-center justify-between">
+                <span className="text-neutral-400">Toggle Theme</span>
+                <kbd className="px-2 py-0.5 rounded bg-white/[0.1] text-white font-bold">[T]</kbd>
+              </div>
+            </div>
           </div>
-          <h2 className="text-3xl sm:text-5xl font-bold text-white font-display">
-            Built for Systematic Edge
-          </h2>
-          <p className="text-sm sm:text-base text-neutral-400 max-w-2xl mx-auto mt-3">
-            Five synchronized algorithmic layers eliminate emotional bias, noise, and execution friction.
-          </p>
-        </div>
 
-        {/* Feature Tabs */}
-        <div className="flex justify-center gap-2 mb-10 overflow-x-auto pb-2">
-          {[
-            { id: "quant", label: "Multi-Factor Quant Gatekeeper", icon: Shield },
-            { id: "ai", label: "Gemini 3.6 Flash AI Copilot", icon: Sparkles },
-            { id: "smart", label: "Smart Money & CVD Engine", icon: BarChart3 },
-            { id: "paper", label: "Auto-Breakeven Paper Terminal", icon: TrendingUp },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const active = activeFeatureTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveFeatureTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${
-                  active
-                    ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-extrabold shadow-[0_0_20px_rgba(6,182,212,0.3)]"
-                    : "bg-white/[0.03] text-neutral-400 hover:text-white border border-white/[0.08]"
-                }`}
-              >
-                <Icon size={14} />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Feature Display Card */}
-        <div className="bg-white/[0.025] backdrop-blur-2xl border border-white/[0.1] rounded-3xl p-6 sm:p-10 shadow-2xl">
-          {activeFeatureTab === "quant" && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-              <div>
-                <span className="text-xs font-mono text-cyan-400 font-bold uppercase tracking-wider block mb-2">
-                  5-TIER ADAPTIVE FILTERING
-                </span>
-                <h3 className="text-2xl sm:text-3xl font-bold text-white font-display mb-4">
-                  Multi-Factor Quant Gatekeeper
-                </h3>
-                <p className="text-sm text-neutral-300 leading-relaxed mb-6">
-                  98% of intraday breakout signals fail because traders chase overbought momentum
-                  or trade against prevailing sector currents. PulseHunter's algorithmic gatekeeper
-                  verifies structural market conditions before any signal qualifies:
-                </p>
-                <div className="space-y-3 text-xs text-neutral-300">
-                  <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-cyan-400 flex-shrink-0 mt-0.5" />
-                    <span>
-                      <b>Sector Breadth Alignment</b>: Requires institutional participation across
-                      constituent stocks to confirm genuine sector tailwinds.
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-cyan-400 flex-shrink-0 mt-0.5" />
-                    <span>
-                      <b>RSI Momentum Calibration</b>: Filters out exhausted tops while ensuring
-                      active buying pressure is confirmed.
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-cyan-400 flex-shrink-0 mt-0.5" />
-                    <span>
-                      <b>VWAP Retest Confirmation</b>: Captures institutional support bounces near
-                      intraday volume weighted averages.
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-cyan-400 flex-shrink-0 mt-0.5" />
-                    <span>
-                      <b>Average Daily Range (ADR) Room</b>: Asserts sufficient remaining daily room
-                      to achieve 1:2 risk-reward profit targets.
-                    </span>
-                  </div>
+          <div className="bg-white/[0.025] border border-white/[0.08] rounded-3xl p-6 space-y-4">
+            <span className="text-xs font-mono font-bold text-indigo-400 uppercase tracking-wider block">
+              ENTERPRISE CLOUD INFRASTRUCTURE
+            </span>
+            <div className="space-y-3 text-xs">
+              <div className="flex items-start gap-3">
+                <Server size={18} className="text-cyan-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold text-white block">In-Memory High Frequency Python Engine</span>
+                  <span className="text-neutral-400">Sub-second tick aggregation across 210 watchlist equities.</span>
                 </div>
               </div>
-
-              <div className="bg-neutral-950/80 border border-white/[0.08] rounded-2xl p-6 space-y-4">
-                <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
-                  <span className="text-xs font-mono font-bold text-cyan-400">
-                    QUANT GATE CHECKPOINT STATUS
-                  </span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                    LIVE GATED
-                  </span>
+              <div className="flex items-start gap-3">
+                <KeyRound size={18} className="text-emerald-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold text-white block">Encrypted Session Authentication</span>
+                  <span className="text-neutral-400">Zero open self-registration with invite-only authorization tokens.</span>
                 </div>
-                <div className="space-y-2.5 text-xs">
-                  <div className="flex items-center justify-between bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
-                    <span className="text-neutral-300">Intraday Relative Strength</span>
-                    <span className="text-emerald-400 font-bold font-mono">✓ Outperforming Index</span>
-                  </div>
-                  <div className="flex items-center justify-between bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
-                    <span className="text-neutral-300">Sector Breadth Confirmation</span>
-                    <span className="text-emerald-400 font-bold font-mono">✓ Institutional Tailwinds</span>
-                  </div>
-                  <div className="flex items-center justify-between bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
-                    <span className="text-neutral-300">VWAP Retest Proximity</span>
-                    <span className="text-emerald-400 font-bold font-mono">✓ Retest Zone Active</span>
-                  </div>
-                  <div className="flex items-center justify-between bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
-                    <span className="text-neutral-300">14-Day ADR Expansion Room</span>
-                    <span className="text-emerald-400 font-bold font-mono">✓ Expansion Room OK</span>
-                  </div>
-                </div>
-                <div className="text-[11px] text-neutral-400 text-center pt-2">
-                  Filters 210 watchlist equities into <b>1–3 high-conviction candidates per day</b>.
+              </div>
+              <div className="flex items-start gap-3">
+                <Sparkles size={18} className="text-indigo-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold text-white block">Google Gemini 3.6 Flash Cloud Intelligence</span>
+                  <span className="text-neutral-400">Adversarial catalyst auditing with automatic quota fallback.</span>
                 </div>
               </div>
             </div>
-          )}
-
-          {activeFeatureTab === "ai" && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-              <div>
-                <span className="text-xs font-mono text-indigo-400 font-bold uppercase tracking-wider block mb-2">
-                  ADVERSARIAL RISK AUDITING
-                </span>
-                <h3 className="text-2xl sm:text-3xl font-bold text-white font-display mb-4">
-                  Google Gemini 3.6 Flash AI Copilot
-                </h3>
-                <p className="text-sm text-neutral-300 leading-relaxed mb-6">
-                  Gemini acts as an adversarial risk auditor. Ingesting 4 real-time global news feeds
-                  (Global Macro, Commodities/Forex, Regulatory/SEBI, and Indian Corporate earnings), it
-                  actively looks for trap catalysts before trade execution:
-                </p>
-                <div className="space-y-3 text-xs text-neutral-300">
-                  <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-indigo-400 flex-shrink-0 mt-0.5" />
-                    <span>
-                      <b>Multi-Stream Global Wire</b>: Real-time sentiment on Nasdaq, Brent Crude,
-                      Gold, SEBI circulars, and quarterly earnings.
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-indigo-400 flex-shrink-0 mt-0.5" />
-                    <span>
-                      <b>Adversarial Red-Flag Defense</b>: Detects overhead resistance clusters,
-                      exhausted liquidity, and unexpected macro headwinds.
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-indigo-400 flex-shrink-0 mt-0.5" />
-                    <span>
-                      <b>Real-time Engine Health</b>: Top-header live status badge indicating active
-                      AI models with automatic fallback.
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl overflow-hidden border border-white/[0.08] shadow-2xl">
-                <img
-                  src="/assets/ai-copilot.jpg"
-                  alt="PulseHunter AI Copilot Neural Matrix"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-          )}
-
-          {activeFeatureTab === "smart" && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-              <div>
-                <span className="text-xs font-mono text-cyan-400 font-bold uppercase tracking-wider block mb-2">
-                  ORDER FLOW PRECISION
-                </span>
-                <h3 className="text-2xl sm:text-3xl font-bold text-white font-display mb-4">
-                  Smart Money &amp; CVD Delta Engine
-                </h3>
-                <p className="text-sm text-neutral-300 leading-relaxed mb-6">
-                  Uncovers institutional accumulation and distribution footprints across 210 F&amp;O
-                  equities by tracking volume velocity and real-time tick aggressive order flow:
-                </p>
-                <div className="space-y-3 text-xs text-neutral-300">
-                  <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-cyan-400 flex-shrink-0 mt-0.5" />
-                    <span>
-                      <b>20-Day Historical Velocity Benchmarking</b>: Identifies abnormal fresh turnover
-                      bursts representing institutional block positioning.
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-cyan-400 flex-shrink-0 mt-0.5" />
-                    <span>
-                      <b>Cumulative Volume Delta (CVD)</b>: Sub-chart pane visualizing net aggressive
-                      market buying vs selling pressure on 5m candles.
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-neutral-950/80 border border-white/[0.08] rounded-2xl p-6 space-y-4">
-                <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
-                  <span className="text-xs font-mono font-bold text-cyan-400">
-                    INSTITUTIONAL FLOW HEATMAP
-                  </span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                    CVD TICK-RULE
-                  </span>
-                </div>
-                <div className="space-y-2.5 text-xs">
-                  <div className="flex items-center justify-between bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
-                    <span className="text-neutral-300 font-mono">TATASTEEL</span>
-                    <span className="text-emerald-400 font-bold font-mono">+12.4M CVD (Aggressive Buys)</span>
-                  </div>
-                  <div className="flex items-center justify-between bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
-                    <span className="text-neutral-300 font-mono">MARUTI</span>
-                    <span className="text-emerald-400 font-bold font-mono">+8.1M CVD (Accumulation)</span>
-                  </div>
-                  <div className="flex items-center justify-between bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
-                    <span className="text-neutral-300 font-mono">INFY</span>
-                    <span className="text-rose-400 font-bold font-mono">-9.2M CVD (Distribution)</span>
-                  </div>
-                </div>
-                <div className="text-[11px] text-neutral-400 text-center pt-2">
-                  Real-time delta classification separating market orders from limit liquidity.
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeFeatureTab === "paper" && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-              <div>
-                <span className="text-xs font-mono text-emerald-400 font-bold uppercase tracking-wider block mb-2">
-                  CAPITAL PRESERVATION &amp; SAFETY
-                </span>
-                <h3 className="text-2xl sm:text-3xl font-bold text-white font-display mb-4">
-                  Auto-Breakeven Paper Terminal
-                </h3>
-                <p className="text-sm text-neutral-300 leading-relaxed mb-6">
-                  Complete paper trading terminal engineered to instill institutional execution discipline
-                  with zero capital risk:
-                </p>
-                <div className="space-y-3 text-xs text-neutral-300">
-                  <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-emerald-400 flex-shrink-0 mt-0.5" />
-                    <span>
-                      <b>Auto-Breakeven at +1.0R Profit</b>: The instant a position reaches 1x risk distance,
-                      the stop loss is ratcheted to Entry, ensuring a winning trade never turns into a loss.
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-emerald-400 flex-shrink-0 mt-0.5" />
-                    <span>
-                      <b>Dynamic ATR Structural Stops</b>: Anchors stops to real volatility structure
-                      instead of arbitrary fixed percentages.
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-emerald-400 flex-shrink-0 mt-0.5" />
-                    <span>
-                      <b>Visual Chart Order Lines</b>: Live Entry, Stop Loss, Breakeven, and 1:2 RR Target
-                      levels rendered directly on Lightweight Charts.
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-neutral-950/80 border border-white/[0.08] rounded-2xl p-6 space-y-4">
-                <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
-                  <span className="text-xs font-mono font-bold text-emerald-400">
-                    ACTIVE TRADE PROTECTION MONITOR
-                  </span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                    PROTECTED
-                  </span>
-                </div>
-                <div className="space-y-2.5 text-xs font-mono">
-                  <div className="flex items-center justify-between bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
-                    <span className="text-cyan-400">Entry (Long)</span>
-                    <span className="text-white">₹1,240.00</span>
-                  </div>
-                  <div className="flex items-center justify-between bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/30">
-                    <span className="text-emerald-400 font-bold">🛡️ Breakeven SL Ratchet</span>
-                    <span className="text-emerald-400 font-bold">₹1,240.00 (Risk: ₹0.00)</span>
-                  </div>
-                  <div className="flex items-center justify-between bg-white/[0.02] p-3 rounded-xl border border-white/[0.05]">
-                    <span className="text-emerald-400">Target 1:2 RR</span>
-                    <span className="text-white">₹1,270.00</span>
-                  </div>
-                </div>
-                <div className="text-[11px] text-neutral-400 text-center pt-2">
-                  Automatic trailing stop loss with institutional risk-reward symmetry.
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </section>
 
