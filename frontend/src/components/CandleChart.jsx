@@ -403,7 +403,7 @@ export default function CandleChart({
     levelValuesRef.current = values;
   }, [levels]);
 
-  // Open paper-trade position lines.
+  // Open paper-trade position lines with Auto-Breakeven & 1:2 RR badge styling.
   useEffect(() => {
     const series = seriesRef.current;
     if (!series) return;
@@ -413,26 +413,55 @@ export default function CandleChart({
     if (position) {
       const isTsl = position.tsl_type && position.tsl_type !== "NONE";
       const isBuy = position.side === "BUY";
+      const entry = Number(position.entry_price);
+      const sl = position.sl_price != null ? Number(position.sl_price) : null;
+      const target = position.target_price != null ? Number(position.target_price) : null;
+
+      const isBreakeven =
+        sl != null && (isBuy ? sl >= entry : sl <= entry);
+
+      const slTitle = isBreakeven
+        ? `🛡️ Breakeven SL (${isBuy ? "Long" : "Short"})`
+        : isTsl
+        ? `TSL (${isBuy ? "Long" : "Short"})`
+        : `SL (${isBuy ? "Long" : "Short"})`;
+      const slColor = isBreakeven ? "#10b981" : "#ef4444";
+
       const entries = [
-        { price: position.entry_price, color: "#60a5fa", title: "Entry" },
         {
-          price: position.sl_price,
-          color: "#ef4444",
-          title: isTsl ? "TSL" : "SL",
+          price: entry,
+          color: "#3b82f6",
+          title: `Entry (${isBuy ? "Long" : "Short"})`,
+          lineStyle: LineStyle.Dashed,
+          lineWidth: 2,
         },
-        { price: position.target_price, color: "#22c55e", title: "Target" },
+        {
+          price: sl,
+          color: slColor,
+          title: slTitle,
+          lineStyle: LineStyle.Solid,
+          lineWidth: 2,
+        },
+        {
+          price: target,
+          color: "#10b981",
+          title: `Target 1:2 (${isBuy ? "Long" : "Short"})`,
+          lineStyle: LineStyle.Dashed,
+          lineWidth: 2,
+        },
       ];
-      entries.forEach(({ price, color, title }) => {
-        if (price == null) return;
+
+      entries.forEach(({ price, color, title, lineStyle, lineWidth }) => {
+        if (price == null || isNaN(price)) return;
         values.push(price);
         positionLinesRef.current.push(
           series.createPriceLine({
             price,
             color,
-            lineWidth: 2,
-            lineStyle: LineStyle.Solid,
+            lineWidth: lineWidth || 2,
+            lineStyle: lineStyle || LineStyle.Solid,
             axisLabelVisible: true,
-            title: `${title} (${isBuy ? "Long" : "Short"})`,
+            title,
           }),
         );
       });

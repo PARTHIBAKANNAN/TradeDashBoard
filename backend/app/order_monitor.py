@@ -46,6 +46,8 @@ def register_pending_limit(order: dict) -> None:
 def register_open_bracket(order: dict) -> None:
     if not order.get("sl_price") and not order.get("target_price") and not order.get("tsl_type"):
         return  # nothing to watch for this position
+    if "initial_sl" not in order and order.get("sl_price"):
+        order["initial_sl"] = order.get("sl_price")
     _open_brackets.setdefault(order["symbol"], []).append(order)
 
 
@@ -84,8 +86,16 @@ def _ratchet_trailing_stop(order: dict, ltp: float) -> None:
     entry_val = float(order["entry_price"])
     new_peak = trailing_stop.update_peak(order["side"], float(prev_peak), ltp)
     prev_sl = float(order["sl_price"]) if order.get("sl_price") else None
+    initial_sl = float(order["initial_sl"]) if order.get("initial_sl") else prev_sl
+
     candidate = trailing_stop.trailing_sl_price(
-        order["side"], entry_val, new_peak, order["tsl_type"], float(order["tsl_value"]), prev_sl
+        order["side"],
+        entry_val,
+        new_peak,
+        order["tsl_type"],
+        float(order["tsl_value"]),
+        initial_sl=initial_sl,
+        enable_breakeven=True,
     )
     new_sl = trailing_stop.ratchet_sl(order["side"], prev_sl, candidate)
 
