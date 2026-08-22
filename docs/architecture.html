@@ -234,6 +234,8 @@
       <a href="#lifecycle">Lifecycle</a>
       <a href="#deploy">Deployment</a>
       <a href="#files">Module Map</a>
+      <a href="#ai-quant">AI Copilot</a>
+      <a href="#roadmap">Roadmap</a>
     </nav>
   </div>
 </header>
@@ -1256,15 +1258,16 @@ frame = build_frame(prev, curr, seq=next_seq)  <span class="tok-c"># None if not
         <tr><td><code>app/paper_trading.py</code></td><td><code>/api/paper</code> router — orders, positions, wallet, history, exports, auto order placement</td></tr>
         <tr><td><code>app/order_monitor.py</code></td><td>Per-tick SL/Target/TSL/limit-fill checks for open paper orders</td></tr>
         <tr><td><code>app/trailing_stop.py</code>, <code>brokerage.py</code>, <code>paper_pnl.py</code>, <code>paper_margin.py</code></td><td>Pure paper-trading math: ratchet TSL, brokerage/tax, P&amp;L, margin/leverage</td></tr>
-        <tr><td><code>app/technical_indicators.py</code></td><td>5m RSI-14, 20/50 EMA, dynamic structural SL/Target math, defensive sector gating</td></tr>
-        <tr><td><code>app/ai_copilot.py</code></td><td>Gemini Red-Flag Filter, Google Search Grounded pre-market briefing, automated risk sizing, silent Telegram alerting</td></tr>
+        <tr><td><code>app/technical_indicators.py</code></td><td>5m RSI-14, 20/50 EMA, dynamic structural SL/Target math, defensive sector gating, VWAP retest evaluation</td></tr>
+        <tr><td><code>app/ai_copilot.py</code></td><td>Gemini 3.6 Flash Red-Flag Filter, Multi-Stream Global Macro/Commodities/Tariff news wire, automated risk sizing, silent Telegram alerting</td></tr>
         <tr><td><code>app/telegram_notify.py</code></td><td>Best-effort Telegram alerts for paper-trade closes, executed orders, and Recommended-digest checkpoints</td></tr>
         <tr><td><code>app/logging_config.py</code></td><td><code>logging.basicConfig</code> to stdout — journald captures it on the VM, no file handler needed</td></tr>
-        <tr><td><code>app/main.py</code></td><td>FastAPI app: routers, <code>/ws/stream</code>, snapshot, health, lifespan wiring (scheduler + broadcaster + Smart Money loop)</td></tr>
+        <tr><td><code>app/main.py</code></td><td>FastAPI app: routers, <code>/ws/stream</code>, snapshot, health, <code>/api/ai/status</code>, lifespan wiring (scheduler + broadcaster + Smart Money loop)</td></tr>
         <tr><td><code>manual_auth.py</code> · <code>diagnose_login.py</code> · <code>check_totp.py</code></td><td>One-time FYERS app consent + credential-masked login diagnostics</td></tr>
-        <tr><td><code>frontend/src/App.jsx</code></td><td>Auth gate, Dashboard shell, tab bar, all 7 screens' mount points</td></tr>
+        <tr><td><code>frontend/src/App.jsx</code></td><td>Auth gate, Dashboard shell, tab bar, Live AI Status Badge (30s polling), all 7 screens' mount points</td></tr>
         <tr><td><code>frontend/src/hooks/useMarketStream.js</code></td><td>Singleton WebSocket controller, localStorage caches, client-side candle building</td></tr>
         <tr><td><code>frontend/src/components/CandleChart.jsx</code></td><td>lightweight-charts wrapper: candles + CVD pane + reference lines + crosshair badge</td></tr>
+        <tr><td><code>frontend/src/components/insights/PremarketBriefingCard.jsx</code></td><td>Multi-stream global intelligence card: Global Cues bar (Gift Nifty, US Tech, Crude, Gold, DXY), Policy Watch, Thematic Focus stocks</td></tr>
         <tr><td><code>frontend/src/screens/SmartMoneyScreen.jsx</code></td><td>Independent-polling Smart Money Top-10 tab</td></tr>
         <tr><td><code>frontend/src/utils/momentumScore.js</code>, <code>industryGroup.js</code></td><td>Client-side mirrors of the Recommended-score formula + scoring-sector map</td></tr>
         <tr><td><code>frontend/src/components/paper-trading/*</code></td><td>Order ticket, positions table, history, charges/exports/equity-curve reports</td></tr>
@@ -1276,25 +1279,27 @@ frame = build_frame(prev, curr, seq=next_seq)  <span class="tok-c"># None if not
   <section id="ai-quant">
     <div class="eyebrow">22 — AI &amp; Quantitative Engine</div>
     <h2>AI Copilot &amp; Multi-Factor Quant Gatekeeper</h2>
-    <p class="sub">An institutional-grade 4-tier filtering pipeline that scans 210 F&amp;O stocks during the 09:15–11:00 AM prime breakout window, filters out 98% of false breakouts, validates technical setups with Google Gemini AI, and executes risk-capped paper orders automatically.</p>
+    <p class="sub">An institutional-grade 5-tier filtering pipeline that scans 210 F&amp;O stocks during the 09:15–11:00 AM prime breakout window, filters out 98% of false breakouts, validates technical setups with Google Gemini 3.6 Flash AI, and executes risk-capped paper orders automatically.</p>
 
     <div class="grid c2" style="margin-top:24px">
       <div class="card">
         <h4><div class="ic" style="background:rgba(59,130,246,0.15);color:var(--blue)">🎯</div> Multi-Factor Quant Gatekeeper</h4>
-        <p>Before any stock reaches the AI copilot, it must pass 4 strict mathematical tests in <code>technical_indicators.py</code>:
-          <br>• <b>Defensive Sector Filter</b>: FMCG/PSU/Cement require RS ≥ 2.0%; Momentum sectors require RS ≥ 1.0%.
+        <p>Before any stock reaches the AI copilot, it must pass 5 strict mathematical tests in <code>technical_indicators.py</code>:
+          <br>• <b>Sector Breadth &amp; Gating</b>: Sector Breadth ≥ 65% advancing; FMCG/PSU RS ≥ 2.0%; Momentum RS ≥ 1.0%.
           <br>• <b>5m RSI-14 (Wilder's)</b>: Must be [55, 72] for Buy / [28, 45] for Sell.
           <br>• <b>20 EMA Alignment</b>: Price must trade on the breakout side of the 20 EMA.
-          <br>• <b>VWAP Distance</b>: Must be within [0.10%, 1.20%] of VWAP (prevents extended tops).
+          <br>• <b>VWAP Retest Zone</b>: [0.10%, 0.65%] distance for pullbacks / [0.10%, 1.20%] for breakouts.
+          <br>• <b>ADR Room Check</b>: Day range used &lt; 85% of 14-day Average Daily Range.
         </p>
       </div>
 
       <div class="card">
-        <h4><div class="ic" style="background:rgba(139,92,246,0.15);color:var(--violet)">🤖</div> Gemini AI Red-Flag Audit</h4>
-        <p>Google Gemini (<code>gemini-flash-latest</code>) acts strictly as a risk auditor — never generating random signals:
-          <br>• <b>Red-Flag Mode</b>: Disqualifies traps, overhead PDH/PDL resistance, and choppy sectors.
-          <br>• <b>Rate Pacing</b>: Protected by <code>Semaphore(1)</code> + 2s sleep delay (0 HTTP 429 errors).
-          <br>• <b>Search Grounding</b>: 08:45 AM pre-market briefing uses real-time Google Search for live Gift Nifty &amp; macro cues.
+        <h4><div class="ic" style="background:rgba(139,92,246,0.15);color:var(--violet)">🌐</div> Multi-Stream News Wire &amp; Gemini 3.6 Flash</h4>
+        <p>Directly ingests 4 live real-time streams at ₹0 API cost without hitting tool rate limits:
+          <br>• <b>4 Live Feeds</b>: Global Macro &amp; US Tech, Commodities (Brent Crude/Gold), Tariffs/SEBI, Indian Corporate Earnings.
+          <br>• <b>Gemini 3.6 Flash Context</b>: Synthesizes Global Cues (Gift Nifty, Crude, Gold, DXY), Policy Watch, and Thematic Focus stocks.
+          <br>• <b>Live Status Badge</b>: <code>/api/ai/status</code> polled every 30s (<code>🟢 Gemini 3.6 Flash Live</code> vs <code>⚡ Institutional Model</code>).
+          <br>• <b>Paced Queue</b>: Protected by <code>Semaphore(1)</code> + 2s sleep delay (0 HTTP 429 errors).
         </p>
       </div>
 
@@ -1319,8 +1324,62 @@ frame = build_frame(prev, curr, seq=next_seq)  <span class="tok-c"># None if not
     </div>
   </section>
 
+  <!-- 23 ROADMAP -->
+  <section id="roadmap">
+    <div class="eyebrow">23 — Future Enhancements</div>
+    <h2>Paper Trading Mastery &amp; Quantitative Roadmap</h2>
+    <p class="sub">A planned progression of institutional features scheduled for deployment during the paper trading phase over the next several months:</p>
+
+    <div class="grid c3" style="margin-top:24px">
+      <div class="card">
+        <h4><div class="ic" style="background:rgba(34,197,94,0.15);color:var(--green)">🛡️</div> Pillar 1: Trade Safety</h4>
+        <p>
+          • <b>Auto-Breakeven Ratchet</b>: Moves SL to <code>Entry + Buffer</code> at +1.0R.<br>
+          • <b>Sector Deterioration Alarm</b>: Reversal alerts if sector breadth flips.<br>
+          • <b>Partial Profit Scale-Out</b>: Book 50% at 1.5R target; trail 50% runner.
+        </p>
+      </div>
+
+      <div class="card">
+        <h4><div class="ic" style="background:rgba(59,130,246,0.15);color:var(--blue)">📈</div> Pillar 2: Visual Charting</h4>
+        <p>
+          • <b>Interactive Order Lines</b>: Live Entry, SL, Target lines on 5m chart.<br>
+          • <b>Institutional Overlays</b>: PDH, PDL, PDC, VWAP ±1σ/±2σ bands, 15m ORB.<br>
+          • <b>Multi-Timeframe Switcher</b>: Toggle 1m, 3m, 5m, 15m instantly.
+        </p>
+      </div>
+
+      <div class="card">
+        <h4><div class="ic" style="background:rgba(245,158,11,0.15);color:var(--amber)">🧠</div> Pillar 3: F&amp;O Options Confluence</h4>
+        <p>
+          • <b>Strike OI Walls</b>: Highest Call resistance &amp; Put support strikes.<br>
+          • <b>Stock PCR Trend</b>: Put-Call ratio smart money accumulation.<br>
+          • <b>Gamma Squeeze Filter</b>: Expiry day open interest unwinding momentum.
+        </p>
+      </div>
+
+      <div class="card">
+        <h4><div class="ic" style="background:rgba(139,92,246,0.15);color:var(--violet)">📑</div> Pillar 4: AI Forensic Journal</h4>
+        <p>
+          • <b>15:35 PM Daily AI Debrief</b>: Automated EOD MFE / MAE analysis.<br>
+          • <b>Execution Quality Scorecard</b>: 0–100 score on entry, sector, trailing.<br>
+          • <b>'What-If' Parameter Matrix</b>: Simulates alternative SL/TSL rules.
+        </p>
+      </div>
+
+      <div class="card">
+        <h4><div class="ic" style="background:rgba(236,72,153,0.15);color:#ec4899">🧪</div> Pillar 5: Historical Backtester</h4>
+        <p>
+          • <b>30-Day Session Replay</b>: Replay 5m intraday data across 210 stocks.<br>
+          • <b>Strategy Benchmark Matrix</b>: ORB vs VWAP Retest vs Pullback stats.<br>
+          • <b>Quantitative Metrics</b>: Win Rate, Profit Factor, Max Drawdown.
+        </p>
+      </div>
+    </div>
+  </section>
+
   <footer>
-    TradeDashboard · FYERS API v3 · FastAPI + React · Complete architecture rewrite covering all 7 screens, both scoring engines, CVD, paper trading, AI Copilot, and the deployment pipeline.
+    TradeDashboard · FYERS API v3 · FastAPI + React · Complete architecture rewrite covering all 7 screens, both scoring engines, CVD, paper trading, AI Copilot, Multi-Stream News Wire, and the deployment pipeline.
   </footer>
 </main>
 </body>

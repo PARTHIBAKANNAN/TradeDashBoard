@@ -883,15 +883,16 @@ never two deploys racing (the VM script also takes its own file lock, belt-and-s
 | `app/paper_trading.py` | `/api/paper` router — orders, positions, wallet, history, exports, auto order placement |
 | `app/order_monitor.py` | Per-tick SL/Target/TSL/limit-fill checks for open paper orders |
 | `app/trailing_stop.py`, `brokerage.py`, `paper_pnl.py`, `paper_margin.py` | Pure paper-trading math: ratchet TSL, brokerage/tax, P&L, margin/leverage |
-| `app/technical_indicators.py` | 5m RSI-14, 20/50 EMA, dynamic structural SL/Target math, defensive sector gating |
-| `app/ai_copilot.py` | Gemini Red-Flag Filter, Google Search Grounded pre-market briefing, automated risk sizing, silent Telegram alerting |
+| `app/technical_indicators.py` | 5m RSI-14, 20/50 EMA, dynamic structural SL/Target math, defensive sector gating, VWAP retest evaluation |
+| `app/ai_copilot.py` | Gemini 3.6 Flash Red-Flag Filter, Multi-Stream Global Macro/Commodities/Tariff news wire, automated risk sizing, silent Telegram alerting |
 | `app/telegram_notify.py` | Best-effort Telegram alerts for paper-trade closes, executed orders, and Recommended-digest checkpoints |
 | `app/logging_config.py` | `logging.basicConfig` to stdout — journald captures it on the VM, no file handler needed |
-| `app/main.py` | FastAPI app: routers, `/ws/stream`, snapshot, health, lifespan wiring (scheduler + broadcaster + Smart Money loop) |
+| `app/main.py` | FastAPI app: routers, `/ws/stream`, snapshot, health, `/api/ai/status`, lifespan wiring (scheduler + broadcaster + Smart Money loop) |
 | `manual_auth.py` · `diagnose_login.py` · `check_totp.py` | One-time FYERS app consent + credential-masked login diagnostics |
-| `frontend/src/App.jsx` | Auth gate, Dashboard shell, tab bar, all 7 screens' mount points |
+| `frontend/src/App.jsx` | Auth gate, Dashboard shell, tab bar, Live AI Status Badge (30s polling), all 7 screens' mount points |
 | `frontend/src/hooks/useMarketStream.js` | Singleton WebSocket controller, localStorage caches, client-side candle building |
 | `frontend/src/components/CandleChart.jsx` | lightweight-charts wrapper: candles + CVD pane + reference lines + crosshair badge |
+| `frontend/src/components/insights/PremarketBriefingCard.jsx` | Multi-stream global intelligence card: Global Cues bar (Gift Nifty, US Tech, Crude, Gold, DXY), Policy Watch, Thematic Focus stocks |
 | `frontend/src/screens/SmartMoneyScreen.jsx` | Independent-polling Smart Money Top-10 tab |
 | `frontend/src/utils/momentumScore.js`, `industryGroup.js` | Client-side mirrors of the Recommended-score formula + scoring-sector map |
 | `frontend/src/components/paper-trading/*` | Order ticket, positions table, history, charges/exports/equity-curve reports |
@@ -904,21 +905,23 @@ An institutional-grade, multi-stage quantitative pipeline that continuously scan
 
 ```
 [ 210 Watchlist Stocks ]
-           │  (Tick-by-tick breakout detection: C1-C4 ORB)
+           │  (Tick-by-tick breakout detection: C1-C4 ORB & VWAP Retest)
            ▼
 [ STAGE 1: Multi-Factor Quant Gatekeeper (app/technical_indicators.py) ]
-   ├── Tier 1: Sector Gating (Defensive FMCG/PSU RS >= 2.0%, Momentum sectors RS >= 1.0%, Sector Mean aligned)
-   ├── Tier 2: VWAP Alignment (0.10% <= Distance <= 1.20%, prevents buying over-extended tops)
+   ├── Tier 1: Sector Gating (Defensive RS >= 2.0%, Momentum RS >= 1.0%, Sector Mean aligned, Breadth >= 65%)
+   ├── Tier 2: VWAP Alignment (0.10% <= Distance <= 0.65% for Retest / 1.20% for Breakout)
    ├── Tier 3: 5m Technicals (RSI 55-72 for Buy / 28-45 for Sell; Price on correct side of 20 EMA)
-   └── Tier 4: Order Book Depth Delta (Net rupee buyer/seller pressure confirmation)
+   ├── Tier 4: ADR Room Check (Day range consumed < 85% of 14-day ADR)
+   └── Tier 5: Order Book Depth Delta (Net rupee buyer/seller pressure confirmation)
            │
            │  (Only 1-3 top-tier stocks pass per day)
            ▼
 [ STAGE 2: AI Copilot Red-Flag Audit (app/ai_copilot.py) ]
-   ├── Google Gemini API (gemini-flash-latest / gemini-3.6-flash)
+   ├── Google Gemini API (gemini-3.6-flash / gen-lang-client-0440367952 Free Tier)
+   ├── Multi-Stream News Wire Ingestion: 4 real-time RSS streams (US Tech, Commodities, Tariffs/SEBI, Indian Corporate)
    ├── Paced via Semaphore(1) + 2s sleep delay (Zero HTTP 429 errors)
    ├── Red-Flag Filter Mode: Identifies traps, wall resistance, late entries, structural flaws
-   └── Grounded Pre-Market Briefing: Google Search Grounding for live Gift Nifty & global cues at 08:45 AM
+   └── Live AI Status: /api/ai/status polled every 30s ("🟢 Gemini 3.6 Flash Live" vs "⚡ Institutional Model")
            │
            │  (Confidence >= 80% and session_minute <= 105)
            ▼
@@ -934,42 +937,74 @@ An institutional-grade, multi-stage quantitative pipeline that continuously scan
    └── Silent Rejection: SKIP_TRAP and low-confidence alerts are silent; Telegram rings ONLY for orders
 ```
 
-### 1. Multi-Factor Quant Filter Math
+### 1. Multi-Stream Global Macro & Commodity News Ingestion
 
-Every breakout candidate must satisfy all four tiers simultaneously:
+Google AI Studio Free Tier blocks native Google Search tool calls with 429 quota exhaustion. The system circumvents this constraint by directly ingesting **4 real-time news streams** into Gemini's context prompt at ₹0 cost:
+
+1. 🌍 **Global Macro & US Tech**: Reuters / CNBC / BBC Business (Nasdaq, Fed rates, Asian cues).
+2. 🥇 **Commodities & Forex**: Brent Crude Oil, Gold & Silver, US Dollar DXY, China industrial demand.
+3. 🏛️ **Policy, Tariffs & Regulatory**: US/Govt Tariffs, SEBI circulars, RBI monetary policy.
+4. 🇮🇳 **Indian Corporate & Stocks**: Economic Times Stocks, LiveMint Markets, earnings results, CEO/board changes.
+
+Synthesized output includes:
+* **Global Cues Bar**: Gift Nifty indication, US Tech sentiment, Brent Crude, Gold, and Dollar DXY.
+* **Policy & Geopolitical Watch**: Active regulatory or tariff alert badges.
+* **Thematic Focus Stocks**: Categorized by theme (`Commodities`, `Global Tech`, `Earnings`, `Policy`) with specific catalyst drivers.
+
+### 2. Multi-Factor Quant Filter Math
+
+Every setup candidate must satisfy all mathematical constraints:
 
 1. **Relative Strength & Sector Gating**:
    $$\text{RS} = \% \Delta \text{Stock} - \% \Delta \text{NIFTY}$$
    $$\text{Threshold} = \begin{cases} 2.0\% & \text{if Sector } \in \{\text{FMCG, PSU Banks, Consumer, Cement}\} \\ 1.0\% & \text{otherwise (High-Beta Momentum)}\end{cases}$$
    $$\text{Sector Mean Return} > 0.0\% \text{ (for Buys)} \quad / \quad < 0.0\% \text{ (for Sells)}$$
 
-2. **VWAP Distance Buffer**:
-   $$0.10\% \le \frac{|\text{LTP} - \text{VWAP}|}{\text{VWAP}} \times 100 \le 1.20\%$$
+2. **Sector Breadth**:
+   $$\text{Sector Breadth} = \frac{\text{Advancing Constituents}}{\text{Total Sector Constituents}} \times 100 \ge 65\% \quad (\text{for Longs})$$
 
-3. **5-Minute Technical Indicators**:
+3. **VWAP Distance Buffer**:
+   $$0.10\% \le \frac{|\text{LTP} - \text{VWAP}|}{\text{VWAP}} \times 100 \le 0.65\% \text{ (Retest)} \quad / \quad \le 1.20\% \text{ (ORB Breakout)}$$
+
+4. **5-Minute Technical Indicators**:
    $$\text{RSI}_{14} \in [55.0, 72.0] \text{ and } \text{LTP} \ge \text{EMA}_{20} \quad (\text{Buy})$$
    $$\text{RSI}_{14} \in [28.0, 45.0] \text{ and } \text{LTP} \le \text{EMA}_{20} \quad (\text{Sell})$$
 
-### 2. Dynamic Stop Loss & Target Formula
+5. **ADR Room Check**:
+   $$\text{Day Range Consumed} = \frac{\text{Today High} - \text{Today Low}}{\text{LTP}} \times 100 < 0.85 \times \text{ADR}_{14}$$
+
+### 3. Dynamic Stop Loss & Target Formula
 
 $$\text{ATR}_{14} = \text{Average True Range of 5-min candles}$$
 $$\text{Swing Dist} = \begin{cases} \text{LTP} - (\min_{5\text{m}}(\text{Low}) \times 0.9985) & (\text{Buy}) \\ (\max_{5\text{m}}(\text{High}) \times 1.0015) - \text{LTP} & (\text{Sell})\end{cases}$$
 $$\text{SL Distance} = \min\Big(\max(\text{Swing Dist},\, 1.5 \times \text{ATR}_{14},\, 0.0085 \times \text{LTP}),\, 0.0200 \times \text{LTP}\Big)$$
 $$\text{Target Price} = \text{Entry} \pm (2.0 \times \text{SL Distance})$$
 
-### 3. Risk-Adjusted Position Sizing
+---
 
-### 4. Institutional VWAP Retest & Pullback Engine
+## 23 — Paper Trading Roadmap & Quantitative Improvements
 
-In addition to multi-timeframe ORB breakouts, the engine identifies **Institutional VWAP Pullback & Retest Setups**:
-1. **Shallow Retest Zone**: $0.10\% \le \frac{|\text{LTP} - \text{VWAP}|}{\text{VWAP}} \times 100 \le 0.65\%$ (identifies non-extended institutional defense entries).
-2. **Sector Breadth Confirmation**:
-   $$\text{Sector Breadth} = \frac{\text{Advancing Constituents}}{\text{Total Sector Constituents}} \times 100 \ge 65\% \quad (\text{Buy})$$
-3. **Average Daily Range (ADR) Room**:
-   $$\text{Day Range Consumed} < 0.85 \times \text{ADR}_{14} \quad (\text{Guarantees ample room to run to target})$$
-4. **Pre-Market Catalyst Priority**: High-impact news stocks identified during the 08:45 AM Google Search Grounding scan bypass defensive sector restrictions and receive prioritized quant validation.
+A planned progression of institutional features scheduled for deployment during the paper trading phase:
+
+1. **Mid-Trade Protection & Proactive Management**:
+   * **Auto-Breakeven Ratchet**: Moves SL to `Entry + Buffer` once trade reaches $+1.0\text{R}$ to guarantee zero losses.
+   * **Adverse Sector / Market Deterioration Alarm**: Real-time warnings if sector breadth or NIFTY flips while holding a position.
+   * **Partial Profit Scale-Out**: Book $50\%$ profit at $1.5\text{R}$ target and let the remaining $50\%$ ride with the dynamic trailing SL.
+2. **Interactive Charting & Visual Execution Lines**:
+   * Green dashed Entry, Red Stop-Loss, and Blue Target lines rendered directly on the Lightweight Candlestick Chart.
+   * Institutional anchor overlays (PDH, PDL, PDC, VWAP $\pm 1\sigma, \pm 2\sigma$ bands, 15m Opening Range box).
+   * Instant multi-timeframe candle switching (1m, 3m, 5m, 15m).
+3. **F&O Options Chain Confluence**:
+   * Major Call resistance & Put support Open Interest (OI) strike wall detection.
+   * Put-Call Ratio (PCR) trend & Max Pain alignment.
+4. **AI Post-Trade Forensic Journal (15:35 PM Daily Review)**:
+   * Automated EOD AI debrief analyzing Maximum Favorable Excursion (MFE) vs Maximum Adverse Excursion (MAE).
+   * 0–100 Execution Quality Scorecard.
+5. **Historical 30-Day Session Replay & Strategy Backtester**:
+   * Multi-session backtester benchmarking ORB vs VWAP Retest vs Trend Pullback across all 210 watchlist stocks.
 
 ---
 
-*TradeDashboard · FYERS API v3 · FastAPI + React · Complete architecture rewrite covering all 7 screens, both scoring engines, CVD, paper trading, AI Copilot, and the deployment pipeline.*
+*TradeDashboard · FYERS API v3 · FastAPI + React · Complete architecture rewrite covering all 7 screens, both scoring engines, CVD, paper trading, AI Copilot, Multi-Stream News Wire, and the deployment pipeline.*
+
 
