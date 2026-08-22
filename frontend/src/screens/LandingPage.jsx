@@ -17,6 +17,7 @@ import {
   LineChart,
   Sparkles,
   ChevronRight,
+  ChevronDown,
   X,
   Mail,
   UserCheck,
@@ -24,6 +25,12 @@ import {
   Target,
   Clock,
   Compass,
+  Eye,
+  Sliders,
+  Award,
+  HelpCircle,
+  TrendingDown,
+  RefreshCw,
 } from "lucide-react";
 import { supabase } from "../lib/supabaseClient.js";
 import ThemeToggle from "../components/ThemeToggle.jsx";
@@ -31,10 +38,12 @@ import ThemeToggle from "../components/ThemeToggle.jsx";
 export default function LandingPage({ onLoginSuccess }) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAccessModal, setShowAccessModal] = useState(false);
+  const [activeScreenTab, setActiveScreenTab] = useState("ranking");
   const [activeFeatureTab, setActiveFeatureTab] = useState("quant");
+  const [openFaq, setOpenFaq] = useState(null);
   const [summaryData, setSummaryData] = useState(null);
 
-  // Login state
+  // Login form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -111,10 +120,14 @@ export default function LandingPage({ onLoginSuccess }) {
   const handleRequestSubmit = (e) => {
     e.preventDefault();
     setRequestSubmitted(true);
+<<<<<<< HEAD
     // Create mailto link for direct transmission
     const subject = encodeURIComponent(
       `PulseHunter Terminal Access Request - ${requestName}`,
     );
+=======
+    const subject = encodeURIComponent(`PulseHunter Terminal Access Request - ${requestName}`);
+>>>>>>> 6e815ff (feat: enhance and integrate bull logo, expand landing page with 7 screen walkthroughs and FAQ, and remove architecture link)
     const body = encodeURIComponent(
       `Applicant Name: ${requestName}\n` +
         `Applicant Email: ${requestEmail}\n` +
@@ -143,6 +156,81 @@ export default function LandingPage({ onLoginSuccess }) {
   const topLosers = summaryData?.top_losers || [];
   const cues = summaryData?.global_cues || {};
 
+  const screens = [
+    {
+      id: "ranking",
+      title: "Live Ranking Matrix",
+      badge: "Real-Time 250ms",
+      desc: "Cross-sectional market scanner dynamically ranking 210 F&O stocks by relative strength against NIFTY 50, day range position, and momentum velocity.",
+      highlights: ["Relative Strength outperformance tracking", "Day range expansion tracking", "Instant filter by sector & signal state"],
+    },
+    {
+      id: "heatmap",
+      title: "Market Breadth & Sector Heatmap",
+      badge: "Visual Hierarchy",
+      desc: "Instant bird's-eye view of capital flow across all major Indian sectors: Banking, IT, Auto, Metals, FMCG, Energy, and Pharma.",
+      highlights: ["Sector-level money flow concentration", "Color-coded market breadth ratios", "Constituent stock drilldown"],
+    },
+    {
+      id: "insights",
+      title: "AI Pre-Market Wire & Catalyst Feed",
+      badge: "Gemini 3.6 Flash",
+      desc: "Multi-stream global news wire synthesis distilling US Tech cues, commodity shifts, regulatory circulars, and quarterly earnings into actionable market bias.",
+      highlights: ["4-stream macro wire synthesis", "Thematic focus stock catalyst mapping", "Adversarial red-flag risk evaluation"],
+    },
+    {
+      id: "smart",
+      title: "Smart Money & Order Flow Scanner",
+      badge: "Institutional Footprint",
+      desc: "Identifies institutional block accumulation by comparing real-time volume velocity against 20-day historical trading time slots.",
+      highlights: ["Abnormal turnover surge detection", "Cumulative Volume Delta (CVD) integration", "Smart Money institutional ranking score"],
+    },
+    {
+      id: "charts",
+      title: "Lightweight Candlestick Charts",
+      badge: "Sub-Second Rendering",
+      desc: "Hardware-accelerated 5-minute candlestick charts with real-time tick aggregation, VWAP bands, prior day highs/lows, and order flow delta panes.",
+      highlights: ["Volume-Weighted Average Price (VWAP)", "CVD tick-rule sub-chart indicator", "Interactive multi-timeframe candle navigation"],
+    },
+    {
+      id: "watchlist",
+      title: "Tactical Watchlist & Alerts",
+      badge: "Custom Pinning",
+      desc: "Curated high-conviction watchlist with real-time alert tags for opening range breakouts, VWAP pullbacks, and abnormal volume expansions.",
+      highlights: ["Personalized symbol pinning", "Real-time catalyst badges", "One-click charting and execution routing"],
+    },
+    {
+      id: "positions",
+      title: "Auto-Breakeven Paper Terminal",
+      badge: "Capital Preservation",
+      desc: "Institutional paper execution simulator with automated position sizing, dynamic ATR volatility stop-losses, and automatic breakeven ratcheting at +1.0R profit.",
+      highlights: ["Zero-risk Auto-Breakeven floor at +1R", "Dynamic 1:2 Risk-Reward profit targets", "Real-time P&L mark-to-market ledger"],
+    },
+  ];
+
+  const faqs = [
+    {
+      q: "What is PulseHunter?",
+      a: "PulseHunter is an institutional quantitative trading terminal and market intelligence workstation designed specifically for active Indian equity and F&O derivatives market participants. It merges high-frequency tick aggregation, multi-factor algorithmic screening, and Google Gemini AI risk synthesis into a unified command center.",
+    },
+    {
+      q: "How does the Auto-Breakeven protection work?",
+      a: "When an active paper trading position achieves +1.0R in profit (equivalent to 1x the initial stop-loss risk distance), PulseHunter automatically ratchets the stop-loss floor up to the entry price. This mathematically guarantees that a profitable winning trade will never turn into a losing trade.",
+    },
+    {
+      q: "What makes the Smart Money engine different from regular volume?",
+      a: "Regular volume indicators only show total shares traded without context. PulseHunter's Smart Money Engine benchmarks volume velocity against a 20-day historical time-slot database, revealing whether current turnover represents genuine institutional block accumulation or retail noise.",
+    },
+    {
+      q: "How can I get access to PulseHunter?",
+      a: "PulseHunter operates on an invite-only onboarding model. Prospective quantitative traders and institutional desks can request access credentials directly from PARTHIBAKANNAN S using the 'Request Access' onboarding form or via email at parthisivaram45@gmail.com.",
+    },
+    {
+      q: "Can I use PulseHunter without live capital risk?",
+      a: "Yes. PulseHunter includes a fully integrated institutional Paper Trading Terminal with a realistic ₹1,00,000 simulated account, automated bracket order execution, and full margin tracking to test quantitative strategies safely.",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-[#07080c] text-white font-sans selection:bg-cyan-500 selection:text-black overflow-x-hidden antialiased">
       {/* Dynamic Ambient Background */}
@@ -159,26 +247,26 @@ export default function LandingPage({ onLoginSuccess }) {
         />
       </div>
 
-      {/* ── HEADER NAVIGATION ── */}
+      {/* ── TOP HEADER NAVBAR ── */}
       <header className="sticky top-0 z-40 backdrop-blur-2xl bg-[#07080c]/85 border-b border-white/[0.06] transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img
               src="/assets/logo.jpg"
               alt="PulseHunter Logo"
-              className="w-9 h-9 rounded-xl object-cover border border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.3)]"
+              className="w-9 h-9 rounded-xl object-cover border border-cyan-500/40 shadow-[0_0_20px_rgba(6,182,212,0.35)]"
             />
             <div className="flex items-baseline gap-2">
               <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-neutral-200 to-neutral-400 bg-clip-text text-transparent font-display">
                 PulseHunter
               </span>
               <span className="hidden sm:inline-flex text-[10px] uppercase font-mono px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-bold tracking-wider">
-                Quant Terminal
+                Since 2026
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <a
               href="#market-radar"
               className="hidden md:inline-flex text-xs font-medium text-neutral-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/[0.04]"
@@ -186,10 +274,22 @@ export default function LandingPage({ onLoginSuccess }) {
               Market Radar
             </a>
             <a
+              href="#screens"
+              className="hidden md:inline-flex text-xs font-medium text-neutral-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/[0.04]"
+            >
+              Terminal Screens
+            </a>
+            <a
               href="#capabilities"
               className="hidden md:inline-flex text-xs font-medium text-neutral-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/[0.04]"
             >
-              Capabilities
+              Superpowers
+            </a>
+            <a
+              href="#faq"
+              className="hidden lg:inline-flex text-xs font-medium text-neutral-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/[0.04]"
+            >
+              FAQ
             </a>
 
             <button
@@ -201,7 +301,7 @@ export default function LandingPage({ onLoginSuccess }) {
 
             <button
               onClick={() => setShowLoginModal(true)}
-              className="flex items-center gap-1.5 text-xs font-bold px-4 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black transition-all shadow-[0_0_20px_rgba(6,182,212,0.25)]"
+              className="flex items-center gap-1.5 text-xs font-bold px-4 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)]"
             >
               <Lock size={12} className="stroke-[2.5]" />
               <span>Client Sign In</span>
@@ -211,16 +311,16 @@ export default function LandingPage({ onLoginSuccess }) {
       </header>
 
       {/* ── HERO SECTION ── */}
-      <section className="relative z-10 pt-16 pb-16 sm:pt-24 sm:pb-24 px-4 sm:px-6 max-w-7xl mx-auto text-center">
-        {/* Status Pill */}
+      <section className="relative z-10 pt-14 pb-16 sm:pt-20 sm:pb-24 px-4 sm:px-6 max-w-7xl mx-auto text-center">
+        {/* Brand Emblem Pill */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 text-xs font-mono font-bold mb-8 shadow-sm"
+          className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 text-xs font-mono font-bold mb-8 shadow-sm"
         >
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-          <span>PULSEHUNTER · MULTI-FACTOR QUANTITATIVE INTELLIGENCE</span>
+          <img src="/assets/logo.jpg" alt="Logo" className="w-4 h-4 rounded-full object-cover" />
+          <span>PULSEHUNTER · SYSTEMATIC TRADING &amp; AI WORKSTATION</span>
         </motion.div>
 
         {/* Hero Title */}
@@ -230,11 +330,11 @@ export default function LandingPage({ onLoginSuccess }) {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight font-display text-white max-w-5xl mx-auto leading-[1.08] mb-6"
         >
-          Precision Alpha &amp;{" "}
+          Hunt the Market Pulse with{" "}
           <span className="bg-gradient-to-r from-cyan-400 via-teal-300 to-indigo-400 bg-clip-text text-transparent">
-            Systematic Execution
+            Systematic Alpha &amp; AI
           </span>{" "}
-          for Indian Equities.
+          Precision.
         </motion.h1>
 
         {/* Hero Subtitle */}
@@ -242,11 +342,17 @@ export default function LandingPage({ onLoginSuccess }) {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-base sm:text-xl text-neutral-400 max-w-3xl mx-auto leading-relaxed mb-10 font-normal"
+          className="text-base sm:text-xl text-neutral-300 max-w-3xl mx-auto leading-relaxed mb-10 font-normal"
         >
+<<<<<<< HEAD
           Continuous sub-second order flow tracking across 210 F&amp;O symbols,
           5-tier quantitative momentum gating, Google Gemini 3.6 Flash risk
           auditing, and automated paper trade management.
+=======
+          The institutional quantitative intelligence command center for active Indian equity traders.
+          Real-time order flow scanning, 5-tier systematic screening, Gemini AI catalyst analysis, and
+          automated paper trade execution.
+>>>>>>> 6e815ff (feat: enhance and integrate bull logo, expand landing page with 7 screen walkthroughs and FAQ, and remove architecture link)
         </motion.p>
 
         {/* CTA Buttons */}
@@ -268,11 +374,11 @@ export default function LandingPage({ onLoginSuccess }) {
             className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.09] border border-white/[0.12] text-white font-bold text-sm transition-all"
           >
             <UserCheck size={16} className="text-cyan-400" />
-            <span>Request Institutional Access</span>
+            <span>Request Access from PARTHIBAKANNAN S</span>
           </button>
         </motion.div>
 
-        {/* Key Metrics Bar */}
+        {/* Numerical Metrics Bar */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -297,10 +403,10 @@ export default function LandingPage({ onLoginSuccess }) {
           </div>
           <div className="bg-white/[0.025] backdrop-blur-xl border border-white/[0.07] rounded-2xl p-4 text-center">
             <div className="text-2xl sm:text-3xl font-extrabold font-mono text-indigo-400 mb-1">
-              5-Tier
+              7 Screens
             </div>
             <div className="text-[11px] text-neutral-400 uppercase font-semibold tracking-wider">
-              Quant Gatekeeper
+              Integrated Workstation
             </div>
           </div>
           <div className="bg-white/[0.025] backdrop-blur-xl border border-white/[0.07] rounded-2xl p-4 text-center">
@@ -313,7 +419,7 @@ export default function LandingPage({ onLoginSuccess }) {
           </div>
         </motion.div>
 
-        {/* Hero Visual Preview Card */}
+        {/* Hero Visual Preview Showcase Card */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -323,14 +429,14 @@ export default function LandingPage({ onLoginSuccess }) {
           <div className="relative aspect-video w-full overflow-hidden bg-neutral-950">
             <img
               src="/assets/hero-bg.jpg"
-              alt="PulseHunter Institutional Terminal Interface"
+              alt="PulseHunter Systematic Terminal Interface"
               className="w-full h-full object-cover transform group-hover:scale-102 transition-transform duration-700 opacity-90"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#07080c] via-transparent to-transparent opacity-80" />
             <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between flex-wrap gap-4 text-left">
               <div>
                 <span className="text-xs font-mono font-bold text-cyan-400 block mb-1">
-                  SYSTEMATIC COMMAND CENTER
+                  SYSTEMATIC QUANT WORKSTATION
                 </span>
                 <h3 className="text-lg sm:text-2xl font-bold text-white">
                   Real-time Cross-Sectional Heatmaps &amp; 5m CVD Delta Engine
@@ -348,11 +454,16 @@ export default function LandingPage({ onLoginSuccess }) {
         </motion.div>
       </section>
 
+<<<<<<< HEAD
       {/* ── PUBLIC LIVE MARKET RADAR SECTION (FREE INSIGHTS) ── */}
       <section
         id="market-radar"
         className="relative z-10 py-16 px-4 sm:px-6 max-w-7xl mx-auto"
       >
+=======
+      {/* ── PUBLIC LIVE MARKET RADAR SECTION ── */}
+      <section id="market-radar" className="relative z-10 py-16 px-4 sm:px-6 max-w-7xl mx-auto">
+>>>>>>> 6e815ff (feat: enhance and integrate bull logo, expand landing page with 7 screen walkthroughs and FAQ, and remove architecture link)
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider mb-2">
             <Activity size={14} />
@@ -362,8 +473,12 @@ export default function LandingPage({ onLoginSuccess }) {
             Live Market Radar &amp; Macro Pulse
           </h2>
           <p className="text-sm text-neutral-400 max-w-2xl mx-auto mt-2">
+<<<<<<< HEAD
             Real-time public benchmarks updated continuously from PulseHunter's
             in-memory stream.
+=======
+            Real-time public benchmarks refreshed continuously directly from PulseHunter's in-memory engine.
+>>>>>>> 6e815ff (feat: enhance and integrate bull logo, expand landing page with 7 screen walkthroughs and FAQ, and remove architecture link)
           </p>
         </div>
 
@@ -550,15 +665,140 @@ export default function LandingPage({ onLoginSuccess }) {
         </div>
       </section>
 
+<<<<<<< HEAD
       {/* ── 5 CORE CAPABILITIES (PROFESSIONAL SENIOR UX PRESENTATION) ── */}
       <section
         id="capabilities"
         className="relative z-10 py-20 px-4 sm:px-6 max-w-7xl mx-auto border-t border-white/[0.06]"
       >
+=======
+      {/* ── THE 7 TERMINAL SCREENS WALKTHROUGH ── */}
+      <section id="screens" className="relative z-10 py-20 px-4 sm:px-6 max-w-7xl mx-auto border-t border-white/[0.06]">
+        <div className="text-center mb-14">
+          <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider mb-2">
+            <Layers size={14} />
+            <span>Complete Platform Walkthrough</span>
+          </div>
+          <h2 className="text-3xl sm:text-5xl font-bold text-white font-display">
+            The 7 Integrated Workstations
+          </h2>
+          <p className="text-sm sm:text-base text-neutral-400 max-w-2xl mx-auto mt-3">
+            A comprehensive suite of institutional tools tailored for rapid intraday decision-making.
+          </p>
+        </div>
+
+        {/* Screen Switcher Tabs */}
+        <div className="flex justify-start lg:justify-center gap-2 mb-10 overflow-x-auto pb-2">
+          {screens.map((sc) => {
+            const active = activeScreenTab === sc.id;
+            return (
+              <button
+                key={sc.id}
+                onClick={() => setActiveScreenTab(sc.id)}
+                className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${
+                  active
+                    ? "bg-white text-black font-extrabold shadow-lg"
+                    : "bg-white/[0.03] text-neutral-400 hover:text-white border border-white/[0.08]"
+                }`}
+              >
+                {sc.title}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Active Screen Detail */}
+        {screens.map((sc) => {
+          if (sc.id !== activeScreenTab) return null;
+          return (
+            <motion.div
+              key={sc.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white/[0.025] backdrop-blur-2xl border border-white/[0.1] rounded-3xl p-6 sm:p-10 shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-mono text-cyan-400 font-bold uppercase tracking-wider">
+                  SCREEN SPOTLIGHT
+                </span>
+                <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-bold">
+                  {sc.badge}
+                </span>
+              </div>
+              <h3 className="text-2xl sm:text-3xl font-bold text-white font-display mb-3">
+                {sc.title}
+              </h3>
+              <p className="text-sm sm:text-base text-neutral-300 max-w-3xl leading-relaxed mb-6">
+                {sc.desc}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-white/[0.06]">
+                {sc.highlights.map((h, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs text-neutral-300">
+                    <CheckCircle2 size={15} className="text-cyan-400 flex-shrink-0" />
+                    <span>{h}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          );
+        })}
+      </section>
+
+      {/* ── 4-STEP SYSTEMATIC WORKFLOW ── */}
+      <section className="relative z-10 py-20 px-4 sm:px-6 max-w-7xl mx-auto border-t border-white/[0.06]">
+        <div className="text-center mb-14">
+          <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-teal-400 uppercase tracking-wider mb-2">
+            <Compass size={14} />
+            <span>Execution Protocol</span>
+          </div>
+          <h2 className="text-3xl sm:text-5xl font-bold text-white font-display">
+            The 4-Step Quantitative Pipeline
+          </h2>
+          <p className="text-sm sm:text-base text-neutral-400 max-w-2xl mx-auto mt-3">
+            How systematic momentum traders utilize PulseHunter from pre-market preparation to trade execution.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white/[0.025] border border-white/[0.08] rounded-3xl p-6 relative">
+            <div className="text-xs font-mono font-bold text-cyan-400 mb-2">01 · 08:45 AM IST</div>
+            <h4 className="font-bold text-base text-white mb-2">Pre-Market Wire Synthesis</h4>
+            <p className="text-xs text-neutral-400 leading-relaxed">
+              Gemini AI digests global macro cues, Brent crude, metals, and Indian corporate catalysts to set the daily sector bias.
+            </p>
+          </div>
+          <div className="bg-white/[0.025] border border-white/[0.08] rounded-3xl p-6 relative">
+            <div className="text-xs font-mono font-bold text-cyan-400 mb-2">02 · 09:15 AM IST</div>
+            <h4 className="font-bold text-base text-white mb-2">Intraday Momentum Scan</h4>
+            <p className="text-xs text-neutral-400 leading-relaxed">
+              210 F&amp;O symbols are continuously scanned for relative strength outperformance and day range expansion.
+            </p>
+          </div>
+          <div className="bg-white/[0.025] border border-white/[0.08] rounded-3xl p-6 relative">
+            <div className="text-xs font-mono font-bold text-cyan-400 mb-2">03 · 09:45 AM IST</div>
+            <h4 className="font-bold text-base text-white mb-2">Order Flow Validation</h4>
+            <p className="text-xs text-neutral-400 leading-relaxed">
+              Candidate setups are cross-checked against 20-day fresh turnover velocity and Cumulative Volume Delta (CVD) aggression.
+            </p>
+          </div>
+          <div className="bg-white/[0.025] border border-white/[0.08] rounded-3xl p-6 relative">
+            <div className="text-xs font-mono font-bold text-cyan-400 mb-2">04 · Execution</div>
+            <h4 className="font-bold text-base text-white mb-2">Protected Execution</h4>
+            <p className="text-xs text-neutral-400 leading-relaxed">
+              Orders are placed with automated 1.5x ATR stops and automatically ratcheted to Breakeven at +1.0R profit.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 5 SUPERPOWERS SECTION ── */}
+      <section id="capabilities" className="relative z-10 py-20 px-4 sm:px-6 max-w-7xl mx-auto border-t border-white/[0.06]">
+>>>>>>> 6e815ff (feat: enhance and integrate bull logo, expand landing page with 7 screen walkthroughs and FAQ, and remove architecture link)
         <div className="text-center mb-14">
           <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-indigo-400 uppercase tracking-wider mb-2">
             <Cpu size={14} />
-            <span>Institutional Terminal Capabilities</span>
+            <span>Institutional Superpowers</span>
           </div>
           <h2 className="text-3xl sm:text-5xl font-bold text-white font-display">
             Built for Systematic Edge
@@ -604,7 +844,7 @@ export default function LandingPage({ onLoginSuccess }) {
           })}
         </div>
 
-        {/* Feature Display Card (Senior UX/UI Visual Mockups - ZERO Raw Calculations Exposed) */}
+        {/* Feature Display Card */}
         <div className="bg-white/[0.025] backdrop-blur-2xl border border-white/[0.1] rounded-3xl p-6 sm:p-10 shadow-2xl">
           {activeFeatureTab === "quant" && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
@@ -667,7 +907,6 @@ export default function LandingPage({ onLoginSuccess }) {
                 </div>
               </div>
 
-              {/* Visual Interactive Mockup */}
               <div className="bg-neutral-950/80 border border-white/[0.08] rounded-2xl p-6 space-y-4">
                 <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
                   <span className="text-xs font-mono font-bold text-cyan-400">
@@ -820,7 +1059,6 @@ export default function LandingPage({ onLoginSuccess }) {
                 </div>
               </div>
 
-              {/* Visual Mockup */}
               <div className="bg-neutral-950/80 border border-white/[0.08] rounded-2xl p-6 space-y-4">
                 <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
                   <span className="text-xs font-mono font-bold text-cyan-400">
@@ -911,7 +1149,6 @@ export default function LandingPage({ onLoginSuccess }) {
                 </div>
               </div>
 
-              {/* Visual Mockup */}
               <div className="bg-neutral-950/80 border border-white/[0.08] rounded-2xl p-6 space-y-4">
                 <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
                   <span className="text-xs font-mono font-bold text-emerald-400">
@@ -949,7 +1186,61 @@ export default function LandingPage({ onLoginSuccess }) {
         </div>
       </section>
 
-      {/* ── INVITE-ONLY ACCESS ONBOARDING CALLOUT ── */}
+      {/* ── FREQUENTLY ASKED QUESTIONS (FAQ) ── */}
+      <section id="faq" className="relative z-10 py-20 px-4 sm:px-6 max-w-4xl mx-auto border-t border-white/[0.06]">
+        <div className="text-center mb-14">
+          <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider mb-2">
+            <HelpCircle size={14} />
+            <span>Knowledge Base</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white font-display">
+            Frequently Asked Questions
+          </h2>
+          <p className="text-sm text-neutral-400 max-w-xl mx-auto mt-2">
+            Everything you need to know about the PulseHunter quantitative terminal.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          {faqs.map((faq, idx) => {
+            const isOpen = openFaq === idx;
+            return (
+              <div
+                key={idx}
+                className="bg-white/[0.025] border border-white/[0.08] rounded-2xl overflow-hidden transition-all"
+              >
+                <button
+                  onClick={() => setOpenFaq(isOpen ? null : idx)}
+                  className="w-full p-5 text-left flex items-center justify-between gap-4 font-bold text-sm text-white hover:text-cyan-400 transition-colors"
+                >
+                  <span>{faq.q}</span>
+                  <ChevronDown
+                    size={16}
+                    className={`flex-shrink-0 text-neutral-400 transition-transform duration-300 ${
+                      isOpen ? "rotate-180 text-cyan-400" : ""
+                    }`}
+                  />
+                </button>
+                <AnimatePresence>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="px-5 pb-5 text-xs text-neutral-300 leading-relaxed border-t border-white/[0.04] pt-3"
+                    >
+                      {faq.a}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── ONBOARDING ACCESS CALLOUT ── */}
       <section className="relative z-10 py-20 px-4 sm:px-6 max-w-5xl mx-auto text-center">
         <div className="bg-gradient-to-b from-white/[0.04] to-white/[0.01] border border-white/[0.1] rounded-3xl p-8 sm:p-14 shadow-2xl relative overflow-hidden">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 text-xs font-mono font-bold mb-4">
@@ -983,7 +1274,7 @@ export default function LandingPage({ onLoginSuccess }) {
         </div>
       </section>
 
-      {/* ── FOOTER & LEGAL ATTRIBUTION ── */}
+      {/* ── SANITIZED FOOTER (NO ARCHITECTURE SPEC REFERENCE) ── */}
       <footer className="relative z-10 border-t border-white/[0.06] py-12 px-4 sm:px-6 max-w-7xl mx-auto text-xs text-neutral-400">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
           <div className="space-y-1">
@@ -1014,14 +1305,7 @@ export default function LandingPage({ onLoginSuccess }) {
               <span>parthisivaram45@gmail.com</span>
             </a>
             <span className="text-neutral-700">|</span>
-            <a
-              href="/docs/architecture.html"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-white transition-colors"
-            >
-              Architecture Spec ↗
-            </a>
+            <span className="text-neutral-400">Systematic Quant Terminal</span>
             <span className="text-neutral-700">|</span>
             <ThemeToggle />
           </div>
