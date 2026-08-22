@@ -110,7 +110,7 @@ export default function PremarketBriefingCard() {
             title="Re-run live multi-stream wire scan"
           >
             <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
-            {refreshing ? "Scanning Wires..." : "↻ Scan Wires"}
+            <span>{refreshing ? "Scanning..." : "Scan Wires"}</span>
           </button>
         </div>
       </div>
