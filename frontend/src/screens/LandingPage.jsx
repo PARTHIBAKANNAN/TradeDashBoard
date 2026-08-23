@@ -90,12 +90,16 @@ export default function LandingPage({ onLoginSuccess }) {
     setLoginBusy(true);
     setLoginError("");
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data, error: authError } = await supabase.auth.signInWithPassword(
+        {
+          email,
+          password,
+        },
+      );
       if (authError || !data.session) {
-        setLoginError("Invalid credentials. Please check your email and password.");
+        setLoginError(
+          "Invalid credentials. Please check your email and password.",
+        );
         return;
       }
       const r = await fetch("/api/auth/login", {
@@ -108,10 +112,14 @@ export default function LandingPage({ onLoginSuccess }) {
         setShowLoginModal(false);
         onLoginSuccess();
       } else {
-        setLoginError("Session verification failed. Contact onboarding administrator.");
+        setLoginError(
+          "Session verification failed. Contact onboarding administrator.",
+        );
       }
     } catch {
-      setLoginError("Network error. Unable to reach terminal authentication server.");
+      setLoginError(
+        "Network error. Unable to reach terminal authentication server.",
+      );
     } finally {
       setLoginBusy(false);
     }
@@ -120,15 +128,20 @@ export default function LandingPage({ onLoginSuccess }) {
   const handleRequestSubmit = (e) => {
     e.preventDefault();
     setRequestSubmitted(true);
-    const subject = encodeURIComponent(`PulseHunter Terminal Access Request - ${requestName}`);
+    const subject = encodeURIComponent(
+      `PulseHunter Terminal Access Request - ${requestName}`,
+    );
     const body = encodeURIComponent(
       `Applicant Name: ${requestName}\n` +
-      `Applicant Email: ${requestEmail}\n` +
-      `Trading Profile: ${requestRole}\n` +
-      `Trading Objectives: ${requestNote || "N/A"}\n\n` +
-      `Request submitted for PulseHunter Institutional Quantitative Terminal.`
+        `Applicant Email: ${requestEmail}\n` +
+        `Trading Profile: ${requestRole}\n` +
+        `Trading Objectives: ${requestNote || "N/A"}\n\n` +
+        `Request submitted for PulseHunter Institutional Quantitative Terminal.`,
     );
-    window.open(`mailto:parthisivaram45@gmail.com?subject=${subject}&body=${body}`, "_blank");
+    window.open(
+      `mailto:parthisivaram45@gmail.com?subject=${subject}&body=${body}`,
+      "_blank",
+    );
   };
 
   const nifty = summaryData?.nifty || {
@@ -180,7 +193,8 @@ export default function LandingPage({ onLoginSuccess }) {
       entry: "₹155.00",
       sl: "🛡️ ₹155.00 (Risk Free)",
       target: "₹159.00 (1:2 RR)",
-      aiVerdict: "Strong sector tailwinds in Metals. Sustained institutional volume above VWAP with zero overhead resistance.",
+      aiVerdict:
+        "Strong sector tailwinds in Metals. Sustained institutional volume above VWAP with zero overhead resistance.",
     },
     MARUTI: {
       symbol: "MARUTI",
@@ -198,7 +212,8 @@ export default function LandingPage({ onLoginSuccess }) {
       entry: "₹12,400.00",
       sl: "🛡️ ₹12,400.00 (Breakeven Active)",
       target: "₹12,680.00 (1:2 RR)",
-      aiVerdict: "Auto sector breadth advancing. High Relative Strength against benchmark with dynamic ATR buffer intact.",
+      aiVerdict:
+        "Auto sector breadth advancing. High Relative Strength against benchmark with dynamic ATR buffer intact.",
     },
     INFY: {
       symbol: "INFY",
@@ -216,7 +231,8 @@ export default function LandingPage({ onLoginSuccess }) {
       entry: "N/A",
       sl: "N/A",
       target: "N/A",
-      aiVerdict: "Adversarial filter triggered: US Nasdaq tech weakness and persistent negative CVD tick flow.",
+      aiVerdict:
+        "Adversarial filter triggered: US Nasdaq tech weakness and persistent negative CVD tick flow.",
     },
   };
 
@@ -226,49 +242,77 @@ export default function LandingPage({ onLoginSuccess }) {
       title: "Live Ranking Matrix",
       badge: "Real-Time 250ms",
       desc: "Cross-sectional market scanner dynamically ranking 210 F&O stocks by relative strength against NIFTY 50, day range position, and momentum velocity.",
-      highlights: ["Relative Strength outperformance tracking", "Day range expansion tracking", "Instant filter by sector & signal state"],
+      highlights: [
+        "Relative Strength outperformance tracking",
+        "Day range expansion tracking",
+        "Instant filter by sector & signal state",
+      ],
     },
     {
       id: "heatmap",
       title: "Market Breadth & Sector Heatmap",
       badge: "Visual Hierarchy",
       desc: "Instant bird's-eye view of capital flow across all major Indian sectors: Banking, IT, Auto, Metals, FMCG, Energy, and Pharma.",
-      highlights: ["Sector-level money flow concentration", "Color-coded market breadth ratios", "Constituent stock drilldown"],
+      highlights: [
+        "Sector-level money flow concentration",
+        "Color-coded market breadth ratios",
+        "Constituent stock drilldown",
+      ],
     },
     {
       id: "insights",
       title: "AI Pre-Market Wire & Catalyst Feed",
       badge: "Gemini 3.6 Flash",
       desc: "Multi-stream global news wire synthesis distilling US Tech cues, commodity shifts, regulatory circulars, and quarterly earnings into actionable market bias.",
-      highlights: ["4-stream macro wire synthesis", "Thematic focus stock catalyst mapping", "Adversarial red-flag risk evaluation"],
+      highlights: [
+        "4-stream macro wire synthesis",
+        "Thematic focus stock catalyst mapping",
+        "Adversarial red-flag risk evaluation",
+      ],
     },
     {
       id: "smart",
       title: "Smart Money & Order Flow Scanner",
       badge: "Institutional Footprint",
       desc: "Identifies institutional block accumulation by comparing real-time volume velocity against 20-day historical trading time slots.",
-      highlights: ["Abnormal turnover surge detection", "Cumulative Volume Delta (CVD) integration", "Smart Money institutional ranking score"],
+      highlights: [
+        "Abnormal turnover surge detection",
+        "Cumulative Volume Delta (CVD) integration",
+        "Smart Money institutional ranking score",
+      ],
     },
     {
       id: "charts",
       title: "Lightweight Candlestick Charts",
       badge: "Sub-Second Rendering",
       desc: "Hardware-accelerated 5-minute candlestick charts with real-time tick aggregation, VWAP bands, prior day highs/lows, and order flow delta panes.",
-      highlights: ["Volume-Weighted Average Price (VWAP)", "CVD tick-rule sub-chart indicator", "Interactive multi-timeframe candle navigation"],
+      highlights: [
+        "Volume-Weighted Average Price (VWAP)",
+        "CVD tick-rule sub-chart indicator",
+        "Interactive multi-timeframe candle navigation",
+      ],
     },
     {
       id: "watchlist",
       title: "Tactical Watchlist & Alerts",
       badge: "Custom Pinning",
       desc: "Curated high-conviction watchlist with real-time alert tags for opening range breakouts, VWAP pullbacks, and abnormal volume expansions.",
-      highlights: ["Personalized symbol pinning", "Real-time catalyst badges", "One-click charting and execution routing"],
+      highlights: [
+        "Personalized symbol pinning",
+        "Real-time catalyst badges",
+        "One-click charting and execution routing",
+      ],
     },
     {
       id: "positions",
       title: "Auto-Breakeven Paper Terminal",
       badge: "Capital Preservation",
       desc: "Institutional paper execution simulator with automated position sizing, dynamic ATR volatility stop-losses, and automatic breakeven ratcheting at +1.0R profit.",
-      highlights: ["Zero-risk Auto-Breakeven floor at +1R", "Dynamic 1:2 Risk-Reward profit targets", "Real-time P&L mark-to-market ledger"],
+      highlights: [
+        "Zero-risk Auto-Breakeven floor at +1R",
+        "Dynamic 1:2 Risk-Reward profit targets",
+        "Real-time P&L mark-to-market ledger",
+      ],
     },
   ];
 
@@ -419,7 +463,9 @@ export default function LandingPage({ onLoginSuccess }) {
               <div key={idx} className="inline-flex items-center gap-2">
                 <span className="text-neutral-400 font-bold">{item.s}</span>
                 <span className="text-white">₹{item.p}</span>
-                <span className={`font-bold ${item.up ? "text-emerald-400" : "text-rose-400"}`}>
+                <span
+                  className={`font-bold ${item.up ? "text-emerald-400" : "text-rose-400"}`}
+                >
                   {item.c}
                 </span>
                 <span className="text-neutral-700">·</span>
@@ -438,7 +484,11 @@ export default function LandingPage({ onLoginSuccess }) {
           transition={{ duration: 0.5 }}
           className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 text-xs font-mono font-bold mb-8 shadow-sm"
         >
-          <img src="/assets/logo.jpg" alt="Logo" className="w-4 h-4 rounded-full object-cover" />
+          <img
+            src="/assets/logo.jpg"
+            alt="Logo"
+            className="w-4 h-4 rounded-full object-cover"
+          />
           <span>PULSEHUNTER · SYSTEMATIC TRADING &amp; AI WORKSTATION</span>
         </motion.div>
 
@@ -463,9 +513,10 @@ export default function LandingPage({ onLoginSuccess }) {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-base sm:text-xl text-neutral-300 max-w-3xl mx-auto leading-relaxed mb-10 font-normal"
         >
-          The institutional quantitative intelligence command center for active Indian equity traders.
-          Real-time order flow scanning, 5-tier systematic screening, Gemini AI catalyst analysis, and
-          automated paper trade execution.
+          The institutional quantitative intelligence command center for active
+          Indian equity traders. Real-time order flow scanning, 5-tier
+          systematic screening, Gemini AI catalyst analysis, and automated paper
+          trade execution.
         </motion.p>
 
         {/* CTA Buttons */}
@@ -568,7 +619,10 @@ export default function LandingPage({ onLoginSuccess }) {
       </section>
 
       {/* ── PUBLIC LIVE MARKET RADAR SECTION ── */}
-      <section id="market-radar" className="relative z-10 py-16 px-4 sm:px-6 max-w-7xl mx-auto">
+      <section
+        id="market-radar"
+        className="relative z-10 py-16 px-4 sm:px-6 max-w-7xl mx-auto"
+      >
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider mb-2">
             <Activity size={14} />
@@ -578,7 +632,8 @@ export default function LandingPage({ onLoginSuccess }) {
             Live Market Radar &amp; Macro Pulse
           </h2>
           <p className="text-sm text-neutral-400 max-w-2xl mx-auto mt-2">
-            Real-time public benchmarks refreshed continuously directly from PulseHunter's in-memory engine.
+            Real-time public benchmarks refreshed continuously directly from
+            PulseHunter's in-memory engine.
           </p>
         </div>
 
@@ -596,7 +651,10 @@ export default function LandingPage({ onLoginSuccess }) {
               </div>
               <div className="flex items-baseline gap-3 mb-2">
                 <h3 className="text-3xl font-extrabold font-mono text-white">
-                  ₹{Number(nifty.ltp).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  ₹
+                  {Number(nifty.ltp).toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                  })}
                 </h3>
                 <span
                   className={`text-sm font-mono font-bold ${
@@ -608,7 +666,8 @@ export default function LandingPage({ onLoginSuccess }) {
                 </span>
               </div>
               <p className="text-xs text-neutral-400 mb-6">
-                NIFTY 50 reference anchor for cross-sectional relative strength calculations.
+                NIFTY 50 reference anchor for cross-sectional relative strength
+                calculations.
               </p>
             </div>
 
@@ -650,14 +709,21 @@ export default function LandingPage({ onLoginSuccess }) {
               </span>
               <div className="grid grid-cols-2 gap-2">
                 {topGainers.slice(0, 2).map((stk, idx) => (
-                  <div key={idx} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-2.5">
+                  <div
+                    key={idx}
+                    className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-2.5"
+                  >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-bold text-xs font-mono text-white">{stk.symbol}</span>
+                      <span className="font-bold text-xs font-mono text-white">
+                        {stk.symbol}
+                      </span>
                       <span className="text-[10px] font-mono text-emerald-400 font-bold">
                         +{Number(stk.pct_change).toFixed(2)}%
                       </span>
                     </div>
-                    <div className="text-[10px] text-neutral-400">₹{Number(stk.ltp).toFixed(1)}</div>
+                    <div className="text-[10px] text-neutral-400">
+                      ₹{Number(stk.ltp).toFixed(1)}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -667,14 +733,21 @@ export default function LandingPage({ onLoginSuccess }) {
               </span>
               <div className="grid grid-cols-2 gap-2">
                 {topLosers.slice(0, 2).map((stk, idx) => (
-                  <div key={idx} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-2.5">
+                  <div
+                    key={idx}
+                    className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-2.5"
+                  >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-bold text-xs font-mono text-white">{stk.symbol}</span>
+                      <span className="font-bold text-xs font-mono text-white">
+                        {stk.symbol}
+                      </span>
                       <span className="text-[10px] font-mono text-rose-400 font-bold">
                         {Number(stk.pct_change).toFixed(2)}%
                       </span>
                     </div>
-                    <div className="text-[10px] text-neutral-400">₹{Number(stk.ltp).toFixed(1)}</div>
+                    <div className="text-[10px] text-neutral-400">
+                      ₹{Number(stk.ltp).toFixed(1)}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -694,19 +767,29 @@ export default function LandingPage({ onLoginSuccess }) {
               <div className="grid grid-cols-2 gap-2 text-xs font-mono mb-4">
                 {cues.gift_nifty && (
                   <div className="bg-white/[0.03] p-2.5 rounded-xl border border-white/[0.06]">
-                    <span className="text-[9px] text-neutral-400 uppercase block">GIFT NIFTY</span>
-                    <span className="font-bold text-white">{cues.gift_nifty}</span>
+                    <span className="text-[9px] text-neutral-400 uppercase block">
+                      GIFT NIFTY
+                    </span>
+                    <span className="font-bold text-white">
+                      {cues.gift_nifty}
+                    </span>
                   </div>
                 )}
                 {cues.crude_oil && (
                   <div className="bg-white/[0.03] p-2.5 rounded-xl border border-white/[0.06]">
-                    <span className="text-[9px] text-neutral-400 uppercase block">BRENT CRUDE</span>
-                    <span className="font-bold text-white">{cues.crude_oil}</span>
+                    <span className="text-[9px] text-neutral-400 uppercase block">
+                      BRENT CRUDE
+                    </span>
+                    <span className="font-bold text-white">
+                      {cues.crude_oil}
+                    </span>
                   </div>
                 )}
                 {cues.gold_commodities && (
                   <div className="bg-white/[0.03] p-2.5 rounded-xl border border-white/[0.06]">
-                    <span className="text-[9px] text-neutral-400 uppercase block">GOLD / METALS</span>
+                    <span className="text-[9px] text-neutral-400 uppercase block">
+                      GOLD / METALS
+                    </span>
                     <span className="font-bold text-white truncate block">
                       {cues.gold_commodities}
                     </span>
@@ -714,8 +797,12 @@ export default function LandingPage({ onLoginSuccess }) {
                 )}
                 {cues.dollar_index && (
                   <div className="bg-white/[0.03] p-2.5 rounded-xl border border-white/[0.06]">
-                    <span className="text-[9px] text-neutral-400 uppercase block">DXY DOLLAR</span>
-                    <span className="font-bold text-white">{cues.dollar_index}</span>
+                    <span className="text-[9px] text-neutral-400 uppercase block">
+                      DXY DOLLAR
+                    </span>
+                    <span className="font-bold text-white">
+                      {cues.dollar_index}
+                    </span>
                   </div>
                 )}
               </div>
@@ -734,7 +821,10 @@ export default function LandingPage({ onLoginSuccess }) {
       </section>
 
       {/* ── INTERACTIVE TERMINAL SANDBOX PREVIEW (HANDS-ON MOCKUP) ── */}
-      <section id="sandbox" className="relative z-10 py-20 px-4 sm:px-6 max-w-7xl mx-auto border-t border-white/[0.06]">
+      <section
+        id="sandbox"
+        className="relative z-10 py-20 px-4 sm:px-6 max-w-7xl mx-auto border-t border-white/[0.06]"
+      >
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider mb-2">
             <Eye size={14} />
@@ -744,7 +834,8 @@ export default function LandingPage({ onLoginSuccess }) {
             Experience PulseHunter in Action
           </h2>
           <p className="text-sm sm:text-base text-neutral-400 max-w-2xl mx-auto mt-3">
-            Select a candidate setup below to observe how PulseHunter's quant gate, order flow, and risk protection interact in real-time.
+            Select a candidate setup below to observe how PulseHunter's quant
+            gate, order flow, and risk protection interact in real-time.
           </p>
         </div>
 
@@ -764,7 +855,9 @@ export default function LandingPage({ onLoginSuccess }) {
                 }`}
               >
                 <span>{cfg.symbol}</span>
-                <span className={`text-[10px] ${cfg.isBullish ? "text-emerald-400" : "text-rose-400"} ${active ? "!text-black font-black" : ""}`}>
+                <span
+                  className={`text-[10px] ${cfg.isBullish ? "text-emerald-400" : "text-rose-400"} ${active ? "!text-black font-black" : ""}`}
+                >
                   {cfg.change}
                 </span>
               </button>
@@ -786,28 +879,38 @@ export default function LandingPage({ onLoginSuccess }) {
               <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-6 border-b border-white/[0.06]">
                 <div>
                   <div className="flex items-center gap-2.5 mb-1">
-                    <h3 className="text-2xl font-bold font-mono text-white">{cfg.symbol}</h3>
-                    <span className="text-xs text-neutral-400">· {cfg.name}</span>
+                    <h3 className="text-2xl font-bold font-mono text-white">
+                      {cfg.symbol}
+                    </h3>
+                    <span className="text-xs text-neutral-400">
+                      · {cfg.name}
+                    </span>
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/[0.05] border border-white/[0.1] text-neutral-300">
                       {cfg.sector}
                     </span>
                   </div>
                   <div className="flex items-baseline gap-3">
-                    <span className="text-3xl font-extrabold font-mono text-white">{cfg.ltp}</span>
-                    <span className={`text-sm font-mono font-bold ${cfg.isBullish ? "text-emerald-400" : "text-rose-400"}`}>
+                    <span className="text-3xl font-extrabold font-mono text-white">
+                      {cfg.ltp}
+                    </span>
+                    <span
+                      className={`text-sm font-mono font-bold ${cfg.isBullish ? "text-emerald-400" : "text-rose-400"}`}
+                    >
                       {cfg.change}
                     </span>
                   </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold border ${
-                    cfg.signalColor === "emerald"
-                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                      : cfg.signalColor === "cyan"
-                      ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/30"
-                      : "bg-rose-500/10 text-rose-400 border-rose-500/30"
-                  }`}>
+                  <span
+                    className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold border ${
+                      cfg.signalColor === "emerald"
+                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                        : cfg.signalColor === "cyan"
+                          ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/30"
+                          : "bg-rose-500/10 text-rose-400 border-rose-500/30"
+                    }`}
+                  >
                     {cfg.signal}
                   </span>
                 </div>
@@ -819,35 +922,52 @@ export default function LandingPage({ onLoginSuccess }) {
                   <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block mb-1">
                     Intraday Order Flow (CVD)
                   </span>
-                  <div className="text-lg font-bold font-mono text-white mb-0.5">{cfg.cvd}</div>
-                  <span className="text-xs text-cyan-400 font-medium">{cfg.cvdDesc}</span>
+                  <div className="text-lg font-bold font-mono text-white mb-0.5">
+                    {cfg.cvd}
+                  </div>
+                  <span className="text-xs text-cyan-400 font-medium">
+                    {cfg.cvdDesc}
+                  </span>
                 </div>
 
                 <div className="bg-neutral-950/70 border border-white/[0.06] rounded-2xl p-4">
                   <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block mb-1">
                     VWAP Reference Level
                   </span>
-                  <div className="text-lg font-bold font-mono text-white mb-0.5">{cfg.vwap}</div>
-                  <span className="text-xs text-neutral-400">Institutional Volume Anchor</span>
+                  <div className="text-lg font-bold font-mono text-white mb-0.5">
+                    {cfg.vwap}
+                  </div>
+                  <span className="text-xs text-neutral-400">
+                    Institutional Volume Anchor
+                  </span>
                 </div>
 
                 <div className="bg-neutral-950/70 border border-white/[0.06] rounded-2xl p-4">
                   <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block mb-1">
                     Risk Protection Status
                   </span>
-                  <div className="text-sm font-bold font-mono text-emerald-400 mb-0.5">{cfg.sl}</div>
-                  <span className="text-xs text-neutral-400">Target: {cfg.target}</span>
+                  <div className="text-sm font-bold font-mono text-emerald-400 mb-0.5">
+                    {cfg.sl}
+                  </div>
+                  <span className="text-xs text-neutral-400">
+                    Target: {cfg.target}
+                  </span>
                 </div>
               </div>
 
               {/* AI Copilot Verdict Box */}
               <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-2xl p-4 flex items-start gap-3">
-                <Sparkles size={18} className="text-cyan-400 flex-shrink-0 mt-0.5" />
+                <Sparkles
+                  size={18}
+                  className="text-cyan-400 flex-shrink-0 mt-0.5"
+                />
                 <div>
                   <span className="text-[11px] font-mono font-bold text-cyan-400 uppercase tracking-wider block mb-1">
                     GEMINI 3.6 FLASH VERDICT &amp; CATALYST AUDIT
                   </span>
-                  <p className="text-xs text-neutral-300 leading-relaxed">{cfg.aiVerdict}</p>
+                  <p className="text-xs text-neutral-300 leading-relaxed">
+                    {cfg.aiVerdict}
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -856,7 +976,10 @@ export default function LandingPage({ onLoginSuccess }) {
       </section>
 
       {/* ── THE 7 TERMINAL SCREENS WALKTHROUGH ── */}
-      <section id="screens" className="relative z-10 py-20 px-4 sm:px-6 max-w-7xl mx-auto border-t border-white/[0.06]">
+      <section
+        id="screens"
+        className="relative z-10 py-20 px-4 sm:px-6 max-w-7xl mx-auto border-t border-white/[0.06]"
+      >
         <div className="text-center mb-14">
           <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider mb-2">
             <Layers size={14} />
@@ -866,7 +989,8 @@ export default function LandingPage({ onLoginSuccess }) {
             The 7 Integrated Workstations
           </h2>
           <p className="text-sm sm:text-base text-neutral-400 max-w-2xl mx-auto mt-3">
-            A comprehensive suite of institutional tools tailored for rapid intraday decision-making.
+            A comprehensive suite of institutional tools tailored for rapid
+            intraday decision-making.
           </p>
         </div>
 
@@ -917,8 +1041,14 @@ export default function LandingPage({ onLoginSuccess }) {
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-white/[0.06]">
                 {sc.highlights.map((h, i) => (
-                  <div key={i} className="flex items-center gap-2 text-xs text-neutral-300">
-                    <CheckCircle2 size={15} className="text-cyan-400 flex-shrink-0" />
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 text-xs text-neutral-300"
+                  >
+                    <CheckCircle2
+                      size={15}
+                      className="text-cyan-400 flex-shrink-0"
+                    />
                     <span>{h}</span>
                   </div>
                 ))}
@@ -929,7 +1059,10 @@ export default function LandingPage({ onLoginSuccess }) {
       </section>
 
       {/* ── COMPARISON MATRIX SECTION ── */}
-      <section id="comparison" className="relative z-10 py-20 px-4 sm:px-6 max-w-5xl mx-auto border-t border-white/[0.06]">
+      <section
+        id="comparison"
+        className="relative z-10 py-20 px-4 sm:px-6 max-w-5xl mx-auto border-t border-white/[0.06]"
+      >
         <div className="text-center mb-14">
           <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-indigo-400 uppercase tracking-wider mb-2">
             <Sliders size={14} />
@@ -939,15 +1072,20 @@ export default function LandingPage({ onLoginSuccess }) {
             Conventional Retail vs PulseHunter
           </h2>
           <p className="text-sm sm:text-base text-neutral-400 max-w-xl mx-auto mt-3">
-            Why systematic momentum trading outperforms manual chart-by-chart browsing.
+            Why systematic momentum trading outperforms manual chart-by-chart
+            browsing.
           </p>
         </div>
 
         <div className="bg-white/[0.025] border border-white/[0.1] rounded-3xl overflow-hidden shadow-2xl">
           <div className="grid grid-cols-3 bg-white/[0.04] border-b border-white/[0.08] p-4 text-xs font-mono font-bold">
             <span className="text-neutral-400 uppercase">Capability</span>
-            <span className="text-neutral-400 uppercase">Conventional Retail</span>
-            <span className="text-cyan-400 uppercase">PulseHunter Terminal</span>
+            <span className="text-neutral-400 uppercase">
+              Conventional Retail
+            </span>
+            <span className="text-cyan-400 uppercase">
+              PulseHunter Terminal
+            </span>
           </div>
           {comparisonData.map((row, idx) => (
             <div
@@ -978,7 +1116,8 @@ export default function LandingPage({ onLoginSuccess }) {
             Who Is PulseHunter Built For?
           </h2>
           <p className="text-sm sm:text-base text-neutral-400 max-w-2xl mx-auto mt-3">
-            Engineered for high-frequency discipline and systematic execution across three key participant profiles.
+            Engineered for high-frequency discipline and systematic execution
+            across three key participant profiles.
           </p>
         </div>
 
@@ -988,10 +1127,13 @@ export default function LandingPage({ onLoginSuccess }) {
               <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 grid place-items-center mb-4">
                 <BarChart3 size={20} />
               </div>
-              <h4 className="text-xl font-bold text-white mb-2">Quantitative &amp; Systematic Traders</h4>
+              <h4 className="text-xl font-bold text-white mb-2">
+                Quantitative &amp; Systematic Traders
+              </h4>
               <p className="text-xs text-neutral-400 leading-relaxed mb-6">
-                Traders seeking statistical outperformance who want to trade strictly with the trend,
-                filtered by sector relative strength and confirmed volume accumulation.
+                Traders seeking statistical outperformance who want to trade
+                strictly with the trend, filtered by sector relative strength
+                and confirmed volume accumulation.
               </p>
             </div>
             <div className="text-xs text-cyan-400 font-mono font-bold flex items-center gap-1">
@@ -1005,10 +1147,13 @@ export default function LandingPage({ onLoginSuccess }) {
               <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 grid place-items-center mb-4">
                 <Flame size={20} />
               </div>
-              <h4 className="text-xl font-bold text-white mb-2">Active F&amp;O Derivatives Desks</h4>
+              <h4 className="text-xl font-bold text-white mb-2">
+                Active F&amp;O Derivatives Desks
+              </h4>
               <p className="text-xs text-neutral-400 leading-relaxed mb-6">
-                Proprietary intraday scalpers who need sub-second Cumulative Volume Delta (CVD) order
-                flow to detect aggressive market participants in 210 F&amp;O stocks.
+                Proprietary intraday scalpers who need sub-second Cumulative
+                Volume Delta (CVD) order flow to detect aggressive market
+                participants in 210 F&amp;O stocks.
               </p>
             </div>
             <div className="text-xs text-indigo-400 font-mono font-bold flex items-center gap-1">
@@ -1022,10 +1167,13 @@ export default function LandingPage({ onLoginSuccess }) {
               <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 grid place-items-center mb-4">
                 <Shield size={20} />
               </div>
-              <h4 className="text-xl font-bold text-white mb-2">Disciplined Risk-First Traders</h4>
+              <h4 className="text-xl font-bold text-white mb-2">
+                Disciplined Risk-First Traders
+              </h4>
               <p className="text-xs text-neutral-400 leading-relaxed mb-6">
-                Traders committed to eliminating revenge trading and emotional exits with automated
-                bracket order execution and automatic +1.0R Breakeven ratchets.
+                Traders committed to eliminating revenge trading and emotional
+                exits with automated bracket order execution and automatic +1.0R
+                Breakeven ratchets.
               </p>
             </div>
             <div className="text-xs text-emerald-400 font-mono font-bold flex items-center gap-1">
@@ -1048,24 +1196,33 @@ export default function LandingPage({ onLoginSuccess }) {
               Engineered for Terminal Velocity
             </h3>
             <p className="text-sm text-neutral-300 leading-relaxed mb-6">
-              Navigate all 7 screens, search symbols, toggle themes, and expand charts with zero latency hotkeys.
+              Navigate all 7 screens, search symbols, toggle themes, and expand
+              charts with zero latency hotkeys.
             </p>
             <div className="grid grid-cols-2 gap-2.5 text-xs font-mono">
               <div className="bg-white/[0.03] p-3 rounded-xl border border-white/[0.06] flex items-center justify-between">
                 <span className="text-neutral-400">Switch Screens</span>
-                <kbd className="px-2 py-0.5 rounded bg-white/[0.1] text-white font-bold">[1 - 7]</kbd>
+                <kbd className="px-2 py-0.5 rounded bg-white/[0.1] text-white font-bold">
+                  [1 - 7]
+                </kbd>
               </div>
               <div className="bg-white/[0.03] p-3 rounded-xl border border-white/[0.06] flex items-center justify-between">
                 <span className="text-neutral-400">Universal Search</span>
-                <kbd className="px-2 py-0.5 rounded bg-white/[0.1] text-white font-bold">[/]</kbd>
+                <kbd className="px-2 py-0.5 rounded bg-white/[0.1] text-white font-bold">
+                  [/]
+                </kbd>
               </div>
               <div className="bg-white/[0.03] p-3 rounded-xl border border-white/[0.06] flex items-center justify-between">
                 <span className="text-neutral-400">Focus Chart Pane</span>
-                <kbd className="px-2 py-0.5 rounded bg-white/[0.1] text-white font-bold">[Space]</kbd>
+                <kbd className="px-2 py-0.5 rounded bg-white/[0.1] text-white font-bold">
+                  [Space]
+                </kbd>
               </div>
               <div className="bg-white/[0.03] p-3 rounded-xl border border-white/[0.06] flex items-center justify-between">
                 <span className="text-neutral-400">Toggle Theme</span>
-                <kbd className="px-2 py-0.5 rounded bg-white/[0.1] text-white font-bold">[T]</kbd>
+                <kbd className="px-2 py-0.5 rounded bg-white/[0.1] text-white font-bold">
+                  [T]
+                </kbd>
               </div>
             </div>
           </div>
@@ -1076,24 +1233,46 @@ export default function LandingPage({ onLoginSuccess }) {
             </span>
             <div className="space-y-3 text-xs">
               <div className="flex items-start gap-3">
-                <Server size={18} className="text-cyan-400 flex-shrink-0 mt-0.5" />
+                <Server
+                  size={18}
+                  className="text-cyan-400 flex-shrink-0 mt-0.5"
+                />
                 <div>
-                  <span className="font-bold text-white block">In-Memory High Frequency Python Engine</span>
-                  <span className="text-neutral-400">Sub-second tick aggregation across 210 watchlist equities.</span>
+                  <span className="font-bold text-white block">
+                    In-Memory High Frequency Python Engine
+                  </span>
+                  <span className="text-neutral-400">
+                    Sub-second tick aggregation across 210 watchlist equities.
+                  </span>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <KeyRound size={18} className="text-emerald-400 flex-shrink-0 mt-0.5" />
+                <KeyRound
+                  size={18}
+                  className="text-emerald-400 flex-shrink-0 mt-0.5"
+                />
                 <div>
-                  <span className="font-bold text-white block">Encrypted Session Authentication</span>
-                  <span className="text-neutral-400">Zero open self-registration with invite-only authorization tokens.</span>
+                  <span className="font-bold text-white block">
+                    Encrypted Session Authentication
+                  </span>
+                  <span className="text-neutral-400">
+                    Zero open self-registration with invite-only authorization
+                    tokens.
+                  </span>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Sparkles size={18} className="text-indigo-400 flex-shrink-0 mt-0.5" />
+                <Sparkles
+                  size={18}
+                  className="text-indigo-400 flex-shrink-0 mt-0.5"
+                />
                 <div>
-                  <span className="font-bold text-white block">Google Gemini 3.6 Flash Cloud Intelligence</span>
-                  <span className="text-neutral-400">Adversarial catalyst auditing with automatic quota fallback.</span>
+                  <span className="font-bold text-white block">
+                    Google Gemini 3.6 Flash Cloud Intelligence
+                  </span>
+                  <span className="text-neutral-400">
+                    Adversarial catalyst auditing with automatic quota fallback.
+                  </span>
                 </div>
               </div>
             </div>
@@ -1102,7 +1281,10 @@ export default function LandingPage({ onLoginSuccess }) {
       </section>
 
       {/* ── FREQUENTLY ASKED QUESTIONS (FAQ) ── */}
-      <section id="faq" className="relative z-10 py-20 px-4 sm:px-6 max-w-4xl mx-auto border-t border-white/[0.06]">
+      <section
+        id="faq"
+        className="relative z-10 py-20 px-4 sm:px-6 max-w-4xl mx-auto border-t border-white/[0.06]"
+      >
         <div className="text-center mb-14">
           <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider mb-2">
             <HelpCircle size={14} />
@@ -1112,7 +1294,8 @@ export default function LandingPage({ onLoginSuccess }) {
             Frequently Asked Questions
           </h2>
           <p className="text-sm text-neutral-400 max-w-xl mx-auto mt-2">
-            Everything you need to know about the PulseHunter quantitative terminal.
+            Everything you need to know about the PulseHunter quantitative
+            terminal.
           </p>
         </div>
 
@@ -1166,8 +1349,9 @@ export default function LandingPage({ onLoginSuccess }) {
             Request Access to PulseHunter
           </h2>
           <p className="text-sm sm:text-base text-neutral-300 max-w-xl mx-auto mb-8 leading-relaxed">
-            PulseHunter is reserved for qualified systematic traders and institutional market participants.
-            Contact <b>PARTHIBAKANNAN S</b> to request authorized access credentials.
+            PulseHunter is reserved for qualified systematic traders and
+            institutional market participants. Contact <b>PARTHIBAKANNAN S</b>{" "}
+            to request authorized access credentials.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3.5">
@@ -1193,14 +1377,20 @@ export default function LandingPage({ onLoginSuccess }) {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
           <div className="space-y-1">
             <div className="flex items-center justify-center md:justify-start gap-2">
-              <img src="/assets/logo.jpg" alt="PulseHunter" className="w-5 h-5 rounded-md object-cover" />
+              <img
+                src="/assets/logo.jpg"
+                alt="PulseHunter"
+                className="w-5 h-5 rounded-md object-cover"
+              />
               <span className="font-bold text-white text-sm">PulseHunter</span>
             </div>
             <p className="text-neutral-400">
-              &copy; {new Date().getFullYear()} PulseHunter. All Rights Reserved.
+              &copy; {new Date().getFullYear()} PulseHunter. All Rights
+              Reserved.
             </p>
             <p className="text-neutral-400">
-              Created, Engineered &amp; Owned by <b className="text-neutral-300">PARTHIBAKANNAN S</b>.
+              Created, Engineered &amp; Owned by{" "}
+              <b className="text-neutral-300">PARTHIBAKANNAN S</b>.
             </p>
           </div>
 
@@ -1244,8 +1434,12 @@ export default function LandingPage({ onLoginSuccess }) {
                   className="w-10 h-10 rounded-xl object-cover border border-cyan-500/30 shadow-md"
                 />
                 <div>
-                  <h3 className="text-lg font-bold text-white font-display">PulseHunter Client Sign In</h3>
-                  <p className="text-xs text-neutral-400">Enter authorized credentials to continue</p>
+                  <h3 className="text-lg font-bold text-white font-display">
+                    PulseHunter Client Sign In
+                  </h3>
+                  <p className="text-xs text-neutral-400">
+                    Enter authorized credentials to continue
+                  </p>
                 </div>
               </div>
 
@@ -1288,7 +1482,9 @@ export default function LandingPage({ onLoginSuccess }) {
                   disabled={loginBusy}
                   className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 text-black font-extrabold text-sm shadow-[0_0_20px_rgba(6,182,212,0.3)] transition-all"
                 >
-                  {loginBusy ? "Authenticating Session..." : "Sign In to Terminal"}
+                  {loginBusy
+                    ? "Authenticating Session..."
+                    : "Sign In to Terminal"}
                 </button>
               </form>
 
@@ -1382,10 +1578,18 @@ export default function LandingPage({ onLoginSuccess }) {
                       onChange={(e) => setRequestRole(e.target.value)}
                       className="w-full bg-neutral-900 border border-white/[0.1] rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-400 transition-colors"
                     >
-                      <option value="Proprietary / Quant Trader">Proprietary / Quantitative Trader</option>
-                      <option value="Institutional Asset Manager">Institutional / Desk Trader</option>
-                      <option value="Active F&O Derivatives Trader">Active F&amp;O Derivatives Trader</option>
-                      <option value="Systematic Individual Trader">Systematic Individual Trader</option>
+                      <option value="Proprietary / Quant Trader">
+                        Proprietary / Quantitative Trader
+                      </option>
+                      <option value="Institutional Asset Manager">
+                        Institutional / Desk Trader
+                      </option>
+                      <option value="Active F&O Derivatives Trader">
+                        Active F&amp;O Derivatives Trader
+                      </option>
+                      <option value="Systematic Individual Trader">
+                        Systematic Individual Trader
+                      </option>
                     </select>
                   </div>
                   <div>
@@ -1414,14 +1618,20 @@ export default function LandingPage({ onLoginSuccess }) {
                   <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 grid place-items-center mx-auto">
                     <CheckCircle2 size={24} />
                   </div>
-                  <h4 className="font-bold text-base text-white">Access Request Dispatched</h4>
+                  <h4 className="font-bold text-base text-white">
+                    Access Request Dispatched
+                  </h4>
                   <p className="text-xs text-neutral-300 leading-relaxed">
-                    Thank you, <b>{requestName}</b>. Your access request has been routed directly to{" "}
-                    <b>PARTHIBAKANNAN S</b> (
-                    <a href="mailto:parthisivaram45@gmail.com" className="text-cyan-400 underline">
+                    Thank you, <b>{requestName}</b>. Your access request has
+                    been routed directly to <b>PARTHIBAKANNAN S</b> (
+                    <a
+                      href="mailto:parthisivaram45@gmail.com"
+                      className="text-cyan-400 underline"
+                    >
                       parthisivaram45@gmail.com
                     </a>
-                    ). You will be contacted via email regarding terminal onboarding.
+                    ). You will be contacted via email regarding terminal
+                    onboarding.
                   </p>
                   <button
                     onClick={() => {
