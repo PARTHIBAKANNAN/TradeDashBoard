@@ -396,6 +396,11 @@ class DataEngine:
 
         def on_error(msg):
             logger.warning("ws error: %s", msg)
+            # -300 means one of the symbols in the last DepthUpdate subscribe
+            # call is not eligible. Blacklist it so subsequent rotations skip it.
+            if isinstance(msg, dict) and msg.get("code") == -300:
+                from . import depth_manager
+                depth_manager.blacklist_last_attempted()
 
         def on_close(msg):
             logger.info("ws closed: %s", msg)

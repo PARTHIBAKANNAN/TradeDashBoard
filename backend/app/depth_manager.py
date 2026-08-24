@@ -49,6 +49,17 @@ _running: bool = False
 _depth_set: set[str] = set()  # short symbols currently subscribed
 _last_book: dict[str, tuple[float, float]] = {}  # sym → (bid_val, ask_val)
 
+# Symbols that returned -300 'invalid symbol' on DepthUpdate subscription —
+# permanently excluded for the lifetime of the process so they don't keep
+# breaking the whole 2-minute rotation window for all other depth symbols.
+_depth_blacklist: set[str] = set()
+
+# Short symbols we tried to subscribe in the most recent resubscribe() call;
+# stored so the on_error(-300) handler in fyers_service.py can identify and
+# blacklist the bad ticker(s) without needing to diff the message itself
+# (Fyers doesn't tell us which symbol triggered the -300).
+_last_subscribe_attempt: set[str] = set()
+
 # Logged once on the very first depth message to confirm actual Fyers field
 # names before processing begins — makes field-name mismatches easy to spot.
 _first_message_logged: bool = False
@@ -76,6 +87,29 @@ def is_depth_subscribed(sym: str) -> bool:
     """True if *sym* currently has a live DepthUpdate subscription."""
     with _lock:
         return sym in _depth_set
+
+
+def blacklist_last_attempted() -> None:
+    """Called by fyers_service.on_error() when a -300 'invalid symbol' response
+    arrives on the WebSocket. Moves every symbol from the most recent
+    subscribe attempt into the permanent depth blacklist so they are never
+    retried for DepthUpdate this session.
+
+    Because Fyers does not identify *which* symbol triggered the error, we
+    conservatively blacklist the whole attempt set. In practice each rotation
+    adds 1-4 new symbols, so false positives are low and still recoverable on
+    the next process restart.
+    """
+    with _lock:
+        bad = set(_last_subscribe_attempt)
+        _last_subscribe_attempt.clear()
+    if bad:
+        _depth_blacklist.update(bad)
+        logger.warning(
+            "depth: blacklisting %d symbol(s) that caused -300 DepthUpdate error: %s",
+            len(bad),
+            sorted(bad),
+        )
 
 
 # ── depth message handler ─────────────────────────────────────────────────────
@@ -203,24 +237,45 @@ def resubscribe() -> None:
     if not to_add and not to_drop:
         return  # subscription unchanged
 
+    # Exclude permanently-blacklisted symbols before building the API lists.
+    to_add = {s for s in to_add if s not in _depth_blacklist}
+    to_drop = {s for s in to_drop if s not in _depth_blacklist}
+
+    if not to_add and not to_drop:
+        return  # nothing to change after filtering blacklist
+
     # Map short symbols → full Fyers symbols for the API call.
     from .state import market_state
 
     with market_state.lock():
         fy_map = {s["symbol"]: s["fy_symbol"] for s in market_state.stocks.values()}
 
-    fy_to_add = [fy_map[s] for s in to_add if s in fy_map]
     fy_to_drop = [fy_map[s] for s in to_drop if s in fy_map]
+    fy_to_add = [fy_map[s] for s in to_add if s in fy_map]
 
+    # Unsubscribe dropped symbols in one batch (unsubscribing a bad sym is safe).
+    with _lock:
+        ws = _ws
     try:
-        with _lock:
-            ws = _ws
-        if fy_to_add and ws:
-            ws.subscribe(symbols=fy_to_add, data_type="DepthUpdate")
         if fy_to_drop and ws:
             ws.unsubscribe(symbols=fy_to_drop, data_type="DepthUpdate")
     except Exception:
-        logger.exception("depth_manager: resubscribe() failed")
+        logger.exception("depth_manager: unsubscribe() failed")
+
+    # Record which symbols we are about to subscribe so that if a -300 error
+    # fires in on_error(), blacklist_last_attempted() can identify them.
+    with _lock:
+        _last_subscribe_attempt.clear()
+        _last_subscribe_attempt.update(to_add)
+
+    try:
+        if fy_to_add and ws:
+            ws.subscribe(symbols=fy_to_add, data_type="DepthUpdate")
+        # Success — clear the attempt tracker (no blacklisting needed).
+        with _lock:
+            _last_subscribe_attempt.clear()
+    except Exception:
+        logger.exception("depth_manager: subscribe() failed")
         return
 
     with _lock:
@@ -298,6 +353,8 @@ def stop() -> None:
         _running = False
         _depth_set.clear()
         _last_book.clear()
+        _depth_blacklist.clear()
+        _last_subscribe_attempt.clear()
 
     try:
         from .state import market_state
