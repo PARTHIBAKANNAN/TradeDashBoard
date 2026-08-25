@@ -400,6 +400,7 @@ class DataEngine:
             # call is not eligible. Blacklist it so subsequent rotations skip it.
             if isinstance(msg, dict) and msg.get("code") == -300:
                 from . import depth_manager
+
                 depth_manager.blacklist_last_attempted()
 
         def on_close(msg):
