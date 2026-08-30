@@ -197,21 +197,46 @@ def _score_symbol(stock: dict, forced_syms: set[str]) -> float:
 
 def _select_top_symbols(n: int) -> set[str]:
     """
-    Score every tracked symbol against live state and return the top-n short
-    symbols. Symbols with open paper positions are forced to score highest so
-    they are never rotated out while a trade is live.
+    Select the top-n short symbols for DepthUpdate subscription based on:
+    1. Forced open/pending paper trade positions (always retained so open trades
+       never lose depth data).
+    2. Smart Money Engine Top-N ranking (fresh turnover ratio + RVOL + RS).
+    3. Fallback to composite market_state scoring if Smart Money has insufficient
+       history or eligible symbols.
     """
+    from .import smart_money
     from .state import market_state
 
-    # Paper positions forced in (open brackets + pending limits).
+    # 1. Paper positions forced in (open brackets + pending limits).
     forced = set(order_monitor._open_brackets.keys()) | set(order_monitor._pending_limits.keys())
 
+    selected = set(forced)
+    if len(selected) >= n:
+        return set(list(selected)[:n])
+
+    # 2. Try Smart Money Top-10 ranking
+    sm_latest = smart_money.get_latest()
+    sm_top = sm_latest.get("top", [])
+    for item in sm_top:
+        sym = item.get("symbol")
+        if sym:
+            selected.add(sym)
+            if len(selected) >= n:
+                return selected
+
+    # 3. Fallback: Score remaining tracked symbols against live market_state
     with market_state.lock():
         stocks = list(market_state.stocks.values())
 
-    scored = [(s["symbol"], _score_symbol(s, forced)) for s in stocks]
+    scored = [(s["symbol"], _score_symbol(s, forced)) for s in stocks if s["symbol"] not in selected]
     scored.sort(key=lambda x: x[1], reverse=True)
-    return {sym for sym, _ in scored[:n]}
+
+    for sym, _score in scored:
+        selected.add(sym)
+        if len(selected) >= n:
+            break
+
+    return selected
 
 
 # ── dynamic resubscription ────────────────────────────────────────────────────
