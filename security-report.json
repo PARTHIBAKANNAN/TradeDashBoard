@@ -31,7 +31,7 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "account": "",
         "local_database_path": null,
         "safety_version": "3.8.1",
-        "timestamp": "2026-08-29 14:05:59",
+        "timestamp": "2026-08-30 14:10:16",
         "packages_found": 13,
         "vulnerabilities_found": 14,
         "vulnerabilities_ignored": 0,
@@ -56,7 +56,7 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "git": {
             "branch": "main",
             "tag": "",
-            "commit": "82f49b636caa2ad68be20c5aa9e758a6b7535f52",
+            "commit": "ffc8abdf5285dd7b0094fc0350721f46392e6098",
             "dirty": "True",
             "origin": "https://github.com/PARTHIBAKANNAN/TradeDashBoard"
         },
@@ -959,6 +959,39 @@ We highly encourage switching to the new `scan` command which is easier to use, 
             "more_info_url": "https://getsafety.com/v/SFTY-20260615-88836/97c"
         },
         {
+            "vulnerability_id": "SFTY-20260615-71642",
+            "package_name": "pyjwt",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                "<2.13.0"
+            ],
+            "all_vulnerable_specs": [
+                "<2.13.0"
+            ],
+            "analyzed_version": "2.10.1",
+            "analyzed_requirement": {
+                "raw": "pyjwt==2.10.1",
+                "extras": [],
+                "marker": null,
+                "name": "pyjwt",
+                "specifier": "==2.10.1",
+                "url": null,
+                "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
+            },
+            "advisory": "Affected versions of the PyJWT package are vulnerable to an Algorithm Confusion attack due to improper validation of JSON Web Keys (JWKs) when used with HMAC algorithms. The `decode` method in PyJWT fails to distinguish between public keys and secret keys when both symmetric (HMAC) and asymmetric algorithms are allowed, leading to the acceptance of a public key as an HMAC secret. An attacker can exploit this by crafting a token with an HMAC algorithm header and using a public JWK as the secret, allowing them to forge tokens and impersonate users, potentially bypassing authorization controls.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2026-48526",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://getsafety.com/v/SFTY-20260615-71642/97c"
+        },
+        {
             "vulnerability_id": "SFTY-20260615-85895",
             "package_name": "pyjwt",
             "ignored": {},
@@ -1056,39 +1089,6 @@ We highly encourage switching to the new `scan` command which is easier to use, 
             "severity": null,
             "affected_versions": [],
             "more_info_url": "https://getsafety.com/v/SFTY-20260615-02573/97c"
-        },
-        {
-            "vulnerability_id": "SFTY-20260615-71642",
-            "package_name": "pyjwt",
-            "ignored": {},
-            "ignored_reason": null,
-            "ignored_expires": null,
-            "vulnerable_spec": [
-                "<2.13.0"
-            ],
-            "all_vulnerable_specs": [
-                "<2.13.0"
-            ],
-            "analyzed_version": "2.10.1",
-            "analyzed_requirement": {
-                "raw": "pyjwt==2.10.1",
-                "extras": [],
-                "marker": null,
-                "name": "pyjwt",
-                "specifier": "==2.10.1",
-                "url": null,
-                "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
-            },
-            "advisory": "Affected versions of the PyJWT package are vulnerable to an Algorithm Confusion attack due to improper validation of JSON Web Keys (JWKs) when used with HMAC algorithms. The `decode` method in PyJWT fails to distinguish between public keys and secret keys when both symmetric (HMAC) and asymmetric algorithms are allowed, leading to the acceptance of a public key as an HMAC secret. An attacker can exploit this by crafting a token with an HMAC algorithm header and using a public JWK as the secret, allowing them to forge tokens and impersonate users, potentially bypassing authorization controls.",
-            "is_transitive": false,
-            "published_date": null,
-            "fixed_versions": [],
-            "closest_versions_without_known_vulnerabilities": [],
-            "resources": [],
-            "CVE": "CVE-2026-48526",
-            "severity": null,
-            "affected_versions": [],
-            "more_info_url": "https://getsafety.com/v/SFTY-20260615-71642/97c"
         },
         {
             "vulnerability_id": "89028",
