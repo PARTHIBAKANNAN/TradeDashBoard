@@ -204,7 +204,7 @@ def _select_top_symbols(n: int) -> set[str]:
     3. Fallback to composite market_state scoring if Smart Money has insufficient
        history or eligible symbols.
     """
-    from .import smart_money
+    from . import smart_money
     from .state import market_state
 
     # 1. Paper positions forced in (open brackets + pending limits).
@@ -228,7 +228,9 @@ def _select_top_symbols(n: int) -> set[str]:
     with market_state.lock():
         stocks = list(market_state.stocks.values())
 
-    scored = [(s["symbol"], _score_symbol(s, forced)) for s in stocks if s["symbol"] not in selected]
+    scored = [
+        (s["symbol"], _score_symbol(s, forced)) for s in stocks if s["symbol"] not in selected
+    ]
     scored.sort(key=lambda x: x[1], reverse=True)
 
     for sym, _score in scored:

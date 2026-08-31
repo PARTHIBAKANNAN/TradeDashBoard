@@ -207,6 +207,7 @@ async def compute_rankings() -> dict:
         # immediately to match the fresh Smart Money top 10 list.
         try:
             from . import depth_manager
+
             depth_manager.resubscribe()
         except Exception:
             logger.exception("smart_money: depth resubscribe trigger failed")
