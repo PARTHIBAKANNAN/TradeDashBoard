@@ -207,10 +207,11 @@ def validate_quant_filters(
     nifty_grp = nifty_group(ind_grp)
 
     # ── Tier 1: Sector & Defensive Gating ─────────────────────────────────────
-    # Defensive names (FMCG, PSU Banks, Cement) need RS >= 2.0% to avoid sideways traps.
-    # Regular momentum sectors need RS >= 1.0% vs NIFTY.
+    # Defensive names (FMCG, PSU Banks, Cement) need RS >= 1.5% to avoid sideways traps.
+    # Regular momentum sectors need RS >= 0.5% (or config threshold) vs NIFTY.
+    from . import config as _cfg
     is_defensive = ind_grp in DEFENSIVE_SECTORS
-    min_rs_required = 2.0 if is_defensive else 1.0
+    min_rs_required = 1.5 if is_defensive else getattr(_cfg, "MIN_RS_THRESHOLD", 0.50)
 
     if is_bull and rs < min_rs_required:
         return (
@@ -225,24 +226,24 @@ def validate_quant_filters(
             {"rs": rs},
         )
 
-    # Sector alignment: verify sector mean return agrees with trade direction
+    # Sector alignment: verify sector mean return agrees with trade direction (with tolerance buffer)
     sector_means = build_sector_means(all_stocks)
     sector_mean = sector_means.get(nifty_grp, 0.0)
-    if is_bull and sector_mean < -0.10:
+    if is_bull and sector_mean < -0.25:
         return (
             False,
-            f"Sector {nifty_grp} is dragging at {sector_mean:+.2f}%",
+            f"Sector {nifty_grp} is dragging heavily at {sector_mean:+.2f}%",
             {"sector_mean": sector_mean},
         )
-    if not is_bull and sector_mean > 0.10:
+    if not is_bull and sector_mean > 0.25:
         return (
             False,
-            f"Sector {nifty_grp} is lifting at {sector_mean:+.2f}%",
+            f"Sector {nifty_grp} is lifting heavily at {sector_mean:+.2f}%",
             {"sector_mean": sector_mean},
         )
 
     # ── Tier 2: VWAP Alignment & Non-Extension Buffer ────────────────────────
-    # Price must be on the right side of VWAP and within [0.15%, 1.2%] buffer.
+    # Price must be on the right side of VWAP and within [0.08%, 2.20%] buffer.
     if not vwap:
         return False, "No VWAP data available", {}
 
@@ -250,18 +251,18 @@ def validate_quant_filters(
         if ltp <= vwap:
             return False, f"LTP (₹{ltp:.2f}) is below VWAP (₹{vwap:.2f})", {}
         vwap_dist_pct = (ltp - vwap) / vwap * 100
-        if vwap_dist_pct < 0.10:
+        if vwap_dist_pct < 0.08:
             return False, f"Price too close to VWAP ({vwap_dist_pct:.2f}%)", {}
-        if vwap_dist_pct > 1.20:
-            return False, f"Price over-extended from VWAP ({vwap_dist_pct:.2f}% > 1.2%)", {}
+        if vwap_dist_pct > 2.20:
+            return False, f"Price over-extended from VWAP ({vwap_dist_pct:.2f}% > 2.2%)", {}
     else:
         if ltp >= vwap:
             return False, f"LTP (₹{ltp:.2f}) is above VWAP (₹{vwap:.2f})", {}
         vwap_dist_pct = (vwap - ltp) / vwap * 100
-        if vwap_dist_pct < 0.10:
+        if vwap_dist_pct < 0.08:
             return False, f"Price too close to VWAP ({vwap_dist_pct:.2f}%)", {}
-        if vwap_dist_pct > 1.20:
-            return False, f"Price over-extended below VWAP ({vwap_dist_pct:.2f}% > 1.2%)", {}
+        if vwap_dist_pct > 2.20:
+            return False, f"Price over-extended below VWAP ({vwap_dist_pct:.2f}% > 2.2%)", {}
 
     # ── Tier 3: 5-Minute Technical Indicators (EMA & RSI) ────────────────────
     prices = list(candle_closes) if candle_closes else [ltp]
@@ -273,18 +274,18 @@ def validate_quant_filters(
     ema_50 = compute_ema(prices, 50)
 
     # RSI momentum zone checks:
-    # BUY: RSI must be 55.0 to 72.0 (strong momentum, not overbought)
-    # SELL: RSI must be 28.0 to 45.0 (breakdown acceleration, not oversold)
+    # BUY: RSI must be 52.0 to 78.0 (strong momentum, not extreme overbought)
+    # SELL: RSI must be 22.0 to 48.0 (breakdown acceleration, not extreme oversold)
     if is_bull:
-        if rsi < 55.0:
-            return False, f"5m RSI is weak ({rsi:.1f} < 55.0)", {"rsi": rsi}
-        if rsi > 72.0:
-            return False, f"5m RSI is overbought ({rsi:.1f} > 72.0)", {"rsi": rsi}
+        if rsi < 52.0:
+            return False, f"5m RSI is weak ({rsi:.1f} < 52.0)", {"rsi": rsi}
+        if rsi > 78.0:
+            return False, f"5m RSI is extreme overbought ({rsi:.1f} > 78.0)", {"rsi": rsi}
     else:
-        if rsi > 45.0:
-            return False, f"5m RSI is weak ({rsi:.1f} > 45.0)", {"rsi": rsi}
-        if rsi < 28.0:
-            return False, f"5m RSI is oversold ({rsi:.1f} < 28.0)", {"rsi": rsi}
+        if rsi > 48.0:
+            return False, f"5m RSI is weak ({rsi:.1f} > 48.0)", {"rsi": rsi}
+        if rsi < 22.0:
+            return False, f"5m RSI is extreme oversold ({rsi:.1f} < 22.0)", {"rsi": rsi}
 
     # EMA trend alignment checks (if enough candles present):
     if len(prices) >= 20:

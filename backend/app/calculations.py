@@ -232,7 +232,11 @@ def process_incoming_tick(
         #             extreme so far.
         #   Rule 3:   at least one red and one green candle in the opening range.
         if signal in ("Bull • C1", "Bear • C1"):
-            qualified = stock["two_sided_ok"] and first_candle_extreme_intact(
+            # Strong trend exception: If RS is significant (|RS| >= 0.8%), allow strong one-way
+            # breakout runners even if opening 30 mins had all green or all red candles.
+            is_strong_trend = abs(stock.get("relative_strength", 0.0)) >= 0.80
+            range_ok = stock.get("two_sided_ok", False) or is_strong_trend
+            qualified = range_ok and first_candle_extreme_intact(
                 signal == "Bull • C1",
                 stock["candle1_high"],
                 stock["candle1_low"],

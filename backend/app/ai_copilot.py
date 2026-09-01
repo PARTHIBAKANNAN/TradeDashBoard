@@ -513,12 +513,12 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
         "Analyse the real numbers provided (RSI-14, 20 EMA, VWAP distance, Sector mean, RS) "
         "and output SKIP_TRAP if any red flag exists, or CONFIRM if the setup is technically clean. "
         "Red flags include: "
-        "• RSI overbought (>72 for buy) or oversold (<28 for sell), or weak momentum (<55 for buy / >45 for sell), "
+        "• RSI extreme overbought (>78 for buy) or extreme oversold (<22 for sell), or weak momentum (<52 for buy / >48 for sell), "
         "• Price below 20 EMA on a buy setup, or price above 20 EMA on a short setup, "
-        "• Sector index dragging against trade direction, "
-        "• Defensive sector (FMCG/PSU) with RS < 2.0%, "
-        "• Price too extended from VWAP (>1.2%), "
-        "• Risk-to-Reward ratio < 1:1.5 given the suggested structural SL/Target (minimum 1.0% SL buffer), "
+        "• Sector index heavily dragging against trade direction (>0.25% opposite), "
+        "• Defensive sector (FMCG/PSU) with RS < 1.5%, "
+        "• Price excessively extended from VWAP (>2.2%), "
+        "• Risk-to-Reward ratio < 1:1.5 given the suggested structural SL/Target (minimum 1.0% to 1.5% SL buffer), "
         "• Depth delta strongly opposing the signal direction. "
         "Return valid JSON only."
     )
@@ -537,9 +537,9 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
         '  "rationale": ["Point 1 (max 2 points)"]\n'
         "}\n\n"
         "IMPORTANT RULES FOR CONFIRMATION:\n"
-        "  • Stop Loss MUST have at least 1.0% to 1.5% structural distance from entry (not razor-thin).\n"
+        "  • Stop Loss MUST have at least 1.0% to 1.5% structural distance from entry (never razor-thin, avoiding 2-minute noise wicks).\n"
         "  • Target MUST be at least 1.5x to 2.0x the SL distance.\n"
-        "  • Only confirm when RSI is in healthy zone (55-72 for buy, 28-45 for sell) and 20 EMA aligns.\n"
+        "  • Only confirm when RSI is in healthy momentum zone (52-78 for buy, 22-48 for sell) and 20 EMA aligns.\n"
         "Otherwise return SKIP_TRAP."
     )
 
