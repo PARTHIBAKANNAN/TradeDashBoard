@@ -2,8 +2,8 @@ import pytest
 import os
 import tempfile
 from datetime import date
-from backend.app import candle_history
-from backend.app.state import MarketState
+from app import candle_history
+from app.state import MarketState
 
 
 @pytest.fixture(autouse=True)
