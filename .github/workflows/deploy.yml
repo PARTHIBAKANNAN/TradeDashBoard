@@ -46,7 +46,7 @@ jobs:
           pip install -r requirements.txt
           pip install --no-deps fyers-apiv3==3.1.14
           pip install "aiohttp>=3.10" websocket-client aws-lambda-powertools "setuptools<81"
-          pip install pytest
+          pip install pytest pytest-asyncio
 
       - name: Backend import check
         working-directory: backend
