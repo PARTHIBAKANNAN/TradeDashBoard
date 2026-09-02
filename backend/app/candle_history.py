@@ -86,7 +86,17 @@ async def persist_candle(
                     delta=excluded.delta,
                     volume=excluded.volume;
                 """,
-                (symbol, b_date, bucket_minute, float(open_), float(high), float(low), float(close), float(delta), float(volume)),
+                (
+                    symbol,
+                    b_date,
+                    bucket_minute,
+                    float(open_),
+                    float(high),
+                    float(low),
+                    float(close),
+                    float(delta),
+                    float(volume),
+                ),
             )
         conn.close()
     except Exception:
@@ -237,7 +247,9 @@ async def get_today_all_symbols(bucket_date: Any) -> Dict[str, List[dict]]:
         return {}
 
 
-async def get_historical_slot_stats(before_date: Any, lookback_days: int = 20) -> Dict[Tuple[str, int], dict]:
+async def get_historical_slot_stats(
+    before_date: Any, lookback_days: int = 20
+) -> Dict[Tuple[str, int], dict]:
     """For every (symbol, bucket_minute) pair, the average volume + average turnover
     over that symbol's last `lookback_days` distinct trading dates strictly before `before_date`."""
     b_date = str(before_date)
@@ -283,8 +295,7 @@ async def get_startup_snapshot() -> Dict[str, dict]:
     try:
         conn = _get_connection()
         cursor = conn.cursor()
-        cursor.execute(
-            """
+        cursor.execute("""
             WITH ranked_dates AS (
                 SELECT symbol, bucket_date,
                        ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY bucket_date DESC) AS rn
@@ -307,8 +318,7 @@ async def get_startup_snapshot() -> Dict[str, dict]:
             JOIN day_stats ds ON ds.symbol = rd.symbol AND ds.bucket_date = rd.bucket_date
             JOIN latest_candles lc ON lc.symbol = rd.symbol AND lc.bucket_date = rd.bucket_date AND lc.c_rn = 1
             WHERE rd.rn <= 2
-            """
-        )
+            """)
         rows = cursor.fetchall()
         conn.close()
         out: Dict[str, dict] = {}

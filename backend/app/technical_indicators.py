@@ -210,6 +210,7 @@ def validate_quant_filters(
     # Defensive names (FMCG, PSU Banks, Cement) need RS >= 1.5% to avoid sideways traps.
     # Regular momentum sectors need RS >= 0.5% (or config threshold) vs NIFTY.
     from . import config as _cfg
+
     is_defensive = ind_grp in DEFENSIVE_SECTORS
     min_rs_required = 1.5 if is_defensive else getattr(_cfg, "MIN_RS_THRESHOLD", 0.50)
 

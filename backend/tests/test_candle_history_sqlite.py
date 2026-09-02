@@ -2,6 +2,7 @@ import asyncio
 import os
 import tempfile
 from datetime import date
+
 import pytest
 from app import candle_history
 from app.state import MarketState
@@ -51,9 +52,15 @@ def test_get_all_today_candles_and_range():
         d1 = date(2026, 8, 31)
         d2 = date(2026, 9, 1)
 
-        await candle_history.persist_candle("TCS", d1, 555, [4000.0, 4010.0, 3990.0, 4005.0], 50.0, 10000.0)
-        await candle_history.persist_candle("INFY", d2, 555, [1800.0, 1810.0, 1790.0, 1805.0], -30.0, 20000.0)
-        await candle_history.persist_candle("TCS", d2, 555, [4020.0, 4030.0, 4015.0, 4025.0], 80.0, 15000.0)
+        await candle_history.persist_candle(
+            "TCS", d1, 555, [4000.0, 4010.0, 3990.0, 4005.0], 50.0, 10000.0
+        )
+        await candle_history.persist_candle(
+            "INFY", d2, 555, [1800.0, 1810.0, 1790.0, 1805.0], -30.0, 20000.0
+        )
+        await candle_history.persist_candle(
+            "TCS", d2, 555, [4020.0, 4030.0, 4015.0, 4025.0], 80.0, 15000.0
+        )
 
         all_d2 = await candle_history.get_all_today_candles(d2)
         assert "INFY" in all_d2

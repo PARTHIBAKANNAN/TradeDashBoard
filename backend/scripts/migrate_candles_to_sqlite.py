@@ -20,6 +20,7 @@ sys.path.insert(0, str(backend_dir))
 
 try:
     from dotenv import load_dotenv
+
     load_dotenv(backend_dir / ".env")
     load_dotenv(".env")
 except ImportError:
