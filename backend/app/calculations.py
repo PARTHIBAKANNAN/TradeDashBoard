@@ -226,25 +226,72 @@ def process_incoming_tick(
         prev_signal = stock.get("signal")
 
         signal, signal_time = evaluate_orb(stock["orb"], ltp, now_ist, stock["signal"])
+
+        # ── C0.5 Early-Fire Quality Gate ──────────────────────────────────────
+        # For the 15-min early-fire window (C0.5), skip the two-sided-range
+        # check (only 3 candles exist — too few for colour analysis).
+        # Instead require:
+        #   1. First-candle extreme intact (same as C1)
+        #   2. RS trend exception at lowered |RS| >= 0.60%
+        #   3. Candle-close confirmation: the last completed 5-min candle in
+        #      the C0.5 window must close in the top 20% (bull) or bottom 20%
+        #      (bear) of its range — prevents wick-poke traps.
+        if signal in ("Bull • C0.5", "Bear • C0.5"):
+            is_bull_c05 = signal == "Bull • C0.5"
+            is_strong_trend = abs(stock.get("relative_strength", 0.0)) >= 0.60
+            # Skip two-sided-range check entirely for C0.5 (approved design)
+            qualified = first_candle_extreme_intact(
+                is_bull_c05,
+                stock.get("candle1_high", 0),
+                stock.get("candle1_low", 0),
+                stock["today_high"],
+                stock["today_low"],
+            ) if stock.get("candle1_high") else is_strong_trend
+            # Candle-close confirmation: check the last 5-min candle's close
+            # is in the top/bottom 20% of its range.
+            if qualified:
+                intra_candles = candle_aggregator.get_intraday_candles(short_sym)
+                if intra_candles:
+                    last_c = intra_candles[-1]
+                    c_range = last_c["high"] - last_c["low"]
+                    if c_range > 0:
+                        close_pos = (last_c["close"] - last_c["low"]) / c_range
+                        if is_bull_c05 and close_pos < 0.80:
+                            qualified = False  # Closed weak — wick poke
+                        elif not is_bull_c05 and close_pos > 0.20:
+                            qualified = False  # Closed weak for bear
+            if not qualified and not is_strong_trend:
+                signal, signal_time = None, None
+
+        # ── C1 Quality Gate (original) ────────────────────────────────────────
         # The breakout-quality rules apply specifically to the 30-min opening-
         # range breakout (both directions), not later C2-C4 structural breaks:
         #   Filter 1: candle-1's low (bull) / high (bear) still the day's
         #             extreme so far.
         #   Rule 3:   at least one red and one green candle in the opening range.
         if signal in ("Bull • C1", "Bear • C1"):
-            # Strong trend exception: If RS is significant (|RS| >= 0.8%), allow strong one-way
-            # breakout runners even if opening 30 mins had all green or all red candles.
-            is_strong_trend = abs(stock.get("relative_strength", 0.0)) >= 0.80
-            range_ok = stock.get("two_sided_ok", False) or is_strong_trend
-            qualified = range_ok and first_candle_extreme_intact(
-                signal == "Bull • C1",
-                stock["candle1_high"],
-                stock["candle1_low"],
-                stock["today_high"],
-                stock["today_low"],
-            )
-            if not qualified:
+            # ── C0.5 → C1 Deduplication ──────────────────────────────────────
+            # If C0.5 already fired in the same direction, don't re-trigger
+            # C1 on the same move — it would burn a second auto-trade slot.
+            prev_dir = "Bull" if prev_signal and "Bull" in prev_signal else (
+                       "Bear" if prev_signal and "Bear" in prev_signal else None)
+            curr_dir = "Bull" if "Bull" in signal else "Bear"
+            if prev_signal and "C0.5" in prev_signal and prev_dir == curr_dir:
                 signal, signal_time = None, None
+            else:
+                # Strong trend exception: If RS is significant (|RS| >= 0.8%), allow strong one-way
+                # breakout runners even if opening 30 mins had all green or all red candles.
+                is_strong_trend = abs(stock.get("relative_strength", 0.0)) >= 0.80
+                range_ok = stock.get("two_sided_ok", False) or is_strong_trend
+                qualified = range_ok and first_candle_extreme_intact(
+                    signal == "Bull • C1",
+                    stock["candle1_high"],
+                    stock["candle1_low"],
+                    stock["today_high"],
+                    stock["today_low"],
+                )
+                if not qualified:
+                    signal, signal_time = None, None
 
         # ── Institutional VWAP Retest Setup ───────────────────────────────────
         # If no raw ORB breakout, check for high-probability shallow VWAP pullback & bounce
@@ -280,39 +327,74 @@ def process_incoming_tick(
             # tick, so we never re-spawn.  This collapses 100s of redundant
             # threads/sec down to at most one per signal transition.
             if signal != prev_signal:
-                # ── Multi-Factor Quant Gatekeeper ────────────────────────────
-                # Strict 4-tier filtering before AI is invoked:
-                # Tier 1: Sector momentum & defensive category gating (FMCG/PSU RS >= 2%)
-                # Tier 2: VWAP alignment & non-extension buffer (0.1% to 1.2%)
-                # Tier 3: 5m RSI (55-72 for buy, 28-45 for sell) & 20 EMA alignment
-                # Tier 4: Order book depth delta confirmation
+                # ── PulseHunter V2 Dual-Score Evaluation ───────────────────────
+                # Evaluates candidate on two distinct dimensions:
+                # 1. Momentum Score (0-100): "Is this stock exhibiting superior momentum?"
+                # 2. Entry Quality Score (0-100): "Is this the right place/time to enter?"
+                # Execution requires both >= 60.
+                from . import config as _cfg
                 from . import technical_indicators as _ti
 
                 all_stocks_list = list(state.stocks.values())
                 candle_closes = candle_aggregator.get_intraday_closes(short_sym)
+                candle_volumes = candle_aggregator.get_intraday_volumes(short_sym)
 
-                passes_quant, fail_reason, metrics = _ti.validate_quant_filters(
+                # Determine structural trigger level
+                trigger_level = ltp
+                if "•" in signal:
+                    setup_name = signal.split("•")[-1].strip()
+                    orb_bounds = stock.get("orb", {}).get(setup_name)
+                    if orb_bounds:
+                        trigger_level = orb_bounds.get("high" if "Bull" in signal else "low", ltp)
+                    elif "VWAP" in setup_name:
+                        trigger_level = stock.get("vwap", ltp)
+
+                # Compute Momentum Score
+                mom_score, mom_factors, mom_metrics = _ti.rank_universe_momentum(
                     stock=stock,
                     signal=signal,
                     all_stocks=all_stocks_list,
                     candle_closes=candle_closes,
+                    candle_volumes=candle_volumes,
+                    depth_delta=stock.get("depth_delta", 0.0),
                 )
 
-                depth = stock.get("depth_delta", 0.0)
-                is_bull = "Bull" in signal
-                # If depth is active (non-zero), ensure it agrees with trade direction
-                if depth != 0.0:
-                    if is_bull and depth < 0:
-                        passes_quant = False
-                        fail_reason = f"Depth delta opposing buy ({depth:.0f})"
-                    elif not is_bull and depth > 0:
-                        passes_quant = False
-                        fail_reason = f"Depth delta opposing sell ({depth:.0f})"
+                # Compute Entry Quality Score
+                intraday_candles = candle_aggregator.get_intraday_candles(short_sym)
+                atr_14 = _ti.compute_atr(intraday_candles, 14) if intraday_candles else 0.0
+                eq_score, eq_factors, eq_metrics = _ti.calculate_entry_quality(
+                    stock=stock,
+                    signal=signal,
+                    trigger_level=trigger_level,
+                    trigger_time=now_ist,
+                    day_high=stock.get("today_high"),
+                    day_low=stock.get("today_low"),
+                    atr_14=atr_14,
+                    now=now_ist,
+                )
 
-                if passes_quant:
+                min_mom = getattr(_cfg, "MIN_MOMENTUM_SCORE", 60)
+                min_eq = getattr(_cfg, "MIN_ENTRY_QUALITY_SCORE", 60)
+
+                passes_eval = (mom_score >= min_mom) and (eq_score >= min_eq)
+
+                import logging as _log
+                logger = _log.getLogger(__name__)
+
+                mom_summary = ", ".join(f"{f['name']}={f['pts']}/{f['max']}" for f in mom_factors)
+                eq_summary = ", ".join(f"{f['name']}={f['pts']}/{f['max']}" for f in eq_factors)
+
+                if passes_eval:
                     import threading
-
                     from . import ai_copilot
+
+                    # Store scores on stock for AI context & UI inspection
+                    stock["momentum_score"] = mom_score
+                    stock["momentum_factors"] = mom_factors
+                    stock["entry_quality_score"] = eq_score
+                    stock["entry_quality_factors"] = eq_factors
+                    stock["conviction_score"] = mom_score
+                    stock["conviction_factors"] = mom_factors + eq_factors
 
                     threading.Thread(
                         target=ai_copilot.audit_and_notify_signal,
@@ -320,25 +402,38 @@ def process_incoming_tick(
                         daemon=True,
                         name=f"ai-audit-{short_sym}",
                     ).start()
-                    import logging as _log
 
-                    _log.getLogger(__name__).info(
-                        "quant_gate: PASS %s | signal=%s rs=%.2f rsi=%.1f vwap_dist=%.2f%% metrics=%s → AI audit queued",
-                        short_sym,
-                        signal,
-                        metrics.get("rs", 0.0),
-                        metrics.get("rsi", 50.0),
-                        metrics.get("vwap_dist_pct", 0.0),
-                        metrics,
+                    logger.info(
+                        "[V2 EVAL] QUALIFIED %s | Signal: %s | Time: %s\n"
+                        "  • MOMENTUM: %d/%d [%s]\n"
+                        "  • ENTRY QUALITY: %d/%d [%s]\n"
+                        "  → Spawning AI Red-Flag Audit",
+                        short_sym, signal, signal_time,
+                        mom_score, min_mom, mom_summary,
+                        eq_score, min_eq, eq_summary,
                     )
                 else:
-                    import logging as _log
+                    rejection_reasons = []
+                    if eq_score < 0:
+                        rejection_reasons.append("Hard VWAP Veto")
+                    else:
+                        if mom_score < min_mom:
+                            weak_mom = [f["name"] for f in mom_factors if f["pts"] < f["max"] * 0.4]
+                            rejection_reasons.append(f"Momentum {mom_score}/{min_mom} (weak: {', '.join(weak_mom[:2]) or 'drag'})")
+                        if eq_score < min_eq:
+                            weak_eq = [f["name"] for f in eq_factors if f["pts"] < f["max"] * 0.4]
+                            rejection_reasons.append(f"Entry Quality {eq_score}/{min_eq} (weak: {', '.join(weak_eq[:2]) or 'extended'})")
 
-                    _log.getLogger(__name__).debug(
-                        "quant_gate: REJECT %s | signal=%s | reason=%s",
-                        short_sym,
-                        signal,
-                        fail_reason,
+                    logger.info(
+                        "[V2 EVAL] REJECTED %s | Signal: %s | Time: %s\n"
+                        "  • MOMENTUM: %d/%d [%s]\n"
+                        "  • ENTRY QUALITY: %d/%d [%s]\n"
+                        "  • REASON: %s",
+                        short_sym, signal, signal_time,
+                        mom_score, min_mom, mom_summary,
+                        eq_score, min_eq, eq_summary,
+                        " | ".join(rejection_reasons),
                     )
+
 
     order_monitor.on_tick_threadsafe(short_sym, ltp)

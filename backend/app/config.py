@@ -68,14 +68,14 @@ ENABLE_AI_TELEGRAM_ALERTS = os.getenv("ENABLE_AI_TELEGRAM_ALERTS", "true").lower
     "yes",
 )
 
-# ----------------- Quant Gatekeeper — signal quality gates -----------------
-# All three gates must pass simultaneously before Gemini is called.
-# Configurable via .env so thresholds can be tightened during choppy markets
-# without a code deploy.
+# ----------------- Conviction Scorer — weighted signal quality -----------------
+# Replaces the old binary 4-tier gatekeeper that required all gates to pass
+# simultaneously (conjunction paralysis). Each factor now contributes weighted
+# points to a 0-100 composite score; a single threshold decides admission.
 #
-# MIN_RS_THRESHOLD: Minimum Intraday Relative Strength vs NIFTY (%).
-#   Bull signal → RS must be >= +MIN_RS_THRESHOLD (stock outperforming NIFTY).
-#   Bear signal → RS must be <= -MIN_RS_THRESHOLD (stock underperforming NIFTY).
+# MIN_RS_THRESHOLD: Reference threshold for RS scoring (graduated, not binary).
+#   Used as the midpoint: RS at this level scores ~50% of the RS weight;
+#   RS at 2x this level scores full weight.  Still env-configurable.
 MIN_RS_THRESHOLD = float(os.getenv("MIN_RS_THRESHOLD", "0.50"))
 #
 # MIN_RVOL_THRESHOLD: Minimum relative volume ratio (today's traded value vs
@@ -88,6 +88,14 @@ MIN_RVOL_THRESHOLD = float(os.getenv("MIN_RVOL_THRESHOLD", "2.0"))
 # MIN_AI_CONFIDENCE: Gemini confidence score floor. Only execute (or alert) when
 #   score >= this value.  80 is conservatively high — treats all below-80 as noise.
 MIN_AI_CONFIDENCE = int(os.getenv("MIN_AI_CONFIDENCE", "80"))
+#
+# PulseHunter V2 Dual-Score Thresholds (0-100 scale)
+# MIN_MOMENTUM_SCORE: Measures whether the stock is inherently exhibiting strong momentum.
+MIN_MOMENTUM_SCORE = int(os.getenv("MIN_MOMENTUM_SCORE", os.getenv("MIN_CONVICTION_SCORE", "60")))
+# MIN_ENTRY_QUALITY_SCORE: Measures whether the entry location is fresh vs. an extended chase.
+MIN_ENTRY_QUALITY_SCORE = int(os.getenv("MIN_ENTRY_QUALITY_SCORE", "60"))
+# Legacy alias for backwards compatibility
+MIN_CONVICTION_SCORE = MIN_MOMENTUM_SCORE
 
 # ----------------- Auto paper trade execution -----------------
 # DAILY_MAX_RISK_INR: Maximum total risk (capital at stake) across ALL auto
@@ -98,10 +106,12 @@ DAILY_MAX_RISK_INR = float(os.getenv("DAILY_MAX_RISK_INR", "2000.0"))
 #   Risk per trade = DAILY_MAX_RISK_INR / MAX_DAILY_AUTO_TRADES.
 MAX_DAILY_AUTO_TRADES = int(os.getenv("MAX_DAILY_AUTO_TRADES", "3"))
 #
-# AUTO_EXECUTE_UNTIL_MINUTE: Session minute cutoff for auto-execution.
-#   Session minute 0 = 09:15 AM.  105 = 11:00 AM.  After this, Gemini sends
-#   a Telegram alert but does NOT auto-place the order (manual approval needed).
-AUTO_EXECUTE_UNTIL_MINUTE = int(os.getenv("AUTO_EXECUTE_UNTIL_MINUTE", "105"))
+# Execution Cutoffs (Session minute 0 = 09:15 AM):
+#   ORB_EXECUTE_UNTIL_MINUTE (60 = 10:15 AM): Cutoff for Type-A ORB breakout entries to avoid midday chop.
+#   RECLAIM_EXECUTE_UNTIL_MINUTE (105 = 11:00 AM): Cutoff for Type-B VWAP reclaim / retest setups.
+ORB_EXECUTE_UNTIL_MINUTE = int(os.getenv("ORB_EXECUTE_UNTIL_MINUTE", "60"))
+RECLAIM_EXECUTE_UNTIL_MINUTE = int(os.getenv("RECLAIM_EXECUTE_UNTIL_MINUTE", "105"))
+AUTO_EXECUTE_UNTIL_MINUTE = int(os.getenv("AUTO_EXECUTE_UNTIL_MINUTE", str(ORB_EXECUTE_UNTIL_MINUTE)))
 #
 # AUTO_PAPER_USER_ID: The user_id (from auth.users) under which auto paper
 #   trades are placed. Must match a valid user in the Supabase auth table.
@@ -123,12 +133,17 @@ MARKET_OPEN = dt_time(9, 15)
 MARKET_CLOSE = dt_time(15, 30)
 DAILY_LOGIN_TIME = dt_time(8, 45)  # cron trigger for the fresh daily token
 
-# 30-minute Opening Range Breakout candles: (name, start, end)
+# Opening Range Breakout candles: (name, start, end)
+# C0.5 is a 15-minute early-fire window that catches the 09:18-09:30
+# institutional expansion wave before the full C1 range completes.
+# C0.5 and C1 overlap (both start at 09:15); candle_aggregator tracks
+# both simultaneously.  C0.5 breakout fires at 09:30; C1 at 09:45.
 ORB_CANDLES = [
-    ("C1", dt_time(9, 15), dt_time(9, 45)),
-    ("C2", dt_time(9, 45), dt_time(10, 15)),
-    ("C3", dt_time(10, 15), dt_time(10, 45)),
-    ("C4", dt_time(10, 45), dt_time(11, 15)),
+    ("C0.5", dt_time(9, 15), dt_time(9, 30)),
+    ("C1",   dt_time(9, 15), dt_time(9, 45)),
+    ("C2",   dt_time(9, 45), dt_time(10, 15)),
+    ("C3",   dt_time(10, 15), dt_time(10, 45)),
+    ("C4",   dt_time(10, 45), dt_time(11, 15)),
 ]
 
 BENCHMARK_SYMBOL = "NSE:NIFTY50-INDEX"

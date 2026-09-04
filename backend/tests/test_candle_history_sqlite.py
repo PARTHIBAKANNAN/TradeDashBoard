@@ -99,11 +99,14 @@ def test_delete_candles_older_than():
 
 def test_startup_snapshot_and_seed_missing_state():
     async def _test():
-        d0 = date(2026, 9, 1)
-        d1 = date(2026, 8, 31)
+        from app.config import IST
+        from datetime import datetime, timedelta
+        d0 = datetime.now(IST).date()
+        d1 = d0 - timedelta(days=1)
         await candle_history.persist_candle("RELIANCE", d1, 555, [2800.0, 2820.0, 2780.0, 2810.0])
         await candle_history.persist_candle("RELIANCE", d1, 560, [2810.0, 2830.0, 2800.0, 2825.0])
         await candle_history.persist_candle("RELIANCE", d0, 555, [2900.0, 2920.0, 2890.0, 2910.0])
+
 
         snapshot = await candle_history.get_startup_snapshot()
         assert "RELIANCE" in snapshot

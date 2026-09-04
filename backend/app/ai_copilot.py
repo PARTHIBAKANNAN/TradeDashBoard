@@ -468,6 +468,12 @@ def compile_symbol_context(sym: str) -> Dict[str, Any]:
             "range_used_pct": range_used_pct,
             "is_defensive_sector": ind_grp in DEFENSIVE_SECTORS,
         },
+        "momentum_score": stock_data.get("momentum_score", stock_data.get("conviction_score", 0)),
+        "momentum_factors": stock_data.get("momentum_factors", []),
+        "entry_quality_score": stock_data.get("entry_quality_score", 0),
+        "entry_quality_factors": stock_data.get("entry_quality_factors", []),
+        "conviction_score": stock_data.get("conviction_score", 0),
+        "conviction_factors": stock_data.get("conviction_factors", []),
         "premarket_catalyst": focus_catalyst,
         "premarket_bias": _premarket_cache.get("bias", "NEUTRAL"),
         "recent_5m_candles_count": len(candles),
@@ -510,16 +516,21 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
         "You are a strict quantitative risk manager for an NSE India intraday desk. "
         "Your ONLY job is to find RED FLAGS that disqualify a trade. "
         "Do not generate buy/sell signals. Do not predict price direction. "
+        "The candidate has already passed a weighted conviction scorer (0-100) — "
+        "review the conviction_score and conviction_factors in the context to understand "
+        "which factors are strong and which are weak. "
         "Analyse the real numbers provided (RSI-14, 20 EMA, VWAP distance, Sector mean, RS) "
-        "and output SKIP_TRAP if any red flag exists, or CONFIRM if the setup is technically clean. "
-        "Red flags include: "
-        "• RSI extreme overbought (>78 for buy) or extreme oversold (<22 for sell), or weak momentum (<52 for buy / >48 for sell), "
-        "• Price below 20 EMA on a buy setup, or price above 20 EMA on a short setup, "
-        "• Sector index heavily dragging against trade direction (>0.25% opposite), "
-        "• Defensive sector (FMCG/PSU) with RS < 1.5%, "
-        "• Price excessively extended from VWAP (>2.2%), "
+        "and output SKIP_TRAP if any GENUINE red flag exists, or CONFIRM if the setup is technically clean. "
+        "Genuine red flags include: "
+        "• RSI extreme overbought (>85 for buy) or extreme oversold (<15 for sell) — "
+        "note: the conviction scorer already penalises borderline RSI, so only flag true extremes, "
+        "• Price on the WRONG side of VWAP (buy below VWAP, short above VWAP), "
+        "• Sector index heavily dragging against trade direction (>0.30% opposite), "
+        "• Price excessively extended from VWAP (>3.0%), "
         "• Risk-to-Reward ratio < 1:1.5 given the suggested structural SL/Target (minimum 1.0% to 1.5% SL buffer), "
-        "• Depth delta strongly opposing the signal direction. "
+        "• Conviction score below 55 with multiple weak factors (check conviction_factors). "
+        "Do NOT red-flag borderline RSI (45-55 for buy / 45-55 for sell) or depth delta opposing — "
+        "these are already handled as soft scoring factors by the conviction scorer. "
         "Return valid JSON only."
     )
 
@@ -539,7 +550,8 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
         "IMPORTANT RULES FOR CONFIRMATION:\n"
         "  • Stop Loss MUST have at least 1.0% to 1.5% structural distance from entry (never razor-thin, avoiding 2-minute noise wicks).\n"
         "  • Target MUST be at least 1.5x to 2.0x the SL distance.\n"
-        "  • Only confirm when RSI is in healthy momentum zone (52-78 for buy, 22-48 for sell) and 20 EMA aligns.\n"
+        "  • The conviction_score and conviction_factors show how the quant scorer rated this setup — use them to calibrate your confidence_score.\n"
+        "  • Only flag RSI as problematic at true extremes (>85 buy / <15 sell); borderline RSI is already penalised by the scorer.\n"
         "Otherwise return SKIP_TRAP."
     )
 
@@ -699,7 +711,10 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
     if passes_confidence and config.AUTO_PAPER_USER_ID:
         now_ist = datetime.now(IST)
         session_minute = (now_ist.hour - 9) * 60 + (now_ist.minute - 15)
-        within_window = session_minute <= config.AUTO_EXECUTE_UNTIL_MINUTE
+        # Determine cutoff based on setup family: ORB (10:15 AM) vs VWAP Reclaim (11:00 AM)
+        is_orb = ("• C" in signal) or ("ORB" in signal)
+        cutoff_minute = config.ORB_EXECUTE_UNTIL_MINUTE if is_orb else config.RECLAIM_EXECUTE_UNTIL_MINUTE
+        within_window = session_minute <= cutoff_minute
         under_cap = _get_auto_trade_count() < config.MAX_DAILY_AUTO_TRADES
 
         if within_window and under_cap:
@@ -739,7 +754,9 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
             else:
                 auto_skipped_reason = "Order placement failed (insufficient margin or DB error)"
         elif not within_window:
-            auto_skipped_reason = f"After 11:00 AM cutoff (session min {session_minute})"
+            cutoff_label = "10:15 AM (ORB)" if is_orb else "11:00 AM (Reclaim)"
+            auto_skipped_reason = f"After {cutoff_label} cutoff (session min {session_minute} > {cutoff_minute})"
+
         elif not under_cap:
             auto_skipped_reason = f"Daily cap reached ({_get_auto_trade_count()}/{config.MAX_DAILY_AUTO_TRADES} trades)"
     elif passes_confidence and not config.AUTO_PAPER_USER_ID:

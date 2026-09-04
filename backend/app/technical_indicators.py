@@ -90,6 +90,9 @@ def compute_rsi(prices: List[float], period: int = 14) -> float:
     if avg_loss == 0:
         return 100.0 if avg_gain > 0 else 50.0
 
+    rs = avg_gain / avg_loss
+    rsi = 100.0 - (100.0 / (1.0 + rs))
+    return round(rsi, 2)
 
 def compute_atr(candles: List[dict], period: int = 14) -> float:
     """
@@ -185,126 +188,485 @@ def compute_dynamic_trade_levels(
     }
 
 
-def validate_quant_filters(
+def rank_universe_momentum(
     stock: dict,
     signal: str,
     all_stocks: List[dict],
     candle_closes: List[float],
-) -> Tuple[bool, str, Dict[str, float]]:
+    candle_volumes: Optional[List[float]] = None,
+    depth_delta: float = 0.0,
+) -> Tuple[int, List[Dict[str, Any]], Dict[str, float]]:
     """
-    Strict 4-tier Quant Gatekeeper.
-    Returns (passes: bool, reason: str, metrics: dict).
+    Momentum Score (0–100) — Answers: "Is this stock exhibiting superior momentum?"
+
+    Weights (100 total):
+      1. Relative Strength (30 pts)
+      2. Volume Acceleration (20 pts)
+      3. Price Velocity / ROC (20 pts)
+      4. RSI Momentum & Slope (15 pts)
+      5. EMA Trend Alignment (10 pts)
+      6. Sector Alignment (5 pts)
+      + Depth Delta (±3 bonus, never a veto)
     """
     if not signal or signal == "None":
-        return False, "No active breakout signal", {}
+        return 0, [{"name": "signal", "pts": 0, "max": 0, "detail": "No active signal"}], {}
 
     is_bull = "Bull" in signal
     sym = stock.get("symbol", "")
     ltp = stock.get("ltp") or 0.0
-    vwap = stock.get("vwap") or 0.0
     rs = stock.get("relative_strength") or 0.0
     ind_grp = industry_group(sym)
     nifty_grp = nifty_group(ind_grp)
 
-    # ── Tier 1: Sector & Defensive Gating ─────────────────────────────────────
-    # Defensive names (FMCG, PSU Banks, Cement) need RS >= 1.5% to avoid sideways traps.
-    # Regular momentum sectors need RS >= 0.5% (or config threshold) vs NIFTY.
-    from . import config as _cfg
+    factors: List[Dict[str, Any]] = []
+    total = 0
+
+    # ── Factor 1: Relative Strength (max 30 pts) ─────────────────────────────
 
     is_defensive = ind_grp in DEFENSIVE_SECTORS
-    min_rs_required = 1.5 if is_defensive else getattr(_cfg, "MIN_RS_THRESHOLD", 0.50)
-
-    if is_bull and rs < min_rs_required:
-        return (
-            False,
-            f"RS {rs:+.2f}% is below {min_rs_required:.1f}% threshold for {ind_grp}",
-            {"rs": rs},
-        )
-    if not is_bull and rs > -min_rs_required:
-        return (
-            False,
-            f"RS {rs:+.2f}% is above {-min_rs_required:.1f}% threshold for {ind_grp}",
-            {"rs": rs},
-        )
-
-    # Sector alignment: verify sector mean return agrees with trade direction (with tolerance buffer)
-    sector_means = build_sector_means(all_stocks)
-    sector_mean = sector_means.get(nifty_grp, 0.0)
-    if is_bull and sector_mean < -0.25:
-        return (
-            False,
-            f"Sector {nifty_grp} is dragging heavily at {sector_mean:+.2f}%",
-            {"sector_mean": sector_mean},
-        )
-    if not is_bull and sector_mean > 0.25:
-        return (
-            False,
-            f"Sector {nifty_grp} is lifting heavily at {sector_mean:+.2f}%",
-            {"sector_mean": sector_mean},
-        )
-
-    # ── Tier 2: VWAP Alignment & Non-Extension Buffer ────────────────────────
-    # Price must be on the right side of VWAP and within [0.08%, 2.20%] buffer.
-    if not vwap:
-        return False, "No VWAP data available", {}
-
-    if is_bull:
-        if ltp <= vwap:
-            return False, f"LTP (₹{ltp:.2f}) is below VWAP (₹{vwap:.2f})", {}
-        vwap_dist_pct = (ltp - vwap) / vwap * 100
-        if vwap_dist_pct < 0.08:
-            return False, f"Price too close to VWAP ({vwap_dist_pct:.2f}%)", {}
-        if vwap_dist_pct > 2.20:
-            return False, f"Price over-extended from VWAP ({vwap_dist_pct:.2f}% > 2.2%)", {}
+    directed_rs = rs if is_bull else -rs
+    if is_defensive:
+        # Defensive sectors require higher RS (0.4% to 1.5%)
+        rs_pts = min(30, max(0, (directed_rs - 0.40) / (1.50 - 0.40) * 30))
     else:
-        if ltp >= vwap:
-            return False, f"LTP (₹{ltp:.2f}) is above VWAP (₹{vwap:.2f})", {}
-        vwap_dist_pct = (vwap - ltp) / vwap * 100
-        if vwap_dist_pct < 0.08:
-            return False, f"Price too close to VWAP ({vwap_dist_pct:.2f}%)", {}
-        if vwap_dist_pct > 2.20:
-            return False, f"Price over-extended below VWAP ({vwap_dist_pct:.2f}% > 2.2%)", {}
+        # Momentum sectors: 0% -> 0, 0.5% -> 18, >= 1.0% -> 30
+        if directed_rs >= 1.0:
+            rs_pts = 30
+        elif directed_rs >= 0.50:
+            rs_pts = 18 + (directed_rs - 0.50) / 0.50 * 12
+        elif directed_rs >= 0.20:
+            rs_pts = 8 + (directed_rs - 0.20) / 0.30 * 10
+        elif directed_rs > 0.0:
+            rs_pts = (directed_rs / 0.20) * 8
+        else:
+            rs_pts = 0
+    rs_pts = int(round(rs_pts))
+    factors.append({"name": "RS", "pts": rs_pts, "max": 30,
+                    "detail": f"RS {rs:+.2f}% ({'defensive' if is_defensive else 'momentum'})"})
+    total += rs_pts
 
-    # ── Tier 3: 5-Minute Technical Indicators (EMA & RSI) ────────────────────
+    # ── Factor 2: Volume Acceleration (max 20 pts) ───────────────────────────
+    # Ratio of latest 5m volume vs average of preceding 3 bars
+    vol_ratio = 1.0
+    if candle_volumes and len(candle_volumes) >= 2:
+        curr_vol = candle_volumes[-1]
+        past_vols = candle_volumes[:-1][-3:]
+        avg_past_vol = sum(past_vols) / len(past_vols) if past_vols else 0.0
+        if avg_past_vol > 0:
+            vol_ratio = curr_vol / avg_past_vol
+            if vol_ratio >= 2.0:
+                vol_pts = 20
+            elif vol_ratio >= 1.4:
+                vol_pts = 15
+            elif vol_ratio >= 1.0:
+                vol_pts = 10
+            elif vol_ratio >= 0.7:
+                vol_pts = 5
+            else:
+                vol_pts = 0
+            vol_detail = f"Vol ratio {vol_ratio:.1f}x vs 3-bar avg"
+        else:
+            vol_pts = 10
+            vol_detail = "Insufficient volume baseline (neutral)"
+    else:
+        vol_pts = 10  # Neutral if volume series not yet populated
+        vol_detail = "Initial candle volume (neutral)"
+    factors.append({"name": "VolumeAcc", "pts": vol_pts, "max": 20, "detail": vol_detail})
+    total += vol_pts
+
+    # ── Factor 3: Price Velocity / 5m ROC (max 20 pts) ────────────────────────
     prices = list(candle_closes) if candle_closes else [ltp]
     if not prices or prices[-1] != ltp:
         prices.append(ltp)
 
+    roc_5m = 0.0
+    if len(prices) >= 2:
+        prev_p = prices[-2]
+        if prev_p > 0:
+            raw_roc = (ltp - prev_p) / prev_p * 100
+            directed_roc = raw_roc if is_bull else -raw_roc
+            roc_5m = raw_roc
+            if directed_roc >= 0.60:
+                roc_pts = 20
+            elif directed_roc >= 0.35:
+                roc_pts = 15
+            elif directed_roc >= 0.15:
+                roc_pts = 10
+            elif directed_roc >= 0.0:
+                roc_pts = 5
+            else:
+                roc_pts = 0
+            roc_detail = f"5m ROC {raw_roc:+.2f}%"
+        else:
+            roc_pts = 10
+            roc_detail = "ROC neutral"
+    else:
+        roc_pts = 10
+        roc_detail = "Single candle (neutral)"
+    factors.append({"name": "PriceVelocity", "pts": roc_pts, "max": 20, "detail": roc_detail})
+    total += roc_pts
+
+    # ── Factor 4: RSI Momentum & Slope (max 15 pts) ──────────────────────────
     rsi = compute_rsi(prices, 14)
+    # Level component (10 pts)
+    if is_bull:
+        if 55.0 <= rsi <= 72.0:
+            rsi_level_pts = 10
+        elif 48.0 <= rsi < 55.0 or 72.0 < rsi <= 80.0:
+            rsi_level_pts = 7
+        elif 40.0 <= rsi < 48.0 or 80.0 < rsi <= 85.0:
+            rsi_level_pts = 3
+        else:
+            rsi_level_pts = 0
+    else:
+        if 28.0 <= rsi <= 45.0:
+            rsi_level_pts = 10
+        elif 20.0 <= rsi < 28.0 or 45.0 < rsi <= 52.0:
+            rsi_level_pts = 7
+        elif 15.0 <= rsi < 20.0 or 52.0 < rsi <= 60.0:
+            rsi_level_pts = 3
+        else:
+            rsi_level_pts = 0
+
+    # 3-bar Slope component (5 pts)
+    rsi_slope_pts = 2  # default neutral
+    if len(prices) >= 4:
+        prev_rsi = compute_rsi(prices[:-3], 14)
+        delta_rsi = rsi - prev_rsi
+        directed_delta = delta_rsi if is_bull else -delta_rsi
+        if directed_delta >= 2.0:
+            rsi_slope_pts = 5
+        elif directed_delta >= 0.0:
+            rsi_slope_pts = 3
+        else:
+            rsi_slope_pts = 0
+
+    rsi_pts = rsi_level_pts + rsi_slope_pts
+    factors.append({"name": "RSI", "pts": rsi_pts, "max": 15,
+                    "detail": f"RSI {rsi:.1f} (level {rsi_level_pts}/10, slope {rsi_slope_pts}/5)"})
+    total += rsi_pts
+
+    # ── Factor 5: EMA Trend Alignment (max 10 pts) ───────────────────────────
     ema_20 = compute_ema(prices, 20)
     ema_50 = compute_ema(prices, 50)
-
-    # RSI momentum zone checks:
-    # BUY: RSI must be 52.0 to 78.0 (strong momentum, not extreme overbought)
-    # SELL: RSI must be 22.0 to 48.0 (breakdown acceleration, not extreme oversold)
-    if is_bull:
-        if rsi < 52.0:
-            return False, f"5m RSI is weak ({rsi:.1f} < 52.0)", {"rsi": rsi}
-        if rsi > 78.0:
-            return False, f"5m RSI is extreme overbought ({rsi:.1f} > 78.0)", {"rsi": rsi}
+    if len(prices) < 20:
+        ema_pts = 7
+        ema_detail = "< 20 candles (partial credit)"
     else:
-        if rsi > 48.0:
-            return False, f"5m RSI is weak ({rsi:.1f} > 48.0)", {"rsi": rsi}
-        if rsi < 22.0:
-            return False, f"5m RSI is extreme oversold ({rsi:.1f} < 22.0)", {"rsi": rsi}
+        if is_bull:
+            if ltp >= ema_20 >= ema_50:
+                ema_pts = 10
+                ema_detail = "LTP > 20EMA > 50EMA (full alignment)"
+            elif ltp >= ema_20:
+                ema_pts = 6
+                ema_detail = "LTP > 20EMA"
+            elif ltp >= ema_20 * 0.998:
+                ema_pts = 3
+                ema_detail = "LTP at 20EMA boundary"
+            else:
+                ema_pts = 0
+                ema_detail = "LTP < 20EMA"
+        else:
+            if ltp <= ema_20 <= ema_50:
+                ema_pts = 10
+                ema_detail = "LTP < 20EMA < 50EMA (full alignment)"
+            elif ltp <= ema_20:
+                ema_pts = 6
+                ema_detail = "LTP < 20EMA"
+            elif ltp <= ema_20 * 1.002:
+                ema_pts = 3
+                ema_detail = "LTP at 20EMA boundary"
+            else:
+                ema_pts = 0
+                ema_detail = "LTP > 20EMA"
+    factors.append({"name": "EMA", "pts": ema_pts, "max": 10, "detail": ema_detail})
+    total += ema_pts
 
-    # EMA trend alignment checks (if enough candles present):
-    if len(prices) >= 20:
-        if is_bull and ltp < ema_20:
-            return False, f"LTP (₹{ltp:.2f}) is below 20 EMA (₹{ema_20:.2f})", {"ema_20": ema_20}
-        if not is_bull and ltp > ema_20:
-            return False, f"LTP (₹{ltp:.2f}) is above 20 EMA (₹{ema_20:.2f})", {"ema_20": ema_20}
+    # ── Factor 6: Sector Alignment (max 5 pts) ───────────────────────────────
+    sector_means = build_sector_means(all_stocks)
+    sector_mean = sector_means.get(nifty_grp, 0.0)
+    if is_bull:
+        if sector_mean >= 0.15:
+            sector_pts = 5
+        elif sector_mean >= -0.15:
+            sector_pts = 2
+        else:
+            sector_pts = 0
+    else:
+        if sector_mean <= -0.15:
+            sector_pts = 5
+        elif sector_mean <= 0.15:
+            sector_pts = 2
+        else:
+            sector_pts = 0
+    factors.append({"name": "Sector", "pts": sector_pts, "max": 5,
+                    "detail": f"Sector {nifty_grp} mean {sector_mean:+.2f}%"})
+    total += sector_pts
+
+    # ── Bonus Factor: Order Book Depth (±3 pts bonus) ────────────────────────
+    depth = depth_delta or stock.get("depth_delta", 0.0)
+    if depth == 0.0:
+        depth_pts = 0
+        depth_detail = "No depth data"
+    elif (is_bull and depth > 0) or (not is_bull and depth < 0):
+        depth_pts = 3
+        depth_detail = f"Depth {depth:+.0f} agrees"
+    else:
+        depth_pts = -2
+        depth_detail = f"Depth {depth:+.0f} opposes (soft penalty)"
+    factors.append({"name": "Depth", "pts": depth_pts, "max": 3, "detail": depth_detail})
+    total += depth_pts
+
+    total = max(0, min(100, total))
 
     metrics = {
         "rs": rs,
         "rsi": rsi,
         "ema_20": ema_20,
         "ema_50": ema_50,
-        "vwap": vwap,
-        "vwap_dist_pct": round(vwap_dist_pct, 2),
+        "roc_5m": round(roc_5m, 2),
+        "vol_ratio": round(vol_ratio, 2),
         "sector_mean": round(sector_mean, 2),
+        "momentum_score": total,
     }
-    return True, "All technical indicators confirmed", metrics
+    return total, factors, metrics
+
+
+def calculate_entry_quality(
+    stock: dict,
+    signal: str,
+    trigger_level: float,
+    trigger_time: Optional[Any] = None,
+    day_high: Optional[float] = None,
+    day_low: Optional[float] = None,
+    atr_14: Optional[float] = None,
+    now: Optional[Any] = None,
+) -> Tuple[int, List[Dict[str, Any]], Dict[str, float]]:
+    """
+    Entry Quality Score (0–100) — Answers: "Is this a good moment and location to enter?"
+
+    Components (100 total):
+      1. Trigger Freshness (30 pts) — Minutes since breakout trigger
+      2. Breakout Distance (25 pts) — Price distance from breakout price
+      3. VWAP Alignment & Distance (25 pts) — Proximity to VWAP (Hard Veto -1 if wrong side)
+      4. % Daily ATR Range Consumed (20 pts) — Extension relative to expected volatility
+    """
+    if not signal or signal == "None":
+        return 0, [{"name": "signal", "pts": 0, "max": 0, "detail": "No active signal"}], {}
+
+    is_bull = "Bull" in signal
+    ltp = stock.get("ltp") or 0.0
+    vwap = stock.get("vwap") or 0.0
+
+    factors: List[Dict[str, Any]] = []
+    total = 0
+
+    # ── HARD PRE-CONDITION: VWAP Side ─────────────────────────────────────────
+    # Never buy below VWAP. Never short above VWAP. Hard veto = -1.
+    if not vwap:
+        return -1, [{"name": "vwap_side", "pts": 0, "max": 0, "detail": "No VWAP data"}], {}
+    if is_bull and ltp < vwap:
+        return -1, [{"name": "vwap_side", "pts": 0, "max": 25,
+                      "detail": f"LTP {ltp:.2f} below VWAP {vwap:.2f}"}], {}
+    if not is_bull and ltp > vwap:
+        return -1, [{"name": "vwap_side", "pts": 0, "max": 25,
+                      "detail": f"LTP {ltp:.2f} above VWAP {vwap:.2f}"}], {}
+
+    # ── Factor 1: Trigger Freshness (max 30 pts) ─────────────────────────────
+    # Time elapsed since breakout trigger
+    elapsed_mins = 0.0
+    if trigger_time and now:
+        try:
+            elapsed_mins = max(0.0, (now - trigger_time).total_seconds() / 60.0)
+        except Exception:
+            elapsed_mins = 0.0
+
+    if elapsed_mins <= 5.0:
+        fresh_pts = 30
+        fresh_detail = f"Fresh trigger ({elapsed_mins:.1f}m ago)"
+    elif elapsed_mins <= 12.0:
+        fresh_pts = 22
+        fresh_detail = f"Healthy trigger ({elapsed_mins:.1f}m ago)"
+    elif elapsed_mins <= 25.0:
+        fresh_pts = 14
+        fresh_detail = f"Moderate age ({elapsed_mins:.1f}m ago)"
+    elif elapsed_mins <= 40.0:
+        fresh_pts = 6
+        fresh_detail = f"Aging trigger ({elapsed_mins:.1f}m ago)"
+    else:
+        fresh_pts = 0
+        fresh_detail = f"Stale trigger ({elapsed_mins:.1f}m ago)"
+    factors.append({"name": "Freshness", "pts": fresh_pts, "max": 30, "detail": fresh_detail})
+    total += fresh_pts
+
+    # ── Factor 2: Breakout Distance (max 25 pts) ─────────────────────────────
+    # Distance from breakout trigger level (e.g. ORB high/low)
+    if trigger_level > 0:
+        dist_pct = abs(ltp - trigger_level) / trigger_level * 100
+        if dist_pct <= 0.35:
+            dist_pts = 25
+            dist_detail = f"Near breakout level ({dist_pct:.2f}%)"
+        elif dist_pct <= 0.70:
+            dist_pts = 18
+            dist_detail = f"Moderate extension ({dist_pct:.2f}%)"
+        elif dist_pct <= 1.20:
+            dist_pts = 10
+            dist_detail = f"Stretching from breakout ({dist_pct:.2f}%)"
+        elif dist_pct <= 1.80:
+            dist_pts = 4
+            dist_detail = f"Late entry ({dist_pct:.2f}%)"
+        else:
+            dist_pts = 0
+            dist_detail = f"Severe chase ({dist_pct:.2f}% from breakout)"
+    else:
+        dist_pct = 0.0
+        dist_pts = 20
+        dist_detail = "Trigger level baseline (neutral)"
+    factors.append({"name": "BreakoutDist", "pts": dist_pts, "max": 25, "detail": dist_detail})
+    total += dist_pts
+
+    # ── Factor 3: VWAP Location & Distance (max 25 pts) ──────────────────────
+    vwap_dist_pct = abs(ltp - vwap) / vwap * 100 if vwap else 0.0
+    if vwap_dist_pct <= 0.60:
+        vwap_pts = 25  # Ideal proximity to institutional value
+    elif vwap_dist_pct <= 1.30:
+        vwap_pts = 20  # Moderate distance
+    elif vwap_dist_pct <= 2.20:
+        vwap_pts = 10  # Extended
+    else:
+        vwap_pts = 3   # High extension
+    factors.append({"name": "VWAPLoc", "pts": vwap_pts, "max": 25,
+                    "detail": f"VWAP dist {vwap_dist_pct:.2f}% (correct side)"})
+    total += vwap_pts
+
+    # ── Factor 4: ATR Consumed (max 20 pts) ──────────────────────────────────
+    # Measures how much of the expected daily range is already spent
+    consumed_pct = 0.0
+    if day_high is not None and day_low is not None and atr_14 and atr_14 > 0:
+        day_range = max(0.0, day_high - day_low)
+        consumed_pct = (day_range / atr_14) * 100
+        if consumed_pct <= 40.0:
+            atr_pts = 20
+            atr_detail = f"Only {consumed_pct:.0f}% of ATR consumed (ample room)"
+        elif consumed_pct <= 65.0:
+            atr_pts = 14
+            atr_detail = f"{consumed_pct:.0f}% of ATR consumed (good room)"
+        elif consumed_pct <= 85.0:
+            atr_pts = 7
+            atr_detail = f"{consumed_pct:.0f}% of ATR consumed (stretching)"
+        else:
+            atr_pts = 0
+            atr_detail = f"{consumed_pct:.0f}% of ATR consumed (range exhausted)"
+    else:
+        atr_pts = 14
+        atr_detail = "ATR range estimate neutral"
+    factors.append({"name": "ATRConsumed", "pts": atr_pts, "max": 20, "detail": atr_detail})
+    total += atr_pts
+
+    total = max(0, min(100, total))
+
+    metrics = {
+        "elapsed_mins": round(elapsed_mins, 1),
+        "breakout_dist_pct": round(dist_pct, 2),
+        "vwap_dist_pct": round(vwap_dist_pct, 2),
+        "atr_consumed_pct": round(consumed_pct, 1),
+        "entry_quality_score": total,
+    }
+    return total, factors, metrics
+
+
+def compute_conviction_score(
+    stock: dict,
+    signal: str,
+    all_stocks: List[dict],
+    candle_closes: List[float],
+    depth_delta: float = 0.0,
+    candle_volumes: Optional[List[float]] = None,
+    trigger_level: float = 0.0,
+    trigger_time: Optional[Any] = None,
+    day_high: Optional[float] = None,
+    day_low: Optional[float] = None,
+    atr_14: Optional[float] = None,
+    now: Optional[Any] = None,
+) -> Tuple[int, List[Dict[str, Any]], Dict[str, float]]:
+    """
+    Combined Conviction & Entry Scorer — delegating to rank_universe_momentum()
+    and calculate_entry_quality().
+    """
+    mom_score, mom_factors, mom_metrics = rank_universe_momentum(
+        stock=stock,
+        signal=signal,
+        all_stocks=all_stocks,
+        candle_closes=candle_closes,
+        candle_volumes=candle_volumes,
+        depth_delta=depth_delta,
+    )
+    
+    # If trigger_level not provided, fallback to ltp
+    lvl = trigger_level if trigger_level > 0 else (stock.get("ltp") or 0.0)
+    eq_score, eq_factors, eq_metrics = calculate_entry_quality(
+        stock=stock,
+        signal=signal,
+        trigger_level=lvl,
+        trigger_time=trigger_time,
+        day_high=day_high,
+        day_low=day_low,
+        atr_14=atr_14,
+        now=now,
+    )
+
+    if eq_score < 0:
+        return -1, eq_factors, {**mom_metrics, **eq_metrics}
+
+    # Combined factors for logging/inspection
+    all_factors = mom_factors + eq_factors
+    combined_metrics = {
+        **mom_metrics,
+        **eq_metrics,
+        "momentum_score": mom_score,
+        "entry_quality_score": eq_score,
+        "conviction_score": mom_score,  # legacy alias
+    }
+    return mom_score, all_factors, combined_metrics
+
+
+def validate_quant_filters(
+    stock: dict,
+    signal: str,
+    all_stocks: List[dict],
+    candle_closes: List[float],
+) -> Tuple[bool, str, Dict[str, float]]:
+    """Legacy shim — delegates to the new dual scorer and applies the
+    configured MIN_MOMENTUM_SCORE and MIN_ENTRY_QUALITY_SCORE thresholds."""
+    from . import config as _cfg
+
+    mom_score, mom_factors, mom_metrics = rank_universe_momentum(
+        stock=stock, signal=signal, all_stocks=all_stocks, candle_closes=candle_closes,
+    )
+    ltp = stock.get("ltp") or 0.0
+    eq_score, eq_factors, eq_metrics = calculate_entry_quality(
+        stock=stock, signal=signal, trigger_level=ltp,
+    )
+
+    metrics = {**mom_metrics, **eq_metrics}
+
+    if eq_score < 0:
+        reason = eq_factors[0]["detail"] if eq_factors else "Hard VWAP veto"
+        return False, reason, metrics
+
+    min_mom = getattr(_cfg, "MIN_MOMENTUM_SCORE", 60)
+    min_eq = getattr(_cfg, "MIN_ENTRY_QUALITY_SCORE", 60)
+
+    if mom_score >= min_mom and eq_score >= min_eq:
+        return True, f"Momentum {mom_score}/100, Entry Quality {eq_score}/100", metrics
+
+    reasons = []
+    if mom_score < min_mom:
+        reasons.append(f"Momentum {mom_score} < {min_mom}")
+    if eq_score < min_eq:
+        reasons.append(f"Entry Quality {eq_score} < {min_eq}")
+    return False, ", ".join(reasons), metrics
+
 
 
 def compute_sector_breadth(all_stocks: List[dict]) -> Dict[str, dict]:

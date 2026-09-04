@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PulseHunter — AI Trading & Smart Money Logic Specification</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- KaTeX for Math Equations -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body);"></script>
+
+  <style>
+    :root {
+      --bg-main: #090d16;
+      --bg-card: rgba(15, 23, 42, 0.75);
+      --bg-card-hover: rgba(30, 41, 59, 0.85);
+      --border: rgba(148, 163, 184, 0.12);
+      --border-accent: rgba(99, 102, 241, 0.35);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      
+      --accent-indigo: #6366f1;
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --accent-rose: #f43f5e;
+      --accent-amber: #f59e0b;
+      --accent-violet: #8b5cf6;
+      
+      --glow-indigo: rgba(99, 102, 241, 0.2);
+      --glow-emerald: rgba(16, 185, 129, 0.2);
+      --glow-rose: rgba(244, 63, 94, 0.2);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-primary);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 15% 10%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 85% 60%, rgba(6, 182, 212, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 50% 90%, rgba(139, 92, 246, 0.06) 0%, transparent 50%);
+    }
+
+    /* Container */
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    /* Header */
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+      position: relative;
+    }
+
+    .badge-hero {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #818cf8;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #818cf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 14px;
+    }
+
+    .subtitle {
+      font-size: 17px;
+      color: var(--text-secondary);
+      max-width: 780px;
+      margin: 0 auto;
+    }
+
+    /* Tabs Navigation */
+    .nav-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 40px;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      backdrop-filter: blur(8px);
+    }
+
+    .tab-btn:hover {
+      background: var(--bg-card-hover);
+      color: #fff;
+      border-color: rgba(99, 102, 241, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(6, 182, 212, 0.25));
+      border-color: #6366f1;
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.25);
+    }
+
+    /* Content Panels */
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.35s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cards & Layout */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(540px, 1fr));
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 28px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.25s ease, transform 0.25s ease;
+    }
+
+    .card:hover {
+      border-color: rgba(99, 102, 241, 0.3);
+      transform: translateY(-2px);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 19px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    /* Pill Badges */
+    .tag {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .tag-emerald { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .tag-rose { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
+    .tag-indigo { background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); }
+    .tag-cyan { background: rgba(6, 182, 212, 0.15); color: #38bdf8; border: 1px solid rgba(6, 182, 212, 0.3); }
+    .tag-amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .tag-violet { background: rgba(139, 92, 246, 0.15); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.3); }
+
+    /* Pipeline Step Box */
+    .pipeline-step {
+      background: rgba(15, 23, 42, 0.6);
+      border-left: 3px solid var(--accent-indigo);
+      padding: 16px 20px;
+      border-radius: 0 12px 12px 0;
+      margin-bottom: 16px;
+    }
+
+    .pipeline-step.success { border-color: var(--accent-emerald); }
+    .pipeline-step.danger { border-color: var(--accent-rose); }
+    .pipeline-step.warning { border-color: var(--accent-amber); }
+    .pipeline-step.cyan { border-color: var(--accent-cyan); }
+
+    .pipeline-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .pipeline-desc {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+    }
+
+    /* Math Formula Block */
+    .formula-box {
+      background: rgba(10, 15, 30, 0.85);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin: 16px 0;
+      font-family: 'JetBrains Mono', monospace;
+      color: #e2e8f0;
+      overflow-x: auto;
+    }
+
+    /* Table Styling */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      margin-top: 16px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13.5px;
+    }
+
+    th {
+      background: rgba(30, 41, 59, 0.7);
+      color: var(--text-secondary);
+      font-weight: 600;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-primary);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(30, 41, 59, 0.4);
+    }
+
+    /* Interactive Calculator */
+    .calc-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .calc-input-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .calc-input {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: 'JetBrains Mono', monospace;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .calc-input:focus {
+      border-color: var(--accent-indigo);
+    }
+
+    .calc-result-box {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.15));
+      border: 1px solid var(--border-accent);
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .calc-result-val {
+      font-size: 30px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      color: #38bdf8;
+      margin: 8px 0;
+    }
+
+    .code-ref {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      color: #38bdf8;
+      background: rgba(6, 182, 212, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      h1 { font-size: 30px; }
+      .calc-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <header>
+    <div class="badge-hero">⚡ Algorithmic Trading Architecture</div>
+    <h1>Quantitative Intelligence & Smart Money Engine</h1>
+    <p class="subtitle">Complete technical specification of indicators, multi-tier gatekeepers, adversarial AI validation, and 20-day time-slot order flow math.</p>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('tab-ai-pipeline', event)">🤖 AI Trade Engine & Gates</button>
+    <button class="tab-btn" onclick="switchTab('tab-smart-money', event)">🧠 Smart Money Calculations</button>
+    <button class="tab-btn" onclick="switchTab('tab-quant-gates', event)">🛡️ 4-Tier Quant Gatekeeper</button>
+    <button class="tab-btn" onclick="switchTab('tab-risk-sizing', event)">📐 Dynamic Sizing & Trailing Math</button>
+    <button class="tab-btn" onclick="switchTab('tab-interactive-calc', event)">🧮 Interactive Math Sandbox</button>
+  </div>
+
+  <!-- TAB 1: AI Trade Engine & Gates -->
+  <div id="tab-ai-pipeline" class="tab-content active">
+    <div class="grid-2">
+      <!-- Funnel Overview -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon" style="background: rgba(99,102,241,0.15); color:#818cf8;">🚀</span>
+            <span>AI Trade Execution Funnel</span>
+          </div>
+          <span class="tag tag-indigo">5-Stage Pipeline</span>
+        </div>
+        <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">
+          Trading decisions follow a strict fail-closed cascade. A setup must clear structural breakout filters and 4 mathematical gates before Gemini AI performs red-flag analysis.
+        </p>
+
+        <div class="pipeline-step">
+          <div class="pipeline-title">
+            <span>Stage 1: Signal Generation</span>
+            <span class="tag tag-cyan">ORB C1-C4 or VWAP Retest</span>
+          </div>
+          <p class="pipeline-desc">Real-time breach of 30-min candle boundaries or institutional VWAP bounce zone.</p>
+        </div>
+
+        <div class="pipeline-step warning">
+          <div class="pipeline-title">
+            <span>Stage 2: 4-Tier Quant Gatekeeper</span>
+            <span class="tag tag-amber">All 4 Must Pass</span>
+          </div>
+          <p class="pipeline-desc">Mathematical filters: RS vs Nifty, Sector Alignment, VWAP Buffer, 5m RSI/EMA, & 5-level Depth Delta.</p>
+        </div>
+
+        <div class="pipeline-step danger">
+          <div class="pipeline-title">
+            <span>Stage 3: Gemini Red-Flag Audit</span>
+            <span class="tag tag-rose">Score &ge; 80%</span>
+          </div>
+          <p class="pipeline-desc">Adversarial evaluation searching for disqualifying traps (overbought/oversold, dragging sector, opposing book).</p>
+        </div>
+
+        <div class="pipeline-step cyan">
+          <div class="pipeline-title">
+            <span>Stage 4: Dynamic ATR SL & Target</span>
+            <span class="tag tag-cyan">1:2 RR Locked</span>
+          </div>
+          <p class="pipeline-desc">Structurally anchored 1.5x 5m ATR stop loss clamped between [0.85%, 2.00%] buffer.</p>
+        </div>
+
+        <div class="pipeline-step success">
+          <div class="pipeline-title">
+            <span>Stage 5: Auto-Execution & Limits</span>
+            <span class="tag tag-emerald">09:15 - 11:00 AM</span>
+          </div>
+          <p class="pipeline-desc">Daily cap of 3 trades, risk-adjusted position sizing, and auto-breakeven ratchet at +1.0R.</p>
+        </div>
+      </div>
+
+      <!-- Trigger Models -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon" style="background: rgba(16,185,129,0.15); color:#34d399;">⚡</span>
+            <span>Signal Generation Engines</span>
+          </div>
+          <span class="tag tag-emerald">Live Tick Driven</span>
+        </div>
+
+        <h4 style="font-size: 15px; margin-bottom: 8px; color: #38bdf8;">1. 30-Minute ORB Engine (C1 to C4)</h4>
+        <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 12px;">
+          Monitors 30-minute structural blocks: <strong>C1</strong> (09:15–09:45), <strong>C2</strong> (09:45–10:15), <strong>C3</strong> (10:15–10:45), <strong>C4</strong> (10:45–11:15).
+        </p>
+        <div class="formula-box">
+          $$\text{Bull Signal: } LTP > \text{Candle High}$$
+          $$\text{Bear Signal: } LTP < \text{Candle Low}$$
+        </div>
+
+        <div style="background: rgba(15,23,42,0.6); padding: 12px 16px; border-radius: 8px; margin-bottom: 18px;">
+          <strong style="font-size: 13px; color: #fbbf24;">C1 Trend Cleanliness Rules:</strong>
+          <ul style="font-size: 13px; color: var(--text-secondary); padding-left: 18px; margin-top: 6px;">
+            <li><strong>Two-Sided Range:</strong> Opening 30 mins must have &ge;1 red & &ge;1 green candle (unless strong trend $|RS| \ge 0.80\%$).</li>
+            <li><strong>First Candle Extreme Intact:</strong> Bull: $\text{today\_low} \ge \text{C1\_low}$; Bear: $\text{today\_high} \le \text{C1\_high}$.</li>
+          </ul>
+        </div>
+
+        <h4 style="font-size: 15px; margin-bottom: 8px; color: #a78bfa;">2. Institutional VWAP Retest Setup</h4>
+        <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 12px;">
+          Fires on high-probability shallow pullbacks when price stabilizes and bounces at VWAP:
+        </p>
+        <div class="formula-box">
+          $$0.10\% \le \frac{|LTP - VWAP|}{VWAP} \times 100 \le 0.65\%$$
+          $$\text{Day Range Consumed } < 85\% \times ADR$$
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: Smart Money Calculations -->
+  <div id="tab-smart-money" class="tab-content">
+    <div class="grid-2">
+      <!-- Core Theory -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon" style="background: rgba(139,92,246,0.15); color:#c084fc;">🧠</span>
+            <span>Same-Slot Benchmarking Philosophy</span>
+          </div>
+          <span class="tag tag-violet">20-Day Archive</span>
+        </div>
+        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">
+          Standard volume indicators fail because midday volume is naturally lower than open rush. <strong>Smart Money Engine</strong> compares each 5-minute candle strictly against that <em>exact same time slot</em> across the last 20 trading days.
+        </p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th>Formula</th>
+                <th>Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Fresh Turnover</strong></td>
+                <td>$\text{Close} \times \text{Volume}$</td>
+                <td>Rupee-value velocity in current 5-min bucket.</td>
+              </tr>
+              <tr>
+                <td><strong>Fresh Turnover Ratio</strong></td>
+                <td>$\frac{\text{Today Turnover}}{\text{Avg Slot Turnover (20d)}}$</td>
+                <td>Institutional accumulation vs historical baseline.</td>
+              </tr>
+              <tr>
+                <td><strong>RVOL</strong></td>
+                <td>$\frac{\text{Today Volume}}{\text{Avg Slot Volume (20d)}}$</td>
+                <td>Share volume expansion ratio.</td>
+              </tr>
+              <tr>
+                <td><strong>Smart Money RS</strong></td>
+                <td>$\% \Delta \text{Stock}_{\text{open}} - \% \Delta \text{NIFTY}_{\text{open}}$</td>
+                <td>Intraday momentum anchored to today's open price.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Composite Score Card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon" style="background: rgba(6,182,212,0.15); color:#38bdf8;">📊</span>
+            <span>Composite Smart Money Score</span>
+          </div>
+          <span class="tag tag-cyan">Weighted Percentile</span>
+        </div>
+
+        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;">
+          Every eligible stock ($\ge 3$ days history) is ranked cross-sectionally from $0.0$ to $100.0\%$. The final score is computed as:
+        </p>
+
+        <div class="formula-box">
+          $$\mathbf{\text{Score}} = 0.50 \cdot \text{Turnover}_{\text{pct}} + 0.30 \cdot \text{RVOL}_{\text{pct}} + 0.20 \cdot \text{RS}_{\text{pct}}$$
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 20px 0;">
+          <div style="background: rgba(15,23,42,0.7); padding: 14px; border-radius: 10px; border-top: 3px solid #6366f1; text-align: center;">
+            <div style="font-size: 22px; font-weight: 800; color: #818cf8;">50%</div>
+            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Fresh Turnover Ratio</div>
+          </div>
+          <div style="background: rgba(15,23,42,0.7); padding: 14px; border-radius: 10px; border-top: 3px solid #06b6d4; text-align: center;">
+            <div style="font-size: 22px; font-weight: 800; color: #38bdf8;">30%</div>
+            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Slot RVOL</div>
+          </div>
+          <div style="background: rgba(15,23,42,0.7); padding: 14px; border-radius: 10px; border-top: 3px solid #10b981; text-align: center;">
+            <div style="font-size: 22px; font-weight: 800; color: #34d399;">20%</div>
+            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Relative Strength</div>
+          </div>
+        </div>
+
+        <div class="pipeline-step success" style="margin-bottom: 0;">
+          <div class="pipeline-title">
+            <span>WebSocket 5-Level Depth Coupling</span>
+            <span class="tag tag-emerald">Top 10 Resubscribe</span>
+          </div>
+          <p class="pipeline-desc">Every 5 minutes, top 10 ranked symbols are automatically subscribed to the live L2 depth order book stream.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: 4-Tier Quant Gatekeeper -->
+  <div id="tab-quant-gates" class="tab-content">
+    <div class="card" style="margin-bottom: 24px;">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="card-icon" style="background: rgba(245,158,11,0.15); color:#fbbf24;">🛡️</span>
+          <span>4-Tier Multi-Factor Gatekeeper Rules</span>
+        </div>
+        <span class="tag tag-amber">Code: technical_indicators.py</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Tier</th>
+              <th>Gate Name</th>
+              <th>Mathematical Thresholds & Logic</th>
+              <th>Rejection Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="tag tag-indigo">Tier 1</span></td>
+              <td><strong>Sector & RS Threshold</strong></td>
+              <td>
+                • Standard Sectors: Bull $RS \ge +0.50\%$, Bear $RS \le -0.50\%$<br>
+                • <strong>Defensive Sectors</strong> (FMCG, PSU Banks, Cement, Consumer): $RS \ge +1.50\%$ (or $\le -1.50\%$)
+              </td>
+              <td>Sideways trap / Low relative strength.</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-indigo">Tier 1</span></td>
+              <td><strong>Sector Alignment</strong></td>
+              <td>
+                • Bull Setup: Sector Mean return $\ge -0.25\%$<br>
+                • Bear Setup: Sector Mean return $\le +0.25\%$
+              </td>
+              <td>Sector dragging heavily against signal.</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-cyan">Tier 2</span></td>
+              <td><strong>VWAP Side Alignment</strong></td>
+              <td>
+                • Bull: $LTP > VWAP$<br>
+                • Bear: $LTP < VWAP$
+              </td>
+              <td>Price on wrong side of intraday institutional anchor.</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-cyan">Tier 2</span></td>
+              <td><strong>VWAP Buffer Zone</strong></td>
+              <td>
+                $$0.08\% \le \frac{|LTP - VWAP|}{VWAP} \times 100 \le 2.20\%$$
+              </td>
+              <td>Price too close to VWAP ($<0.08\%$) or over-extended ($>2.20\%$).</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-violet">Tier 3</span></td>
+              <td><strong>5m RSI-14 Momentum Zone</strong></td>
+              <td>
+                • <strong>BUY</strong>: $52.0 \le RSI_{14} \le 78.0$<br>
+                • <strong>SELL</strong>: $22.0 \le RSI_{14} \le 48.0$
+              </td>
+              <td>Weak momentum ($<52$) or extreme exhaustion ($>78$ / $<22$).</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-violet">Tier 3</span></td>
+              <td><strong>5m 20 EMA Alignment</strong></td>
+              <td>
+                • Bull: $LTP \ge 20\,EMA$<br>
+                • Bear: $LTP \le 20\,EMA$
+              </td>
+              <td>Micro-trend moving against breakout.</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-emerald">Tier 4</span></td>
+              <td><strong>5-Level Depth Delta</strong></td>
+              <td>
+                $\text{Delta} = \sum (\text{Bid Price} \times \text{Bid Qty}) - \sum (\text{Ask Price} \times \text{Ask Qty})$<br>
+                • Bull: $\text{Delta} \ge 0$<br>
+                • Bear: $\text{Delta} \le 0$
+              </td>
+              <td>Order book depth opposing signal direction.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: Dynamic Sizing & Trailing Math -->
+  <div id="tab-risk-sizing" class="tab-content">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon" style="background: rgba(16,185,129,0.15); color:#34d399;">📐</span>
+            <span>Dynamic Stop Loss & Target Math</span>
+          </div>
+          <span class="tag tag-emerald">ATR + Swing Anchored</span>
+        </div>
+
+        <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 12px;">
+          Stop Loss is never fixed. It dynamically expands/contracts based on true 5-minute volatility ($1.5 \times ATR_{14}$) and 5-candle swing lows/highs with hard boundaries:
+        </p>
+
+        <div class="formula-box">
+          $$SL\_Dist = \min\Big(\max(\text{Swing Dist},\, 1.5 \cdot ATR_{14},\, 0.0085 \cdot LTP),\, 0.0200 \cdot LTP\Big)$$
+          $$\text{Target} = Entry \pm (2.0 \times SL\_Dist) \quad \text{[1:2 Risk-Reward]}$$
+        </div>
+
+        <div class="pipeline-step cyan">
+          <div class="pipeline-title">
+            <span>Trailing Stop Loss (TSL)</span>
+            <span class="tag tag-cyan">$\ge 1.20\%$</span>
+          </div>
+          <p class="pipeline-desc">$\text{TSL Offset} = \text{Peak Price} \times \max(SL\_Pct, 1.2\%)$. Only ever ratchets favorably.</p>
+        </div>
+
+        <div class="pipeline-step success">
+          <div class="pipeline-title">
+            <span>Auto-Breakeven Guarantee</span>
+            <span class="tag tag-emerald">+1.0R Reached</span>
+          </div>
+          <p class="pipeline-desc">When $\text{Peak} \ge Entry + R$, Stop Loss ratchets to $Entry + \text{buffer}$ eliminating downside risk.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon" style="background: rgba(244,63,94,0.15); color:#fb7185;">🛡️</span>
+            <span>Risk-Adjusted Position Sizing</span>
+          </div>
+          <span class="tag tag-rose">₹2,000 Max Daily Risk</span>
+        </div>
+
+        <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 12px;">
+          Position size is derived purely from allowable risk and stop loss distance:
+        </p>
+
+        <div class="formula-box">
+          $$\text{Risk Per Trade} = \frac{\text{DAILY\_MAX\_RISK\_INR}}{\text{MAX\_DAILY\_AUTO\_TRADES}} = \frac{₹2,000}{3} \approx ₹666.67$$
+          $$\text{Quantity} = \max\left(1, \left\lfloor \frac{₹666.67}{|Entry - SL|} \right\rfloor\right)$$
+        </div>
+
+        <div style="background: rgba(15,23,42,0.6); padding: 16px; border-radius: 12px; margin-top: 16px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+            <span style="color: var(--text-secondary);">Session Window:</span>
+            <span style="font-weight: 700; color: #34d399;">09:15 AM – 11:00 AM IST</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+            <span style="color: var(--text-secondary);">Max Daily Auto Trades:</span>
+            <span style="font-weight: 700; color: #38bdf8;">3 Orders / Day</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 13px;">
+            <span style="color: var(--text-secondary);">Deduplication:</span>
+            <span style="font-weight: 700; color: #a78bfa;">1 Trigger / Symbol / Day</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 5: Interactive Math Sandbox -->
+  <div id="tab-interactive-calc" class="tab-content">
+    <div class="grid-2">
+      <!-- Calculator Inputs -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon" style="background: rgba(99,102,241,0.15); color:#818cf8;">🧮</span>
+            <span>Live Quant & Smart Money Sandbox</span>
+          </div>
+          <span class="tag tag-indigo">Client-Side Engine</span>
+        </div>
+
+        <div class="calc-row">
+          <div class="calc-input-group">
+            <label>Stock LTP (₹)</label>
+            <input type="number" id="calc-ltp" class="calc-input" value="2500" oninput="runSandboxCalc()">
+          </div>
+          <div class="calc-input-group">
+            <label>VWAP (₹)</label>
+            <input type="number" id="calc-vwap" class="calc-input" value="2480" oninput="runSandboxCalc()">
+          </div>
+        </div>
+
+        <div class="calc-row">
+          <div class="calc-input-group">
+            <label>Stock % Change</label>
+            <input type="number" id="calc-stock-pct" class="calc-input" value="1.8" step="0.1" oninput="runSandboxCalc()">
+          </div>
+          <div class="calc-input-group">
+            <label>NIFTY % Change</label>
+            <input type="number" id="calc-nifty-pct" class="calc-input" value="0.4" step="0.1" oninput="runSandboxCalc()">
+          </div>
+        </div>
+
+        <div class="calc-row">
+          <div class="calc-input-group">
+            <label>5m RSI-14</label>
+            <input type="number" id="calc-rsi" class="calc-input" value="62" oninput="runSandboxCalc()">
+          </div>
+          <div class="calc-input-group">
+            <label>5m 20 EMA (₹)</label>
+            <input type="number" id="calc-ema" class="calc-input" value="2490" oninput="runSandboxCalc()">
+          </div>
+        </div>
+
+        <div class="calc-row">
+          <div class="calc-input-group">
+            <label>5m ATR-14 (₹)</label>
+            <input type="number" id="calc-atr" class="calc-input" value="15" oninput="runSandboxCalc()">
+          </div>
+          <div class="calc-input-group">
+            <label>Recent Swing Low (₹)</label>
+            <input type="number" id="calc-swing" class="calc-input" value="2475" oninput="runSandboxCalc()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Evaluated Results -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon" style="background: rgba(16,185,129,0.15); color:#34d399;">⚡</span>
+            <span>Real-Time Evaluation</span>
+          </div>
+          <span id="gate-status-tag" class="tag tag-emerald">PASS</span>
+        </div>
+
+        <div class="calc-result-box">
+          <div style="font-size: 13px; text-transform: uppercase; color: var(--text-secondary);">Computed Stop Loss / Target (1:2 RR)</div>
+          <div id="res-sl-target" class="calc-result-val">SL: ₹2,475 | TGT: ₹2,550</div>
+          <div id="res-sizing" style="font-size: 14px; color: #a78bfa; font-family: 'JetBrains Mono', monospace;">Qty: 26 shares (₹667 risk)</div>
+        </div>
+
+        <div style="margin-top: 20px;">
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13.5px;">
+            <span style="color: var(--text-secondary);">Relative Strength (RS vs Nifty):</span>
+            <span id="res-rs" style="font-weight: 700; color: #34d399;">+1.40% (PASS)</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13.5px;">
+            <span style="color: var(--text-secondary);">VWAP Distance:</span>
+            <span id="res-vwap-dist" style="font-weight: 700; color: #38bdf8;">0.81% (IN ZONE)</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13.5px;">
+            <span style="color: var(--text-secondary);">RSI Momentum Zone:</span>
+            <span id="res-rsi-status" style="font-weight: 700; color: #34d399;">62.0 (HEALTHY)</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; font-size: 13.5px;">
+            <span style="color: var(--text-secondary);">20 EMA Alignment:</span>
+            <span id="res-ema-status" style="font-weight: 700; color: #34d399;">ABOVE (ALIGNED)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function switchTab(tabId, event) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    
+    if (event && event.currentTarget) {
+      event.currentTarget.classList.add('active');
+    }
+    const target = document.getElementById(tabId);
+    if (target) {
+      target.classList.add('active');
+    }
+  }
+
+  function runSandboxCalc() {
+    const ltp = parseFloat(document.getElementById('calc-ltp').value) || 0;
+    const vwap = parseFloat(document.getElementById('calc-vwap').value) || 0;
+    const stockPct = parseFloat(document.getElementById('calc-stock-pct').value) || 0;
+    const niftyPct = parseFloat(document.getElementById('calc-nifty-pct').value) || 0;
+    const rsi = parseFloat(document.getElementById('calc-rsi').value) || 50;
+    const ema = parseFloat(document.getElementById('calc-ema').value) || 0;
+    const atr = parseFloat(document.getElementById('calc-atr').value) || (ltp * 0.006);
+    const swingLow = parseFloat(document.getElementById('calc-swing').value) || (ltp * 0.99);
+
+    if (ltp <= 0) return;
+
+    // 1. RS
+    const rs = stockPct - niftyPct;
+    const rsPass = rs >= 0.50;
+    document.getElementById('res-rs').textContent = `${rs >= 0 ? '+' : ''}${rs.toFixed(2)}% (${rsPass ? 'PASS' : 'REJECT'})`;
+    document.getElementById('res-rs').style.color = rsPass ? '#34d399' : '#fb7185';
+
+    // 2. VWAP dist
+    const vwapDist = vwap > 0 ? Math.abs(ltp - vwap) / vwap * 100 : 0;
+    const vwapPass = ltp > vwap && vwapDist >= 0.08 && vwapDist <= 2.20;
+    document.getElementById('res-vwap-dist').textContent = `${vwapDist.toFixed(2)}% (${vwapPass ? 'IN ZONE' : 'OUT OF BOUNDS'})`;
+    document.getElementById('res-vwap-dist').style.color = vwapPass ? '#38bdf8' : '#fb7185';
+
+    // 3. RSI
+    const rsiPass = rsi >= 52.0 && rsi <= 78.0;
+    document.getElementById('res-rsi-status').textContent = `${rsi.toFixed(1)} (${rsiPass ? 'HEALTHY' : 'REJECT'})`;
+    document.getElementById('res-rsi-status').style.color = rsiPass ? '#34d399' : '#fb7185';
+
+    // 4. EMA
+    const emaPass = ltp >= ema;
+    document.getElementById('res-ema-status').textContent = emaPass ? 'ABOVE (ALIGNED)' : 'BELOW (OPPOSING)';
+    document.getElementById('res-ema-status').style.color = emaPass ? '#34d399' : '#fb7185';
+
+    // Overall Gate
+    const allPass = rsPass && vwapPass && rsiPass && emaPass;
+    const tag = document.getElementById('gate-status-tag');
+    tag.textContent = allPass ? 'PASS' : 'GATE REJECT';
+    tag.className = allPass ? 'tag tag-emerald' : 'tag tag-rose';
+
+    // Sizing & SL Math
+    const minSlDist = ltp * 0.0085;
+    const maxSlDist = ltp * 0.0200;
+    const swingDist = Math.max(0, ltp - (swingLow * 0.9985));
+    const atrDist = atr * 1.5;
+
+    const rawSlDist = Math.max(swingDist, atrDist, minSlDist);
+    const finalSlDist = Math.min(rawSlDist, maxSlDist);
+
+    const sl = ltp - finalSlDist;
+    const target = ltp + (finalSlDist * 2.0);
+
+    document.getElementById('res-sl-target').textContent = `SL: ₹${sl.toFixed(2)} | TGT: ₹${target.toFixed(2)}`;
+
+    const riskPerTrade = 2000 / 3;
+    const qty = Math.max(1, Math.floor(riskPerTrade / finalSlDist));
+    const actualRisk = qty * finalSlDist;
+
+    document.getElementById('res-sizing').textContent = `Qty: ${qty} shares (₹${actualRisk.toFixed(0)} risk | SL: ${(finalSlDist/ltp*100).toFixed(2)}%)`;
+  }
+
+  // Initial calculation
+  window.addEventListener('DOMContentLoaded', runSandboxCalc);
+</script>
+
+</body>
+</html>

@@ -33,7 +33,11 @@ from datetime import datetime
 
 from .config import ORB_CANDLES
 
-_OPENING_RANGE_END = ORB_CANDLES[0][2]  # 09:45 — end of the 6-candle opening range
+# The full opening-range quality gate (two-sided-range, candle1 extremes)
+# needs all six 5-min candles from 09:15-09:45.  Hardcoded so that adding
+# C0.5 (which ends at 09:30) as ORB_CANDLES[0] doesn't shift this boundary.
+from datetime import time as _dt_time
+_OPENING_RANGE_END = _dt_time(9, 45)
 _FIVE_MIN = 5
 
 # symbol -> {bucket_start_minute: [open, high, low, close]}. Discarded once
@@ -92,12 +96,13 @@ def on_tick(stock: dict, ltp: float, now: datetime) -> None:
     live, and once the opening range (09:15-09:45) completes, seeds
     `candle1_high/low` and `two_sided_ok`."""
     now_t = now.time()
+    # Do NOT break early — C0.5 (09:15-09:30) and C1 (09:15-09:45) overlap,
+    # and both must track the live tick during their shared window.
     for name, start, end in ORB_CANDLES:
         if start <= now_t < end:
             bounds = stock["orb"].setdefault(name, {"high": ltp, "low": ltp})
             bounds["high"] = max(bounds["high"], ltp)
             bounds["low"] = min(bounds["low"], ltp)
-            break
 
     sym = stock["symbol"]
     _track_day_candle(sym, ltp, now, stock.get("volume") or 0)
@@ -236,3 +241,10 @@ def get_intraday_candles(sym: str) -> list[dict]:
             }
         )
     return candles
+
+
+def get_intraday_volumes(sym: str) -> list[float]:
+    """Return chronological list of today's 5m candle volumes for technical volume acceleration."""
+    candles = get_intraday_candles(sym)
+    return [float(c.get("volume", 0.0)) for c in candles if "volume" in c]
+

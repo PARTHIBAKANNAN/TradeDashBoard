@@ -21,5 +21,6 @@ frontend/dist/
 # Editor / OS
 .vscode/
 .idea/
-.DS_Store
-Thumbs.db
+# Local scratch
+scratch/
+scratch_*.py
