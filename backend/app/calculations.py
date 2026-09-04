@@ -362,6 +362,7 @@ def process_incoming_tick(
                 # Compute Entry Quality Score
                 intraday_candles = candle_aggregator.get_intraday_candles(short_sym)
                 atr_14 = _ti.compute_atr(intraday_candles, 14) if intraday_candles else 0.0
+                vol_ratio = mom_metrics.get("vol_ratio", 1.0)
                 eq_score, eq_factors, eq_metrics = _ti.calculate_entry_quality(
                     stock=stock,
                     signal=signal,
@@ -371,7 +372,10 @@ def process_incoming_tick(
                     day_low=stock.get("today_low"),
                     atr_14=atr_14,
                     now=now_ist,
+                    candles=intraday_candles,
+                    volume_ratio=vol_ratio,
                 )
+
 
                 min_mom = getattr(_cfg, "MIN_MOMENTUM_SCORE", 60)
                 min_eq = getattr(_cfg, "MIN_ENTRY_QUALITY_SCORE", 60)

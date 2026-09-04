@@ -91,3 +91,44 @@ def test_combined_conviction_and_legacy_shim():
     )
     assert passes is True
     assert "Momentum" in reason
+
+
+def test_detect_breakaway_gap_and_bonus():
+    from app.technical_indicators import detect_breakaway_gap
+
+    candles = [
+        {"open": 152.0, "high": 154.0, "low": 151.8, "close": 153.5, "minute": 555},
+        {"open": 154.2, "high": 156.0, "low": 154.1, "close": 155.8, "minute": 560},  # Breakout bar
+    ]
+    trigger_level = 154.0  # ORB high
+
+    is_bag, gap, detail = detect_breakaway_gap(
+        candles=candles,
+        trigger_level=trigger_level,
+        is_bull=True,
+        volume_ratio=1.6,
+        atr_14=2.0,
+    )
+
+    assert is_bag is True
+    assert gap > 0
+    assert "Bullish BAG" in detail
+
+    # Test that calculate_entry_quality awards BAG_Bonus
+    stock = {"symbol": "NSE:TATASTEEL-EQ", "ltp": 155.8, "vwap": 154.5}
+    now = datetime.now(IST)
+    score, factors, metrics = calculate_entry_quality(
+        stock=stock,
+        signal="Bull • C0.5",
+        trigger_level=trigger_level,
+        trigger_time=now,
+        day_high=156.0,
+        day_low=152.0,
+        atr_14=2.0,
+        now=now,
+        candles=candles,
+        volume_ratio=1.6,
+    )
+    assert metrics["is_bag"] is True
+    assert any(f["name"] == "BAG_Bonus" for f in factors)
+

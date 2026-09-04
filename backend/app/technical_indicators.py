@@ -432,6 +432,48 @@ def rank_universe_momentum(
     return total, factors, metrics
 
 
+def detect_breakaway_gap(
+    candles: List[dict],
+    trigger_level: float,
+    is_bull: bool,
+    volume_ratio: float = 1.0,
+    atr_14: float = 0.0,
+) -> Tuple[bool, float, str]:
+    """
+    Breakaway Auction Gap (BAG) Detection:
+    Occurs when an opening expansion candle launches cleanly beyond the 
+    balance/ORB trigger level with volume participation, leaving a price displacement
+    that institutions protect (preventing fill back into the balance range).
+    
+    Returns (is_bag: bool, gap_size: float, detail: str).
+    """
+    if not candles or trigger_level <= 0:
+        return False, 0.0, "No candle data for BAG"
+
+    last_candle = candles[-1]
+    h = last_candle.get("high", 0.0)
+    l = last_candle.get("low", 0.0)
+    c = last_candle.get("close", 0.0)
+    o = last_candle.get("open", 0.0)
+
+    if is_bull:
+        # For Long: The breakout candle closes near highs and low does not violate trigger level
+        gap = l - trigger_level
+        c_range = h - l
+        is_bullish_bar = (c > o) and (c_range > 0 and (c - l) / c_range >= 0.65)
+        is_bag = (gap >= -0.05 * (atr_14 or 1.0)) and is_bullish_bar and (volume_ratio >= 1.3)
+        detail = f"Bullish BAG (Gap {gap:+.2f}, Vol {volume_ratio:.1f}x)" if is_bag else "No Bullish BAG"
+    else:
+        # For Short: The breakout candle closes near lows and high does not violate trigger level
+        gap = trigger_level - h
+        c_range = h - l
+        is_bearish_bar = (c < o) and (c_range > 0 and (h - c) / c_range >= 0.65)
+        is_bag = (gap >= -0.05 * (atr_14 or 1.0)) and is_bearish_bar and (volume_ratio >= 1.3)
+        detail = f"Bearish BAG (Gap {gap:+.2f}, Vol {volume_ratio:.1f}x)" if is_bag else "No Bearish BAG"
+
+    return is_bag, round(gap, 2), detail
+
+
 def calculate_entry_quality(
     stock: dict,
     signal: str,
@@ -441,15 +483,18 @@ def calculate_entry_quality(
     day_low: Optional[float] = None,
     atr_14: Optional[float] = None,
     now: Optional[Any] = None,
+    candles: Optional[List[dict]] = None,
+    volume_ratio: float = 1.0,
 ) -> Tuple[int, List[Dict[str, Any]], Dict[str, float]]:
     """
     Entry Quality Score (0–100) — Answers: "Is this a good moment and location to enter?"
 
-    Components (100 total):
+    Components (100 total + bonus):
       1. Trigger Freshness (30 pts) — Minutes since breakout trigger
       2. Breakout Distance (25 pts) — Price distance from breakout price
       3. VWAP Alignment & Distance (25 pts) — Proximity to VWAP (Hard Veto -1 if wrong side)
       4. % Daily ATR Range Consumed (20 pts) — Extension relative to expected volatility
+      + Breakaway Auction Gap (BAG) Bonus (up to +10 pts bonus for non-fill momentum displacement)
     """
     if not signal or signal == "None":
         return 0, [{"name": "signal", "pts": 0, "max": 0, "detail": "No active signal"}], {}
@@ -563,6 +608,21 @@ def calculate_entry_quality(
     factors.append({"name": "ATRConsumed", "pts": atr_pts, "max": 20, "detail": atr_detail})
     total += atr_pts
 
+    # ── Structural Bonus: Breakaway Auction Gap (BAG) (up to +10 bonus) ──────
+    is_bag = False
+    bag_gap = 0.0
+    if candles and trigger_level > 0:
+        is_bag, bag_gap, bag_detail = detect_breakaway_gap(
+            candles=candles,
+            trigger_level=trigger_level,
+            is_bull=is_bull,
+            volume_ratio=volume_ratio,
+            atr_14=atr_14 or 0.0,
+        )
+        if is_bag:
+            factors.append({"name": "BAG_Bonus", "pts": 10, "max": 10, "detail": bag_detail})
+            total += 10
+
     total = max(0, min(100, total))
 
     metrics = {
@@ -570,9 +630,12 @@ def calculate_entry_quality(
         "breakout_dist_pct": round(dist_pct, 2),
         "vwap_dist_pct": round(vwap_dist_pct, 2),
         "atr_consumed_pct": round(consumed_pct, 1),
+        "is_bag": is_bag,
+        "bag_gap": bag_gap,
         "entry_quality_score": total,
     }
     return total, factors, metrics
+
 
 
 def compute_conviction_score(
