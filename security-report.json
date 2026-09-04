@@ -31,9 +31,9 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "account": "",
         "local_database_path": null,
         "safety_version": "3.8.1",
-        "timestamp": "2026-09-03 13:09:01",
+        "timestamp": "2026-09-04 13:02:50",
         "packages_found": 13,
-        "vulnerabilities_found": 14,
+        "vulnerabilities_found": 17,
         "vulnerabilities_ignored": 0,
         "remediations_recommended": 0,
         "telemetry": {
@@ -56,7 +56,7 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "git": {
             "branch": "main",
             "tag": "",
-            "commit": "5c20131287bf880aa933ec2cb22a77cb09feac29",
+            "commit": "3346c9b39594f7fa8e952d13606dadcb0b14a3b9",
             "dirty": "True",
             "origin": "https://github.com/PARTHIBAKANNAN/TradeDashBoard"
         },
@@ -436,13 +436,13 @@ We highly encourage switching to the new `scan` command which is easier to use, 
                 "46.0.6",
                 "46.0.7",
                 "47.0.0",
-                "48.0.0"
+                "48.0.0",
+                "48.0.1",
+                "49.0.0"
             ],
             "secure_versions": [
                 "50.0.1",
-                "50.0.0",
-                "49.0.0",
-                "48.0.1"
+                "50.0.0"
             ],
             "latest_version_without_known_vulnerabilities": "50.0.1",
             "latest_version": "50.0.1",
@@ -793,6 +793,105 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         }
     ],
     "vulnerabilities": [
+        {
+            "vulnerability_id": "SFTY-20260803-29229",
+            "package_name": "cryptography",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                "<=48.0.0"
+            ],
+            "all_vulnerable_specs": [
+                "<=48.0.0"
+            ],
+            "analyzed_version": "44.0.0",
+            "analyzed_requirement": {
+                "raw": "cryptography==44.0.0  # ES256/RS256 support for verifying Supabase JWTs",
+                "extras": [],
+                "marker": null,
+                "name": "cryptography",
+                "specifier": "==44.0.0",
+                "url": null,
+                "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
+            },
+            "advisory": "Affected versions of the `python-cryptography` package are vulnerable to Denial of Service (DoS) due to exponential path-building caused by duplicate self-signed intermediates. The `build_chain_inner` function fails to de-duplicate previously analyzed certificate candidates, leading to recursive invocation of the same candidates and an exponential increase in processing time. An attacker can exploit this vulnerability by crafting certificate chains with duplicate self-signed certificates, causing the system to spend excessive time processing these chains, potentially leading to resource exhaustion and service unavailability.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2026-69249",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://getsafety.com/v/SFTY-20260803-29229/97c"
+        },
+        {
+            "vulnerability_id": "SFTY-20260803-89041",
+            "package_name": "cryptography",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                "<=48.0.0"
+            ],
+            "all_vulnerable_specs": [
+                "<=48.0.0"
+            ],
+            "analyzed_version": "44.0.0",
+            "analyzed_requirement": {
+                "raw": "cryptography==44.0.0  # ES256/RS256 support for verifying Supabase JWTs",
+                "extras": [],
+                "marker": null,
+                "name": "cryptography",
+                "specifier": "==44.0.0",
+                "url": null,
+                "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
+            },
+            "advisory": "Affected versions of the `python-cryptography` package are vulnerable to Improper Certificate Validation due to inadequate handling of wildcard DNS names in the verification process. The `matches` method in the `DNSConstraint` class fails to correctly enforce the constraints specified in the permitted subtrees, allowing certificates with wildcard DNS Subject Alternative Names (SANs) to escape the intended restrictions. An attacker could exploit this vulnerability by crafting a certificate chain that appears valid, despite violating the constraints, potentially leading to the acceptance of unauthorized certificates and facilitating man-in-the-middle attacks.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2026-69248",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://getsafety.com/v/SFTY-20260803-89041/97c"
+        },
+        {
+            "vulnerability_id": "SFTY-20260803-51569",
+            "package_name": "cryptography",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                ">=44.0.0,<50.0.0"
+            ],
+            "all_vulnerable_specs": [
+                ">=44.0.0,<50.0.0"
+            ],
+            "analyzed_version": "44.0.0",
+            "analyzed_requirement": {
+                "raw": "cryptography==44.0.0  # ES256/RS256 support for verifying Supabase JWTs",
+                "extras": [],
+                "marker": null,
+                "name": "cryptography",
+                "specifier": "==44.0.0",
+                "url": null,
+                "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
+            },
+            "advisory": "Affected versions of the cryptography package are vulnerable to a Bleichenbacher Oracle attack due to distinguishable errors and timing discrepancies during PKCS#7 EnvelopedData decryption. The `pkcs7_decrypt_der`, `pkcs7_decrypt_pem`, and `pkcs7_decrypt_smime` functions report the outcome of decrypting a `RecipientInfo`'s `encryptedKey` in several distinguishable ways, including disclosing the exact length recovered from the RSA operation. An attacker can exploit this vulnerability by supplying crafted `EnvelopedData` to an application that decrypts and reflects the outcome, thereby gaining the ability to perform adaptive chosen-ciphertext attacks to recover the content-encryption key.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2026-69247",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://getsafety.com/v/SFTY-20260803-51569/97c"
+        },
         {
             "vulnerability_id": "76170",
             "package_name": "cryptography",
@@ -1261,7 +1360,7 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "cryptography": {
             "requirements": {
                 "==44.0.0": {
-                    "vulnerabilities_found": 4,
+                    "vulnerabilities_found": 7,
                     "version": "44.0.0",
                     "requirement": {
                         "raw": "cryptography==44.0.0  # ES256/RS256 support for verifying Supabase JWTs",
