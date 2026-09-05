@@ -111,7 +111,9 @@ MAX_DAILY_AUTO_TRADES = int(os.getenv("MAX_DAILY_AUTO_TRADES", "3"))
 #   RECLAIM_EXECUTE_UNTIL_MINUTE (105 = 11:00 AM): Cutoff for Type-B VWAP reclaim / retest setups.
 ORB_EXECUTE_UNTIL_MINUTE = int(os.getenv("ORB_EXECUTE_UNTIL_MINUTE", "60"))
 RECLAIM_EXECUTE_UNTIL_MINUTE = int(os.getenv("RECLAIM_EXECUTE_UNTIL_MINUTE", "105"))
-AUTO_EXECUTE_UNTIL_MINUTE = int(os.getenv("AUTO_EXECUTE_UNTIL_MINUTE", str(ORB_EXECUTE_UNTIL_MINUTE)))
+AUTO_EXECUTE_UNTIL_MINUTE = int(
+    os.getenv("AUTO_EXECUTE_UNTIL_MINUTE", str(ORB_EXECUTE_UNTIL_MINUTE))
+)
 #
 # AUTO_PAPER_USER_ID: The user_id (from auth.users) under which auto paper
 #   trades are placed. Must match a valid user in the Supabase auth table.
@@ -140,10 +142,10 @@ DAILY_LOGIN_TIME = dt_time(8, 45)  # cron trigger for the fresh daily token
 # both simultaneously.  C0.5 breakout fires at 09:30; C1 at 09:45.
 ORB_CANDLES = [
     ("C0.5", dt_time(9, 15), dt_time(9, 30)),
-    ("C1",   dt_time(9, 15), dt_time(9, 45)),
-    ("C2",   dt_time(9, 45), dt_time(10, 15)),
-    ("C3",   dt_time(10, 15), dt_time(10, 45)),
-    ("C4",   dt_time(10, 45), dt_time(11, 15)),
+    ("C1", dt_time(9, 15), dt_time(9, 45)),
+    ("C2", dt_time(9, 45), dt_time(10, 15)),
+    ("C3", dt_time(10, 15), dt_time(10, 45)),
+    ("C4", dt_time(10, 45), dt_time(11, 15)),
 ]
 
 BENCHMARK_SYMBOL = "NSE:NIFTY50-INDEX"

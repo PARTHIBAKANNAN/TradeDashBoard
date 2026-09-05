@@ -3,19 +3,30 @@ Unit tests for PulseHunter V2 Dual-Score Engine (rank_universe_momentum & calcul
 """
 
 from datetime import datetime, timedelta
+
 from app.config import IST
-from app.technical_indicators import (
-    rank_universe_momentum,
-    calculate_entry_quality,
-    compute_conviction_score,
-    validate_quant_filters,
-)
+from app.technical_indicators import (calculate_entry_quality,
+                                      compute_conviction_score,
+                                      rank_universe_momentum,
+                                      validate_quant_filters)
 
 
 def test_momentum_score_strong_candidate():
     all_stocks = [
-        {"symbol": "NSE:TATASTEEL-EQ", "ltp": 155.0, "vwap": 154.2, "relative_strength": 1.15, "depth_delta": 300},
-        {"symbol": "NSE:INFY-EQ", "ltp": 1600.0, "vwap": 1598.0, "relative_strength": 0.20, "depth_delta": -50},
+        {
+            "symbol": "NSE:TATASTEEL-EQ",
+            "ltp": 155.0,
+            "vwap": 154.2,
+            "relative_strength": 1.15,
+            "depth_delta": 300,
+        },
+        {
+            "symbol": "NSE:INFY-EQ",
+            "ltp": 1600.0,
+            "vwap": 1598.0,
+            "relative_strength": 0.20,
+            "depth_delta": -50,
+        },
     ]
     closes = [150.0 + i * 0.3 for i in range(25)]
     vols = [10000.0, 12000.0, 11000.0, 26000.0]
@@ -79,7 +90,13 @@ def test_hard_vwap_veto():
 
 def test_combined_conviction_and_legacy_shim():
     all_stocks = [
-        {"symbol": "NSE:TATASTEEL-EQ", "ltp": 155.0, "vwap": 154.2, "relative_strength": 1.15, "depth_delta": 300},
+        {
+            "symbol": "NSE:TATASTEEL-EQ",
+            "ltp": 155.0,
+            "vwap": 154.2,
+            "relative_strength": 1.15,
+            "depth_delta": 300,
+        },
     ]
     closes = [150.0 + i * 0.3 for i in range(25)]
 
@@ -131,4 +148,3 @@ def test_detect_breakaway_gap_and_bonus():
     )
     assert metrics["is_bag"] is True
     assert any(f["name"] == "BAG_Bonus" for f in factors)
-

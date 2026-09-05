@@ -29,14 +29,14 @@ layer on top without conflict either way).
 """
 
 import asyncio
-from datetime import datetime
-
-from .config import ORB_CANDLES
-
 # The full opening-range quality gate (two-sided-range, candle1 extremes)
 # needs all six 5-min candles from 09:15-09:45.  Hardcoded so that adding
 # C0.5 (which ends at 09:30) as ORB_CANDLES[0] doesn't shift this boundary.
+from datetime import datetime
 from datetime import time as _dt_time
+
+from .config import ORB_CANDLES
+
 _OPENING_RANGE_END = _dt_time(9, 45)
 _FIVE_MIN = 5
 
@@ -247,4 +247,3 @@ def get_intraday_volumes(sym: str) -> list[float]:
     """Return chronological list of today's 5m candle volumes for technical volume acceleration."""
     candles = get_intraday_candles(sym)
     return [float(c.get("volume", 0.0)) for c in candles if "volume" in c]
-

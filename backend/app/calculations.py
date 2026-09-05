@@ -240,13 +240,17 @@ def process_incoming_tick(
             is_bull_c05 = signal == "Bull • C0.5"
             is_strong_trend = abs(stock.get("relative_strength", 0.0)) >= 0.60
             # Skip two-sided-range check entirely for C0.5 (approved design)
-            qualified = first_candle_extreme_intact(
-                is_bull_c05,
-                stock.get("candle1_high", 0),
-                stock.get("candle1_low", 0),
-                stock["today_high"],
-                stock["today_low"],
-            ) if stock.get("candle1_high") else is_strong_trend
+            qualified = (
+                first_candle_extreme_intact(
+                    is_bull_c05,
+                    stock.get("candle1_high", 0),
+                    stock.get("candle1_low", 0),
+                    stock["today_high"],
+                    stock["today_low"],
+                )
+                if stock.get("candle1_high")
+                else is_strong_trend
+            )
             # Candle-close confirmation: check the last 5-min candle's close
             # is in the top/bottom 20% of its range.
             if qualified:
@@ -273,8 +277,11 @@ def process_incoming_tick(
             # ── C0.5 → C1 Deduplication ──────────────────────────────────────
             # If C0.5 already fired in the same direction, don't re-trigger
             # C1 on the same move — it would burn a second auto-trade slot.
-            prev_dir = "Bull" if prev_signal and "Bull" in prev_signal else (
-                       "Bear" if prev_signal and "Bear" in prev_signal else None)
+            prev_dir = (
+                "Bull"
+                if prev_signal and "Bull" in prev_signal
+                else ("Bear" if prev_signal and "Bear" in prev_signal else None)
+            )
             curr_dir = "Bull" if "Bull" in signal else "Bear"
             if prev_signal and "C0.5" in prev_signal and prev_dir == curr_dir:
                 signal, signal_time = None, None
@@ -376,13 +383,13 @@ def process_incoming_tick(
                     volume_ratio=vol_ratio,
                 )
 
-
                 min_mom = getattr(_cfg, "MIN_MOMENTUM_SCORE", 60)
                 min_eq = getattr(_cfg, "MIN_ENTRY_QUALITY_SCORE", 60)
 
                 passes_eval = (mom_score >= min_mom) and (eq_score >= min_eq)
 
                 import logging as _log
+
                 logger = _log.getLogger(__name__)
 
                 mom_summary = ", ".join(f"{f['name']}={f['pts']}/{f['max']}" for f in mom_factors)
@@ -390,6 +397,7 @@ def process_incoming_tick(
 
                 if passes_eval:
                     import threading
+
                     from . import ai_copilot
 
                     # Store scores on stock for AI context & UI inspection
@@ -412,9 +420,15 @@ def process_incoming_tick(
                         "  • MOMENTUM: %d/%d [%s]\n"
                         "  • ENTRY QUALITY: %d/%d [%s]\n"
                         "  → Spawning AI Red-Flag Audit",
-                        short_sym, signal, signal_time,
-                        mom_score, min_mom, mom_summary,
-                        eq_score, min_eq, eq_summary,
+                        short_sym,
+                        signal,
+                        signal_time,
+                        mom_score,
+                        min_mom,
+                        mom_summary,
+                        eq_score,
+                        min_eq,
+                        eq_summary,
                     )
                 else:
                     rejection_reasons = []
@@ -423,21 +437,30 @@ def process_incoming_tick(
                     else:
                         if mom_score < min_mom:
                             weak_mom = [f["name"] for f in mom_factors if f["pts"] < f["max"] * 0.4]
-                            rejection_reasons.append(f"Momentum {mom_score}/{min_mom} (weak: {', '.join(weak_mom[:2]) or 'drag'})")
+                            rejection_reasons.append(
+                                f"Momentum {mom_score}/{min_mom} (weak: {', '.join(weak_mom[:2]) or 'drag'})"
+                            )
                         if eq_score < min_eq:
                             weak_eq = [f["name"] for f in eq_factors if f["pts"] < f["max"] * 0.4]
-                            rejection_reasons.append(f"Entry Quality {eq_score}/{min_eq} (weak: {', '.join(weak_eq[:2]) or 'extended'})")
+                            rejection_reasons.append(
+                                f"Entry Quality {eq_score}/{min_eq} (weak: {', '.join(weak_eq[:2]) or 'extended'})"
+                            )
 
                     logger.info(
                         "[V2 EVAL] REJECTED %s | Signal: %s | Time: %s\n"
                         "  • MOMENTUM: %d/%d [%s]\n"
                         "  • ENTRY QUALITY: %d/%d [%s]\n"
                         "  • REASON: %s",
-                        short_sym, signal, signal_time,
-                        mom_score, min_mom, mom_summary,
-                        eq_score, min_eq, eq_summary,
+                        short_sym,
+                        signal,
+                        signal_time,
+                        mom_score,
+                        min_mom,
+                        mom_summary,
+                        eq_score,
+                        min_eq,
+                        eq_summary,
                         " | ".join(rejection_reasons),
                     )
-
 
     order_monitor.on_tick_threadsafe(short_sym, ltp)
