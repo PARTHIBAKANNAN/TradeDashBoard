@@ -147,10 +147,10 @@ DAILY_LOGIN_TIME = dt_time(8, 45)  # cron trigger for the fresh daily token
 # both simultaneously.  C0.5 breakout fires at 09:30; C1 at 09:45.
 ORB_CANDLES = [
     ("C0.5", dt_time(9, 15), dt_time(9, 30)),
-    ("C1",   dt_time(9, 15), dt_time(9, 45)),
-    ("C2",   dt_time(9, 45), dt_time(10, 15)),
-    ("C3",   dt_time(10, 15), dt_time(10, 45)),
-    ("C4",   dt_time(10, 45), dt_time(11, 15)),
+    ("C1", dt_time(9, 15), dt_time(9, 45)),
+    ("C2", dt_time(9, 45), dt_time(10, 15)),
+    ("C3", dt_time(10, 15), dt_time(10, 45)),
+    ("C4", dt_time(10, 45), dt_time(11, 15)),
 ]
 
 BENCHMARK_SYMBOL = "NSE:NIFTY50-INDEX"

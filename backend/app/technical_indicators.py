@@ -94,6 +94,7 @@ def compute_rsi(prices: List[float], period: int = 14) -> float:
     rsi = 100.0 - (100.0 / (1.0 + rs))
     return round(rsi, 2)
 
+
 def compute_atr(candles: List[dict], period: int = 14) -> float:
     """
     Compute 5-minute True Range (ATR) across historical candles.
@@ -241,8 +242,14 @@ def rank_universe_momentum(
         else:
             rs_pts = 0
     rs_pts = int(round(rs_pts))
-    factors.append({"name": "RS", "pts": rs_pts, "max": 30,
-                    "detail": f"RS {rs:+.2f}% ({'defensive' if is_defensive else 'momentum'})"})
+    factors.append(
+        {
+            "name": "RS",
+            "pts": rs_pts,
+            "max": 30,
+            "detail": f"RS {rs:+.2f}% ({'defensive' if is_defensive else 'momentum'})",
+        }
+    )
     total += rs_pts
 
     # ── Factor 2: Volume Acceleration (max 20 pts) ───────────────────────────
@@ -342,8 +349,14 @@ def rank_universe_momentum(
             rsi_slope_pts = 0
 
     rsi_pts = rsi_level_pts + rsi_slope_pts
-    factors.append({"name": "RSI", "pts": rsi_pts, "max": 15,
-                    "detail": f"RSI {rsi:.1f} (level {rsi_level_pts}/10, slope {rsi_slope_pts}/5)"})
+    factors.append(
+        {
+            "name": "RSI",
+            "pts": rsi_pts,
+            "max": 15,
+            "detail": f"RSI {rsi:.1f} (level {rsi_level_pts}/10, slope {rsi_slope_pts}/5)",
+        }
+    )
     total += rsi_pts
 
     # ── Factor 5: EMA Trend Alignment (max 10 pts) ───────────────────────────
@@ -399,8 +412,14 @@ def rank_universe_momentum(
             sector_pts = 2
         else:
             sector_pts = 0
-    factors.append({"name": "Sector", "pts": sector_pts, "max": 5,
-                    "detail": f"Sector {nifty_grp} mean {sector_mean:+.2f}%"})
+    factors.append(
+        {
+            "name": "Sector",
+            "pts": sector_pts,
+            "max": 5,
+            "detail": f"Sector {nifty_grp} mean {sector_mean:+.2f}%",
+        }
+    )
     total += sector_pts
 
     # ── Bonus Factor: Order Book Depth (±3 pts bonus) ────────────────────────
@@ -441,10 +460,10 @@ def detect_breakaway_gap(
 ) -> Tuple[bool, float, str]:
     """
     Breakaway Auction Gap (BAG) Detection:
-    Occurs when an opening expansion candle launches cleanly beyond the 
+    Occurs when an opening expansion candle launches cleanly beyond the
     balance/ORB trigger level with volume participation, leaving a price displacement
     that institutions protect (preventing fill back into the balance range).
-    
+
     Returns (is_bag: bool, gap_size: float, detail: str).
     """
     if not candles or trigger_level <= 0:
@@ -462,14 +481,18 @@ def detect_breakaway_gap(
         c_range = h - l
         is_bullish_bar = (c > o) and (c_range > 0 and (c - l) / c_range >= 0.65)
         is_bag = (gap >= -0.05 * (atr_14 or 1.0)) and is_bullish_bar and (volume_ratio >= 1.3)
-        detail = f"Bullish BAG (Gap {gap:+.2f}, Vol {volume_ratio:.1f}x)" if is_bag else "No Bullish BAG"
+        detail = (
+            f"Bullish BAG (Gap {gap:+.2f}, Vol {volume_ratio:.1f}x)" if is_bag else "No Bullish BAG"
+        )
     else:
         # For Short: The breakout candle closes near lows and high does not violate trigger level
         gap = trigger_level - h
         c_range = h - l
         is_bearish_bar = (c < o) and (c_range > 0 and (h - c) / c_range >= 0.65)
         is_bag = (gap >= -0.05 * (atr_14 or 1.0)) and is_bearish_bar and (volume_ratio >= 1.3)
-        detail = f"Bearish BAG (Gap {gap:+.2f}, Vol {volume_ratio:.1f}x)" if is_bag else "No Bearish BAG"
+        detail = (
+            f"Bearish BAG (Gap {gap:+.2f}, Vol {volume_ratio:.1f}x)" if is_bag else "No Bearish BAG"
+        )
 
     return is_bag, round(gap, 2), detail
 
@@ -511,11 +534,31 @@ def calculate_entry_quality(
     if not vwap:
         return -1, [{"name": "vwap_side", "pts": 0, "max": 0, "detail": "No VWAP data"}], {}
     if is_bull and ltp < vwap:
-        return -1, [{"name": "vwap_side", "pts": 0, "max": 25,
-                      "detail": f"LTP {ltp:.2f} below VWAP {vwap:.2f}"}], {}
+        return (
+            -1,
+            [
+                {
+                    "name": "vwap_side",
+                    "pts": 0,
+                    "max": 25,
+                    "detail": f"LTP {ltp:.2f} below VWAP {vwap:.2f}",
+                }
+            ],
+            {},
+        )
     if not is_bull and ltp > vwap:
-        return -1, [{"name": "vwap_side", "pts": 0, "max": 25,
-                      "detail": f"LTP {ltp:.2f} above VWAP {vwap:.2f}"}], {}
+        return (
+            -1,
+            [
+                {
+                    "name": "vwap_side",
+                    "pts": 0,
+                    "max": 25,
+                    "detail": f"LTP {ltp:.2f} above VWAP {vwap:.2f}",
+                }
+            ],
+            {},
+        )
 
     # ── Factor 1: Trigger Freshness (max 30 pts) ─────────────────────────────
     # Time elapsed since breakout trigger
@@ -579,9 +622,15 @@ def calculate_entry_quality(
     elif vwap_dist_pct <= 2.20:
         vwap_pts = 10  # Extended
     else:
-        vwap_pts = 3   # High extension
-    factors.append({"name": "VWAPLoc", "pts": vwap_pts, "max": 25,
-                    "detail": f"VWAP dist {vwap_dist_pct:.2f}% (correct side)"})
+        vwap_pts = 3  # High extension
+    factors.append(
+        {
+            "name": "VWAPLoc",
+            "pts": vwap_pts,
+            "max": 25,
+            "detail": f"VWAP dist {vwap_dist_pct:.2f}% (correct side)",
+        }
+    )
     total += vwap_pts
 
     # ── Factor 4: ATR Consumed (max 20 pts) ──────────────────────────────────
@@ -637,7 +686,6 @@ def calculate_entry_quality(
     return total, factors, metrics
 
 
-
 def compute_conviction_score(
     stock: dict,
     signal: str,
@@ -664,7 +712,7 @@ def compute_conviction_score(
         candle_volumes=candle_volumes,
         depth_delta=depth_delta,
     )
-    
+
     # If trigger_level not provided, fallback to ltp
     lvl = trigger_level if trigger_level > 0 else (stock.get("ltp") or 0.0)
     eq_score, eq_factors, eq_metrics = calculate_entry_quality(
@@ -704,11 +752,16 @@ def validate_quant_filters(
     from . import config as _cfg
 
     mom_score, mom_factors, mom_metrics = rank_universe_momentum(
-        stock=stock, signal=signal, all_stocks=all_stocks, candle_closes=candle_closes,
+        stock=stock,
+        signal=signal,
+        all_stocks=all_stocks,
+        candle_closes=candle_closes,
     )
     ltp = stock.get("ltp") or 0.0
     eq_score, eq_factors, eq_metrics = calculate_entry_quality(
-        stock=stock, signal=signal, trigger_level=ltp,
+        stock=stock,
+        signal=signal,
+        trigger_level=ltp,
     )
 
     metrics = {**mom_metrics, **eq_metrics}
@@ -729,7 +782,6 @@ def validate_quant_filters(
     if eq_score < min_eq:
         reasons.append(f"Entry Quality {eq_score} < {min_eq}")
     return False, ", ".join(reasons), metrics
-
 
 
 def compute_sector_breadth(all_stocks: List[dict]) -> Dict[str, dict]:

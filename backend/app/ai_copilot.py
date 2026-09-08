@@ -742,7 +742,9 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
         session_minute = (now_ist.hour - 9) * 60 + (now_ist.minute - 15)
         # Determine cutoff based on setup family: ORB (10:15 AM) vs VWAP Reclaim (11:00 AM)
         is_orb = ("• C" in signal) or ("ORB" in signal)
-        cutoff_minute = config.ORB_EXECUTE_UNTIL_MINUTE if is_orb else config.RECLAIM_EXECUTE_UNTIL_MINUTE
+        cutoff_minute = (
+            config.ORB_EXECUTE_UNTIL_MINUTE if is_orb else config.RECLAIM_EXECUTE_UNTIL_MINUTE
+        )
         within_window = session_minute <= cutoff_minute
         under_cap = _get_auto_trade_count() < config.MAX_DAILY_AUTO_TRADES
 
