@@ -226,6 +226,7 @@ def process_incoming_tick(
         prev_signal = stock.get("signal")
 
         from . import config as _cfg
+
         session_minute = (now_ist.hour - 9) * 60 + (now_ist.minute - 15)
         scan_cutoff = getattr(_cfg, "MARKET_SCAN_END_MINUTE", 105)
 
@@ -431,14 +432,24 @@ def process_incoming_tick(
                             "  • MOMENTUM: %d/%d [%s]\n"
                             "  • ENTRY QUALITY: %d/%d [%s]\n"
                             "  → Spawning AI Red-Flag Audit",
-                            short_sym, signal, signal_time,
-                            mom_score, min_mom, mom_summary,
-                            eq_score, min_eq, eq_summary,
+                            short_sym,
+                            signal,
+                            signal_time,
+                            mom_score,
+                            min_mom,
+                            mom_summary,
+                            eq_score,
+                            min_eq,
+                            eq_summary,
                         )
                     else:
                         logger.info(
                             "[V2 EVAL] QUALIFIED %s (%d/%d, %d/%d) but symbol already audited today; skipping redundant thread",
-                            short_sym, mom_score, min_mom, eq_score, min_eq,
+                            short_sym,
+                            mom_score,
+                            min_mom,
+                            eq_score,
+                            min_eq,
                         )
                 else:
                     rejection_reasons = []
@@ -474,4 +485,3 @@ def process_incoming_tick(
                     )
 
     order_monitor.on_tick_threadsafe(short_sym, ltp)
-

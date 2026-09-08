@@ -1,8 +1,10 @@
-from unittest.mock import patch
 from datetime import datetime
+from unittest.mock import patch
+
 from app import config
+from app.ai_copilot import (_reset_daily_counters_if_needed,
+                            audit_and_notify_signal)
 from app.config import IST
-from app.ai_copilot import audit_and_notify_signal, _reset_daily_counters_if_needed
 
 
 def test_audit_and_notify_signal_symbol_level_deduplication():
@@ -11,7 +13,9 @@ def test_audit_and_notify_signal_symbol_level_deduplication():
 
     with patch("app.telegram_notify.send_message") as mock_send, patch(
         "app.ai_copilot.analyze_trade_setup"
-    ) as mock_analyze, patch.object(config, "ENABLE_AI_TELEGRAM_ALERTS", True), patch.object(config, "AUTO_PAPER_USER_ID", ""):
+    ) as mock_analyze, patch.object(config, "ENABLE_AI_TELEGRAM_ALERTS", True), patch.object(
+        config, "AUTO_PAPER_USER_ID", ""
+    ):
 
         mock_analyze.return_value = {
             "decision": "BUY",
@@ -37,7 +41,9 @@ def test_audit_and_notify_signal_quota_cap_enforcement():
 
     with patch("app.telegram_notify.send_message") as mock_send, patch(
         "app.ai_copilot.analyze_trade_setup"
-    ) as mock_analyze, patch.object(config, "ENABLE_AI_TELEGRAM_ALERTS", True), patch.object(config, "AUTO_PAPER_USER_ID", ""):
+    ) as mock_analyze, patch.object(config, "ENABLE_AI_TELEGRAM_ALERTS", True), patch.object(
+        config, "AUTO_PAPER_USER_ID", ""
+    ):
 
         mock_analyze.return_value = {
             "decision": "BUY",
@@ -52,7 +58,7 @@ def test_audit_and_notify_signal_quota_cap_enforcement():
         audit_and_notify_signal("STOCK_1", "Bull • C0.5", "09:30")
         audit_and_notify_signal("STOCK_2", "Bull • C0.5", "09:30")
         audit_and_notify_signal("STOCK_3", "Bull • C0.5", "09:30")
-        
+
         # 3 manual alerts + 1 summary alert = 4 sends
         assert mock_send.call_count == 4
 
@@ -61,11 +67,9 @@ def test_audit_and_notify_signal_quota_cap_enforcement():
         assert mock_send.call_count == 4  # No additional Telegram send!
 
 
-
 def test_audit_and_notify_signal_respects_config_toggle():
     with patch("app.telegram_notify.send_message") as mock_send, patch.object(
         config, "ENABLE_AI_TELEGRAM_ALERTS", False
     ):
         audit_and_notify_signal("DISABLE_TEST", "Bull • C2", "10:00")
         assert mock_send.call_count == 0
-

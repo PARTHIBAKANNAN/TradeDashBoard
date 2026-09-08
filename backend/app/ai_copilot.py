@@ -786,7 +786,9 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
                 auto_skipped_reason = "Order placement failed (insufficient margin or DB error)"
         elif not within_window:
             cutoff_label = "10:15 AM (ORB)" if is_orb else "11:00 AM (Reclaim)"
-            auto_skipped_reason = f"After {cutoff_label} cutoff (session min {session_minute} > {cutoff_minute})"
+            auto_skipped_reason = (
+                f"After {cutoff_label} cutoff (session min {session_minute} > {cutoff_minute})"
+            )
         elif not under_cap:
             auto_skipped_reason = f"Daily auto trade cap reached ({_get_auto_trade_count()}/{config.MAX_DAILY_AUTO_TRADES} trades)"
     elif passes_confidence and not config.AUTO_PAPER_USER_ID:
@@ -855,8 +857,12 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
                     lines.append(f"• {r}")
 
             text = "\n".join(lines)
-            logger.info("ai_copilot: pushing Telegram manual approval alert %d/%d for %s",
-                        new_manual_count, config.MAX_DAILY_MANUAL_ALERTS, sym)
+            logger.info(
+                "ai_copilot: pushing Telegram manual approval alert %d/%d for %s",
+                new_manual_count,
+                config.MAX_DAILY_MANUAL_ALERTS,
+                sym,
+            )
             telegram_notify.send_message(text)
 
             # If this was the 3rd manual alert (all 6 daily slots now exhausted), push final summary
@@ -886,4 +892,3 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
             dec,
             score,
         )
-

@@ -117,7 +117,9 @@ MAX_DAILY_MANUAL_ALERTS = int(os.getenv("MAX_DAILY_MANUAL_ALERTS", "3"))
 ORB_EXECUTE_UNTIL_MINUTE = int(os.getenv("ORB_EXECUTE_UNTIL_MINUTE", "60"))
 RECLAIM_EXECUTE_UNTIL_MINUTE = int(os.getenv("RECLAIM_EXECUTE_UNTIL_MINUTE", "105"))
 MARKET_SCAN_END_MINUTE = int(os.getenv("MARKET_SCAN_END_MINUTE", "105"))
-AUTO_EXECUTE_UNTIL_MINUTE = int(os.getenv("AUTO_EXECUTE_UNTIL_MINUTE", str(ORB_EXECUTE_UNTIL_MINUTE)))
+AUTO_EXECUTE_UNTIL_MINUTE = int(
+    os.getenv("AUTO_EXECUTE_UNTIL_MINUTE", str(ORB_EXECUTE_UNTIL_MINUTE))
+)
 #
 # AUTO_PAPER_USER_ID: The user_id (from auth.users) under which auto paper
 #   trades are placed. Must match a valid user in the Supabase auth table.
