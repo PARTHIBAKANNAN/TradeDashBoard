@@ -86,37 +86,44 @@ MIN_RS_THRESHOLD = float(os.getenv("MIN_RS_THRESHOLD", "0.50"))
 MIN_RVOL_THRESHOLD = float(os.getenv("MIN_RVOL_THRESHOLD", "2.0"))
 #
 # MIN_AI_CONFIDENCE: Gemini confidence score floor. Only execute (or alert) when
-#   score >= this value.  80 is conservatively high — treats all below-80 as noise.
-MIN_AI_CONFIDENCE = int(os.getenv("MIN_AI_CONFIDENCE", "80"))
+#   score >= this value.  85 is high — filters out ambiguous setups and requires clean structure.
+MIN_AI_CONFIDENCE = int(os.getenv("MIN_AI_CONFIDENCE", "85"))
 #
 # PulseHunter V2 Dual-Score Thresholds (0-100 scale)
-# MIN_MOMENTUM_SCORE: Measures whether the stock is inherently exhibiting strong momentum.
-MIN_MOMENTUM_SCORE = int(os.getenv("MIN_MOMENTUM_SCORE", os.getenv("MIN_CONVICTION_SCORE", "60")))
+# MIN_MOMENTUM_SCORE: Measures whether the stock is inherently exhibiting elite momentum (RS + Volume + Velocity).
+MIN_MOMENTUM_SCORE = int(os.getenv("MIN_MOMENTUM_SCORE", "70"))
 # MIN_ENTRY_QUALITY_SCORE: Measures whether the entry location is fresh vs. an extended chase.
-MIN_ENTRY_QUALITY_SCORE = int(os.getenv("MIN_ENTRY_QUALITY_SCORE", "60"))
+MIN_ENTRY_QUALITY_SCORE = int(os.getenv("MIN_ENTRY_QUALITY_SCORE", "70"))
 # Legacy alias for backwards compatibility
 MIN_CONVICTION_SCORE = MIN_MOMENTUM_SCORE
 
-# ----------------- Auto paper trade execution -----------------
+# ----------------- Auto paper trade execution & Signal Caps -----------------
 # DAILY_MAX_RISK_INR: Maximum total risk (capital at stake) across ALL auto
 #   paper trades in a single trading day.  ₹2,000 = stop loss across all trades.
 DAILY_MAX_RISK_INR = float(os.getenv("DAILY_MAX_RISK_INR", "2000.0"))
 #
-# MAX_DAILY_AUTO_TRADES: Hard cap on the number of auto paper trades per day.
+# MAX_DAILY_AUTO_TRADES: Hard cap on the number of auto paper trades per day (e.g. 3).
 #   Risk per trade = DAILY_MAX_RISK_INR / MAX_DAILY_AUTO_TRADES.
 MAX_DAILY_AUTO_TRADES = int(os.getenv("MAX_DAILY_AUTO_TRADES", "3"))
 #
-# Execution Cutoffs (Session minute 0 = 09:15 AM):
+# MAX_DAILY_MANUAL_ALERTS: Hard cap on manual approval Telegram alerts per day (e.g. 3).
+#   Total maximum signals delivered per day = MAX_DAILY_AUTO_TRADES + MAX_DAILY_MANUAL_ALERTS (6 total).
+MAX_DAILY_MANUAL_ALERTS = int(os.getenv("MAX_DAILY_MANUAL_ALERTS", "3"))
+#
+# Execution & Scanning Cutoffs (Session minute 0 = 09:15 AM):
 #   ORB_EXECUTE_UNTIL_MINUTE (60 = 10:15 AM): Cutoff for Type-A ORB breakout entries to avoid midday chop.
 #   RECLAIM_EXECUTE_UNTIL_MINUTE (105 = 11:00 AM): Cutoff for Type-B VWAP reclaim / retest setups.
+#   MARKET_SCAN_END_MINUTE (105 = 11:00 AM): Hard engine cutoff after which ALL signal scanning halts.
 ORB_EXECUTE_UNTIL_MINUTE = int(os.getenv("ORB_EXECUTE_UNTIL_MINUTE", "60"))
 RECLAIM_EXECUTE_UNTIL_MINUTE = int(os.getenv("RECLAIM_EXECUTE_UNTIL_MINUTE", "105"))
+MARKET_SCAN_END_MINUTE = int(os.getenv("MARKET_SCAN_END_MINUTE", "105"))
 AUTO_EXECUTE_UNTIL_MINUTE = int(os.getenv("AUTO_EXECUTE_UNTIL_MINUTE", str(ORB_EXECUTE_UNTIL_MINUTE)))
 #
 # AUTO_PAPER_USER_ID: The user_id (from auth.users) under which auto paper
 #   trades are placed. Must match a valid user in the Supabase auth table.
 #   Leave empty to disable auto-execution even when all other gates pass.
 AUTO_PAPER_USER_ID = os.getenv("AUTO_PAPER_USER_ID", "")
+
 
 # ----------------- Token cache & refresh -----------------
 # Location where the daily access token is cached (env-configurable → mount a volume when hosted).

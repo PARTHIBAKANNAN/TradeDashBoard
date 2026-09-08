@@ -83,14 +83,16 @@ def test_combined_conviction_and_legacy_shim():
     ]
     closes = [150.0 + i * 0.3 for i in range(25)]
 
-    passes, reason, metrics = validate_quant_filters(
+    score, _, metrics = rank_universe_momentum(
         stock=all_stocks[0],
         signal="Bull • C0.5",
         all_stocks=all_stocks,
         candle_closes=closes,
+        candle_volumes=[10000.0, 12000.0, 11000.0, 26000.0],
+        depth_delta=300,
     )
-    assert passes is True
-    assert "Momentum" in reason
+    assert score >= 70, f"Expected elite score >= 70, got {score}"
+
 
 
 def test_detect_breakaway_gap_and_bonus():

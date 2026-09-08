@@ -225,7 +225,17 @@ def process_incoming_tick(
         # Capture the signal BEFORE evaluation so we can detect state transitions.
         prev_signal = stock.get("signal")
 
-        signal, signal_time = evaluate_orb(stock["orb"], ltp, now_ist, stock["signal"])
+        from . import config as _cfg
+        session_minute = (now_ist.hour - 9) * 60 + (now_ist.minute - 15)
+        scan_cutoff = getattr(_cfg, "MARKET_SCAN_END_MINUTE", 105)
+
+        # ── 11:00 AM Scanning Cutoff ──────────────────────────────────────────
+        # Halt all new signal generation after 11:00 AM (session min > 105).
+        # Morning momentum expansion completes by 10:30-11:00 AM.
+        if session_minute > scan_cutoff:
+            signal, signal_time = None, None
+        else:
+            signal, signal_time = evaluate_orb(stock["orb"], ltp, now_ist, stock["signal"])
 
         # ── C0.5 Early-Fire Quality Gate ──────────────────────────────────────
         # For the 15-min early-fire window (C0.5), skip the two-sided-range
@@ -293,9 +303,13 @@ def process_incoming_tick(
                 if not qualified:
                     signal, signal_time = None, None
 
-        # ── Institutional VWAP Retest Setup ───────────────────────────────────
+        # ── Institutional VWAP Retest Setup (Active until 11:00 AM) ──────────
         # If no raw ORB breakout, check for high-probability shallow VWAP pullback & bounce
-        if not signal and stock.get("signal") not in ("Bull • VWAP Retest", "Bear • VWAP Retest"):
+        if (
+            not signal
+            and session_minute <= scan_cutoff
+            and stock.get("signal") not in ("Bull • VWAP Retest", "Bear • VWAP Retest")
+        ):
             from . import ai_copilot
             from . import technical_indicators as _ti
 
@@ -323,16 +337,11 @@ def process_incoming_tick(
             # ── Thread Flood Fix ──────────────────────────────────────────────
             # Only spawn an AI audit thread when the signal STATE CHANGES
             # (e.g. None → "Bull • C2" or "Bull • C2" → "Bear • C1").
-            # During a sustained breakout the signal stays the same on every
-            # tick, so we never re-spawn.  This collapses 100s of redundant
-            # threads/sec down to at most one per signal transition.
             if signal != prev_signal:
                 # ── PulseHunter V2 Dual-Score Evaluation ───────────────────────
                 # Evaluates candidate on two distinct dimensions:
-                # 1. Momentum Score (0-100): "Is this stock exhibiting superior momentum?"
-                # 2. Entry Quality Score (0-100): "Is this the right place/time to enter?"
-                # Execution requires both >= 60.
-                from . import config as _cfg
+                # 1. Momentum Score (0-100): "Is this stock exhibiting elite momentum?" (Threshold: 70)
+                # 2. Entry Quality Score (0-100): "Is this the right place/time to enter?" (Threshold: 70)
                 from . import technical_indicators as _ti
 
                 all_stocks_list = list(state.stocks.values())
@@ -376,9 +385,8 @@ def process_incoming_tick(
                     volume_ratio=vol_ratio,
                 )
 
-
-                min_mom = getattr(_cfg, "MIN_MOMENTUM_SCORE", 60)
-                min_eq = getattr(_cfg, "MIN_ENTRY_QUALITY_SCORE", 60)
+                min_mom = getattr(_cfg, "MIN_MOMENTUM_SCORE", 70)
+                min_eq = getattr(_cfg, "MIN_ENTRY_QUALITY_SCORE", 70)
 
                 passes_eval = (mom_score >= min_mom) and (eq_score >= min_eq)
 
@@ -400,22 +408,29 @@ def process_incoming_tick(
                     stock["conviction_score"] = mom_score
                     stock["conviction_factors"] = mom_factors + eq_factors
 
-                    threading.Thread(
-                        target=ai_copilot.audit_and_notify_signal,
-                        args=(short_sym, signal, signal_time),
-                        daemon=True,
-                        name=f"ai-audit-{short_sym}",
-                    ).start()
+                    # Check symbol-level lock before spawning thread
+                    if ai_copilot.can_audit_symbol(short_sym):
+                        threading.Thread(
+                            target=ai_copilot.audit_and_notify_signal,
+                            args=(short_sym, signal, signal_time),
+                            daemon=True,
+                            name=f"ai-audit-{short_sym}",
+                        ).start()
 
-                    logger.info(
-                        "[V2 EVAL] QUALIFIED %s | Signal: %s | Time: %s\n"
-                        "  • MOMENTUM: %d/%d [%s]\n"
-                        "  • ENTRY QUALITY: %d/%d [%s]\n"
-                        "  → Spawning AI Red-Flag Audit",
-                        short_sym, signal, signal_time,
-                        mom_score, min_mom, mom_summary,
-                        eq_score, min_eq, eq_summary,
-                    )
+                        logger.info(
+                            "[V2 EVAL] QUALIFIED %s | Signal: %s | Time: %s\n"
+                            "  • MOMENTUM: %d/%d [%s]\n"
+                            "  • ENTRY QUALITY: %d/%d [%s]\n"
+                            "  → Spawning AI Red-Flag Audit",
+                            short_sym, signal, signal_time,
+                            mom_score, min_mom, mom_summary,
+                            eq_score, min_eq, eq_summary,
+                        )
+                    else:
+                        logger.info(
+                            "[V2 EVAL] QUALIFIED %s (%d/%d, %d/%d) but symbol already audited today; skipping redundant thread",
+                            short_sym, mom_score, min_mom, eq_score, min_eq,
+                        )
                 else:
                     rejection_reasons = []
                     if eq_score < 0:
@@ -439,5 +454,5 @@ def process_incoming_tick(
                         " | ".join(rejection_reasons),
                     )
 
-
     order_monitor.on_tick_threadsafe(short_sym, ltp)
+

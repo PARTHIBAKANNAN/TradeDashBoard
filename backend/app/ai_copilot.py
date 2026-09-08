@@ -612,41 +612,67 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
 
 # ── 3. Deduplication + Daily Trade Counter ────────────────────────────────────
 
-_notified_lock = threading.Lock()
+_notified_lock = threading.RLock()
 _notified_signals_today: set[str] = set()
 _last_reset_date: date | None = None
 
 # Auto-trade counter: tracks how many paper trades have been auto-placed today
 _auto_trades_today: int = 0
-_auto_trades_lock = threading.Lock()
-_auto_trades_reset_date: date | None = None
+_manual_alerts_today: int = 0
+_daily_summary_sent: bool = False
+_quota_lock = threading.RLock()
+_quota_reset_date: date | None = None
 
 
-def _reset_daily_counters_if_needed(today: date) -> None:
-    """Reset deduplication cache and trade counter at the start of each new trading day."""
-    global _last_reset_date, _auto_trades_today, _auto_trades_reset_date
+def _reset_daily_counters_if_needed(today: date, force: bool = False) -> None:
+    """Reset deduplication cache and trade/alert counters at the start of each new trading day."""
+    global _last_reset_date, _auto_trades_today, _manual_alerts_today, _daily_summary_sent, _quota_reset_date
     with _notified_lock:
-        if _last_reset_date != today:
+        if force or _last_reset_date != today:
             _notified_signals_today.clear()
             _last_reset_date = today
-    with _auto_trades_lock:
-        if _auto_trades_reset_date != today:
+    with _quota_lock:
+        if force or _quota_reset_date != today:
             _auto_trades_today = 0
-            _auto_trades_reset_date = today
+            _manual_alerts_today = 0
+            _daily_summary_sent = False
+            _quota_reset_date = today
 
 
 def _increment_auto_trade_count() -> int:
     """Increment and return the new daily auto-trade count (thread-safe)."""
     global _auto_trades_today
-    with _auto_trades_lock:
+    with _quota_lock:
         _auto_trades_today += 1
         return _auto_trades_today
 
 
 def _get_auto_trade_count() -> int:
     """Return current daily auto-trade count (thread-safe)."""
-    with _auto_trades_lock:
+    with _quota_lock:
         return _auto_trades_today
+
+
+def _increment_manual_alert_count() -> int:
+    """Increment and return the new daily manual alert count (thread-safe)."""
+    global _manual_alerts_today
+    with _quota_lock:
+        _manual_alerts_today += 1
+        return _manual_alerts_today
+
+
+def _get_manual_alert_count() -> int:
+    """Return current daily manual alert count (thread-safe)."""
+    with _quota_lock:
+        return _manual_alerts_today
+
+
+def can_audit_symbol(sym: str) -> bool:
+    """Check if symbol has already been audited today (symbol-level single-fire lock)."""
+    today = datetime.now(IST).date()
+    _reset_daily_counters_if_needed(today)
+    with _notified_lock:
+        return f"{today}:{sym}" not in _notified_signals_today
 
 
 # ── 4. Main Audit & Notify Entry Point ───────────────────────────────────────
@@ -658,11 +684,14 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
     using Gemini's Red-Flag Filter and sends a rich Telegram alert.
 
     Pipeline:
-      1. Daily dedup check — each symbol+signal fires at most once per day
-      2. Gemini Red-Flag audit — SKIP_TRAP if any red flag found
-      3. Confidence threshold check — must reach MIN_AI_CONFIDENCE
-      4. Auto paper trade execution (if within session window and daily cap not hit)
-      5. Telegram notification (SENT ONLY ON EXECUTIONS OR HIGH CONVICTION)
+      1. Symbol-level daily dedup check — each symbol fires AT MOST ONCE per day.
+      2. Gemini Red-Flag audit — SKIP_TRAP if any red flag found.
+      3. Confidence threshold check — must reach MIN_AI_CONFIDENCE (85%).
+      4. Auto paper trade execution (if within session window and auto trade cap not hit).
+      5. Telegram notification:
+         - Up to MAX_DAILY_AUTO_TRADES (3) placed orders
+         - Up to MAX_DAILY_MANUAL_ALERTS (3) manual approval alerts
+         - Zero spam once quota is met or for low confidence/traps.
     """
     if not config.ENABLE_AI_TELEGRAM_ALERTS:
         logger.info("ai_copilot: ENABLE_AI_TELEGRAM_ALERTS is false; skipping alert for %s", sym)
@@ -671,14 +700,14 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
     today = datetime.now(IST).date()
     _reset_daily_counters_if_needed(today)
 
-    # Step 1 — Deduplication: each symbol+signal audited at most once per day
+    # Step 1 — Symbol-Level Deduplication: each symbol audited AT MOST ONCE per day
     with _notified_lock:
-        dedup_key = f"{today}:{sym}:{signal}"
+        dedup_key = f"{today}:{sym}"
         if dedup_key in _notified_signals_today:
             logger.info(
-                "ai_copilot: signal %s for %s already notified today; skipping duplicate",
-                signal,
+                "ai_copilot: symbol %s already audited today; skipping duplicate signal %s",
                 sym,
+                signal,
             )
             return
         _notified_signals_today.add(dedup_key)
@@ -701,7 +730,7 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
 
     is_confirm = ("BUY" in dec.upper() or "SELL" in dec.upper()) and "SKIP" not in dec.upper()
 
-    # Step 3 — Confidence threshold
+    # Step 3 — Confidence threshold (must reach MIN_AI_CONFIDENCE >= 85)
     passes_confidence = is_confirm and score >= config.MIN_AI_CONFIDENCE
 
     # Step 4 — Auto paper trade execution (if within session window + daily cap)
@@ -756,13 +785,12 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
         elif not within_window:
             cutoff_label = "10:15 AM (ORB)" if is_orb else "11:00 AM (Reclaim)"
             auto_skipped_reason = f"After {cutoff_label} cutoff (session min {session_minute} > {cutoff_minute})"
-
         elif not under_cap:
-            auto_skipped_reason = f"Daily cap reached ({_get_auto_trade_count()}/{config.MAX_DAILY_AUTO_TRADES} trades)"
+            auto_skipped_reason = f"Daily auto trade cap reached ({_get_auto_trade_count()}/{config.MAX_DAILY_AUTO_TRADES} trades)"
     elif passes_confidence and not config.AUTO_PAPER_USER_ID:
         auto_skipped_reason = "AUTO_PAPER_USER_ID not configured"
 
-    # Step 5 — Telegram message (SILENT on low confidence / traps; alert ONLY on placed orders or manual review)
+    # Step 5 — Telegram message routing with strict quota caps
     rr_str = "N/A"
     if entry and sl and target:
         sl_dist = abs(entry - sl)
@@ -771,14 +799,15 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
             rr_str = f"1:{round(tgt_dist / sl_dist, 1)}"
 
     if passes_confidence and auto_order_result:
-        # ── Auto-executed trade notification ──
+        # ── 1. Auto-executed trade notification (Max 3/day) ──
         risk_per_trade = config.DAILY_MAX_RISK_INR / config.MAX_DAILY_AUTO_TRADES
         sl_distance = abs(entry - sl) if entry and sl else 0.0
         quantity = max(1, int(risk_per_trade / sl_distance)) if sl_distance > 0 else 1
         actual_risk = round(quantity * sl_distance, 2)
+        auto_count = _get_auto_trade_count()
 
         lines = [
-            f"✅ *PAPER ORDER PLACED*",
+            f"✅ *PAPER ORDER PLACED ({auto_count}/{config.MAX_DAILY_AUTO_TRADES})*",
             f"",
             f"📌 *Stock:* `{sym}` | *{('BUY' if 'BUY' in dec else 'SELL')}*",
             f"🔢 *Quantity:* {quantity} shares",
@@ -800,29 +829,53 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
         telegram_notify.send_message(text)
 
     elif passes_confidence and not auto_order_result and auto_skipped_reason:
-        # ── High conviction but after-hours or cap hit → manual approval needed ──
-        lines = [
-            f"⏸ *HIGH CONVICTION — MANUAL APPROVAL NEEDED*",
-            f"",
-            f"📌 *Stock:* `{sym}` | *Signal:* `{signal}` ({signal_time})",
-            f"🤖 *AI:* `{dec}` | *Confidence:* {score}%",
-            f"",
-            f"📍 *Entry:* ₹{entry:.2f}",
-            f"🛑 *SL:* ₹{sl:.2f}",
-            f"🎯 *Target:* ₹{target:.2f}",
-            f"📊 *RR:* {rr_str}",
-            f"🔄 *TSL:* {tsl_t} {tsl_v}",
-            f"",
-            f"⚠️ _Auto-execute skipped: {auto_skipped_reason}_",
-        ]
-        if rationale:
-            lines.append("")
-            for r in rationale[:2]:
-                lines.append(f"• {r}")
+        # ── 2. Manual Approval High-Conviction Alert (Max 3/day) ──
+        current_manual_count = _get_manual_alert_count()
+        if current_manual_count < config.MAX_DAILY_MANUAL_ALERTS:
+            new_manual_count = _increment_manual_alert_count()
+            lines = [
+                f"⏸ *HIGH CONVICTION — MANUAL APPROVAL ({new_manual_count}/{config.MAX_DAILY_MANUAL_ALERTS})*",
+                f"",
+                f"📌 *Stock:* `{sym}` | *Signal:* `{signal}` ({signal_time})",
+                f"🤖 *AI:* `{dec}` | *Confidence:* {score}%",
+                f"",
+                f"📍 *Entry:* ₹{entry:.2f}",
+                f"🛑 *SL:* ₹{sl:.2f}",
+                f"🎯 *Target:* ₹{target:.2f}",
+                f"📊 *RR:* {rr_str}",
+                f"🔄 *TSL:* {tsl_t} {tsl_v}",
+                f"",
+                f"⚠️ _Auto-execute skipped: {auto_skipped_reason}_",
+            ]
+            if rationale:
+                lines.append("")
+                for r in rationale[:2]:
+                    lines.append(f"• {r}")
 
-        text = "\n".join(lines)
-        logger.info("ai_copilot: pushing Telegram manual approval alert for %s", sym)
-        telegram_notify.send_message(text)
+            text = "\n".join(lines)
+            logger.info("ai_copilot: pushing Telegram manual approval alert %d/%d for %s",
+                        new_manual_count, config.MAX_DAILY_MANUAL_ALERTS, sym)
+            telegram_notify.send_message(text)
+
+            # If this was the 3rd manual alert (all 6 daily slots now exhausted), push final summary
+            global _daily_summary_sent
+            with _quota_lock:
+                if new_manual_count >= config.MAX_DAILY_MANUAL_ALERTS and not _daily_summary_sent:
+                    _daily_summary_sent = True
+                    summary_text = (
+                        "🔒 *DAILY SIGNAL QUOTA COMPLETED*\n\n"
+                        f"✅ Auto Paper Trades: {_get_auto_trade_count()}/{config.MAX_DAILY_AUTO_TRADES}\n"
+                        f"📋 Manual Setups: {new_manual_count}/{config.MAX_DAILY_MANUAL_ALERTS}\n\n"
+                        "_All 6 high-conviction daily slots have been delivered. Engine notifications are now silent for the rest of today's session._"
+                    )
+                    telegram_notify.send_message(summary_text)
+        else:
+            logger.info(
+                "ai_copilot: manual alert cap reached (%d/%d) - suppressing Telegram alert for %s",
+                current_manual_count,
+                config.MAX_DAILY_MANUAL_ALERTS,
+                sym,
+            )
 
     else:
         # Silent rejection for SKIP_TRAP or low-confidence — no Telegram spam
@@ -831,3 +884,4 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
             dec,
             score,
         )
+
