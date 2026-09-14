@@ -637,6 +637,8 @@ def _reset_daily_counters_if_needed(today: date, force: bool = False) -> None:
             _manual_alerts_today = 0
             _daily_summary_sent = False
             _quota_reset_date = today
+            from .risk_allocator import reset_risk_allocator
+            reset_risk_allocator(None)
 
 
 def _increment_auto_trade_count() -> int:
@@ -667,12 +669,31 @@ def _get_manual_alert_count() -> int:
         return _manual_alerts_today
 
 
-def can_audit_symbol(sym: str) -> bool:
-    """Check if symbol has already been audited today (symbol-level single-fire lock)."""
+def get_signal_family(signal: str) -> StrategyFamily:
+    """Extract strategy family from signal label."""
+    from .strategy_base import StrategyFamily
+
+    if "VWAP" in signal:
+        return StrategyFamily.VWAP_RETEST
+    elif "SECTOR" in signal or "Sector" in signal:
+        return StrategyFamily.SECTOR_SYMPATHY
+    elif "SQUEEZE" in signal or "Squeeze" in signal:
+        return StrategyFamily.SQUEEZE
+    return StrategyFamily.ORB_BREAKOUT
+
+
+def can_audit_symbol(sym: str, signal: str = "") -> bool:
+    """Check if symbol has already been audited today (strategy-aware or symbol-level single-fire lock)."""
     today = datetime.now(IST).date()
     _reset_daily_counters_if_needed(today)
+    multi_strat_dedup = getattr(config, "ENABLE_MULTI_STRATEGY_DEDUP", False)
     with _notified_lock:
-        return f"{today}:{sym}" not in _notified_signals_today
+        if multi_strat_dedup and signal:
+            family = get_signal_family(signal)
+            key = f"{today}:{sym}:{family.name}"
+        else:
+            key = f"{today}:{sym}"
+        return key not in _notified_signals_today
 
 
 # ── 4. Main Audit & Notify Entry Point ───────────────────────────────────────
@@ -684,7 +705,7 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
     using Gemini's Red-Flag Filter and sends a rich Telegram alert.
 
     Pipeline:
-      1. Symbol-level daily dedup check — each symbol fires AT MOST ONCE per day.
+      1. Symbol-level daily dedup check — each symbol fires AT MOST ONCE per day (or per strategy family).
       2. Gemini Red-Flag audit — SKIP_TRAP if any red flag found.
       3. Confidence threshold check — must reach MIN_AI_CONFIDENCE (85%).
       4. Auto paper trade execution (if within session window and auto trade cap not hit).
@@ -700,13 +721,22 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
     today = datetime.now(IST).date()
     _reset_daily_counters_if_needed(today)
 
-    # Step 1 — Symbol-Level Deduplication: each symbol audited AT MOST ONCE per day
+    from .strategy_base import StrategyFamily
+    from .risk_allocator import get_risk_allocator
+
+    family = get_signal_family(signal)
+    multi_strat_dedup = getattr(config, "ENABLE_MULTI_STRATEGY_DEDUP", False)
+    use_risk_alloc = getattr(config, "ENABLE_RISK_ALLOCATOR", True)
+    risk_alloc = get_risk_allocator()
+
+    # Step 1 — Symbol/Strategy Deduplication
     with _notified_lock:
-        dedup_key = f"{today}:{sym}"
+        dedup_key = f"{today}:{sym}:{family.name}" if multi_strat_dedup else f"{today}:{sym}"
         if dedup_key in _notified_signals_today:
             logger.info(
-                "ai_copilot: symbol %s already audited today; skipping duplicate signal %s",
+                "ai_copilot: symbol %s already audited today for %s; skipping duplicate signal %s",
                 sym,
+                family.name if multi_strat_dedup else "all",
                 signal,
             )
             return
@@ -741,18 +771,28 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
         now_ist = datetime.now(IST)
         session_minute = (now_ist.hour - 9) * 60 + (now_ist.minute - 15)
         # Determine cutoff based on setup family: ORB (10:15 AM) vs VWAP Reclaim (11:00 AM)
-        is_orb = ("• C" in signal) or ("ORB" in signal)
+        is_orb = family == StrategyFamily.ORB_BREAKOUT
         cutoff_minute = (
             config.ORB_EXECUTE_UNTIL_MINUTE if is_orb else config.RECLAIM_EXECUTE_UNTIL_MINUTE
         )
         within_window = session_minute <= cutoff_minute
-        under_cap = _get_auto_trade_count() < config.MAX_DAILY_AUTO_TRADES
+
+        use_risk_alloc = getattr(config, "ENABLE_RISK_ALLOCATOR", True)
+        risk_alloc = get_risk_allocator()
+
+        if use_risk_alloc:
+            under_cap = risk_alloc.can_trade(family, today)
+        else:
+            under_cap = _get_auto_trade_count() < config.MAX_DAILY_AUTO_TRADES
 
         if within_window and under_cap:
-            # Risk-adjusted quantity: risk_per_trade / SL_distance_per_share
-            risk_per_trade = config.DAILY_MAX_RISK_INR / config.MAX_DAILY_AUTO_TRADES
+            if use_risk_alloc:
+                risk_per_trade = risk_alloc.get_risk_per_trade(family, today)
+            else:
+                risk_per_trade = config.DAILY_MAX_RISK_INR / config.MAX_DAILY_AUTO_TRADES
+
             sl_distance = abs(entry - sl) if entry and sl else 0.0
-            if sl_distance > 0:
+            if sl_distance > 0 and risk_per_trade > 0:
                 quantity = max(1, int(risk_per_trade / sl_distance))
             else:
                 quantity = 1
@@ -775,6 +815,9 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
             )
             if auto_order_result:
                 _increment_auto_trade_count()
+                if use_risk_alloc:
+                    trade_risk = quantity * sl_distance
+                    risk_alloc.consume(family, trade_risk, today)
                 logger.info(
                     "ai_copilot: auto paper trade placed for %s | %s %d qty @ %.2f",
                     sym,
@@ -788,7 +831,10 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
             cutoff_label = "10:15 AM (ORB)" if is_orb else "11:00 AM (Reclaim)"
             auto_skipped_reason = f"After {cutoff_label} cutoff (session min {session_minute} > {cutoff_minute})"
         elif not under_cap:
-            auto_skipped_reason = f"Daily auto trade cap reached ({_get_auto_trade_count()}/{config.MAX_DAILY_AUTO_TRADES} trades)"
+            if use_risk_alloc:
+                auto_skipped_reason = f"Daily budget reached for strategy {family.name}"
+            else:
+                auto_skipped_reason = f"Daily auto trade cap reached ({_get_auto_trade_count()}/{config.MAX_DAILY_AUTO_TRADES} trades)"
     elif passes_confidence and not config.AUTO_PAPER_USER_ID:
         auto_skipped_reason = "AUTO_PAPER_USER_ID not configured"
 
@@ -831,44 +877,46 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
         telegram_notify.send_message(text)
 
     elif passes_confidence and not auto_order_result and auto_skipped_reason:
-        # ── 2. Manual Approval High-Conviction Alert (Max 3/day) ──
+        # ── 2. Manual Approval High-Conviction Alert (1 per strategy / Max 4/day) ──
         current_manual_count = _get_manual_alert_count()
-        if current_manual_count < config.MAX_DAILY_MANUAL_ALERTS:
+        can_manual = risk_alloc.can_alert(family, today) if use_risk_alloc else (current_manual_count < config.MAX_DAILY_MANUAL_ALERTS)
+        if can_manual and current_manual_count < config.MAX_DAILY_MANUAL_ALERTS:
             new_manual_count = _increment_manual_alert_count()
+            if use_risk_alloc:
+                risk_alloc.consume_alert(family, today)
             lines = [
                 f"⏸ *HIGH CONVICTION — MANUAL APPROVAL ({new_manual_count}/{config.MAX_DAILY_MANUAL_ALERTS})*",
                 f"",
                 f"📌 *Stock:* `{sym}` | *Signal:* `{signal}` ({signal_time})",
                 f"🤖 *AI:* `{dec}` | *Confidence:* {score}%",
                 f"",
-                f"📍 *Entry:* ₹{entry:.2f}",
-                f"🛑 *SL:* ₹{sl:.2f}",
-                f"🎯 *Target:* ₹{target:.2f}",
-                f"📊 *RR:* {rr_str}",
-                f"🔄 *TSL:* {tsl_t} {tsl_v}",
-                f"",
-                f"⚠️ _Auto-execute skipped: {auto_skipped_reason}_",
+                f"📍 *Suggested Entry:* ₹{entry:.2f}" if entry else None,
+                f"🛑 *Suggested SL:* ₹{sl:.2f}" if sl else None,
+                f"🎯 *Suggested Target:* ₹{target:.2f}" if target else None,
+                f"📊 *RR Ratio:* {rr_str}",
+                f"⚠️ *Reason for Manual Approval:* {auto_skipped_reason}",
             ]
+            lines = [line for line in lines if line]
             if rationale:
                 lines.append("")
                 for r in rationale[:2]:
                     lines.append(f"• {r}")
 
             text = "\n".join(lines)
-            logger.info("ai_copilot: pushing Telegram manual approval alert %d/%d for %s",
-                        new_manual_count, config.MAX_DAILY_MANUAL_ALERTS, sym)
+            logger.info("ai_copilot: pushing manual approval alert for %s", sym)
             telegram_notify.send_message(text)
 
-            # If this was the 3rd manual alert (all 6 daily slots now exhausted), push final summary
+            # Daily summary alert after manual quota hits
             global _daily_summary_sent
             with _quota_lock:
                 if new_manual_count >= config.MAX_DAILY_MANUAL_ALERTS and not _daily_summary_sent:
                     _daily_summary_sent = True
                     summary_text = (
-                        "🔒 *DAILY SIGNAL QUOTA COMPLETED*\n\n"
+                        f"🔒 *DAILY SIGNALS COMPLETED*\n\n"
+                        f"Market delivery quotas reached for today:\n"
                         f"✅ Auto Paper Trades: {_get_auto_trade_count()}/{config.MAX_DAILY_AUTO_TRADES}\n"
-                        f"📋 Manual Setups: {new_manual_count}/{config.MAX_DAILY_MANUAL_ALERTS}\n\n"
-                        "_All 6 high-conviction daily slots have been delivered. Engine notifications are now silent for the rest of today's session._"
+                        f"⏸ Manual Approval Alerts: {new_manual_count}/{config.MAX_DAILY_MANUAL_ALERTS}\n\n"
+                        f"Scanning remains active on web dashboard. Further Telegram alerts silenced until tomorrow's open."
                     )
                     telegram_notify.send_message(summary_text)
         else:

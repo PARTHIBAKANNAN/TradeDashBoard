@@ -99,16 +99,15 @@ MIN_CONVICTION_SCORE = MIN_MOMENTUM_SCORE
 
 # ----------------- Auto paper trade execution & Signal Caps -----------------
 # DAILY_MAX_RISK_INR: Maximum total risk (capital at stake) across ALL auto
-#   paper trades in a single trading day.  ₹2,000 = stop loss across all trades.
-DAILY_MAX_RISK_INR = float(os.getenv("DAILY_MAX_RISK_INR", "2000.0"))
+#   paper trades in a single trading day.  ₹3,400 = total stop loss budget.
+DAILY_MAX_RISK_INR = float(os.getenv("DAILY_MAX_RISK_INR", "3400.0"))
 #
-# MAX_DAILY_AUTO_TRADES: Hard cap on the number of auto paper trades per day (e.g. 3).
-#   Risk per trade = DAILY_MAX_RISK_INR / MAX_DAILY_AUTO_TRADES.
-MAX_DAILY_AUTO_TRADES = int(os.getenv("MAX_DAILY_AUTO_TRADES", "3"))
+# MAX_DAILY_AUTO_TRADES: Hard cap on the number of auto paper trades per day (4 total across strategies).
+#   Risk per trade is dynamically allocated per strategy family via RiskAllocator.
+MAX_DAILY_AUTO_TRADES = int(os.getenv("MAX_DAILY_AUTO_TRADES", "4"))
 #
-# MAX_DAILY_MANUAL_ALERTS: Hard cap on manual approval Telegram alerts per day (e.g. 3).
-#   Total maximum signals delivered per day = MAX_DAILY_AUTO_TRADES + MAX_DAILY_MANUAL_ALERTS (6 total).
-MAX_DAILY_MANUAL_ALERTS = int(os.getenv("MAX_DAILY_MANUAL_ALERTS", "3"))
+# MAX_DAILY_MANUAL_ALERTS: Hard cap on manual approval Telegram alerts per day (4 total across strategies).
+MAX_DAILY_MANUAL_ALERTS = int(os.getenv("MAX_DAILY_MANUAL_ALERTS", "4"))
 #
 # Execution & Scanning Cutoffs (Session minute 0 = 09:15 AM):
 #   ORB_EXECUTE_UNTIL_MINUTE (60 = 10:15 AM): Cutoff for Type-A ORB breakout entries to avoid midday chop.
@@ -123,6 +122,20 @@ AUTO_EXECUTE_UNTIL_MINUTE = int(os.getenv("AUTO_EXECUTE_UNTIL_MINUTE", str(ORB_E
 #   trades are placed. Must match a valid user in the Supabase auth table.
 #   Leave empty to disable auto-execution even when all other gates pass.
 AUTO_PAPER_USER_ID = os.getenv("AUTO_PAPER_USER_ID", "")
+
+# ----------------- Multi-Strategy & Risk Allocation -----------------
+ENABLE_RISK_ALLOCATOR = os.getenv("ENABLE_RISK_ALLOCATOR", "true").lower() in ("true", "1", "yes")
+ENABLE_MULTI_STRATEGY_DEDUP = os.getenv("ENABLE_MULTI_STRATEGY_DEDUP", "true").lower() in ("true", "1", "yes")
+ORB_BUDGET_TRADES = int(os.getenv("ORB_BUDGET_TRADES", "1"))
+ORB_BUDGET_RISK = float(os.getenv("ORB_BUDGET_RISK", "1000.0"))
+VWAP_BUDGET_TRADES = int(os.getenv("VWAP_BUDGET_TRADES", "1"))
+VWAP_BUDGET_RISK = float(os.getenv("VWAP_BUDGET_RISK", "800.0"))
+SECTOR_BUDGET_TRADES = int(os.getenv("SECTOR_BUDGET_TRADES", "1"))
+SECTOR_BUDGET_RISK = float(os.getenv("SECTOR_BUDGET_RISK", "800.0"))
+SQUEEZE_BUDGET_TRADES = int(os.getenv("SQUEEZE_BUDGET_TRADES", "1"))
+SQUEEZE_BUDGET_RISK = float(os.getenv("SQUEEZE_BUDGET_RISK", "800.0"))
+MAX_MANUAL_ALERTS_PER_STRATEGY = int(os.getenv("MAX_MANUAL_ALERTS_PER_STRATEGY", "1"))
+
 
 
 # ----------------- Token cache & refresh -----------------

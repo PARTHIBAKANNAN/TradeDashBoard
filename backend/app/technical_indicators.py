@@ -939,3 +939,105 @@ def evaluate_vwap_retest_setup(
                     )
 
     return False, "Not in VWAP retest zone", {}
+
+
+# ---------- Squeeze Indicators (Bollinger Bands & Keltner Channels) ----------
+def compute_bollinger_bands(
+    prices: List[float], period: int = 20, num_std: float = 2.0
+) -> Tuple[float, float, float]:
+    """
+    Computes (upper_band, middle_sma, lower_band).
+    Returns (latest_price, latest_price, latest_price) if insufficient data.
+    """
+    if not prices:
+        return (0.0, 0.0, 0.0)
+    if len(prices) < period:
+        last = prices[-1]
+        return (last, last, last)
+
+    window = prices[-period:]
+    sma = sum(window) / period
+    variance = sum((x - sma) ** 2 for x in window) / period
+    std_dev = variance ** 0.5
+    upper = round(sma + num_std * std_dev, 2)
+    lower = round(sma - num_std * std_dev, 2)
+    return (upper, round(sma, 2), lower)
+
+
+def compute_keltner_channels(
+    candles: List[dict], period: int = 20, atr_multiplier: float = 1.5
+) -> Tuple[float, float, float]:
+    """
+    Computes (upper_keltner, middle_ema, lower_keltner).
+    Middle line is 20 EMA of close prices.
+    Bands are Middle ± (atr_multiplier * ATR_period).
+    """
+    if not candles:
+        return (0.0, 0.0, 0.0)
+    closes = [c["close"] for c in candles if "close" in c]
+    if not closes:
+        return (0.0, 0.0, 0.0)
+    if len(candles) < period:
+        last = closes[-1]
+        return (last, last, last)
+
+    ema = compute_ema(closes, period)
+    atr = compute_atr(candles, period)
+    upper = round(ema + (atr_multiplier * atr), 2)
+    lower = round(ema - (atr_multiplier * atr), 2)
+    return (upper, ema, lower)
+
+
+def detect_volatility_squeeze(
+    candles: List[dict],
+    bb_period: int = 20,
+    kc_period: int = 20,
+    num_std: float = 2.0,
+    atr_multiplier: float = 1.5,
+    min_squeeze_bars: int = 3,
+) -> Tuple[bool, bool, Dict[str, Any]]:
+    """
+    Detects John Carter's Volatility Squeeze setup on intraday candles:
+    - Squeeze ON: Bollinger Bands are entirely inside Keltner Channels (upper_bb <= upper_kc and lower_bb >= lower_kc).
+    - Squeeze FIRE / RELEASE: Was in Squeeze for >= min_squeeze_bars, now BB has expanded outside KC.
+
+    Returns (is_squeeze_on, is_squeeze_fired, metrics_dict).
+    """
+    if len(candles) < max(bb_period, kc_period) + min_squeeze_bars:
+        return False, False, {}
+
+    closes = [c["close"] for c in candles if "close" in c]
+    squeeze_history = []
+    lookback = min_squeeze_bars + 5
+    start_idx = max(max(bb_period, kc_period) - 1, len(candles) - lookback - 1)
+
+    for end_idx in range(start_idx, len(candles)):
+        sub_candles = candles[: end_idx + 1]
+        sub_closes = closes[: end_idx + 1]
+        u_bb, m_bb, l_bb = compute_bollinger_bands(sub_closes, bb_period, num_std)
+        u_kc, m_kc, l_kc = compute_keltner_channels(sub_candles, kc_period, atr_multiplier)
+        is_sq = (u_bb <= u_kc) and (l_bb >= l_kc)
+        squeeze_history.append((is_sq, u_bb, l_bb, u_kc, l_kc, m_bb))
+
+    current_is_sq, curr_u_bb, curr_l_bb, curr_u_kc, curr_l_kc, curr_m_bb = squeeze_history[-1]
+    prior_squeezes = [h[0] for h in squeeze_history[:-1]]
+
+    # Squeeze fired when current bar is NOT in squeeze (expanded), but prior recent bars had >= min_squeeze_bars in squeeze
+    is_fired = (not current_is_sq) and (sum(prior_squeezes) >= min_squeeze_bars)
+
+    last_close = closes[-1] if closes else 0.0
+    mom_delta = round(last_close - curr_m_bb, 2)
+
+    metrics = {
+        "is_squeeze_on": current_is_sq,
+        "is_squeeze_fired": is_fired,
+        "upper_bb": curr_u_bb,
+        "lower_bb": curr_l_bb,
+        "upper_kc": curr_u_kc,
+        "lower_kc": curr_l_kc,
+        "mid_sma": curr_m_bb,
+        "mom_delta": mom_delta,
+        "consecutive_squeeze_bars": sum(prior_squeezes),
+    }
+
+    return current_is_sq, is_fired, metrics

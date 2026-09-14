@@ -89,71 +89,30 @@ def update_vwap(
     return new_cum_pv, new_cum_vol, round(new_cum_pv / new_cum_vol, 4)
 
 
-# ---------- B. Opening Range Breakout engine ----------
-def has_two_sided_range(candles: list) -> bool:
-    """
-    Breakout-quality rule: given the six 9:15-9:45 5-min candles (each
-    `[ts, open, high, low, close, ...]`, FYERS' raw shape, already
-    filtered/sorted to just that window), at least one must be red
-    (close < open) and one green (close > open) — rules out a stock that
-    just ran straight up/down with no two-sided trade at all.
+# Re-export pure helpers from strategies for backwards compatibility
+from .strategies.orb_strategy import (
+    completed_candles,
+    evaluate_orb,
+    first_candle_extreme_intact,
+    has_two_sided_range,
+    OrbStrategy,
+)
+from .strategies.sector_sympathy_strategy import SectorSympathyStrategy
+from .strategies.squeeze_strategy import SqueezeStrategy
+from .strategies.vwap_retest_strategy import VWAPRetestStrategy
+from .strategy_base import StrategyRegistry
 
-    Returns False if fewer than 6 candles are given (incomplete data).
-    """
-    if len(candles) < 6:
-        return False
-    has_red = any(c[4] < c[1] for c in candles)
-    has_green = any(c[4] > c[1] for c in candles)
-    return has_red and has_green
-
-
-def first_candle_extreme_intact(
-    bullish: bool, candle1_high: float, candle1_low: float, today_high: float, today_low: float
-) -> bool:
-    """
-    "First candle made the extreme" trend-cleanliness rule, checked live
-    against the whole day so far (not just the opening 30 min):
-      - Bullish: candle-1's low must still be the day's low so far (never
-        undercut by any later candle/tick).
-      - Bearish: candle-1's high must still be the day's high so far (never
-        overtaken).
-    Fails closed (False) if candle-1's reference value hasn't been backfilled
-    yet (still at its 0.0 default) — no data means not qualified.
-    """
-    if bullish:
-        return bool(candle1_low) and today_low >= candle1_low
-    return bool(candle1_high) and today_high <= candle1_high
+# Default strategy registry (evaluated in registration priority order)
+_strategy_registry = StrategyRegistry()
+_strategy_registry.register(OrbStrategy())
+_strategy_registry.register(VWAPRetestStrategy())
+_strategy_registry.register(SectorSympathyStrategy())
+_strategy_registry.register(SqueezeStrategy())
 
 
-def completed_candles(now: dt_time) -> list[str]:
-    """Names of ORB candles whose window has fully elapsed by `now`."""
-    return [name for name, _start, end in ORB_CANDLES if now >= end]
-
-
-def evaluate_orb(orb_bounds: dict, ltp: float, now_ist: datetime, current_signal: str):
-    """
-    Given completed candle bounds ({"C1": {"high","low"}, ...}) and the live
-    LTP, return (signal, signal_time) if a NEW breakout is triggered, else
-    (None, None). The most recent completed candle whose boundary is breached
-    wins, so later structural breaks supersede earlier ones.
-    """
-    now_t = now_ist.time()
-    ready = completed_candles(now_t)
-    # Evaluate newest completed candle first so it takes precedence.
-    for name in reversed(ready):
-        bounds = orb_bounds.get(name)
-        if not bounds:
-            continue
-        if ltp > bounds["high"]:
-            new_signal = f"Bull • {name}"
-        elif ltp < bounds["low"]:
-            new_signal = f"Bear • {name}"
-        else:
-            continue
-        if new_signal != current_signal:
-            return new_signal, now_ist.strftime("%H:%M")
-        return None, None  # already in this signal state
-    return None, None
+def get_default_strategy_registry() -> StrategyRegistry:
+    """Return the global default StrategyRegistry."""
+    return _strategy_registry
 
 
 # ---------- Tick processor (the single mutation point) ----------
@@ -224,118 +183,17 @@ def process_incoming_tick(
 
         # Capture the signal BEFORE evaluation so we can detect state transitions.
         prev_signal = stock.get("signal")
+        all_stocks_list = list(state.stocks.values())
 
-        from . import config as _cfg
-        session_minute = (now_ist.hour - 9) * 60 + (now_ist.minute - 15)
-        scan_cutoff = getattr(_cfg, "MARKET_SCAN_END_MINUTE", 105)
-
-        # ── 11:00 AM Scanning Cutoff ──────────────────────────────────────────
-        # Halt all new signal generation after 11:00 AM (session min > 105).
-        # Morning momentum expansion completes by 10:30-11:00 AM.
-        if session_minute > scan_cutoff:
-            signal, signal_time = None, None
+        # Evaluate all registered strategies (ORB, VWAP Retest, etc.) in priority order
+        signal_event = _strategy_registry.evaluate_all(
+            stock, now_ist, all_stocks=all_stocks_list
+        )
+        if signal_event is not None:
+            signal = signal_event.label
+            signal_time = signal_event.signal_time.strftime("%H:%M")
         else:
-            signal, signal_time = evaluate_orb(stock["orb"], ltp, now_ist, stock["signal"])
-
-        # ── C0.5 Early-Fire Quality Gate ──────────────────────────────────────
-        # For the 15-min early-fire window (C0.5), skip the two-sided-range
-        # check (only 3 candles exist — too few for colour analysis).
-        # Instead require:
-        #   1. First-candle extreme intact (same as C1)
-        #   2. RS trend exception at lowered |RS| >= 0.60%
-        #   3. Candle-close confirmation: the last completed 5-min candle in
-        #      the C0.5 window must close in the top 20% (bull) or bottom 20%
-        #      (bear) of its range — prevents wick-poke traps.
-        if signal in ("Bull • C0.5", "Bear • C0.5"):
-            is_bull_c05 = signal == "Bull • C0.5"
-            is_strong_trend = abs(stock.get("relative_strength", 0.0)) >= 0.60
-            # Skip two-sided-range check entirely for C0.5 (approved design)
-            qualified = (
-                first_candle_extreme_intact(
-                    is_bull_c05,
-                    stock.get("candle1_high", 0),
-                    stock.get("candle1_low", 0),
-                    stock["today_high"],
-                    stock["today_low"],
-                )
-                if stock.get("candle1_high")
-                else is_strong_trend
-            )
-            # Candle-close confirmation: check the last 5-min candle's close
-            # is in the top/bottom 20% of its range.
-            if qualified:
-                intra_candles = candle_aggregator.get_intraday_candles(short_sym)
-                if intra_candles:
-                    last_c = intra_candles[-1]
-                    c_range = last_c["high"] - last_c["low"]
-                    if c_range > 0:
-                        close_pos = (last_c["close"] - last_c["low"]) / c_range
-                        if is_bull_c05 and close_pos < 0.80:
-                            qualified = False  # Closed weak — wick poke
-                        elif not is_bull_c05 and close_pos > 0.20:
-                            qualified = False  # Closed weak for bear
-            if not qualified and not is_strong_trend:
-                signal, signal_time = None, None
-
-        # ── C1 Quality Gate (original) ────────────────────────────────────────
-        # The breakout-quality rules apply specifically to the 30-min opening-
-        # range breakout (both directions), not later C2-C4 structural breaks:
-        #   Filter 1: candle-1's low (bull) / high (bear) still the day's
-        #             extreme so far.
-        #   Rule 3:   at least one red and one green candle in the opening range.
-        if signal in ("Bull • C1", "Bear • C1"):
-            # ── C0.5 → C1 Deduplication ──────────────────────────────────────
-            # If C0.5 already fired in the same direction, don't re-trigger
-            # C1 on the same move — it would burn a second auto-trade slot.
-            prev_dir = (
-                "Bull"
-                if prev_signal and "Bull" in prev_signal
-                else ("Bear" if prev_signal and "Bear" in prev_signal else None)
-            )
-            curr_dir = "Bull" if "Bull" in signal else "Bear"
-            if prev_signal and "C0.5" in prev_signal and prev_dir == curr_dir:
-                signal, signal_time = None, None
-            else:
-                # Strong trend exception: If RS is significant (|RS| >= 0.8%), allow strong one-way
-                # breakout runners even if opening 30 mins had all green or all red candles.
-                is_strong_trend = abs(stock.get("relative_strength", 0.0)) >= 0.80
-                range_ok = stock.get("two_sided_ok", False) or is_strong_trend
-                qualified = range_ok and first_candle_extreme_intact(
-                    signal == "Bull • C1",
-                    stock["candle1_high"],
-                    stock["candle1_low"],
-                    stock["today_high"],
-                    stock["today_low"],
-                )
-                if not qualified:
-                    signal, signal_time = None, None
-
-        # ── Institutional VWAP Retest Setup (Active until 11:00 AM) ──────────
-        # If no raw ORB breakout, check for high-probability shallow VWAP pullback & bounce
-        if (
-            not signal
-            and session_minute <= scan_cutoff
-            and stock.get("signal") not in ("Bull • VWAP Retest", "Bear • VWAP Retest")
-        ):
-            from . import ai_copilot
-            from . import technical_indicators as _ti
-
-            premarket_focus = ai_copilot.get_premarket_briefing().get("focus_stocks", [])
-            all_stocks_list = list(state.stocks.values())
-            candle_closes = candle_aggregator.get_intraday_closes(short_sym)
-            is_retest, _retest_msg, retest_metrics = _ti.evaluate_vwap_retest_setup(
-                stock=stock,
-                all_stocks=all_stocks_list,
-                candle_closes=candle_closes,
-                premarket_focus=premarket_focus,
-            )
-            if is_retest:
-                signal = (
-                    "Bull • VWAP Retest"
-                    if "BUY" in retest_metrics.get("setup_type", "")
-                    else "Bear • VWAP Retest"
-                )
-                signal_time = now_ist.strftime("%H:%M")
+            signal, signal_time = None, None
 
         if signal:
             stock["signal"] = signal
@@ -351,19 +209,11 @@ def process_incoming_tick(
                 # 2. Entry Quality Score (0-100): "Is this the right place/time to enter?" (Threshold: 70)
                 from . import technical_indicators as _ti
 
-                all_stocks_list = list(state.stocks.values())
                 candle_closes = candle_aggregator.get_intraday_closes(short_sym)
                 candle_volumes = candle_aggregator.get_intraday_volumes(short_sym)
 
                 # Determine structural trigger level
-                trigger_level = ltp
-                if "•" in signal:
-                    setup_name = signal.split("•")[-1].strip()
-                    orb_bounds = stock.get("orb", {}).get(setup_name)
-                    if orb_bounds:
-                        trigger_level = orb_bounds.get("high" if "Bull" in signal else "low", ltp)
-                    elif "VWAP" in setup_name:
-                        trigger_level = stock.get("vwap", ltp)
+                trigger_level = signal_event.trigger_price if signal_event else ltp
 
                 # Compute Momentum Score
                 mom_score, mom_factors, mom_metrics = _ti.rank_universe_momentum(
@@ -418,7 +268,7 @@ def process_incoming_tick(
                     stock["conviction_factors"] = mom_factors + eq_factors
 
                     # Check symbol-level lock before spawning thread
-                    if ai_copilot.can_audit_symbol(short_sym):
+                    if ai_copilot.can_audit_symbol(short_sym, signal):
                         threading.Thread(
                             target=ai_copilot.audit_and_notify_signal,
                             args=(short_sym, signal, signal_time),

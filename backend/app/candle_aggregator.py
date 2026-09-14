@@ -247,3 +247,36 @@ def get_intraday_volumes(sym: str) -> list[float]:
     """Return chronological list of today's 5m candle volumes for technical volume acceleration."""
     candles = get_intraday_candles(sym)
     return [float(c.get("volume", 0.0)) for c in candles if "volume" in c]
+
+
+def get_intraday_15min_candles(sym: str) -> list[dict]:
+    """
+    Synthesize chronological 15-minute OHLCV candles from today's 5-minute candles.
+    Enables multi-timeframe trend alignment and higher-timeframe Squeeze/EMA evaluation.
+    """
+    candles_5m = get_intraday_candles(sym)
+    if not candles_5m:
+        return []
+
+    buckets: dict[int, dict] = {}
+    for c in candles_5m:
+        m = c.get("minute", 0)
+        b15 = (m // 15) * 15
+        if b15 not in buckets:
+            buckets[b15] = {
+                "open": float(c["open"]),
+                "high": float(c["high"]),
+                "low": float(c["low"]),
+                "close": float(c["close"]),
+                "volume": float(c.get("volume", 0.0)),
+                "minute": b15,
+            }
+        else:
+            b = buckets[b15]
+            b["high"] = max(b["high"], float(c["high"]))
+            b["low"] = min(b["low"], float(c["low"]))
+            b["close"] = float(c["close"])
+            b["volume"] += float(c.get("volume", 0.0))
+
+    return [buckets[k] for k in sorted(buckets.keys())]
+
