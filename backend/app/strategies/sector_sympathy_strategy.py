@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from datetime import datetime, time as dt_time
+from datetime import datetime
+from datetime import time as dt_time
 from typing import Any
 
 from ..momentum_score import industry_group, nifty_group
@@ -85,8 +86,7 @@ class SectorSympathyStrategy:
         sector_peers = [
             s
             for s in all_stocks
-            if nifty_group(industry_group(s.get("symbol", ""))) == sector
-            and s.get("symbol") != sym
+            if nifty_group(industry_group(s.get("symbol", ""))) == sector and s.get("symbol") != sym
         ]
         leader_threshold = abs(sec_mean) * 1.5
         has_leader = any(

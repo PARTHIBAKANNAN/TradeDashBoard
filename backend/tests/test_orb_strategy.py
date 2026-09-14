@@ -1,11 +1,9 @@
 from datetime import datetime
+
 from app.config import IST
-from app.strategies.orb_strategy import (
-    OrbStrategy,
-    completed_candles,
-    first_candle_extreme_intact,
-    has_two_sided_range,
-)
+from app.strategies.orb_strategy import (OrbStrategy, completed_candles,
+                                         first_candle_extreme_intact,
+                                         has_two_sided_range)
 from app.strategy_base import Direction, StrategyFamily
 
 

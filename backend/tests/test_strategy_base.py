@@ -1,11 +1,9 @@
-from datetime import datetime, time as dt_time
+from datetime import datetime
+from datetime import time as dt_time
+
 from app.config import IST
-from app.strategy_base import (
-    Direction,
-    SignalEvent,
-    StrategyFamily,
-    StrategyRegistry,
-)
+from app.strategy_base import (Direction, SignalEvent, StrategyFamily,
+                               StrategyRegistry)
 
 
 class DummyStrategy:
@@ -28,7 +26,9 @@ class DummyStrategy:
     def active_window(self) -> tuple[dt_time, dt_time]:
         return (self._start, self._end)
 
-    def evaluate(self, stock: dict, now: datetime, *, all_stocks: list[dict] | None = None) -> SignalEvent | None:
+    def evaluate(
+        self, stock: dict, now: datetime, *, all_stocks: list[dict] | None = None
+    ) -> SignalEvent | None:
         if self._fire:
             return SignalEvent(
                 strategy_family=self._family,

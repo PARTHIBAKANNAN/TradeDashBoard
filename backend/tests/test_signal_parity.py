@@ -1,14 +1,10 @@
 from datetime import datetime
-from app.calculations import (
-    day_range_position,
-    evaluate_orb,
-    first_candle_extreme_intact,
-    has_two_sided_range,
-    intraday_relative_strength,
-    pct_change,
-    range_map,
-    get_default_strategy_registry,
-)
+
+from app.calculations import (day_range_position, evaluate_orb,
+                              first_candle_extreme_intact,
+                              get_default_strategy_registry,
+                              has_two_sided_range, intraday_relative_strength,
+                              pct_change, range_map)
 from app.config import IST
 from app.strategy_base import Direction, StrategyFamily
 

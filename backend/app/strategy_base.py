@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, time as dt_time
+from datetime import datetime
+from datetime import time as dt_time
 from enum import Enum
 from typing import Any, Protocol
 
@@ -13,6 +14,7 @@ class Direction(Enum):
 
 class StrategyFamily(Enum):
     """Logical grouping for risk quota allocation."""
+
     ORB_BREAKOUT = "ORB"
     VWAP_RETEST = "VWAP"
     SECTOR_SYMPATHY = "SECTOR"
@@ -22,11 +24,12 @@ class StrategyFamily(Enum):
 @dataclass(frozen=True, slots=True)
 class SignalEvent:
     """Immutable record of a strategy signal. Replaces loose string signals."""
+
     strategy_family: StrategyFamily
-    strategy_name: str         # e.g. "C0.5", "C1", "C2", "C3", "C4", "VWAP_RETEST", "SECTOR_LAG"
+    strategy_name: str  # e.g. "C0.5", "C1", "C2", "C3", "C4", "VWAP_RETEST", "SECTOR_LAG"
     direction: Direction
     symbol: str
-    trigger_price: float       # structural level that was breached
+    trigger_price: float  # structural level that was breached
     signal_time: datetime
     metadata: dict[str, Any] = field(default_factory=dict)
 

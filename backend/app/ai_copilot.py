@@ -638,6 +638,7 @@ def _reset_daily_counters_if_needed(today: date, force: bool = False) -> None:
             _daily_summary_sent = False
             _quota_reset_date = today
             from .risk_allocator import reset_risk_allocator
+
             reset_risk_allocator(None)
 
 
@@ -721,8 +722,8 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
     today = datetime.now(IST).date()
     _reset_daily_counters_if_needed(today)
 
-    from .strategy_base import StrategyFamily
     from .risk_allocator import get_risk_allocator
+    from .strategy_base import StrategyFamily
 
     family = get_signal_family(signal)
     multi_strat_dedup = getattr(config, "ENABLE_MULTI_STRATEGY_DEDUP", False)
@@ -829,7 +830,9 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
                 auto_skipped_reason = "Order placement failed (insufficient margin or DB error)"
         elif not within_window:
             cutoff_label = "10:15 AM (ORB)" if is_orb else "11:00 AM (Reclaim)"
-            auto_skipped_reason = f"After {cutoff_label} cutoff (session min {session_minute} > {cutoff_minute})"
+            auto_skipped_reason = (
+                f"After {cutoff_label} cutoff (session min {session_minute} > {cutoff_minute})"
+            )
         elif not under_cap:
             if use_risk_alloc:
                 auto_skipped_reason = f"Daily budget reached for strategy {family.name}"
@@ -879,7 +882,11 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
     elif passes_confidence and not auto_order_result and auto_skipped_reason:
         # ── 2. Manual Approval High-Conviction Alert (1 per strategy / Max 4/day) ──
         current_manual_count = _get_manual_alert_count()
-        can_manual = risk_alloc.can_alert(family, today) if use_risk_alloc else (current_manual_count < config.MAX_DAILY_MANUAL_ALERTS)
+        can_manual = (
+            risk_alloc.can_alert(family, today)
+            if use_risk_alloc
+            else (current_manual_count < config.MAX_DAILY_MANUAL_ALERTS)
+        )
         if can_manual and current_manual_count < config.MAX_DAILY_MANUAL_ALERTS:
             new_manual_count = _increment_manual_alert_count()
             if use_risk_alloc:
@@ -934,4 +941,3 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
             dec,
             score,
         )
-

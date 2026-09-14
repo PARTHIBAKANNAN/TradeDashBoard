@@ -90,13 +90,10 @@ def update_vwap(
 
 
 # Re-export pure helpers from strategies for backwards compatibility
-from .strategies.orb_strategy import (
-    completed_candles,
-    evaluate_orb,
-    first_candle_extreme_intact,
-    has_two_sided_range,
-    OrbStrategy,
-)
+from .strategies.orb_strategy import (OrbStrategy, completed_candles,
+                                      evaluate_orb,
+                                      first_candle_extreme_intact,
+                                      has_two_sided_range)
 from .strategies.sector_sympathy_strategy import SectorSympathyStrategy
 from .strategies.squeeze_strategy import SqueezeStrategy
 from .strategies.vwap_retest_strategy import VWAPRetestStrategy
@@ -186,9 +183,7 @@ def process_incoming_tick(
         all_stocks_list = list(state.stocks.values())
 
         # Evaluate all registered strategies (ORB, VWAP Retest, etc.) in priority order
-        signal_event = _strategy_registry.evaluate_all(
-            stock, now_ist, all_stocks=all_stocks_list
-        )
+        signal_event = _strategy_registry.evaluate_all(stock, now_ist, all_stocks=all_stocks_list)
         if signal_event is not None:
             signal = signal_event.label
             signal_time = signal_event.signal_time.strftime("%H:%M")
@@ -281,14 +276,24 @@ def process_incoming_tick(
                             "  • MOMENTUM: %d/%d [%s]\n"
                             "  • ENTRY QUALITY: %d/%d [%s]\n"
                             "  → Spawning AI Red-Flag Audit",
-                            short_sym, signal, signal_time,
-                            mom_score, min_mom, mom_summary,
-                            eq_score, min_eq, eq_summary,
+                            short_sym,
+                            signal,
+                            signal_time,
+                            mom_score,
+                            min_mom,
+                            mom_summary,
+                            eq_score,
+                            min_eq,
+                            eq_summary,
                         )
                     else:
                         logger.info(
                             "[V2 EVAL] QUALIFIED %s (%d/%d, %d/%d) but symbol already audited today; skipping redundant thread",
-                            short_sym, mom_score, min_mom, eq_score, min_eq,
+                            short_sym,
+                            mom_score,
+                            min_mom,
+                            eq_score,
+                            min_eq,
                         )
                 else:
                     rejection_reasons = []
@@ -324,4 +329,3 @@ def process_incoming_tick(
                     )
 
     order_monitor.on_tick_threadsafe(short_sym, ltp)
-

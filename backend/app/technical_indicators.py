@@ -958,7 +958,7 @@ def compute_bollinger_bands(
     window = prices[-period:]
     sma = sum(window) / period
     variance = sum((x - sma) ** 2 for x in window) / period
-    std_dev = variance ** 0.5
+    std_dev = variance**0.5
     upper = round(sma + num_std * std_dev, 2)
     lower = round(sma - num_std * std_dev, 2)
     return (upper, round(sma, 2), lower)

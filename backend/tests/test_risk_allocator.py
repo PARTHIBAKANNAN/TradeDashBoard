@@ -1,4 +1,5 @@
 from datetime import date
+
 from app.risk_allocator import RiskAllocator
 from app.strategy_base import StrategyFamily
 
@@ -70,4 +71,3 @@ def test_risk_allocator_alerts():
     assert alloc.can_alert(StrategyFamily.VWAP_RETEST, today) is True
     assert alloc.can_alert(StrategyFamily.SECTOR_SYMPATHY, today) is True
     assert alloc.can_alert(StrategyFamily.SQUEEZE, today) is True
-

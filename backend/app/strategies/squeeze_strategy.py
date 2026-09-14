@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from datetime import datetime, time as dt_time
+from datetime import datetime
+from datetime import time as dt_time
 from typing import Any
 
 from .. import candle_aggregator

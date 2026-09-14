@@ -1,13 +1,12 @@
 from datetime import datetime
 from unittest.mock import patch
+
 from app.config import IST
 from app.strategies.squeeze_strategy import SqueezeStrategy
 from app.strategy_base import Direction, StrategyFamily
-from app.technical_indicators import (
-    compute_bollinger_bands,
-    compute_keltner_channels,
-    detect_volatility_squeeze,
-)
+from app.technical_indicators import (compute_bollinger_bands,
+                                      compute_keltner_channels,
+                                      detect_volatility_squeeze)
 
 
 def test_bollinger_bands_and_keltner_channels():
@@ -47,7 +46,9 @@ def test_detect_volatility_squeeze_simulation():
         {"open": 100.0, "high": 106.0, "low": 99.5, "close": 105.0, "minute": 23 * 5},
         {"open": 105.0, "high": 110.0, "low": 104.0, "close": 109.0, "minute": 24 * 5},
     ]
-    is_sq_after, is_fired_after, metrics_after = detect_volatility_squeeze(expansion_candles, min_squeeze_bars=3)
+    is_sq_after, is_fired_after, metrics_after = detect_volatility_squeeze(
+        expansion_candles, min_squeeze_bars=3
+    )
     assert is_sq_after is False
     assert is_fired_after is True
     assert metrics_after["is_squeeze_fired"] is True

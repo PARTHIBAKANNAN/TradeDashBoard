@@ -279,4 +279,3 @@ def get_intraday_15min_candles(sym: str) -> list[dict]:
             b["volume"] += float(c.get("volume", 0.0))
 
     return [buckets[k] for k in sorted(buckets.keys())]
-

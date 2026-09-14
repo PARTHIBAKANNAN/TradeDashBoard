@@ -127,7 +127,11 @@ AUTO_PAPER_USER_ID = os.getenv("AUTO_PAPER_USER_ID", "")
 
 # ----------------- Multi-Strategy & Risk Allocation -----------------
 ENABLE_RISK_ALLOCATOR = os.getenv("ENABLE_RISK_ALLOCATOR", "true").lower() in ("true", "1", "yes")
-ENABLE_MULTI_STRATEGY_DEDUP = os.getenv("ENABLE_MULTI_STRATEGY_DEDUP", "true").lower() in ("true", "1", "yes")
+ENABLE_MULTI_STRATEGY_DEDUP = os.getenv("ENABLE_MULTI_STRATEGY_DEDUP", "true").lower() in (
+    "true",
+    "1",
+    "yes",
+)
 ORB_BUDGET_TRADES = int(os.getenv("ORB_BUDGET_TRADES", "1"))
 ORB_BUDGET_RISK = float(os.getenv("ORB_BUDGET_RISK", "1000.0"))
 VWAP_BUDGET_TRADES = int(os.getenv("VWAP_BUDGET_TRADES", "1"))
@@ -137,7 +141,6 @@ SECTOR_BUDGET_RISK = float(os.getenv("SECTOR_BUDGET_RISK", "800.0"))
 SQUEEZE_BUDGET_TRADES = int(os.getenv("SQUEEZE_BUDGET_TRADES", "1"))
 SQUEEZE_BUDGET_RISK = float(os.getenv("SQUEEZE_BUDGET_RISK", "800.0"))
 MAX_MANUAL_ALERTS_PER_STRATEGY = int(os.getenv("MAX_MANUAL_ALERTS_PER_STRATEGY", "1"))
-
 
 
 # ----------------- Token cache & refresh -----------------
