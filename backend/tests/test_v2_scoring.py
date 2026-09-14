@@ -111,7 +111,6 @@ def test_combined_conviction_and_legacy_shim():
     assert score >= 70, f"Expected elite score >= 70, got {score}"
 
 
-
 def test_detect_breakaway_gap_and_bonus():
     from app.technical_indicators import detect_breakaway_gap
 
