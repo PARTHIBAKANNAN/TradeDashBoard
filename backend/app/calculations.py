@@ -15,6 +15,7 @@ from datetime import datetime
 from datetime import time as dt_time
 
 from . import candle_aggregator, order_monitor
+from . import config as _cfg
 from .config import IST, ORB_CANDLES
 
 
