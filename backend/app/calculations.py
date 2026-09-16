@@ -14,8 +14,9 @@ shared state, and it delegates all arithmetic to these helpers.
 from datetime import datetime
 from datetime import time as dt_time
 
-from . import candle_aggregator, order_monitor
+from . import candle_aggregator
 from . import config as _cfg
+from . import order_monitor
 from .config import IST, ORB_CANDLES
 
 
