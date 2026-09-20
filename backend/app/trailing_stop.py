@@ -11,6 +11,12 @@ def update_peak(side: str, current_peak: float, ltp: float) -> float:
     return min(current_peak, ltp)
 
 
+def update_mae(side: str, current_mae: float, ltp: float) -> float:
+    if side == "BUY":
+        return min(current_mae, ltp)
+    return max(current_mae, ltp)
+
+
 def compute_breakeven_sl(
     side: str,
     entry: float,

@@ -54,6 +54,7 @@ _opening_5min: dict[str, dict[int, list]] = {}
 # contribution for this bucket (see _tick_delta() below); `volume` is the
 # unsigned traded quantity for the bucket (RVOL / Fresh Turnover input).
 _day_candles: dict[str, tuple] = {}
+_completed_day_candles: dict[str, list[tuple]] = {}
 
 # Per-symbol state for the tick-rule delta estimate, deliberately INDEPENDENT
 # of calculations.py's own VWAP volume tracking (stock["vwap_cum_vol"]) even
@@ -170,6 +171,11 @@ def on_index_tick(sym: str, ltp: float, now: datetime) -> None:
 def _persist_bucket(
     sym: str, bucket_date, bucket_minute: int, ohlc: list, delta: float, volume: float = 0.0
 ) -> None:
+    # Keep in memory for real-time momentum/POC calculations without DB hits
+    _completed_day_candles.setdefault(sym, []).append(
+        (bucket_date, bucket_minute, list(ohlc), delta, volume)
+    )
+
     from . import order_monitor
     from .candle_history import persist_candle
 
@@ -187,6 +193,7 @@ def flush_all() -> None:
     for sym, (bucket_date, bucket_minute, ohlc, delta, volume) in list(_day_candles.items()):
         _persist_bucket(sym, bucket_date, bucket_minute, ohlc, delta, volume)
     _day_candles.clear()
+    _completed_day_candles.clear()
 
 
 def get_in_progress(sym: str):
@@ -199,13 +206,17 @@ def get_in_progress(sym: str):
     return (entry[0], entry[1], list(entry[2]), entry[3], entry[4]) if entry else None
 
 
+def get_completed_candles(sym: str) -> list[tuple]:
+    """Read-only snapshot of all completed 5-min buckets for `sym` today."""
+    return list(_completed_day_candles.get(sym, []))
+
+
 def get_intraday_closes(sym: str) -> list[float]:
     """Return chronological list of today's 5m close prices for technical indicators."""
     closes: list[float] = []
-    if sym in _opening_5min:
-        for b_min in sorted(_opening_5min[sym].keys()):
-            ohlc = _opening_5min[sym][b_min]
-            closes.append(float(ohlc[3]))
+    for comp in _completed_day_candles.get(sym, []):
+        closes.append(float(comp[2][3]))
+        
     cur = _day_candles.get(sym)
     if cur and cur[2]:
         closes.append(float(cur[2][3]))
@@ -215,18 +226,19 @@ def get_intraday_closes(sym: str) -> list[float]:
 def get_intraday_candles(sym: str) -> list[dict]:
     """Return chronological list of today's 5m candles with full OHLC for ATR & Swing calculations."""
     candles: list[dict] = []
-    if sym in _opening_5min:
-        for b_min in sorted(_opening_5min[sym].keys()):
-            ohlc = _opening_5min[sym][b_min]
-            candles.append(
-                {
-                    "open": float(ohlc[0]),
-                    "high": float(ohlc[1]),
-                    "low": float(ohlc[2]),
-                    "close": float(ohlc[3]),
-                    "minute": b_min,
-                }
-            )
+    for comp in _completed_day_candles.get(sym, []):
+        ohlc = comp[2]
+        candles.append(
+            {
+                "open": float(ohlc[0]),
+                "high": float(ohlc[1]),
+                "low": float(ohlc[2]),
+                "close": float(ohlc[3]),
+                "minute": comp[1],
+                "volume": float(comp[4]),
+            }
+        )
+        
     cur = _day_candles.get(sym)
     if cur and cur[2]:
         ohlc = cur[2]
@@ -236,8 +248,8 @@ def get_intraday_candles(sym: str) -> list[dict]:
                 "high": float(ohlc[1]),
                 "low": float(ohlc[2]),
                 "close": float(ohlc[3]),
-                "volume": float(cur[4]),
                 "minute": cur[1],
+                "volume": float(cur[4]),
             }
         )
     return candles

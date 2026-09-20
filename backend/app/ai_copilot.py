@@ -468,12 +468,7 @@ def compile_symbol_context(sym: str) -> Dict[str, Any]:
             "range_used_pct": range_used_pct,
             "is_defensive_sector": ind_grp in DEFENSIVE_SECTORS,
         },
-        "momentum_score": stock_data.get("momentum_score", stock_data.get("conviction_score", 0)),
-        "momentum_factors": stock_data.get("momentum_factors", []),
-        "entry_quality_score": stock_data.get("entry_quality_score", 0),
-        "entry_quality_factors": stock_data.get("entry_quality_factors", []),
-        "conviction_score": stock_data.get("conviction_score", 0),
-        "conviction_factors": stock_data.get("conviction_factors", []),
+        "scores": stock_data.get("scores", {}),
         "premarket_catalyst": focus_catalyst,
         "premarket_bias": _premarket_cache.get("bias", "NEUTRAL"),
         "recent_5m_candles_count": len(candles),
@@ -513,24 +508,18 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
     is_bull = "Bull" in s.get("signal", "")
 
     system_prompt = (
-        "You are a strict quantitative risk manager for an NSE India intraday desk. "
-        "Your ONLY job is to find RED FLAGS that disqualify a trade. "
+        "You are a strict quantitative risk manager and anomaly auditor for an NSE India intraday desk. "
+        "Your ONLY job is to find RED FLAGS (structural anomalies, unusual events, news risk) that disqualify a trade. "
         "Do not generate buy/sell signals. Do not predict price direction. "
-        "The candidate has already passed a weighted conviction scorer (0-100) — "
-        "review the conviction_score and conviction_factors in the context to understand "
-        "which factors are strong and which are weak. "
-        "Analyse the real numbers provided (RSI-14, 20 EMA, VWAP distance, Sector mean, RS) "
-        "and output SKIP_TRAP if any GENUINE red flag exists, or CONFIRM if the setup is technically clean. "
-        "Genuine red flags include: "
-        "• RSI extreme overbought (>85 for buy) or extreme oversold (<15 for sell) — "
-        "note: the conviction scorer already penalises borderline RSI, so only flag true extremes, "
-        "• Price on the WRONG side of VWAP (buy below VWAP, short above VWAP), "
-        "• Sector index heavily dragging against trade direction (>0.30% opposite), "
-        "• Price excessively extended from VWAP (>3.0%), "
-        "• Risk-to-Reward ratio < 1:1.5 given the suggested structural SL/Target (minimum 1.0% to 1.5% SL buffer), "
-        "• Conviction score below 55 with multiple weak factors (check conviction_factors). "
-        "Do NOT red-flag borderline RSI (45-55 for buy / 45-55 for sell) or depth delta opposing — "
-        "these are already handled as soft scoring factors by the conviction scorer. "
+        "The candidate has already passed a robust Momentum and Entry Quality scorer — "
+        "review the 'scores' object in the context to understand why it was selected. "
+        "Analyze the provided data and output SKIP_TRAP if any GENUINE, overriding red flag exists, "
+        "or CONFIRM if the setup is technically clean. "
+        "Genuine anomalies include: "
+        "• Unprecedented news/event risk for this specific stock today, "
+        "• Index heavily crashing while stock is trying to breakout (market regime misalignment), "
+        "• Extreme over-extension not captured by the entry quality score. "
+        "Do NOT red-flag standard technical pullbacks or borderline RSI. "
         "Return valid JSON only."
     )
 
@@ -540,25 +529,13 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
         "{\n"
         '  "decision": "CONFIRM_BUY" | "CONFIRM_SELL" | "SKIP_TRAP",\n'
         '  "confidence_score": integer (0 to 100),\n'
-        '  "suggested_entry": float,\n'
-        '  "suggested_sl": float,\n'
-        '  "suggested_target": float,\n'
-        '  "tsl_type": "PERCENT" | "POINTS",\n'
-        '  "tsl_value": float,\n'
-        '  "rationale": ["Point 1 (max 2 points)"]\n'
+        '  "rationale": ["Anomaly Reason 1 (if any)"]\n'
         "}\n\n"
         "IMPORTANT RULES FOR CONFIRMATION:\n"
-        "  • Stop Loss MUST have at least 1.0% to 1.5% structural distance from entry (never razor-thin, avoiding 2-minute noise wicks).\n"
-        "  • Target MUST be at least 1.5x to 2.0x the SL distance.\n"
-        "  • The conviction_score and conviction_factors show how the quant scorer rated this setup — use them to calibrate your confidence_score.\n"
-        "  • Only flag RSI as problematic at true extremes (>85 buy / <15 sell); borderline RSI is already penalised by the scorer.\n"
+        "  • The 'scores' object shows how the quant engine rated this setup (Momentum & Entry Quality). Use this to calibrate your confidence_score.\n"
+        "  • Stop Loss and Targets are handled programmatically; you do not need to calculate them.\n"
         "Otherwise return SKIP_TRAP."
     )
-
-    from .candle_aggregator import get_intraday_candles
-    from .technical_indicators import compute_dynamic_trade_levels
-
-    dyn = compute_dynamic_trade_levels(s, s.get("signal", ""), get_intraday_candles(sym))
 
     raw_response = call_gemini(prompt, system_instruction=system_prompt)
     if raw_response:
@@ -566,41 +543,15 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
             parsed = json.loads(raw_response)
             parsed["symbol"] = sym
             parsed["timestamp"] = datetime.now(IST).strftime("%H:%M:%S IST")
-            # Enforce dynamic minimum structural SL bounds (clamp to at least dyn["sl_distance"])
-            min_safe_sl = dyn["sl_distance"]
-            entry = float(parsed.get("suggested_entry") or ltp)
-            sl = float(parsed.get("suggested_sl") or 0.0)
-            if entry and sl:
-                actual_sl_dist = abs(entry - sl)
-                if actual_sl_dist < min_safe_sl:
-                    parsed["suggested_sl"] = (
-                        round(entry - min_safe_sl, 2) if is_bull else round(entry + min_safe_sl, 2)
-                    )
-                    parsed["suggested_target"] = (
-                        round(entry + (min_safe_sl * 2.0), 2)
-                        if is_bull
-                        else round(entry - (min_safe_sl * 2.0), 2)
-                    )
-            # Enforce safe minimum 1.2% trailing buffer
-            parsed["tsl_type"] = parsed.get("tsl_type") or "PERCENT"
-            parsed["tsl_value"] = max(
-                float(parsed.get("tsl_value") or 1.2), round(dyn["sl_pct"], 2), 1.2
-            )
             return parsed
         except Exception as e:
             logger.error("ai_copilot: failed to parse setup JSON: %s", e)
 
     # Heuristic Mathematical Fallback (when API key is not set or network fails)
-    # Uses true 5-minute ATR and recent swing high/low bounds with 1:2 RR
     return {
         "symbol": sym,
         "decision": "CONFIRM_BUY" if is_bull else "CONFIRM_SELL",
         "confidence_score": 80 if s.get("signal") != "None" else 50,
-        "suggested_entry": dyn["entry"],
-        "suggested_sl": dyn["sl"],
-        "suggested_target": dyn["target"],
-        "tsl_type": "PERCENT",
-        "tsl_value": max(round(dyn["sl_pct"], 2), 1.2),
         "rationale": [
             f"Dynamic Structural Anchor: SL {dyn['sl_pct']:.2f}% (₹{dyn['sl']}), Target 1:2 RR (₹{dyn['target']}).",
             f"Volatility Buffer: 1.5x 5m ATR (₹{dyn['atr_14']}) with swing protection.",
@@ -622,14 +573,16 @@ _manual_alerts_today: int = 0
 _daily_summary_sent: bool = False
 _quota_lock = threading.RLock()
 _quota_reset_date: date | None = None
+_auto_traded_symbols_today: set[str] = set()
 
 
 def _reset_daily_counters_if_needed(today: date, force: bool = False) -> None:
     """Reset deduplication cache and trade/alert counters at the start of each new trading day."""
-    global _last_reset_date, _auto_trades_today, _manual_alerts_today, _daily_summary_sent, _quota_reset_date
-    with _notified_lock:
-        if force or _last_reset_date != today:
+    global _last_reset_date, _auto_trades_today, _manual_alerts_today, _daily_summary_sent, _quota_reset_date, _notified_signals_today, _auto_traded_symbols_today
+    if force or _last_reset_date != today:
+        with _notified_lock:
             _notified_signals_today.clear()
+            _auto_traded_symbols_today.clear()
             _last_reset_date = today
     with _quota_lock:
         if force or _quota_reset_date != today:
@@ -685,7 +638,14 @@ def get_signal_family(signal: str) -> StrategyFamily:
 
 def can_audit_symbol(sym: str, signal: str = "") -> bool:
     """Check if symbol has already been audited today (strategy-aware or symbol-level single-fire lock)."""
-    today = datetime.now(IST).date()
+    now_ist = datetime.now(IST)
+    today = now_ist.date()
+    
+    # Phase 1: No automated execution before 09:30 IST (C0.5 completion)
+    from datetime import time as dt_time
+    if now_ist.time() < dt_time(9, 30):
+        return False
+
     _reset_daily_counters_if_needed(today)
     multi_strat_dedup = getattr(config, "ENABLE_MULTI_STRATEGY_DEDUP", False)
     with _notified_lock:
@@ -786,35 +746,72 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
         else:
             under_cap = _get_auto_trade_count() < config.MAX_DAILY_AUTO_TRADES
 
-        if within_window and under_cap:
+        with _notified_lock:
+            already_traded = sym in _auto_traded_symbols_today
+
+        if within_window and under_cap and not already_traded:
             if use_risk_alloc:
                 risk_per_trade = risk_alloc.get_risk_per_trade(family, today)
             else:
                 risk_per_trade = config.DAILY_MAX_RISK_INR / config.MAX_DAILY_AUTO_TRADES
 
-            sl_distance = abs(entry - sl) if entry and sl else 0.0
+            from . import paper_trading, trade_management
+
+            side = "BUY" if "BUY" in dec else "SELL"
+            notes = f"AI_COPILOT | {signal} | score={score} | auto"
+            
+            # Phase 3: Programmatic ATR/Structural Stops
+            computed_stops = trade_management.calculate_initial_stops(sym, side, entry)
+            sl_price = computed_stops["sl_price"]
+            target_price = computed_stops["target_price"]
+            tsl_type = computed_stops["tsl_type"]
+            tsl_value = computed_stops["tsl_value"]
+
+            # Re-calculate risk dynamically
+            sl_distance = abs(entry - sl_price) if entry and sl_price else 0.0
             if sl_distance > 0 and risk_per_trade > 0:
                 quantity = max(1, int(risk_per_trade / sl_distance))
             else:
                 quantity = 1
 
-            from . import paper_trading
+            qty1 = quantity // 2
+            qty2 = quantity - qty1
+            
+            # Order 1: 50% partial exit at +1.5R
+            target1 = entry + (1.5 * sl_distance) if side == "BUY" else entry - (1.5 * sl_distance)
+            
+            success_count = 0
+            if qty1 > 0:
+                res1 = paper_trading.place_auto_paper_order_sync(
+                    user_id=config.AUTO_PAPER_USER_ID,
+                    symbol=sym,
+                    side=side,
+                    quantity=qty1,
+                    sl_price=sl_price,
+                    target_price=round(target1, 2),
+                    tsl_type=tsl_type,
+                    tsl_value=tsl_value,
+                    notes=notes + " | 50% Partial 1.5R",
+                )
+                if res1: success_count += 1
+                
+            if qty2 > 0:
+                res2 = paper_trading.place_auto_paper_order_sync(
+                    user_id=config.AUTO_PAPER_USER_ID,
+                    symbol=sym,
+                    side=side,
+                    quantity=qty2,
+                    sl_price=sl_price,
+                    target_price=target_price,
+                    tsl_type=tsl_type,
+                    tsl_value=tsl_value,
+                    notes=notes + " | Trailing Runner",
+                )
+                if res2: success_count += 1
 
-            side = "BUY" if "BUY" in dec else "SELL"
-            notes = f"AI_COPILOT | {signal} | score={score} | auto"
-
-            auto_order_result = paper_trading.place_auto_paper_order_sync(
-                user_id=config.AUTO_PAPER_USER_ID,
-                symbol=sym,
-                side=side,
-                quantity=quantity,
-                sl_price=sl if sl else None,
-                target_price=target if target else None,
-                tsl_type=tsl_t,
-                tsl_value=tsl_v,
-                notes=notes,
-            )
-            if auto_order_result:
+            if success_count > 0:
+                with _notified_lock:
+                    _auto_traded_symbols_today.add(sym)
                 _increment_auto_trade_count()
                 if use_risk_alloc:
                     trade_risk = quantity * sl_distance
@@ -828,6 +825,8 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
                 )
             else:
                 auto_skipped_reason = "Order placement failed (insufficient margin or DB error)"
+        elif already_traded:
+            auto_skipped_reason = f"Symbol {sym} has already been auto-traded today. Deduplicating."
         elif not within_window:
             cutoff_label = "10:15 AM (ORB)" if is_orb else "11:00 AM (Reclaim)"
             auto_skipped_reason = (

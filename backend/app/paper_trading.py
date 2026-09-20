@@ -135,11 +135,14 @@ async def place_auto_paper_order(
                 margin,
                 user_id,
             )
+            initial_risk_per_share = abs(ltp - sl_price) if sl_price else None
+
             row = await conn.fetchrow(
                 "insert into public.paper_orders "
                 "(user_id, symbol, side, quantity, order_type, sl_price, target_price, "
-                "tsl_type, tsl_value, peak_price, entry_price, margin_locked, notes, status, filled_at) "
-                "values ($1,$2,$3,$4,'MARKET',$5,$6,$7,$8,$9,$10,$11,$12,'OPEN', now()) returning *",
+                "tsl_type, tsl_value, peak_price, entry_price, margin_locked, notes, status, filled_at, "
+                "initial_sl_price, initial_risk_per_share, mfe_price, mae_price) "
+                "values ($1,$2,$3,$4,'MARKET',$5,$6,$7,$8,$9,$10,$11,$12,'OPEN', now(), $13, $14, $15, $16) returning *",
                 user_id,
                 symbol,
                 side,
@@ -152,6 +155,10 @@ async def place_auto_paper_order(
                 ltp,
                 margin,
                 notes,
+                sl_price,
+                initial_risk_per_share,
+                ltp,  # mfe_price starts at entry price
+                ltp,  # mae_price starts at entry price
             )
     if sl_price or target_price or tsl_type:
         order_monitor.register_open_bracket(dict(row))
@@ -295,22 +302,24 @@ async def fill_order(order_id: int, user_id: str, ltp: float) -> dict | None:
     return _serialize(dict(filled))
 
 
-async def update_trailing_stop(
-    order_id: int, user_id: str, sl_price: float, peak_price: float
+async def update_trade_metrics(
+    order_id: int, user_id: str, sl_price: float | None, mfe_price: float, mae_price: float,
+    time_to_05r: datetime | None, time_to_1r: datetime | None,
+    time_to_15r: datetime | None, time_to_2r: datetime | None
 ) -> None:
-    """System-driven: called only from order_monitor's tick-driven ratchet, never
+    """System-driven: called only from order_monitor's tick-driven metric update, never
     from a user request, so no separate ownership ambiguity beyond the WHERE clause."""
     pool = get_pool()
     if pool is None:
         return
     async with pool.acquire() as conn:
         await conn.execute(
-            "update public.paper_orders set sl_price=$1, peak_price=$2 "
-            "where id=$3 and user_id=$4 and status='OPEN'",
-            sl_price,
-            peak_price,
-            order_id,
-            user_id,
+            "update public.paper_orders set sl_price=$1, mfe_price=$2, peak_price=$2, mae_price=$3, "
+            "time_to_05r=$4, time_to_1r=$5, time_to_15r=$6, time_to_2r=$7 "
+            "where id=$8 and user_id=$9 and status='OPEN'",
+            sl_price, mfe_price, mae_price,
+            time_to_05r, time_to_1r, time_to_15r, time_to_2r,
+            order_id, user_id,
         )
 
 
@@ -322,11 +331,14 @@ def _close_alert_text(order: dict) -> str:
     emoji = _CLOSE_ALERT_EMOJI.get(order["close_reason"], "⚪")
     label = _CLOSE_ALERT_LABEL.get(order["close_reason"], order["close_reason"])
     sign = "+" if float(order["net_pnl"]) >= 0 else ""
+    mfe_r = order.get("mfe_r")
+    mae_r = order.get("mae_r")
+    r_text = f"\nMFE: {mfe_r}R | MAE: {mae_r}R" if mfe_r is not None and mae_r is not None else ""
     return (
         f"{emoji} *{label}*: {order['side']} {order['quantity']} {order['symbol']} "
         f"@ {order['exit_price']} (entry {order['entry_price']})\n"
         f"Gross: {sign}₹{order['realized_pnl']} | Charges: ₹{order['total_charges']} | "
-        f"Net: {sign}₹{order['net_pnl']}"
+        f"Net: {sign}₹{order['net_pnl']}{r_text}"
     )
 
 
@@ -359,11 +371,30 @@ async def close_order(order_id: int, user_id: str, reason: str, exit_price: floa
                 credit,
                 user_id,
             )
+            # Compute MFE/MAE R-multiples
+            initial_risk = float(row.get("initial_risk_per_share") or 0)
+            mfe_r = None
+            mae_r = None
+            exit_r = None
+            if initial_risk > 0:
+                mfe_p = float(row.get("mfe_price") or row.get("peak_price") or row["entry_price"])
+                mae_p = float(row.get("mae_price") or row["entry_price"])
+                
+                if row["side"] == "BUY":
+                    mfe_r = round((mfe_p - float(row["entry_price"])) / initial_risk, 2)
+                    mae_r = round((float(row["entry_price"]) - mae_p) / initial_risk, 2)
+                    exit_r = round((exit_price - float(row["entry_price"])) / initial_risk, 2)
+                else:
+                    mfe_r = round((float(row["entry_price"]) - mfe_p) / initial_risk, 2)
+                    mae_r = round((mae_p - float(row["entry_price"])) / initial_risk, 2)
+                    exit_r = round((float(row["entry_price"]) - exit_price) / initial_risk, 2)
+
             closed = await conn.fetchrow(
                 "update public.paper_orders set status='CLOSED', close_reason=$1, exit_price=$2, "
                 "realized_pnl=$3, brokerage=$4, stt=$5, exchange_charges=$6, sebi_charges=$7, "
-                "stamp_duty=$8, gst=$9, total_charges=$10, net_pnl=$11, closed_at=now() "
-                "where id=$12 returning *",
+                "stamp_duty=$8, gst=$9, total_charges=$10, net_pnl=$11, closed_at=now(), "
+                "mfe_r=$12, mae_r=$13, exit_r=$14 "
+                "where id=$15 returning *",
                 reason,
                 exit_price,
                 pnl,
@@ -375,6 +406,9 @@ async def close_order(order_id: int, user_id: str, reason: str, exit_price: floa
                 charges["gst"],
                 charges["total_charges"],
                 net_pnl,
+                mfe_r,
+                mae_r,
+                exit_r,
                 order_id,
             )
     order_monitor.unregister(order_id, row["symbol"])

@@ -78,35 +78,65 @@ def _bracket_hit(order: dict, ltp: float) -> str | None:
     return None
 
 
-def _ratchet_trailing_stop(order: dict, ltp: float) -> None:
-    """Mutate `order` in place: advance peak_price and, if favorable, sl_price.
-    Runs before the bracket-hit check on the same tick so a stop crossed by
-    this tick's own ratchet is caught immediately, not one tick late."""
-    prev_peak = order.get("peak_price") or order["entry_price"]
+def _update_trade_metrics(order: dict, ltp: float) -> None:
+    """Mutate `order` in place: advance mfe_price, mae_price, and if favorable, sl_price.
+    Tracks time to various R-multiples."""
+    prev_mfe = order.get("mfe_price") or order.get("peak_price") or order["entry_price"]
+    prev_mae = order.get("mae_price") or order["entry_price"]
     entry_val = float(order["entry_price"])
-    new_peak = trailing_stop.update_peak(order["side"], float(prev_peak), ltp)
+    
+    new_mfe = trailing_stop.update_peak(order["side"], float(prev_mfe), ltp)
+    new_mae = trailing_stop.update_mae(order["side"], float(prev_mae), ltp)
+    
+    order["mfe_price"] = new_mfe
+    order["mae_price"] = new_mae
+    order["peak_price"] = new_mfe  # Keep backwards compatibility for now
+
+    # R-multiple tracking
+    initial_risk = order.get("initial_risk_per_share")
+    if initial_risk and float(initial_risk) > 0:
+        r_val = float(initial_risk)
+        current_profit = (ltp - entry_val) if order["side"] == "BUY" else (entry_val - ltp)
+        current_r = current_profit / r_val
+        
+        now = __import__("datetime").datetime.now(__import__("datetime").timezone.utc)
+        if current_r >= 0.5 and not order.get("time_to_05r"):
+            order["time_to_05r"] = now
+        if current_r >= 1.0 and not order.get("time_to_1r"):
+            order["time_to_1r"] = now
+        if current_r >= 1.5 and not order.get("time_to_15r"):
+            order["time_to_15r"] = now
+        if current_r >= 2.0 and not order.get("time_to_2r"):
+            order["time_to_2r"] = now
+
+    # Trailing Stop Logic
     prev_sl = float(order["sl_price"]) if order.get("sl_price") else None
-    initial_sl = float(order["initial_sl"]) if order.get("initial_sl") else prev_sl
+    initial_sl = float(order["initial_sl_price"]) if order.get("initial_sl_price") else prev_sl
+    
+    new_sl = prev_sl
+    if order.get("tsl_type"):
+        candidate = trailing_stop.trailing_sl_price(
+            order["side"],
+            entry_val,
+            new_mfe,
+            order["tsl_type"],
+            float(order["tsl_value"]),
+            initial_sl=initial_sl,
+            enable_breakeven=True,
+        )
+        new_sl = trailing_stop.ratchet_sl(order["side"], prev_sl, candidate)
 
-    candidate = trailing_stop.trailing_sl_price(
-        order["side"],
-        entry_val,
-        new_peak,
-        order["tsl_type"],
-        float(order["tsl_value"]),
-        initial_sl=initial_sl,
-        enable_breakeven=True,
-    )
-    new_sl = trailing_stop.ratchet_sl(order["side"], prev_sl, candidate)
-
-    changed = new_peak != prev_peak or new_sl != prev_sl
-    order["peak_price"] = new_peak
+    changed = new_mfe != prev_mfe or new_sl != prev_sl or new_mae != prev_mae
     order["sl_price"] = new_sl
+    
     if changed:
         from . import paper_trading
-
         asyncio.create_task(
-            paper_trading.update_trailing_stop(order["id"], order["user_id"], new_sl, new_peak)
+            paper_trading.update_trade_metrics(
+                order["id"], order["user_id"], new_sl, new_mfe, new_mae,
+                order.get("time_to_05r"), order.get("time_to_1r"),
+                order.get("time_to_15r"), order.get("time_to_2r")
+            )
         )
 
 
@@ -120,8 +150,7 @@ async def on_tick(symbol: str, ltp: float) -> None:
         if _limit_hit(order, ltp):
             asyncio.create_task(paper_trading.fill_order(order["id"], order["user_id"], ltp))
     for order in list(_open_brackets.get(symbol, [])):
-        if order.get("tsl_type"):
-            _ratchet_trailing_stop(order, ltp)
+        _update_trade_metrics(order, ltp)
         reason = _bracket_hit(order, ltp)
         if reason:
             asyncio.create_task(
