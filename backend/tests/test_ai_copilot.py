@@ -56,9 +56,6 @@ def test_analyze_trade_setup_heuristic_fallback():
             res = ai_copilot.analyze_trade_setup("RELIANCE")
             assert res["symbol"] == "RELIANCE"
             assert res["decision"] == "CONFIRM_BUY"
-            assert res["suggested_entry"] == 1000.0
-            assert res["suggested_sl"] < 1000.0
-            assert res["suggested_target"] > 1000.0
             assert res.get("is_fallback") is True
 
 

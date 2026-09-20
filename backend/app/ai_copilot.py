@@ -553,8 +553,8 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
         "decision": "CONFIRM_BUY" if is_bull else "CONFIRM_SELL",
         "confidence_score": 80 if s.get("signal") != "None" else 50,
         "rationale": [
-            f"Dynamic Structural Anchor: SL {dyn['sl_pct']:.2f}% (₹{dyn['sl']}), Target 1:2 RR (₹{dyn['target']}).",
-            f"Volatility Buffer: 1.5x 5m ATR (₹{dyn['atr_14']}) with swing protection.",
+            "Quant score meets threshold.",
+            "Fallback activated: AI copilot skipped (network or API key error).",
         ],
         "is_fallback": True,
         "timestamp": datetime.now(IST).strftime("%H:%M:%S IST"),
