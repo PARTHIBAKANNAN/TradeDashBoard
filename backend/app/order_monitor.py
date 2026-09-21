@@ -84,10 +84,10 @@ def _update_trade_metrics(order: dict, ltp: float) -> None:
     prev_mfe = order.get("mfe_price") or order.get("peak_price") or order["entry_price"]
     prev_mae = order.get("mae_price") or order["entry_price"]
     entry_val = float(order["entry_price"])
-    
+
     new_mfe = trailing_stop.update_peak(order["side"], float(prev_mfe), ltp)
     new_mae = trailing_stop.update_mae(order["side"], float(prev_mae), ltp)
-    
+
     order["mfe_price"] = new_mfe
     order["mae_price"] = new_mae
     order["peak_price"] = new_mfe  # Keep backwards compatibility for now
@@ -98,7 +98,7 @@ def _update_trade_metrics(order: dict, ltp: float) -> None:
         r_val = float(initial_risk)
         current_profit = (ltp - entry_val) if order["side"] == "BUY" else (entry_val - ltp)
         current_r = current_profit / r_val
-        
+
         now = __import__("datetime").datetime.now(__import__("datetime").timezone.utc)
         if current_r >= 0.5 and not order.get("time_to_05r"):
             order["time_to_05r"] = now
@@ -112,7 +112,7 @@ def _update_trade_metrics(order: dict, ltp: float) -> None:
     # Trailing Stop Logic
     prev_sl = float(order["sl_price"]) if order.get("sl_price") else None
     initial_sl = float(order["initial_sl_price"]) if order.get("initial_sl_price") else prev_sl
-    
+
     new_sl = prev_sl
     if order.get("tsl_type"):
         candidate = trailing_stop.trailing_sl_price(
@@ -128,14 +128,21 @@ def _update_trade_metrics(order: dict, ltp: float) -> None:
 
     changed = new_mfe != prev_mfe or new_sl != prev_sl or new_mae != prev_mae
     order["sl_price"] = new_sl
-    
+
     if changed:
         from . import paper_trading
+
         asyncio.create_task(
             paper_trading.update_trade_metrics(
-                order["id"], order["user_id"], new_sl, new_mfe, new_mae,
-                order.get("time_to_05r"), order.get("time_to_1r"),
-                order.get("time_to_15r"), order.get("time_to_2r")
+                order["id"],
+                order["user_id"],
+                new_sl,
+                new_mfe,
+                new_mae,
+                order.get("time_to_05r"),
+                order.get("time_to_1r"),
+                order.get("time_to_15r"),
+                order.get("time_to_2r"),
             )
         )
 

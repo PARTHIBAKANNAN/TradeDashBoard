@@ -6,11 +6,13 @@ aligned. Run from backend/:
     python -m pytest tests/test_momentum_score.py
 """
 
-from app.momentum_score import build_sector_means, compute_recommended, evaluate_scores
 from app import candle_aggregator
+from app.momentum_score import (build_sector_means, compute_recommended,
+                                evaluate_scores)
 
 # Mock the candle aggregator so tests run instantly without DB
 candle_aggregator.get_intraday_candles = lambda sym: []
+
 
 def _stock(**overrides):
     base = {
@@ -76,6 +78,7 @@ def test_rewards_fresher_signal():
 
 def test_compute_recommended_picks_top_qualifying_stocks():
     import app.momentum_score as ms
+
     ms.MOMENTUM_FLOOR = 0.0
     ms.ENTRY_QUALITY_FLOOR = 0.0
     strong = _stock(symbol="STRONG", relative_strength=10, pct_change=5)

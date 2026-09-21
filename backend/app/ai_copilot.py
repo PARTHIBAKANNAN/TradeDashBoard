@@ -640,9 +640,10 @@ def can_audit_symbol(sym: str, signal: str = "") -> bool:
     """Check if symbol has already been audited today (strategy-aware or symbol-level single-fire lock)."""
     now_ist = datetime.now(IST)
     today = now_ist.date()
-    
+
     # Phase 1: No automated execution before 09:30 IST (C0.5 completion)
     from datetime import time as dt_time
+
     if now_ist.time() < dt_time(9, 30):
         return False
 
@@ -759,7 +760,7 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
 
             side = "BUY" if "BUY" in dec else "SELL"
             notes = f"AI_COPILOT | {signal} | score={score} | auto"
-            
+
             # Phase 3: Programmatic ATR/Structural Stops
             computed_stops = trade_management.calculate_initial_stops(sym, side, entry)
             sl_price = computed_stops["sl_price"]
@@ -776,10 +777,10 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
 
             qty1 = quantity // 2
             qty2 = quantity - qty1
-            
+
             # Order 1: 50% partial exit at +1.5R
             target1 = entry + (1.5 * sl_distance) if side == "BUY" else entry - (1.5 * sl_distance)
-            
+
             success_count = 0
             if qty1 > 0:
                 res1 = paper_trading.place_auto_paper_order_sync(
@@ -793,8 +794,9 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
                     tsl_value=tsl_value,
                     notes=notes + " | 50% Partial 1.5R",
                 )
-                if res1: success_count += 1
-                
+                if res1:
+                    success_count += 1
+
             if qty2 > 0:
                 res2 = paper_trading.place_auto_paper_order_sync(
                     user_id=config.AUTO_PAPER_USER_ID,
@@ -807,7 +809,8 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
                     tsl_value=tsl_value,
                     notes=notes + " | Trailing Runner",
                 )
-                if res2: success_count += 1
+                if res2:
+                    success_count += 1
 
             if success_count > 0:
                 with _notified_lock:

@@ -216,7 +216,7 @@ def get_intraday_closes(sym: str) -> list[float]:
     closes: list[float] = []
     for comp in _completed_day_candles.get(sym, []):
         closes.append(float(comp[2][3]))
-        
+
     cur = _day_candles.get(sym)
     if cur and cur[2]:
         closes.append(float(cur[2][3]))
@@ -238,7 +238,7 @@ def get_intraday_candles(sym: str) -> list[dict]:
                 "volume": float(comp[4]),
             }
         )
-        
+
     cur = _day_candles.get(sym)
     if cur and cur[2]:
         ohlc = cur[2]

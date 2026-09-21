@@ -303,9 +303,15 @@ async def fill_order(order_id: int, user_id: str, ltp: float) -> dict | None:
 
 
 async def update_trade_metrics(
-    order_id: int, user_id: str, sl_price: float | None, mfe_price: float, mae_price: float,
-    time_to_05r: datetime | None, time_to_1r: datetime | None,
-    time_to_15r: datetime | None, time_to_2r: datetime | None
+    order_id: int,
+    user_id: str,
+    sl_price: float | None,
+    mfe_price: float,
+    mae_price: float,
+    time_to_05r: datetime | None,
+    time_to_1r: datetime | None,
+    time_to_15r: datetime | None,
+    time_to_2r: datetime | None,
 ) -> None:
     """System-driven: called only from order_monitor's tick-driven metric update, never
     from a user request, so no separate ownership ambiguity beyond the WHERE clause."""
@@ -317,9 +323,15 @@ async def update_trade_metrics(
             "update public.paper_orders set sl_price=$1, mfe_price=$2, peak_price=$2, mae_price=$3, "
             "time_to_05r=$4, time_to_1r=$5, time_to_15r=$6, time_to_2r=$7 "
             "where id=$8 and user_id=$9 and status='OPEN'",
-            sl_price, mfe_price, mae_price,
-            time_to_05r, time_to_1r, time_to_15r, time_to_2r,
-            order_id, user_id,
+            sl_price,
+            mfe_price,
+            mae_price,
+            time_to_05r,
+            time_to_1r,
+            time_to_15r,
+            time_to_2r,
+            order_id,
+            user_id,
         )
 
 
@@ -379,7 +391,7 @@ async def close_order(order_id: int, user_id: str, reason: str, exit_price: floa
             if initial_risk > 0:
                 mfe_p = float(row.get("mfe_price") or row.get("peak_price") or row["entry_price"])
                 mae_p = float(row.get("mae_price") or row["entry_price"])
-                
+
                 if row["side"] == "BUY":
                     mfe_r = round((mfe_p - float(row["entry_price"])) / initial_risk, 2)
                     mae_r = round((float(row["entry_price"]) - mae_p) / initial_risk, 2)
