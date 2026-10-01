@@ -31,7 +31,7 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "account": "",
         "local_database_path": null,
         "safety_version": "3.8.1",
-        "timestamp": "2026-09-30 15:29:56",
+        "timestamp": "2026-10-01 15:52:41",
         "packages_found": 13,
         "vulnerabilities_found": 17,
         "vulnerabilities_ignored": 0,
@@ -56,7 +56,7 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "git": {
             "branch": "main",
             "tag": "",
-            "commit": "7701a0d3498f0c45007478b6d59ec259e831ea72",
+            "commit": "28440a91d7ef87787d9053e23aa3ac09e0868732",
             "dirty": "True",
             "origin": "https://github.com/PARTHIBAKANNAN/TradeDashBoard"
         },
@@ -441,11 +441,12 @@ We highly encourage switching to the new `scan` command which is easier to use, 
                 "49.0.0"
             ],
             "secure_versions": [
+                "50.0.2",
                 "50.0.1",
                 "50.0.0"
             ],
-            "latest_version_without_known_vulnerabilities": "50.0.1",
-            "latest_version": "50.0.1",
+            "latest_version_without_known_vulnerabilities": "50.0.2",
+            "latest_version": "50.0.2",
             "more_info_url": "https://getsafety.com/p/pypi/cryptography/97c/"
         },
         "pyjwt": {
