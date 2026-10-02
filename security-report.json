@@ -31,7 +31,7 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "account": "",
         "local_database_path": null,
         "safety_version": "3.8.1",
-        "timestamp": "2026-10-01 15:52:41",
+        "timestamp": "2026-10-02 15:13:38",
         "packages_found": 13,
         "vulnerabilities_found": 17,
         "vulnerabilities_ignored": 0,
@@ -56,7 +56,7 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "git": {
             "branch": "main",
             "tag": "",
-            "commit": "28440a91d7ef87787d9053e23aa3ac09e0868732",
+            "commit": "18cc6e981c4a8dc18385c7d5c127711225ec81ea",
             "dirty": "True",
             "origin": "https://github.com/PARTHIBAKANNAN/TradeDashBoard"
         },
@@ -597,11 +597,12 @@ We highly encourage switching to the new `scan` command which is easier to use, 
                 "1.2.1"
             ],
             "secure_versions": [
+                "1.2.4",
                 "1.2.3",
                 "1.2.2"
             ],
-            "latest_version_without_known_vulnerabilities": "1.2.3",
-            "latest_version": "1.2.3",
+            "latest_version_without_known_vulnerabilities": "1.2.4",
+            "latest_version": "1.2.4",
             "more_info_url": "https://getsafety.com/p/pypi/python-dotenv/97c/"
         },
         "requests": {
