@@ -19,7 +19,7 @@ from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from . import (ai_copilot, auth, candle_aggregator, candle_history, config,
+from . import (ai_copilot, aliceblue_auth, aliceblue_service, auth, candle_aggregator, candle_history, config,
                depth_manager, momentum_score, order_monitor, paper_trading,
                telegram_notify)
 from .config import IST, MARKET_CLOSE, MARKET_OPEN
@@ -51,11 +51,27 @@ def _start_engine():
     """Authenticate (if needed), backfill, and launch the websocket thread."""
     if not config.DATA_ENGINE_ENABLED:
         logger.info(
-            "DATA_ENGINE_ENABLED=false on '%s'; not opening the FYERS websocket "
+            "DATA_ENGINE_ENABLED=false on '%s'; not opening broker websocket "
             "(single-WS-per-app safety).",
             config.INSTANCE_NAME,
         )
         return
+
+    # ── Alice Blue Broker Engine ──
+    if getattr(config, "BROKER", "aliceblue") == "aliceblue":
+        session = aliceblue_auth.get_cached_session()
+        if not session:
+            logger.warning(
+                "No valid Alice Blue session token found — run `python manual_auth_aliceblue.py` or authorize."
+            )
+            return
+        market_state.market_open = True
+        aliceblue_service.aliceblue_engine.start_websocket()
+        _last_recommended.clear()
+        logger.info("Alice Blue data engine started on '%s' (single-WS owner).", config.INSTANCE_NAME)
+        return
+
+    # ── FYERS Broker Engine (Legacy) ──
     if not data_engine.access_token:
         token = auth.get_access_token()
         if token:
@@ -81,6 +97,12 @@ def ensure_engine_running():
     mid-session /callback login). Safe to call repeatedly."""
     if not config.DATA_ENGINE_ENABLED or not is_market_open():
         return
+
+    if getattr(config, "BROKER", "aliceblue") == "aliceblue":
+        if aliceblue_auth.get_cached_session() and not aliceblue_service.aliceblue_engine.running:
+            _start_engine()
+        return
+
     if data_engine.access_token and not data_engine.running:
         _start_engine()
 
@@ -126,8 +148,11 @@ def _recommended_digest():
 
 
 def _stop_engine():
-    data_engine.stop_websocket()
-    depth_manager.stop()
+    if getattr(config, "BROKER", "aliceblue") == "aliceblue":
+        aliceblue_service.aliceblue_engine.stop_websocket()
+    else:
+        data_engine.stop_websocket()
+        depth_manager.stop()
     market_state.market_open = False
     logger.info("Data engine stopped (market closed / standby).")
 

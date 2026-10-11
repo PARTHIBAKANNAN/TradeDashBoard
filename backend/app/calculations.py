@@ -239,10 +239,13 @@ def process_incoming_tick(
                     volume_ratio=vol_ratio,
                 )
 
-                min_mom = getattr(_cfg, "MIN_MOMENTUM_SCORE", 70)
-                min_eq = getattr(_cfg, "MIN_ENTRY_QUALITY_SCORE", 70)
+                min_mom = getattr(_cfg, "MIN_MOMENTUM_SCORE", 62)
+                min_eq = getattr(_cfg, "MIN_ENTRY_QUALITY_SCORE", 65)
+                min_comp = getattr(_cfg, "MIN_COMPOSITE_CONVICTION", 68)
 
-                passes_eval = (mom_score >= min_mom) and (eq_score >= min_eq)
+                # Composite score balances Fresh Entry Quality (55%) with Momentum Velocity (45%)
+                composite_score = round((eq_score * 0.55) + (mom_score * 0.45), 1)
+                passes_eval = (composite_score >= min_comp) and (mom_score >= min_mom) and (eq_score >= min_eq)
 
                 import logging as _log
 

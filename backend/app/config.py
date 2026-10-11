@@ -14,6 +14,17 @@ load_dotenv()
 
 IST = pytz.timezone("Asia/Kolkata")
 
+# ----------------- Broker Selection -----------------
+BROKER = os.getenv("BROKER", "aliceblue").strip().lower()
+
+# ----------------- Alice Blue credentials -----------------
+ALICEBLUE_USER_ID = os.getenv("ALICEBLUE_USER_ID", "2628887").strip()
+ALICEBLUE_PASSWORD = os.getenv("ALICEBLUE_PASSWORD", "Thalamsd&7781").strip()
+ALICEBLUE_TOTP_KEY = os.getenv("ALICEBLUE_TOTP_KEY", "NDAWXZFBTOUJKUBDGOSJMJBYZKFYGPDR").replace(" ", "").strip()
+ALICEBLUE_APP_KEY = os.getenv("ALICEBLUE_APP_KEY", "X926u86ZC6").strip()
+ALICEBLUE_API_SECRET = os.getenv("ALICEBLUE_API_SECRET", "0su1gFNZfoHtLMWOKpES8TudTfzM2SYVB4gKxpBPkSTw7bHEW2GTbB78LsUE1bRnlyz4OeGgohtkeHk9qFN5o0QMmvyQax2sEirx").strip()
+ALICEBLUE_SESSION_TOKEN = os.getenv("ALICEBLUE_SESSION_TOKEN", "").strip()
+
 # ----------------- Secret credentials (backend only) -----------------
 CLIENT_ID = os.getenv("FYERS_CLIENT_ID", "")
 SECRET_KEY = os.getenv("FYERS_SECRET_KEY", "")
@@ -91,9 +102,11 @@ MIN_AI_CONFIDENCE = int(os.getenv("MIN_AI_CONFIDENCE", "85"))
 #
 # PulseHunter V2 Dual-Score Thresholds (0-100 scale)
 # MIN_MOMENTUM_SCORE: Measures whether the stock is inherently exhibiting elite momentum (RS + Volume + Velocity).
-MIN_MOMENTUM_SCORE = int(os.getenv("MIN_MOMENTUM_SCORE", "70"))
+MIN_MOMENTUM_SCORE = int(os.getenv("MIN_MOMENTUM_SCORE", "62"))
 # MIN_ENTRY_QUALITY_SCORE: Measures whether the entry location is fresh vs. an extended chase.
-MIN_ENTRY_QUALITY_SCORE = int(os.getenv("MIN_ENTRY_QUALITY_SCORE", "70"))
+MIN_ENTRY_QUALITY_SCORE = int(os.getenv("MIN_ENTRY_QUALITY_SCORE", "65"))
+# Minimum combined conviction score (weighted average of EQ 55% + Mom 45%)
+MIN_COMPOSITE_CONVICTION = int(os.getenv("MIN_COMPOSITE_CONVICTION", "68"))
 # Legacy alias for backwards compatibility
 MIN_CONVICTION_SCORE = MIN_MOMENTUM_SCORE
 
@@ -110,10 +123,10 @@ MAX_DAILY_AUTO_TRADES = int(os.getenv("MAX_DAILY_AUTO_TRADES", "4"))
 MAX_DAILY_MANUAL_ALERTS = int(os.getenv("MAX_DAILY_MANUAL_ALERTS", "4"))
 #
 # Execution & Scanning Cutoffs (Session minute 0 = 09:15 AM):
-#   ORB_EXECUTE_UNTIL_MINUTE (60 = 10:15 AM): Cutoff for Type-A ORB breakout entries to avoid midday chop.
+#   ORB_EXECUTE_UNTIL_MINUTE (90 = 10:45 AM): Extended cutoff for prime breakout entries.
 #   RECLAIM_EXECUTE_UNTIL_MINUTE (105 = 11:00 AM): Cutoff for Type-B VWAP reclaim / retest setups.
 #   MARKET_SCAN_END_MINUTE (105 = 11:00 AM): Hard engine cutoff after which ALL signal scanning halts.
-ORB_EXECUTE_UNTIL_MINUTE = int(os.getenv("ORB_EXECUTE_UNTIL_MINUTE", "60"))
+ORB_EXECUTE_UNTIL_MINUTE = int(os.getenv("ORB_EXECUTE_UNTIL_MINUTE", "90"))
 RECLAIM_EXECUTE_UNTIL_MINUTE = int(os.getenv("RECLAIM_EXECUTE_UNTIL_MINUTE", "105"))
 MARKET_SCAN_END_MINUTE = int(os.getenv("MARKET_SCAN_END_MINUTE", "105"))
 AUTO_EXECUTE_UNTIL_MINUTE = int(
@@ -140,7 +153,7 @@ SECTOR_BUDGET_TRADES = int(os.getenv("SECTOR_BUDGET_TRADES", "1"))
 SECTOR_BUDGET_RISK = float(os.getenv("SECTOR_BUDGET_RISK", "800.0"))
 SQUEEZE_BUDGET_TRADES = int(os.getenv("SQUEEZE_BUDGET_TRADES", "1"))
 SQUEEZE_BUDGET_RISK = float(os.getenv("SQUEEZE_BUDGET_RISK", "800.0"))
-MAX_MANUAL_ALERTS_PER_STRATEGY = int(os.getenv("MAX_MANUAL_ALERTS_PER_STRATEGY", "1"))
+MAX_MANUAL_ALERTS_PER_STRATEGY = int(os.getenv("MAX_MANUAL_ALERTS_PER_STRATEGY", "3"))
 
 
 # ----------------- Token cache & refresh -----------------
@@ -148,6 +161,10 @@ MAX_MANUAL_ALERTS_PER_STRATEGY = int(os.getenv("MAX_MANUAL_ALERTS_PER_STRATEGY",
 TOKEN_CACHE_FILE = os.getenv(
     "TOKEN_CACHE_FILE",
     os.path.join(os.path.dirname(__file__), "..", ".token_cache.json"),
+)
+ALICEBLUE_TOKEN_CACHE_FILE = os.getenv(
+    "ALICEBLUE_TOKEN_CACHE_FILE",
+    os.path.join(os.path.dirname(__file__), "..", "data", "aliceblue_token.json"),
 )
 FYERS_REFRESH_URL = os.getenv(
     "FYERS_REFRESH_URL", "https://api-t1.fyers.in/api/v3/validate-refresh-token"

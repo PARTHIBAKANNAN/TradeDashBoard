@@ -26,7 +26,7 @@ from .logging_config import configure_logging
 
 configure_logging()
 
-from . import (auth, candle_history, charts, config, paper_trading, security,
+from . import (aliceblue_auth, aliceblue_service, auth, candle_history, charts, config, paper_trading, security,
                smart_money)
 from .broadcaster import Broadcaster, build_frame, snapshot_from_state
 from .fyers_service import data_engine
@@ -38,14 +38,21 @@ logger = logging.getLogger(__name__)
 
 
 def _live_snapshot() -> dict:
-    """Snapshot provider for the Broadcaster: reads state + patches fyers flag."""
+    """Snapshot provider for the Broadcaster: reads state + patches broker connection flag."""
     snap = snapshot_from_state(market_state)
-    is_auth = bool(auth.auth_status()["authenticated"])
-    # Outside active market hours (e.g. 08:45-09:15 AM pre-market), valid auth is sufficient
-    # During market hours (09:15-15:30), data_engine socket must also be actively running
-    snap["fyers_connected"] = (
-        is_auth if not market_state.market_open else bool(is_auth and data_engine.running)
-    )
+    if getattr(config, "BROKER", "aliceblue") == "aliceblue":
+        is_auth = bool(aliceblue_auth.get_cached_session())
+        connected = (
+            is_auth if not market_state.market_open else bool(is_auth and aliceblue_service.aliceblue_engine.running)
+        )
+    else:
+        is_auth = bool(auth.auth_status()["authenticated"])
+        connected = (
+            is_auth if not market_state.market_open else bool(is_auth and data_engine.running)
+        )
+    snap["fyers_connected"] = connected
+    snap["broker_connected"] = connected
+    snap["broker"] = getattr(config, "BROKER", "aliceblue")
     return snap
 
 
@@ -131,32 +138,52 @@ async def me(request: Request):
     }
 
 
-# ----------------- FYERS account auth (admin-only) -----------------
+# ----------------- Broker account auth (admin-only) -----------------
 @app.get("/api/auth/status", dependencies=[Depends(require_login)])
-async def fyers_status():
+async def broker_status():
+    if getattr(config, "BROKER", "aliceblue") == "aliceblue":
+        session = aliceblue_auth.get_cached_session()
+        return {
+            "authenticated": bool(session),
+            "broker": "aliceblue",
+            "expires_in": 86400 if session else 0,
+        }
     return auth.auth_status()
 
 
 @app.get("/api/auth/login-url", dependencies=[Depends(require_login)])
-async def fyers_login_url():
+async def broker_login_url():
+    if getattr(config, "BROKER", "aliceblue") == "aliceblue":
+        return {"url": aliceblue_auth.build_login_url()}
     return {"url": auth.build_login_url()}
 
 
 @app.get("/callback", response_class=HTMLResponse)
-async def fyers_callback(request: Request):
-    """FYERS redirects here after browser authorization; auto-capture the code."""
-    auth_code = request.query_params.get("auth_code")
+async def broker_callback(request: Request):
+    """Broker (Alice Blue or FYERS) redirects here after browser authorization; auto-capture the code."""
+    # Alice Blue uses `authCode`, FYERS uses `auth_code`
+    auth_code = request.query_params.get("authCode") or request.query_params.get("auth_code")
     if not auth_code:
-        return HTMLResponse(_callback_html(False, "No auth_code in the redirect."), status_code=400)
-    token = auth.exchange_and_cache(auth_code)
-    if not token:
-        return HTMLResponse(
-            _callback_html(False, "Token exchange failed. Check server logs."), status_code=400
-        )
-    data_engine.set_token(token)
-    # Bring the data engine up now if the market is open.
-    ensure_engine_running()
-    return HTMLResponse(_callback_html(True, "FYERS connected. You can close this tab."))
+        return HTMLResponse(_callback_html(False, "No authorization code found in redirect."), status_code=400)
+
+    is_alice = getattr(config, "BROKER", "aliceblue") == "aliceblue" or request.query_params.get("authCode")
+    if is_alice:
+        token = aliceblue_auth.exchange_auth_code_for_session(auth_code)
+        if not token:
+            return HTMLResponse(
+                _callback_html(False, "Alice Blue token exchange failed. Check server logs."), status_code=400
+            )
+        ensure_engine_running()
+        return HTMLResponse(_callback_html(True, "Alice Blue connected successfully! You can close this tab."))
+    else:
+        token = auth.exchange_and_cache(auth_code)
+        if not token:
+            return HTMLResponse(
+                _callback_html(False, "FYERS token exchange failed. Check server logs."), status_code=400
+            )
+        data_engine.set_token(token)
+        ensure_engine_running()
+        return HTMLResponse(_callback_html(True, "FYERS connected. You can close this tab."))
 
 
 def _callback_html(ok: bool, msg: str) -> str:
