@@ -189,6 +189,35 @@ def _cleanup_old_candles():
 def _daily_login():
     from . import candle_history, order_monitor
 
+    # ── Alice Blue Broker Workflow ──
+    if getattr(config, "BROKER", "aliceblue") == "aliceblue":
+        session = aliceblue_auth.get_cached_session()
+        if not session:
+            logger.warning("Daily 08:45 Alice Blue check: No active session. Manual authorization required.")
+            if config.TELEGRAM_BOT_TOKEN and config.TELEGRAM_CHAT_ID:
+                telegram_notify.send_message(
+                    "⚠️ *Alice Blue Session Needed*\n\nPlease log in to re-authorize: /callback"
+                )
+            return
+
+        logger.info("Daily Alice Blue session token verified (active).")
+        # Ensure contract master is loaded
+        aliceblue_service.aliceblue_engine.contract_master.load_contracts()
+        # Reset signals across all stocks at 08:45 AM
+        market_state.reset_signals()
+        logger.info("Market state signals reset for the new session.")
+        # Run pre-market briefing
+        try:
+            ai_copilot.run_premarket_briefing()
+        except Exception:
+            logger.exception("Failed to run premarket AI briefing")
+        # Refresh yesterday's high/low/close from candle history
+        loop = order_monitor.get_loop()
+        if loop is not None:
+            asyncio.run_coroutine_threadsafe(candle_history.seed_missing_state(market_state), loop)
+        return
+
+    # ── FYERS Broker Workflow (Legacy) ──
     token = auth.get_access_token(force_refresh=True)
     if not token:
         logger.warning("Daily token refresh failed — MANUAL LOGIN required.")
