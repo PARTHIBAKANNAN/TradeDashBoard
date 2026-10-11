@@ -19,9 +19,9 @@ from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from . import (ai_copilot, aliceblue_auth, aliceblue_service, auth, candle_aggregator, candle_history, config,
-               depth_manager, momentum_score, order_monitor, paper_trading,
-               telegram_notify)
+from . import (ai_copilot, aliceblue_auth, aliceblue_service, auth,
+               candle_aggregator, candle_history, config, depth_manager,
+               momentum_score, order_monitor, paper_trading, telegram_notify)
 from .config import IST, MARKET_CLOSE, MARKET_OPEN
 from .fyers_service import data_engine
 from .state import market_state
@@ -68,7 +68,9 @@ def _start_engine():
         market_state.market_open = True
         aliceblue_service.aliceblue_engine.start_websocket()
         _last_recommended.clear()
-        logger.info("Alice Blue data engine started on '%s' (single-WS owner).", config.INSTANCE_NAME)
+        logger.info(
+            "Alice Blue data engine started on '%s' (single-WS owner).", config.INSTANCE_NAME
+        )
         return
 
     # ── FYERS Broker Engine (Legacy) ──

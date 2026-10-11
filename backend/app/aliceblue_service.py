@@ -8,22 +8,23 @@ Ingests live market data from Alice Blue NorenWS WebSocket:
   * Dispatches real-time ticks into CandleAggregator and MarketState.
 """
 
-from datetime import datetime
 import csv
 import hashlib
 import json
 import logging
-from pathlib import Path
 import threading
 import time
+from datetime import datetime
+from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 from zoneinfo import ZoneInfo
+
 import requests
 import websocket
 
 from . import aliceblue_auth, candle_aggregator, config
 from .calculations import process_incoming_tick
-from .config import (ALL_SYMBOLS, BENCHMARK_SYMBOL, IST, WATCHLIST, short_symbol)
+from .config import ALL_SYMBOLS, BENCHMARK_SYMBOL, IST, WATCHLIST, short_symbol
 from .state import market_state
 
 logger = logging.getLogger(__name__)
@@ -59,9 +60,13 @@ class AliceBlueContractMaster:
                     resp = requests.get(NSE_CSV_URL, timeout=30)
                     if resp.status_code == 200 and len(resp.content) > 10000:
                         self.csv_path.write_bytes(resp.content)
-                        logger.info("Saved Alice Blue NSE contract master (%d bytes)", len(resp.content))
+                        logger.info(
+                            "Saved Alice Blue NSE contract master (%d bytes)", len(resp.content)
+                        )
                     else:
-                        logger.error("Failed to download Alice Blue NSE master: HTTP %d", resp.status_code)
+                        logger.error(
+                            "Failed to download Alice Blue NSE master: HTTP %d", resp.status_code
+                        )
                         return False
                 except Exception as e:
                     logger.error("Exception downloading Alice Blue NSE master: %s", e)
@@ -310,7 +315,11 @@ class AliceBlueDataEngine:
 
             def on_message(ws, raw_msg):
                 try:
-                    data = json.loads(raw_msg) if isinstance(raw_msg, str) and raw_msg.startswith("{") else raw_msg
+                    data = (
+                        json.loads(raw_msg)
+                        if isinstance(raw_msg, str) and raw_msg.startswith("{")
+                        else raw_msg
+                    )
                 except Exception:
                     return
 

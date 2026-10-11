@@ -1,6 +1,6 @@
 import pytest
-from app.aliceblue_service import AliceBlueContractMaster, AliceBlueDataEngine
 from app import aliceblue_auth
+from app.aliceblue_service import AliceBlueContractMaster, AliceBlueDataEngine
 
 
 def test_contract_master_token_lookup():

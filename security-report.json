@@ -31,8 +31,8 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "account": "",
         "local_database_path": null,
         "safety_version": "3.8.1",
-        "timestamp": "2026-10-10 14:56:35",
-        "packages_found": 13,
+        "timestamp": "2026-10-11 15:13:25",
+        "packages_found": 14,
         "vulnerabilities_found": 17,
         "vulnerabilities_ignored": 0,
         "remediations_recommended": 0,
@@ -56,7 +56,7 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "git": {
             "branch": "main",
             "tag": "",
-            "commit": "a16d4ce81e842591fc7cf9b4aa288def95583f18",
+            "commit": "296ea2309eee7b72b1ef232e22a566db2ab411dd",
             "dirty": "True",
             "origin": "https://github.com/PARTHIBAKANNAN/TradeDashBoard"
         },
@@ -244,6 +244,21 @@ We highly encourage switching to the new `scan` command which is easier to use, 
                     "marker": null,
                     "name": "openpyxl",
                     "specifier": "==3.1.5",
+                    "url": null,
+                    "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
+                }
+            ]
+        },
+        "websocket-client": {
+            "name": "websocket-client",
+            "version": null,
+            "requirements": [
+                {
+                    "raw": "websocket-client>=1.8.0  # Alice Blue NorenWS and realtime socket streaming",
+                    "extras": [],
+                    "marker": null,
+                    "name": "websocket-client",
+                    "specifier": ">=1.8.0",
                     "url": null,
                     "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
                 }
@@ -794,7 +809,7 @@ We highly encourage switching to the new `scan` command which is easier to use, 
     "announcements": [
         {
             "type": "warning",
-            "message": "Warning: asyncpg is unpinned. Safety by default does not report on potential vulnerabilities in unpinned packages. It is recommended to pin your dependencies unless this is a library meant for distribution. To learn more about reporting these, specifier range handling, and options for scanning unpinned packages visit https://docs.pyup.io/docs/safety-range-specs"
+            "message": "Warning: asyncpg and websocket-client are unpinned. Safety by default does not report on potential vulnerabilities in unpinned packages. It is recommended to pin your dependencies unless this is a library meant for distribution. To learn more about reporting these, specifier range handling, and options for scanning unpinned packages visit https://docs.pyup.io/docs/safety-range-specs"
         }
     ],
     "vulnerabilities": [

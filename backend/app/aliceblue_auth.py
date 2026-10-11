@@ -5,14 +5,15 @@ Manages Alice Blue userSession generation, checksum calculation,
 token caching, and JWT expiration validation.
 """
 
-from datetime import datetime
 import hashlib
 import json
 import logging
-from pathlib import Path
 import time
+from datetime import datetime
+from pathlib import Path
 from typing import Optional
 from zoneinfo import ZoneInfo
+
 import requests
 
 from . import config
@@ -46,6 +47,7 @@ def is_token_valid(token_str: str) -> bool:
         if len(parts) < 2:
             return False
         import base64
+
         payload_bytes = base64.b64decode(parts[1] + "==")
         payload = json.loads(payload_bytes.decode("utf-8"))
         exp = payload.get("exp", 0)
@@ -70,7 +72,9 @@ def get_cached_session() -> Optional[str]:
             data = json.loads(cache_path.read_text(encoding="utf-8"))
             token = data.get("userSession") or data.get("user_session") or ""
             if is_token_valid(token):
-                logger.info("Restored valid Alice Blue session token from cache: %s", cache_path.name)
+                logger.info(
+                    "Restored valid Alice Blue session token from cache: %s", cache_path.name
+                )
                 return token
         except Exception as e:
             logger.warning("Failed reading token cache file: %s", e)
@@ -82,10 +86,13 @@ def save_session_token(token: str) -> None:
     cache_path = get_token_cache_path()
     try:
         cache_path.write_text(
-            json.dumps({
-                "userSession": token,
-                "updated_at": datetime.now(IST).isoformat(),
-            }, indent=2),
+            json.dumps(
+                {
+                    "userSession": token,
+                    "updated_at": datetime.now(IST).isoformat(),
+                },
+                indent=2,
+            ),
             encoding="utf-8",
         )
         logger.info("Saved Alice Blue userSession to %s", cache_path)

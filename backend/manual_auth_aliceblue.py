@@ -5,6 +5,7 @@ Run:
 """
 
 from urllib.parse import parse_qs, urlparse
+
 from app import aliceblue_auth, config
 
 

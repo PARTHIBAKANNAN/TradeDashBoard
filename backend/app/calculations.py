@@ -245,7 +245,11 @@ def process_incoming_tick(
 
                 # Composite score balances Fresh Entry Quality (55%) with Momentum Velocity (45%)
                 composite_score = round((eq_score * 0.55) + (mom_score * 0.45), 1)
-                passes_eval = (composite_score >= min_comp) and (mom_score >= min_mom) and (eq_score >= min_eq)
+                passes_eval = (
+                    (composite_score >= min_comp)
+                    and (mom_score >= min_mom)
+                    and (eq_score >= min_eq)
+                )
 
                 import logging as _log
 
