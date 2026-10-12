@@ -333,10 +333,11 @@ def init_scheduler():
         _start_engine()
     else:
         # Populate a static snapshot (prev close / last ranges) for the "Closed" view.
-        token = auth.get_access_token()
-        if token:
-            data_engine.set_token(token)
-            data_engine.backfill()
+        if getattr(config, "BROKER", "aliceblue") == "fyers":
+            token = auth.get_access_token()
+            if token:
+                data_engine.set_token(token)
+                data_engine.backfill()
         market_state.market_open = False
         logger.info("Booted in standby (market closed); serving snapshot.")
 
