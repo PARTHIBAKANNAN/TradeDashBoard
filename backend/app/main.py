@@ -156,8 +156,31 @@ async def broker_status():
 @app.get("/api/auth/login-url", dependencies=[Depends(require_login)])
 async def broker_login_url():
     if getattr(config, "BROKER", "aliceblue") == "aliceblue":
-        return {"url": aliceblue_auth.build_login_url()}
-    return {"url": auth.build_login_url()}
+        return {"url": aliceblue_auth.build_login_url(), "broker": "aliceblue"}
+    return {"url": auth.build_login_url(), "broker": "fyers"}
+
+
+@app.post("/api/auth/aliceblue/connect", dependencies=[Depends(require_login)])
+async def aliceblue_manual_connect(body: dict):
+    """Allows manual connection by passing authCode or redirect URL."""
+    raw_code = body.get("auth_code") or body.get("authCode") or body.get("url") or ""
+    auth_code = ""
+    if "authCode=" in raw_code or "auth_code=" in raw_code:
+        from urllib.parse import parse_qs, urlparse
+        q = parse_qs(urlparse(raw_code).query)
+        auth_code = q.get("authCode", [""])[0] or q.get("auth_code", [""])[0]
+    else:
+        auth_code = raw_code.strip()
+
+    if not auth_code:
+        raise HTTPException(status_code=400, detail="Missing authCode or redirect URL")
+
+    token = aliceblue_auth.exchange_auth_code_for_session(auth_code)
+    if not token:
+        raise HTTPException(status_code=400, detail="Alice Blue token exchange failed. Please verify credentials.")
+
+    ensure_engine_running()
+    return {"success": True, "message": "Alice Blue connected and streaming live!"}
 
 
 @app.get("/callback", response_class=HTMLResponse)
@@ -199,11 +222,22 @@ async def broker_callback(request: Request):
 def _callback_html(ok: bool, msg: str) -> str:
     color = "#22c55e" if ok else "#ef4444"
     title = "Connected" if ok else "Login failed"
+    status_str = "SUCCESS" if ok else "ERROR"
     return f"""<!doctype html><html><head><meta charset="utf-8"><title>{title}</title>
 <style>body{{background:#09090b;color:#e7e7ea;font-family:system-ui;display:grid;place-items:center;height:100vh;margin:0}}
-.card{{border:1px solid #26262c;border-radius:14px;padding:28px 34px;text-align:center;background:#131318}}
-h1{{color:{color};margin:0 0 8px}}a{{color:#3b82f6}}</style></head>
-<body><div class="card"><h1>{title}</h1><p>{msg}</p><p><a href="/">Back to dashboard</a></p></div></body></html>"""
+.card{{border:1px solid #26262c;border-radius:14px;padding:28px 34px;text-align:center;background:#131318;max-width:400px}}
+h1{{color:{color};margin:0 0 8px}}a{{color:#3b82f6}}</style>
+<script>
+  try {{
+    if (window.opener) {{
+      window.opener.postMessage({{ type: "ALICEBLUE_AUTH_COMPLETE", status: "{status_str}" }}, "*");
+      setTimeout(() => window.close(), 1200);
+    }}
+  }} catch(e) {{}}
+  setTimeout(() => {{ window.location.href = "/"; }}, 2000);
+</script>
+</head>
+<body><div class="card"><h1>{title}</h1><p>{msg}</p><p style="color:#a1a1aa;font-size:12px">Syncing and returning to dashboard...</p></div></body></html>"""
 
 
 # ----------------- AI Copilot routes (login-gated) -----------------

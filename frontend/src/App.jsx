@@ -30,6 +30,7 @@ import SmartMoneyScreen from "./screens/SmartMoneyScreen.jsx";
 import PaperTradingScreen from "./screens/PaperTradingScreen.jsx";
 import LandingPage from "./screens/LandingPage.jsx";
 import ThemeToggle from "./components/ThemeToggle.jsx";
+import ConnectAliceBlueModal from "./components/ConnectAliceBlueModal.jsx";
 
 // ---------------- Auth gate ----------------
 export default function App() {
@@ -181,35 +182,25 @@ function Login({ onSuccess }) {
   );
 }
 
-// ---------------- Connect-FYERS banner ----------------
-function ConnectFyersBanner() {
-  const connect = async () => {
-    try {
-      const r = await fetch("/api/auth/login-url", { credentials: "include" });
-      const j = await r.json();
-      if (j.url) window.open(j.url, "_blank", "noopener");
-    } catch {
-      /* ignore */
-    }
-  };
+// ---------------- Connect Alice Blue Banner ----------------
+function ConnectBrokerBanner({ onOpenModal }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mb-5 flex items-center justify-between gap-4 rounded-xl border border-accent-amber/30 bg-accent-amber/10 px-4 py-3"
+      className="mb-5 flex items-center justify-between gap-4 rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-3"
     >
-      <div className="flex items-center gap-3 text-sm text-accent-amber">
-        <AlertTriangle size={16} className="flex-shrink-0" />
+      <div className="flex items-center gap-3 text-sm text-blue-400">
+        <AlertTriangle size={16} className="flex-shrink-0 text-amber-400" />
         <span>
-          <b>FYERS not connected.</b> Live data is paused until you authorize
-          the broker account.
+          <b>Alice Blue not connected.</b> Live market data is paused until you authorize today&apos;s broker session.
         </span>
       </div>
       <button
-        onClick={connect}
-        className="whitespace-nowrap flex items-center gap-1.5 rounded-lg bg-accent-amber hover:brightness-110 px-3 py-1.5 text-xs font-bold text-black transition-all"
+        onClick={onOpenModal}
+        className="whitespace-nowrap flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 transition-all"
       >
-        Connect FYERS
+        Connect Alice Blue
         <ArrowUpRight size={13} />
       </button>
     </motion.div>
@@ -223,6 +214,7 @@ function Dashboard({ user, onLogout }) {
   const symbols = useSymbols();
   const [activeTab, setActiveTab] = useState("ranking");
   const [chartsFocusSymbol, setChartsFocusSymbol] = useState(null);
+  const [showBrokerModal, setShowBrokerModal] = useState(false);
   const [aiStatus, setAiStatus] = useState({
     status: "LIVE",
     model: "gemini-3.6-flash",
@@ -278,12 +270,21 @@ function Dashboard({ user, onLogout }) {
         connected={connected}
         fyersConnected={fyersConnected}
         aiStatus={aiStatus}
+        onOpenBrokerModal={() => setShowBrokerModal(true)}
+      />
+
+      <ConnectAliceBlueModal
+        isOpen={showBrokerModal}
+        onClose={() => setShowBrokerModal(false)}
+        onConnected={() => {
+          // Re-trigger status checks or socket sync if needed
+        }}
       />
 
       <div className="flex-1 overflow-auto">
         {fyersConnected === false && (
           <div className="mx-auto max-w-[1920px] w-full px-4 sm:px-6 pt-4">
-            <ConnectFyersBanner />
+            <ConnectBrokerBanner onOpenModal={() => setShowBrokerModal(true)} />
           </div>
         )}
 
@@ -332,6 +333,7 @@ function TopNavbar({
   connected,
   fyersConnected,
   aiStatus,
+  onOpenBrokerModal,
 }) {
   const openPositionsCount = usePositionsCount();
   const tabs = [
@@ -446,21 +448,11 @@ function TopNavbar({
           <div className="border-l border-subtle pl-3 flex items-center gap-3">
             {!fyersConnected && (
               <button
-                onClick={async () => {
-                  try {
-                    const r = await fetch("/api/auth/login-url", {
-                      credentials: "include",
-                    });
-                    const j = await r.json();
-                    if (j.url) window.open(j.url, "_blank", "noopener");
-                  } catch {
-                    /* ignore */
-                  }
-                }}
-                className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded bg-accent-amber text-black hover:brightness-110 transition-colors"
-                title="Connect FYERS broker account"
+                onClick={onOpenBrokerModal}
+                className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-500 transition-colors shadow-sm"
+                title="Connect Alice Blue broker account"
               >
-                <span>Connect FYERS</span>
+                <span>Connect Alice Blue</span>
                 <ArrowUpRight size={11} />
               </button>
             )}

@@ -298,6 +298,15 @@ class AliceBlueDataEngine:
 
     def _run_loop(self):
         while self._running:
+            # Re-read cached session on each connection attempt in case it was freshly renewed
+            latest_session = aliceblue_auth.get_cached_session()
+            if latest_session:
+                self.user_session = latest_session
+            if not self.user_session:
+                time.sleep(2)
+                continue
+
+            self._create_ws_session()
             susertoken = self._compute_susertoken()
 
             def on_open(ws):
