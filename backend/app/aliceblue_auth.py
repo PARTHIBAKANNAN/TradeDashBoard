@@ -100,8 +100,12 @@ def build_login_url() -> str:
     return f"https://ant.aliceblueonline.com/?appcode={app_key}"
 
 
-def is_token_valid(token_str: str) -> bool:
-    """Checks whether the Alice Blue JWT session token is structurally valid and unexpired."""
+def is_token_valid(token_str: str, updated_at_str: Optional[str] = None) -> bool:
+    """
+    Checks whether the Alice Blue JWT session token is structurally valid, unexpired,
+    and generated during today's trading session (since Alice Blue clears active
+    sessions overnight between 05:00 and 06:00 AM IST).
+    """
     if not token_str:
         return False
     try:
@@ -111,14 +115,26 @@ def is_token_valid(token_str: str) -> bool:
         payload_bytes = base64.b64decode(parts[1] + "==")
         payload = json.loads(payload_bytes.decode("utf-8"))
         exp = payload.get("exp", 0)
-        return exp > (time.time() + 300)
+        if exp <= (time.time() + 300):
+            return False
+
+        if updated_at_str:
+            updated_dt = datetime.fromisoformat(updated_at_str)
+            now_ist = datetime.now(IST)
+            if updated_dt.date() != now_ist.date():
+                return False
+            # If generated before 06:00 AM IST today, Alice Blue overnight wipe invalidates it
+            if updated_dt.time().hour < 6 and now_ist.time().hour >= 6:
+                return False
+
+        return True
     except Exception as e:
         logger.debug("JWT validation exception: %s", e)
         return False
 
 
 def get_cached_session() -> Optional[str]:
-    """Retrieves valid cached session token if available."""
+    """Retrieves valid cached session token if available and generated for today's session."""
     env_token = getattr(config, "ALICEBLUE_SESSION_TOKEN", "").strip()
     if is_token_valid(env_token):
         return env_token
@@ -128,7 +144,8 @@ def get_cached_session() -> Optional[str]:
         try:
             data = json.loads(cache_path.read_text(encoding="utf-8"))
             token = data.get("userSession") or data.get("user_session") or ""
-            if is_token_valid(token):
+            updated_at = data.get("updated_at")
+            if is_token_valid(token, updated_at):
                 logger.debug(
                     "Restored valid Alice Blue session token from cache: %s", cache_path.name
                 )
@@ -136,6 +153,36 @@ def get_cached_session() -> Optional[str]:
         except Exception as e:
             logger.warning("Failed reading token cache file: %s", e)
     return None
+
+
+def login_automatically() -> Optional[str]:
+    """
+    Performs fully headless daily authentication using configured
+    ALICEBLUE_USER_ID, ALICEBLUE_PASSWORD, and dynamic TOTP generated from ALICEBLUE_TOTP_KEY.
+    """
+    user_id = getattr(config, "ALICEBLUE_USER_ID", "").strip()
+    password = getattr(config, "ALICEBLUE_PASSWORD", "").strip()
+    totp_key = getattr(config, "ALICEBLUE_TOTP_KEY", "").strip()
+
+    if not user_id or not password or not totp_key:
+        logger.warning(
+            "Alice Blue auto-login skipped: ALICEBLUE_USER_ID, PASSWORD, or TOTP_KEY missing in config."
+        )
+        return None
+
+    try:
+        totp = generate_totp(totp_key)
+        logger.info("Generated daily TOTP for Alice Blue user %s. Initiating auto-login...", user_id)
+        token = authenticate_user(user_id, password, totp)
+        if token:
+            logger.info("Alice Blue automatic morning login SUCCEEDED.")
+            return token
+        else:
+            logger.error("Alice Blue automatic morning login FAILED.")
+            return None
+    except Exception as e:
+        logger.exception("Alice Blue automatic morning login raised exception: %s", e)
+        return None
 
 
 def save_session_token(token: str) -> None:

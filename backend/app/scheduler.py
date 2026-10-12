@@ -61,8 +61,11 @@ def _start_engine():
     if getattr(config, "BROKER", "aliceblue") == "aliceblue":
         session = aliceblue_auth.get_cached_session()
         if not session:
+            logger.info("No active Alice Blue session token for today; attempting auto-login...")
+            session = aliceblue_auth.login_automatically()
+        if not session:
             logger.warning(
-                "No valid Alice Blue session token found — run `python manual_auth_aliceblue.py` or authorize."
+                "Alice Blue auto-login failed and no valid session found — manual authorization required."
             )
             return
         market_state.market_open = True
@@ -193,10 +196,14 @@ def _daily_login():
     if getattr(config, "BROKER", "aliceblue") == "aliceblue":
         session = aliceblue_auth.get_cached_session()
         if not session:
-            logger.warning("Daily 08:45 Alice Blue check: No active session. Manual authorization required.")
+            logger.info("08:45 AM: No active session for today. Initiating Alice Blue auto-login...")
+            session = aliceblue_auth.login_automatically()
+
+        if not session:
+            logger.warning("Daily 08:45 Alice Blue auto-login failed. Manual authorization required.")
             if config.TELEGRAM_BOT_TOKEN and config.TELEGRAM_CHAT_ID:
                 telegram_notify.send_message(
-                    "⚠️ *Alice Blue Session Needed*\n\nPlease log in to re-authorize: /callback"
+                    "⚠️ *Alice Blue Session Needed*\n\nAutomatic morning login failed. Please connect manually from dashboard."
                 )
             return
 
