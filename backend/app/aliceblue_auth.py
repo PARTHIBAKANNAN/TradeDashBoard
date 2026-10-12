@@ -53,7 +53,7 @@ def _evp_bytes_to_key(password: bytes, salt: bytes, key_len: int, iv_len: int):
     while len(d) < key_len + iv_len:
         d_i = hashlib.md5(d_i + password + salt).digest()
         d += d_i
-    return d[:key_len], d[key_len: key_len + iv_len]
+    return d[:key_len], d[key_len : key_len + iv_len]
 
 
 def _encrypt_password_cryptojs(password: str, enc_key: str) -> str:
@@ -66,8 +66,7 @@ def _encrypt_password_cryptojs(password: str, enc_key: str) -> str:
         from Crypto.Util.Padding import pad
     except ImportError:
         raise RuntimeError(
-            "pycryptodome is required for Alice Blue direct login. "
-            "Run: pip install pycryptodome"
+            "pycryptodome is required for Alice Blue direct login. " "Run: pip install pycryptodome"
         )
 
     salt = _os.urandom(8)
@@ -81,6 +80,7 @@ def generate_totp(totp_key: str) -> str:
     """Generates a 6-digit TOTP from a Base32 TOTP secret (RFC 6238)."""
     try:
         import pyotp
+
         return pyotp.TOTP(totp_key).now()
     except ImportError:
         raise RuntimeError("pyotp is required: pip install pyotp")
@@ -172,7 +172,9 @@ def login_automatically() -> Optional[str]:
 
     try:
         totp = generate_totp(totp_key)
-        logger.info("Generated daily TOTP for Alice Blue user %s. Initiating auto-login...", user_id)
+        logger.info(
+            "Generated daily TOTP for Alice Blue user %s. Initiating auto-login...", user_id
+        )
         token = authenticate_user(user_id, password, totp)
         if token:
             logger.info("Alice Blue automatic morning login SUCCEEDED.")

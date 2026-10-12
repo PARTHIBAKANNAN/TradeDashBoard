@@ -197,7 +197,8 @@ function ConnectBrokerBanner({ onOpenModal }) {
       <div className="flex items-center gap-3 text-sm text-blue-400">
         <AlertTriangle size={16} className="flex-shrink-0 text-amber-400" />
         <span>
-          <b>Alice Blue not connected.</b> Live market data is paused until you authorize today&apos;s broker session.
+          <b>Alice Blue not connected.</b> Live market data is paused until you
+          authorize today&apos;s broker session.
         </span>
       </div>
       <button
@@ -433,7 +434,9 @@ function TopNavbar({
               </span>
               <span
                 className={`text-[10px] sm:text-xs ${
-                  (nifty.pct_change || 0) >= 0 ? "text-green-400" : "text-red-400"
+                  (nifty.pct_change || 0) >= 0
+                    ? "text-green-400"
+                    : "text-red-400"
                 }`}
               >
                 {(nifty.pct_change || 0) >= 0 ? "+" : ""}
@@ -530,14 +533,20 @@ function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
               }`}
             >
               <div className="relative">
-                <Icon size={19} strokeWidth={isActive ? 2.3 : 1.8} className={isActive ? "text-blue-400" : "text-text-muted"} />
+                <Icon
+                  size={19}
+                  strokeWidth={isActive ? 2.3 : 1.8}
+                  className={isActive ? "text-blue-400" : "text-text-muted"}
+                />
                 {tab.badge != null && (
                   <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-0.5 rounded-full bg-emerald-500 text-black text-[9px] font-black flex items-center justify-center shadow-sm">
                     {tab.badge}
                   </span>
                 )}
               </div>
-              <span className={`text-[10px] tracking-tight leading-none mt-1 truncate max-w-[54px] ${isActive ? "text-blue-400 font-semibold" : "text-text-muted/80"}`}>
+              <span
+                className={`text-[10px] tracking-tight leading-none mt-1 truncate max-w-[54px] ${isActive ? "text-blue-400 font-semibold" : "text-text-muted/80"}`}
+              >
                 {tab.label}
               </span>
               {isActive && (

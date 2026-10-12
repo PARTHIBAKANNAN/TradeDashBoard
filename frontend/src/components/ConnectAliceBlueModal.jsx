@@ -25,7 +25,11 @@ import {
  * (auto-generated server-side). Credentials default to backend config values
  * so the form can be submitted with just one click once pre-filled.
  */
-export default function ConnectAliceBlueModal({ isOpen, onClose, onConnected }) {
+export default function ConnectAliceBlueModal({
+  isOpen,
+  onClose,
+  onConnected,
+}) {
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
   const [totp, setTotp] = useState("");
@@ -72,7 +76,11 @@ export default function ConnectAliceBlueModal({ isOpen, onClose, onConnected }) 
           if (onClose) onClose();
         }, 1400);
       } else {
-        setError(data.detail || data.message || "Login failed. Check credentials or TOTP.");
+        setError(
+          data.detail ||
+            data.message ||
+            "Login failed. Check credentials or TOTP.",
+        );
       }
     } catch (err) {
       setError("Network error — could not reach the backend.");
@@ -120,8 +128,12 @@ export default function ConnectAliceBlueModal({ isOpen, onClose, onConnected }) 
               <ShieldCheck size={22} />
             </div>
             <div>
-              <h2 className="text-base font-bold text-primary">Alice Blue Login</h2>
-              <p className="text-xs text-muted">Daily session renewal • Secure in-app</p>
+              <h2 className="text-base font-bold text-primary">
+                Alice Blue Login
+              </h2>
+              <p className="text-xs text-muted">
+                Daily session renewal • Secure in-app
+              </p>
             </div>
           </div>
 
@@ -147,7 +159,10 @@ export default function ConnectAliceBlueModal({ isOpen, onClose, onConnected }) 
                   User ID
                 </label>
                 <div className="relative">
-                  <User size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
+                  <User
+                    size={13}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-faint"
+                  />
                   <input
                     type="text"
                     value={userId}
@@ -164,7 +179,10 @@ export default function ConnectAliceBlueModal({ isOpen, onClose, onConnected }) 
                   Password
                 </label>
                 <div className="relative">
-                  <Lock size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
+                  <Lock
+                    size={13}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-faint"
+                  />
                   <input
                     type={showPwd ? "text" : "password"}
                     value={password}
@@ -185,17 +203,25 @@ export default function ConnectAliceBlueModal({ isOpen, onClose, onConnected }) 
               {/* TOTP */}
               <div>
                 <label className="block text-[11px] font-semibold text-muted mb-1">
-                  TOTP <span className="text-faint font-normal">(auto-generated if blank)</span>
+                  TOTP{" "}
+                  <span className="text-faint font-normal">
+                    (auto-generated if blank)
+                  </span>
                 </label>
                 <div className="relative">
-                  <KeyRound size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
+                  <KeyRound
+                    size={13}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-faint"
+                  />
                   <input
                     ref={totpRef}
                     type="text"
                     inputMode="numeric"
                     maxLength={6}
                     value={totp}
-                    onChange={(e) => setTotp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    onChange={(e) =>
+                      setTotp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                    }
                     placeholder="6-digit TOTP (optional)"
                     className="w-full rounded-xl border border-border/80 bg-surface-base pl-8 pr-3 py-2.5 text-xs text-primary placeholder-faint focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 tracking-widest"
                   />
@@ -206,8 +232,8 @@ export default function ConnectAliceBlueModal({ isOpen, onClose, onConnected }) 
               <div className="flex items-start gap-2 rounded-xl border border-blue-500/15 bg-blue-500/5 px-3 py-2">
                 <Zap size={12} className="text-blue-400 flex-shrink-0 mt-0.5" />
                 <p className="text-[10px] text-blue-300/80 leading-relaxed">
-                  Credentials are forwarded only to your backend. Leave fields blank
-                  to use values pre-configured in your <code>.env</code>.
+                  Credentials are forwarded only to your backend. Leave fields
+                  blank to use values pre-configured in your <code>.env</code>.
                 </p>
               </div>
 

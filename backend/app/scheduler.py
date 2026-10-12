@@ -196,11 +196,15 @@ def _daily_login():
     if getattr(config, "BROKER", "aliceblue") == "aliceblue":
         session = aliceblue_auth.get_cached_session()
         if not session:
-            logger.info("08:45 AM: No active session for today. Initiating Alice Blue auto-login...")
+            logger.info(
+                "08:45 AM: No active session for today. Initiating Alice Blue auto-login..."
+            )
             session = aliceblue_auth.login_automatically()
 
         if not session:
-            logger.warning("Daily 08:45 Alice Blue auto-login failed. Manual authorization required.")
+            logger.warning(
+                "Daily 08:45 Alice Blue auto-login failed. Manual authorization required."
+            )
             if config.TELEGRAM_BOT_TOKEN and config.TELEGRAM_CHAT_ID:
                 telegram_notify.send_message(
                     "⚠️ *Alice Blue Session Needed*\n\nAutomatic morning login failed. Please connect manually from dashboard."
