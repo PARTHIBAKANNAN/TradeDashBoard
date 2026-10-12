@@ -118,7 +118,8 @@ export default function SmartMoneyScreen() {
           </div>
         )}
 
-        <div className="bg-surface2/70 backdrop-blur-xl border border-subtle rounded-xl overflow-hidden shadow-card">
+        {/* Desktop Table View (md+) */}
+        <div className="hidden md:block bg-surface2/70 backdrop-blur-xl border border-subtle rounded-xl overflow-hidden shadow-card">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -214,14 +215,81 @@ export default function SmartMoneyScreen() {
               </tbody>
             </table>
           </div>
-          {(data?.top || []).length === 0 && !error && (
-            <div className="py-12 text-center text-faint text-sm">
-              {buildingHistory
-                ? "No stocks have enough history yet — check back after a few trading days."
-                : "No eligible stocks right now."}
-            </div>
-          )}
         </div>
+
+        {/* Mobile Cards View (<md) */}
+        <div className="md:hidden space-y-3">
+          {(data?.top || []).map((row, i) => (
+            <div
+              key={row.symbol}
+              className="bg-surface2/80 border border-subtle rounded-xl p-3.5 space-y-2.5 shadow-sm"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-mono text-faint font-bold">
+                      #{i + 1}
+                    </span>
+                    <span className="font-bold text-primary text-sm">
+                      {row.symbol}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-faint font-medium">
+                    {row.sector}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <ScoreBar score={row.score} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 py-2 border-y border-subtle/60 text-xs font-mono">
+                <div>
+                  <div className="text-[9px] text-faint uppercase font-bold">Fresh TO</div>
+                  <div className="font-semibold text-primary">{fmtRatio(row.fresh_turnover_ratio)}</div>
+                </div>
+                <div>
+                  <div className="text-[9px] text-faint uppercase font-bold">RVOL</div>
+                  <div className="font-semibold text-primary">{fmtRatio(row.rvol)}</div>
+                </div>
+                <div>
+                  <div className="text-[9px] text-faint uppercase font-bold">RS vs Nifty</div>
+                  <div className={`font-bold ${row.relative_strength >= 0 ? "text-bull" : "text-bear"}`}>
+                    {fmtSigned(row.relative_strength)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-0.5">
+                <span className="text-[10px] text-faint font-mono">
+                  History: {row.days_history}/{lookback}d
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setChartSymbol(row.symbol)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-subtle bg-surface3 px-2.5 py-1 text-xs font-semibold text-muted hover:text-accent-blue transition-colors"
+                  >
+                    <LineChart size={12} /> Chart
+                  </button>
+                  <button
+                    onClick={() => setTradeSymbol(row.symbol)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-subtle bg-surface3 px-2.5 py-1 text-xs font-bold text-bull hover:border-bull/40 transition-colors"
+                  >
+                    <Rocket size={12} /> Trade
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {(data?.top || []).length === 0 && !error && (
+          <div className="py-12 text-center text-faint text-sm bg-surface2/70 border border-subtle rounded-xl mt-3">
+            {buildingHistory
+              ? "No stocks have enough history yet — check back after a few trading days."
+              : "No eligible stocks right now."}
+          </div>
+        )}
       </div>
 
       {/* Chart modal — portalled, full-screen */}

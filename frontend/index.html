@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
     <title>
       PulseHunter · Institutional Quantitative & AI Trading Terminal
     </title>
@@ -11,6 +14,17 @@
       content="PulseHunter: Real-time quantitative momentum scanner, 5-tier filter matrix, Google Gemini 3.6 Flash AI Copilot, and automated paper trade execution engine by PARTHIBAKANNAN S."
     />
     <meta name="author" content="PARTHIBAKANNAN S" />
+
+    <!-- PWA & Mobile Web App Meta Tags -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#06070c" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="PulseHunter" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/jpeg" href="/assets/logo.jpg" />
+
     <script>
       // Set the theme class before React/CSS paint anything, to avoid a
       // flash of the wrong theme on load. Must stay in sync with the
@@ -20,6 +34,15 @@
         var theme = saved === "light" ? "light" : "dark";
         document.documentElement.classList.add(theme);
       })();
+
+      // Register Service Worker for PWA installation
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("/sw.js").catch(function (err) {
+            console.warn("PWA ServiceWorker registration failed: ", err);
+          });
+        });
+      }
     </script>
   </head>
   <body>

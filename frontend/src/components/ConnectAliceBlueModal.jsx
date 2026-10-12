@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShieldCheck,
@@ -85,7 +85,7 @@ export default function ConnectAliceBlueModal({ isOpen, onClose, onConnected }) 
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -97,11 +97,11 @@ export default function ConnectAliceBlueModal({ isOpen, onClose, onConnected }) 
 
         {/* Modal Window */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 12 }}
+          initial={{ opacity: 0, scale: 0.98, y: 24 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 12 }}
+          exit={{ opacity: 0, scale: 0.98, y: 24 }}
           transition={{ type: "spring", stiffness: 320, damping: 28 }}
-          className="relative w-full max-w-sm overflow-hidden rounded-2xl border border-border/60 bg-[#0f1117] p-6 shadow-2xl"
+          className="relative w-full max-w-sm overflow-hidden rounded-t-3xl sm:rounded-2xl border-t sm:border border-border/60 bg-[#0f1117] p-6 shadow-2xl pb-safe"
         >
           {/* Decorative gradient */}
           <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-blue-500/6 to-transparent" />

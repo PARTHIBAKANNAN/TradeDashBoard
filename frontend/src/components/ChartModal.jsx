@@ -124,10 +124,10 @@ export default function ChartModal({ symbol, stock: stockProp, onClose }) {
             exit={{ opacity: 0, y: 10, scale: 0.97 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
             onClick={(e) => e.stopPropagation()}
-            className="relative flex flex-col w-full h-full bg-surface border-t border-subtle shadow-glow overflow-hidden"
+            className="relative flex flex-col w-full h-full bg-surface border-t border-subtle shadow-glow overflow-hidden pb-safe"
           >
             {/* ── Modal header ──────────────────────────────────────────── */}
-            <div className="flex items-center justify-between gap-4 px-5 py-3 border-b border-subtle flex-shrink-0 bg-surface2/80 backdrop-blur">
+            <div className="flex items-center justify-between gap-4 px-3 sm:px-5 py-2.5 sm:py-3 border-b border-subtle flex-shrink-0 bg-surface2/80 backdrop-blur pt-safe">
               {/* Left: symbol + price info */}
               <div className="flex items-center gap-3 min-w-0 flex-wrap">
                 <span className="font-extrabold text-xl text-primary tracking-tight">

@@ -259,7 +259,7 @@ function Dashboard({ user, onLogout }) {
   const connected = meta.connected;
 
   return (
-    <div className="min-h-screen bg-surface text-primary font-sans flex flex-col">
+    <div className="min-h-screen bg-surface text-primary font-sans flex flex-col pb-16 md:pb-0">
       <TopNavbar
         user={user}
         onLogout={onLogout}
@@ -283,7 +283,7 @@ function Dashboard({ user, onLogout }) {
 
       <div className="flex-1 overflow-auto">
         {fyersConnected === false && (
-          <div className="mx-auto max-w-[1920px] w-full px-4 sm:px-6 pt-4">
+          <div className="mx-auto max-w-[1920px] w-full px-4 sm:px-6 pt-3">
             <ConnectBrokerBanner onOpenModal={() => setShowBrokerModal(true)} />
           </div>
         )}
@@ -318,11 +318,18 @@ function Dashboard({ user, onLogout }) {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* Mobile Native Bottom Tab Bar for iOS & Android */}
+      <MobileBottomBar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        openPositionsCount={usePositionsCount()}
+      />
     </div>
   );
 }
 
-// -------- Top Navbar --------
+// -------- Top Navbar (Desktop & Mobile Header) --------
 function TopNavbar({
   user,
   onLogout,
@@ -354,20 +361,20 @@ function TopNavbar({
   ];
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-subtle bg-surface2/95 backdrop-blur-xl shadow-sm">
-      <div className="mx-auto max-w-[1920px] w-full px-4 sm:px-6 py-2 flex items-center justify-between gap-4">
-        {/* Left: Brand & Status & Navigation Tabs */}
-        <div className="flex items-center gap-3 min-w-0">
+    <nav className="sticky top-0 z-50 border-b border-subtle bg-surface2/95 backdrop-blur-xl shadow-sm pt-safe">
+      <div className="mx-auto max-w-[1920px] w-full px-3 sm:px-6 py-2 flex items-center justify-between gap-3">
+        {/* Left: Brand & Status */}
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <div className="flex items-center gap-2 flex-shrink-0">
             <img
               src="/assets/logo.jpg"
               alt="PulseHunter"
               className="w-7 h-7 rounded-lg object-cover border border-accent-blue/30 shadow-glow-sm"
             />
-            <h1 className="text-xs font-extrabold tracking-tight bg-gradient-to-r from-accent-blue via-cyan-400 to-accent-violet bg-clip-text text-transparent hidden sm:block font-display">
+            <h1 className="text-xs font-extrabold tracking-tight bg-gradient-to-r from-accent-blue via-cyan-400 to-accent-violet bg-clip-text text-transparent font-display">
               PulseHunter
             </h1>
-            <div className="flex items-center gap-1.5 ml-1 pl-2.5 border-l border-subtle">
+            <div className="flex items-center gap-1.5 ml-0.5 sm:ml-1 pl-2 sm:pl-2.5 border-l border-subtle">
               <span
                 className={`w-2 h-2 rounded-full ${
                   connected && marketOpen
@@ -387,8 +394,8 @@ function TopNavbar({
             </div>
           </div>
 
-          {/* Navigation Tabs */}
-          <div className="flex items-center gap-1 overflow-x-auto py-0.5 border-l border-subtle pl-2.5">
+          {/* Desktop Navigation Tabs (Hidden on mobile) */}
+          <div className="hidden md:flex items-center gap-1 overflow-x-auto py-0.5 border-l border-subtle pl-2.5">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
@@ -407,11 +414,34 @@ function TopNavbar({
         </div>
 
         {/* Right side: Benchmark & AI Status & User */}
-        <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
+        <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+          {/* NIFTY 50 (Mobile compact & desktop full) */}
+          <div className="text-right border-l border-subtle pl-2.5 sm:pl-3">
+            <div className="text-[9px] text-faint font-bold uppercase tracking-wider hidden sm:block">
+              NIFTY 50
+            </div>
+            <div className="font-mono text-xs font-bold flex items-center gap-1">
+              <span className="text-primary text-[11px] sm:text-xs">
+                {nifty.ltp?.toLocaleString("en-IN", {
+                  minimumFractionDigits: 1,
+                  maximumFractionDigits: 2,
+                }) || "—"}
+              </span>
+              <span
+                className={`text-[10px] sm:text-xs ${
+                  (nifty.pct_change || 0) >= 0 ? "text-green-400" : "text-red-400"
+                }`}
+              >
+                {(nifty.pct_change || 0) >= 0 ? "+" : ""}
+                {nifty.pct_change || 0}%
+              </span>
+            </div>
+          </div>
+
           {/* Live AI Status Badge */}
           {aiStatus?.status === "LIVE" ? (
             <div
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-mono text-[10px] sm:text-[11px] font-bold shadow-sm whitespace-nowrap"
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-mono text-[10px] sm:text-[11px] font-bold shadow-sm whitespace-nowrap"
               title="Google Gemini 3.6 Flash Connected & Live"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -419,40 +449,21 @@ function TopNavbar({
             </div>
           ) : (
             <div
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 font-mono text-[10px] sm:text-[11px] font-bold shadow-sm whitespace-nowrap"
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 font-mono text-[10px] sm:text-[11px] font-bold shadow-sm whitespace-nowrap"
               title="Quantitative Structural Math Fallback Engine Active"
             >
               <span>⚡ Institutional Model</span>
             </div>
           )}
 
-          <div className="text-right hidden md:block border-l border-subtle pl-3">
-            <div className="text-[9px] text-faint font-bold uppercase tracking-wider">
-              NIFTY 50
-            </div>
-            <div className="font-mono text-xs font-bold">
-              <span className="text-primary">
-                {nifty.ltp?.toLocaleString("en-IN", {
-                  minimumFractionDigits: 2,
-                })}
-              </span>
-              <span
-                className={`ml-1.5 ${nifty.pct_change >= 0 ? "text-green-400" : "text-red-400"}`}
-              >
-                {nifty.pct_change >= 0 ? "+" : ""}
-                {nifty.pct_change}%
-              </span>
-            </div>
-          </div>
-
-          <div className="border-l border-subtle pl-3 flex items-center gap-3">
+          <div className="border-l border-subtle pl-2 sm:pl-3 flex items-center gap-2 sm:gap-3">
             {!fyersConnected && (
               <button
                 onClick={onOpenBrokerModal}
                 className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-500 transition-colors shadow-sm"
                 title="Connect Alice Blue broker account"
               >
-                <span>Connect Alice Blue</span>
+                <span>Connect</span>
                 <ArrowUpRight size={11} />
               </button>
             )}
@@ -479,5 +490,54 @@ function TopNavbar({
         </div>
       </div>
     </nav>
+  );
+}
+
+// -------- Mobile Native Bottom Bar for iOS & Android --------
+function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
+  const bottomTabs = [
+    { key: "ranking", label: "Rank", icon: "📊" },
+    { key: "watchlist", label: "Watch", icon: "⭐" },
+    { key: "charts", label: "Charts", icon: "📈" },
+    { key: "insights", label: "Insights", icon: "💡" },
+    {
+      key: "paper-trading",
+      label: openPositionsCount > 0 ? `Trades (${openPositionsCount})` : "Trades",
+      icon: "🧪",
+    },
+    { key: "smart-money", label: "Smart", icon: "🧠" },
+  ];
+
+  return (
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface2/95 backdrop-blur-2xl border-t border-subtle pb-safe">
+      <div className="grid grid-cols-6 h-14 items-center px-1">
+        {bottomTabs.map((tab) => {
+          const isActive = activeTab === tab.key;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => onTabChange(tab.key)}
+              className={`flex flex-col items-center justify-center py-1 transition-all relative ${
+                isActive
+                  ? "text-accent-blue font-bold"
+                  : "text-muted hover:text-primary font-medium"
+              }`}
+            >
+              <span className="text-base leading-none mb-1">{tab.icon}</span>
+              <span className="text-[10px] tracking-tight leading-none truncate max-w-[52px]">
+                {tab.label}
+              </span>
+              {isActive && (
+                <motion.div
+                  layoutId="bottom-nav-active"
+                  className="absolute top-0 w-8 h-0.5 rounded-full bg-accent-blue shadow-glow-sm"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
