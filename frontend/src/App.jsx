@@ -11,6 +11,10 @@ import {
   Radio,
   AlertTriangle,
   ArrowUpRight,
+  TrendingUp,
+  Briefcase,
+  Brain,
+  LineChart,
 } from "lucide-react";
 import {
   useMarketStream,
@@ -362,9 +366,9 @@ function TopNavbar({
 
   return (
     <nav className="sticky top-0 z-50 border-b border-subtle bg-surface2/95 backdrop-blur-xl shadow-sm pt-safe">
-      <div className="mx-auto max-w-[1920px] w-full px-3 sm:px-6 py-2 flex items-center justify-between gap-3">
+      <div className="mx-auto max-w-[1920px] w-full px-3 sm:px-6 py-2.5 flex items-center justify-between gap-2 sm:gap-4">
         {/* Left: Brand & Status */}
-        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <div className="flex items-center gap-2 flex-shrink-0">
             <img
               src="/assets/logo.jpg"
@@ -374,7 +378,7 @@ function TopNavbar({
             <h1 className="text-xs font-extrabold tracking-tight bg-gradient-to-r from-accent-blue via-cyan-400 to-accent-violet bg-clip-text text-transparent font-display">
               PulseHunter
             </h1>
-            <div className="flex items-center gap-1.5 ml-0.5 sm:ml-1 pl-2 sm:pl-2.5 border-l border-subtle">
+            <div className="flex items-center gap-1.5 ml-1 pl-2 border-l border-subtle">
               <span
                 className={`w-2 h-2 rounded-full ${
                   connected && marketOpen
@@ -414,14 +418,14 @@ function TopNavbar({
         </div>
 
         {/* Right side: Benchmark & AI Status & User */}
-        <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-          {/* NIFTY 50 (Mobile compact & desktop full) */}
-          <div className="text-right border-l border-subtle pl-2.5 sm:pl-3">
-            <div className="text-[9px] text-faint font-bold uppercase tracking-wider hidden sm:block">
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          {/* NIFTY 50 (Hidden on very narrow mobile screens to avoid overlap) */}
+          <div className="text-right border-l border-subtle pl-2 sm:pl-3 hidden sm:block">
+            <div className="text-[9px] text-faint font-bold uppercase tracking-wider">
               NIFTY 50
             </div>
             <div className="font-mono text-xs font-bold flex items-center gap-1">
-              <span className="text-primary text-[11px] sm:text-xs">
+              <span className="text-primary">
                 {nifty.ltp?.toLocaleString("en-IN", {
                   minimumFractionDigits: 1,
                   maximumFractionDigits: 2,
@@ -456,15 +460,15 @@ function TopNavbar({
             </div>
           )}
 
-          <div className="border-l border-subtle pl-2 sm:pl-3 flex items-center gap-2 sm:gap-3">
+          <div className="border-l border-subtle pl-2 sm:pl-3 flex items-center gap-1.5 sm:gap-2">
             {!fyersConnected && (
               <button
                 onClick={onOpenBrokerModal}
-                className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-500 transition-colors shadow-sm"
+                className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors shadow-sm"
                 title="Connect Alice Blue broker account"
               >
                 <span>Connect</span>
-                <ArrowUpRight size={11} />
+                <ArrowUpRight size={12} />
               </button>
             )}
             <div className="text-right hidden lg:block">
@@ -496,42 +500,51 @@ function TopNavbar({
 // -------- Mobile Native Bottom Bar for iOS & Android --------
 function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
   const bottomTabs = [
-    { key: "ranking", label: "Rank", icon: "📊" },
-    { key: "watchlist", label: "Watch", icon: "⭐" },
-    { key: "charts", label: "Charts", icon: "📈" },
-    { key: "insights", label: "Insights", icon: "💡" },
+    { key: "ranking", label: "Ranking", icon: BarChart3 },
+    { key: "watchlist", label: "Watchlist", icon: Star },
+    { key: "charts", label: "Charts", icon: LineChart },
     {
       key: "paper-trading",
-      label: openPositionsCount > 0 ? `Trades (${openPositionsCount})` : "Trades",
-      icon: "🧪",
+      label: "Positions",
+      icon: Briefcase,
+      badge: openPositionsCount > 0 ? openPositionsCount : null,
     },
-    { key: "smart-money", label: "Smart", icon: "🧠" },
+    { key: "insights", label: "Insights", icon: Lightbulb },
+    { key: "smart-money", label: "Smart", icon: Brain },
   ];
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface2/95 backdrop-blur-2xl border-t border-subtle pb-safe">
-      <div className="grid grid-cols-6 h-14 items-center px-1">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0c0e17]/95 backdrop-blur-2xl border-t border-border-subtle/80 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
+      <div className="grid grid-cols-6 h-[54px] items-center px-1">
         {bottomTabs.map((tab) => {
           const isActive = activeTab === tab.key;
+          const Icon = tab.icon;
           return (
             <button
               key={tab.key}
               onClick={() => onTabChange(tab.key)}
               className={`flex flex-col items-center justify-center py-1 transition-all relative ${
                 isActive
-                  ? "text-accent-blue font-bold"
-                  : "text-muted hover:text-primary font-medium"
+                  ? "text-blue-400 font-bold"
+                  : "text-text-muted/80 hover:text-text-primary font-medium"
               }`}
             >
-              <span className="text-base leading-none mb-1">{tab.icon}</span>
-              <span className="text-[10px] tracking-tight leading-none truncate max-w-[52px]">
+              <div className="relative">
+                <Icon size={19} strokeWidth={isActive ? 2.3 : 1.8} className={isActive ? "text-blue-400" : "text-text-muted"} />
+                {tab.badge != null && (
+                  <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-0.5 rounded-full bg-emerald-500 text-black text-[9px] font-black flex items-center justify-center shadow-sm">
+                    {tab.badge}
+                  </span>
+                )}
+              </div>
+              <span className={`text-[10px] tracking-tight leading-none mt-1 truncate max-w-[54px] ${isActive ? "text-blue-400 font-semibold" : "text-text-muted/80"}`}>
                 {tab.label}
               </span>
               {isActive && (
                 <motion.div
-                  layoutId="bottom-nav-active"
-                  className="absolute top-0 w-8 h-0.5 rounded-full bg-accent-blue shadow-glow-sm"
-                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  layoutId="bottom-nav-active-indicator"
+                  className="absolute top-0 w-8 h-[2px] rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"
+                  transition={{ type: "spring", stiffness: 450, damping: 35 }}
                 />
               )}
             </button>
