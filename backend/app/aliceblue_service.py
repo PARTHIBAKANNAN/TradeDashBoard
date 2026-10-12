@@ -144,6 +144,10 @@ class AliceBlueDataEngine:
     def running(self) -> bool:
         return self._running
 
+    @property
+    def connected(self) -> bool:
+        return bool(self._running and self._connected and self._handshake_done)
+
     def _compute_susertoken(self) -> str:
         """Computes double SHA-256 hash of the session token required by NorenWS."""
         h1 = hashlib.sha256(self.user_session.encode("utf-8")).hexdigest()

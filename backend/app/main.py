@@ -45,7 +45,7 @@ def _live_snapshot() -> dict:
         connected = (
             is_auth
             if not market_state.market_open
-            else bool(is_auth and aliceblue_service.aliceblue_engine.running)
+            else bool(is_auth and aliceblue_service.aliceblue_engine.connected)
         )
     else:
         is_auth = bool(auth.auth_status()["authenticated"])
