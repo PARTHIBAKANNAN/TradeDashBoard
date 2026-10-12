@@ -32,3 +32,5 @@ pip-system-certs==5.3 ; sys_platform == "win32"
 # (`setuptools<81` is required because fyers imports the removed `pkg_resources`.)
 # The provided install.ps1 does all of this for you.
 # ----------------------------------------------------------------------------
+
+pycryptodome>=3.20.0
