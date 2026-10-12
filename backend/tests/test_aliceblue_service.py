@@ -44,3 +44,17 @@ def test_aliceblue_tick_handling():
     }
     engine._handle_tick(tick_data)
     assert engine.tick_count == 1
+
+def test_aliceblue_crypto_and_totp():
+    # Test CryptoJS-compatible password encryption
+    pwd = "TestPassword123"
+    enc_key = "SAMPLE_ENC_KEY_123"
+    enc1 = aliceblue_auth._encrypt_password_cryptojs(pwd, enc_key)
+    assert enc1.startswith("U2FsdGVkX1")  # Standard "Salted__" OpenSSL header in base64
+
+    # Test TOTP generation
+    secret = "JBSWY3DPEHPK3PXP"
+    totp = aliceblue_auth.generate_totp(secret)
+    assert len(totp) == 6
+    assert totp.isdigit()
+

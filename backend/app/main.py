@@ -183,6 +183,56 @@ async def aliceblue_manual_connect(body: dict):
     return {"success": True, "message": "Alice Blue connected and streaming live!"}
 
 
+
+class AliceBlueLoginRequest(BaseModel):
+    user_id: str = ""
+    password: str = ""
+    totp: str = ""
+
+
+@app.post("/api/auth/aliceblue/login", dependencies=[Depends(require_login)])
+async def aliceblue_direct_login(body: AliceBlueLoginRequest):
+    """
+    Quantman-style in-app direct login: performs the 4-step Alice Blue internal
+    API handshake (verify -> enckey -> pwd/validate -> otp/validate) without
+    requiring any browser redirect. TOTP can be supplied by the caller or
+    auto-generated from the configured ALICEBLUE_TOTP_KEY.
+    """
+    import asyncio as _asyncio
+
+    uid = body.user_id.strip() or getattr(config, "ALICEBLUE_USER_ID", "").strip()
+    pwd = body.password.strip() or getattr(config, "ALICEBLUE_PASSWORD", "").strip()
+    otp = body.totp.strip()
+
+    if not otp:
+        totp_key = getattr(config, "ALICEBLUE_TOTP_KEY", "").strip()
+        if not totp_key:
+            raise HTTPException(
+                status_code=400,
+                detail="TOTP required — no ALICEBLUE_TOTP_KEY configured.",
+            )
+        try:
+            otp = aliceblue_auth.generate_totp(totp_key)
+        except RuntimeError as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    if not uid or not pwd:
+        raise HTTPException(status_code=400, detail="User ID and password are required.")
+
+    loop = _asyncio.get_running_loop()
+    token = await loop.run_in_executor(
+        None, aliceblue_auth.authenticate_user, uid, pwd, otp
+    )
+
+    if not token:
+        raise HTTPException(
+            status_code=401,
+            detail="Alice Blue login failed — check credentials or TOTP.",
+        )
+
+    ensure_engine_running()
+    return {"success": True, "message": "Alice Blue connected and streaming live!"}
+
 @app.get("/callback", response_class=HTMLResponse)
 async def broker_callback(request: Request):
     """Broker (Alice Blue or FYERS) redirects here after browser authorization; auto-capture the code."""
@@ -448,3 +498,4 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run("app.main:app", host=config.HOST, port=config.PORT, reload=False)
+

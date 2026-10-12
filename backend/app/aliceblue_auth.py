@@ -3,11 +3,19 @@ Alice Blue Authentication Module for TradeDashboard / PulseHunter
 ==================================================================
 Manages Alice Blue userSession generation, checksum calculation,
 token caching, and JWT expiration validation.
+
+Also implements the internal 4-step direct-login flow (Quantman-style):
+  1. verify/user        - confirm user exists
+  2. client/enckey      - get per-session AES encryption key
+  3. pwd/validate       - submit encrypted password with source: 'WEB'
+  4. topt/verify        - submit TOTP with Bearer header -> receive accessToken JWT
 """
 
+import base64
 import hashlib
 import json
 import logging
+import os as _os
 import time
 from datetime import datetime
 from pathlib import Path
@@ -22,6 +30,60 @@ logger = logging.getLogger(__name__)
 IST = ZoneInfo("Asia/Kolkata")
 
 GET_USER_DETAILS_URL = "https://a3.aliceblueonline.com/open-api/od/v1/vendor/getUserDetails"
+
+# Alice Blue internal ANT API base (reverse-engineered from JS bundle index-45cb44ad.js)
+_ANT_BASE = "https://ant.aliceblueonline.com/omk"
+
+_ANT_HEADERS = {
+    "Content-Type": "application/json",
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/126.0.0.0 Safari/537.36"
+    ),
+    "Origin": "https://ant.aliceblueonline.com",
+    "Referer": "https://ant.aliceblueonline.com/",
+}
+
+
+def _evp_bytes_to_key(password: bytes, salt: bytes, key_len: int, iv_len: int):
+    """OpenSSL EVP_BytesToKey with MD5 - identical to what CryptoJS uses by default."""
+    d = b""
+    d_i = b""
+    while len(d) < key_len + iv_len:
+        d_i = hashlib.md5(d_i + password + salt).digest()
+        d += d_i
+    return d[:key_len], d[key_len: key_len + iv_len]
+
+
+def _encrypt_password_cryptojs(password: str, enc_key: str) -> str:
+    """
+    Encrypts password with AES-256-CBC using CryptoJS conventions.
+    Exactly matches CryptoJS.AES.encrypt(password, encKey).toString()
+    """
+    try:
+        from Crypto.Cipher import AES
+        from Crypto.Util.Padding import pad
+    except ImportError:
+        raise RuntimeError(
+            "pycryptodome is required for Alice Blue direct login. "
+            "Run: pip install pycryptodome"
+        )
+
+    salt = _os.urandom(8)
+    key, iv = _evp_bytes_to_key(enc_key.encode("utf-8"), salt, 32, 16)
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    ct = cipher.encrypt(pad(password.encode("utf-8"), AES.block_size))
+    return base64.b64encode(b"Salted__" + salt + ct).decode("utf-8")
+
+
+def generate_totp(totp_key: str) -> str:
+    """Generates a 6-digit TOTP from a Base32 TOTP secret (RFC 6238)."""
+    try:
+        import pyotp
+        return pyotp.TOTP(totp_key).now()
+    except ImportError:
+        raise RuntimeError("pyotp is required: pip install pyotp")
 
 
 def get_token_cache_path() -> Path:
@@ -46,12 +108,9 @@ def is_token_valid(token_str: str) -> bool:
         parts = token_str.split(".")
         if len(parts) < 2:
             return False
-        import base64
-
         payload_bytes = base64.b64decode(parts[1] + "==")
         payload = json.loads(payload_bytes.decode("utf-8"))
         exp = payload.get("exp", 0)
-        # Valid if has at least 5 minutes remaining
         return exp > (time.time() + 300)
     except Exception as e:
         logger.debug("JWT validation exception: %s", e)
@@ -60,12 +119,10 @@ def is_token_valid(token_str: str) -> bool:
 
 def get_cached_session() -> Optional[str]:
     """Retrieves valid cached session token if available."""
-    # 1. Check process environment first
     env_token = getattr(config, "ALICEBLUE_SESSION_TOKEN", "").strip()
     if is_token_valid(env_token):
         return env_token
 
-    # 2. Check token cache file
     cache_path = get_token_cache_path()
     if cache_path.exists():
         try:
@@ -100,6 +157,155 @@ def save_session_token(token: str) -> None:
         logger.warning("Could not persist session token: %s", e)
 
 
+def authenticate_user(
+    user_id: str,
+    password: str,
+    totp: str,
+) -> Optional[str]:
+    """
+    Performs Alice Blue's internal 4-step direct login handshake and returns the
+    userSession JWT on success, or None on failure.
+
+    Steps (reverse-engineered from ant.aliceblueonline.com JS bundle):
+      1. POST /auth/access/verify/user      - verify user exists
+      2. POST /auth/access/client/enckey    - fetch AES encryption key
+      3. POST /auth/access/v2/pwd/validate  - submit encrypted password with source: 'WEB'
+      4. POST /auth/access/topt/verify      - submit TOTP with Bearer header -> get accessToken JWT
+    """
+    session = requests.Session()
+    session.headers.update(_ANT_HEADERS)
+
+    # Step 1: Verify User
+    try:
+        r1 = session.post(
+            f"{_ANT_BASE}/auth/access/verify/user",
+            json={"userId": user_id},
+            timeout=15,
+        )
+        logger.debug("verify/user status=%d body=%s", r1.status_code, r1.text[:300])
+        if r1.status_code != 200:
+            logger.error("verify/user failed: HTTP %d - %s", r1.status_code, r1.text[:300])
+            return None
+        d1 = r1.json()
+        if d1.get("status", "").lower() not in ("ok", "success", "true"):
+            logger.error("verify/user bad status: %s", d1)
+            return None
+    except Exception as e:
+        logger.error("verify/user exception: %s", e)
+        return None
+
+    # Step 2: Get Encryption Key
+    try:
+        r2 = session.post(
+            f"{_ANT_BASE}/auth/access/client/enckey",
+            json={"userId": user_id},
+            timeout=15,
+        )
+        logger.debug("enckey status=%d body=%s", r2.status_code, r2.text[:300])
+        if r2.status_code != 200:
+            logger.error("enckey failed: HTTP %d - %s", r2.status_code, r2.text[:300])
+            return None
+        d2 = r2.json()
+        enc_key = None
+        if isinstance(d2.get("result"), list) and len(d2["result"]) > 0:
+            enc_key = d2["result"][0].get("encKey")
+        if not enc_key:
+            enc_key = (
+                d2.get("encKey")
+                or d2.get("data", {}).get("encKey")
+                or d2.get("result", {}).get("encKey")
+            )
+        if not enc_key:
+            logger.error("enckey response missing encKey: %s", d2)
+            return None
+    except Exception as e:
+        logger.error("enckey exception: %s", e)
+        return None
+
+    # Step 3: Validate Password
+    try:
+        encrypted_pwd = _encrypt_password_cryptojs(password, enc_key)
+
+        r3 = session.post(
+            f"{_ANT_BASE}/auth/access/v2/pwd/validate",
+            json={
+                "userId": user_id,
+                "userData": encrypted_pwd,
+                "source": "WEB",
+            },
+            timeout=15,
+        )
+        logger.debug("pwd/validate status=%d body=%s", r3.status_code, r3.text[:300])
+        if r3.status_code != 200:
+            logger.error("pwd/validate failed: HTTP %d - %s", r3.status_code, r3.text[:300])
+            return None
+        d3 = r3.json()
+        if d3.get("status", "").lower() not in ("ok", "success", "true"):
+            logger.error("pwd/validate rejected: %s", d3)
+            return None
+
+        step3_token = None
+        if isinstance(d3.get("result"), list) and len(d3["result"]) > 0:
+            step3_token = d3["result"][0].get("token")
+        if not step3_token:
+            step3_token = d3.get("token") or d3.get("data", {}).get("token")
+        if not step3_token:
+            logger.error("pwd/validate missing token: %s", d3)
+            return None
+    except Exception as e:
+        logger.error("pwd/validate exception: %s", e)
+        return None
+
+    # Step 4: Validate TOTP
+    try:
+        payload4 = {
+            "userId": user_id,
+            "totp": totp,
+            "source": "WEB",
+            "deviceId": "web_browser",
+            "deviceNumber": "web_browser",
+        }
+        headers4 = {
+            "Authorization": f"Bearer {user_id} WEB {step3_token}",
+        }
+        r4 = session.post(
+            f"{_ANT_BASE}/auth/access/topt/verify",
+            json=payload4,
+            headers=headers4,
+            timeout=15,
+        )
+        logger.debug("topt/verify status=%d body=%s", r4.status_code, r4.text[:500])
+        if r4.status_code != 200:
+            logger.error("topt/verify failed: HTTP %d - %s", r4.status_code, r4.text[:300])
+            return None
+        d4 = r4.json()
+        if d4.get("status", "").lower() not in ("ok", "success", "true"):
+            logger.error("topt/verify rejected: %s", d4)
+            return None
+
+        user_session = None
+        if isinstance(d4.get("result"), list) and len(d4["result"]) > 0:
+            user_session = d4["result"][0].get("accessToken") or d4["result"][0].get("userSession")
+        if not user_session:
+            user_session = (
+                d4.get("accessToken")
+                or d4.get("userSession")
+                or d4.get("data", {}).get("accessToken")
+                or d4.get("data", {}).get("userSession")
+            )
+
+        if user_session:
+            save_session_token(user_session)
+            logger.info("Alice Blue direct login successful - session cached.")
+            return user_session
+        else:
+            logger.error("topt/verify: no accessToken in response: %s", d4)
+            return None
+    except Exception as e:
+        logger.error("topt/verify exception: %s", e)
+        return None
+
+
 def exchange_auth_code_for_session(auth_code: str) -> Optional[str]:
     """
     Exchanges authorization code from Alice Blue redirect for a 24-hr session token.
@@ -130,7 +336,6 @@ def exchange_auth_code_for_session(auth_code: str) -> Optional[str]:
         data = resp.json()
         logger.info("Alice Blue token exchange response received")
 
-        # Response contains userSession / userSID / token
         user_session = (
             data.get("userSession")
             or data.get("userSID")
@@ -139,7 +344,6 @@ def exchange_auth_code_for_session(auth_code: str) -> Optional[str]:
         )
 
         if not user_session:
-            # Check if root dictionary has session or token
             if isinstance(data, dict):
                 for k in ("session", "token", "sessionID", "userSession"):
                     if k in data and isinstance(data[k], str):
