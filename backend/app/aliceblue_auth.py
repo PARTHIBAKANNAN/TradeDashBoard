@@ -72,7 +72,7 @@ def get_cached_session() -> Optional[str]:
             data = json.loads(cache_path.read_text(encoding="utf-8"))
             token = data.get("userSession") or data.get("user_session") or ""
             if is_token_valid(token):
-                logger.info(
+                logger.debug(
                     "Restored valid Alice Blue session token from cache: %s", cache_path.name
                 )
                 return token
