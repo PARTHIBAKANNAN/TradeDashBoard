@@ -45,6 +45,7 @@ def test_aliceblue_tick_handling():
     engine._handle_tick(tick_data)
     assert engine.tick_count == 1
 
+
 def test_aliceblue_crypto_and_totp():
     # Test CryptoJS-compatible password encryption
     pwd = "TestPassword123"
@@ -57,4 +58,3 @@ def test_aliceblue_crypto_and_totp():
     totp = aliceblue_auth.generate_totp(secret)
     assert len(totp) == 6
     assert totp.isdigit()
-

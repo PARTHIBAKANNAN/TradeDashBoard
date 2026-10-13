@@ -245,16 +245,28 @@ export default function SmartMoneyScreen() {
 
               <div className="grid grid-cols-3 gap-2 py-2 border-y border-subtle/60 text-xs font-mono">
                 <div>
-                  <div className="text-[9px] text-faint uppercase font-bold">Fresh TO</div>
-                  <div className="font-semibold text-primary">{fmtRatio(row.fresh_turnover_ratio)}</div>
+                  <div className="text-[9px] text-faint uppercase font-bold">
+                    Fresh TO
+                  </div>
+                  <div className="font-semibold text-primary">
+                    {fmtRatio(row.fresh_turnover_ratio)}
+                  </div>
                 </div>
                 <div>
-                  <div className="text-[9px] text-faint uppercase font-bold">RVOL</div>
-                  <div className="font-semibold text-primary">{fmtRatio(row.rvol)}</div>
+                  <div className="text-[9px] text-faint uppercase font-bold">
+                    RVOL
+                  </div>
+                  <div className="font-semibold text-primary">
+                    {fmtRatio(row.rvol)}
+                  </div>
                 </div>
                 <div>
-                  <div className="text-[9px] text-faint uppercase font-bold">RS vs Nifty</div>
-                  <div className={`font-bold ${row.relative_strength >= 0 ? "text-bull" : "text-bear"}`}>
+                  <div className="text-[9px] text-faint uppercase font-bold">
+                    RS vs Nifty
+                  </div>
+                  <div
+                    className={`font-bold ${row.relative_strength >= 0 ? "text-bull" : "text-bear"}`}
+                  >
                     {fmtSigned(row.relative_strength)}
                   </div>
                 </div>

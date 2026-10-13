@@ -162,6 +162,7 @@ async def aliceblue_manual_connect(body: dict):
     auth_code = ""
     if "authCode=" in raw_code or "auth_code=" in raw_code:
         from urllib.parse import parse_qs, urlparse
+
         q = parse_qs(urlparse(raw_code).query)
         auth_code = q.get("authCode", [""])[0] or q.get("auth_code", [""])[0]
     else:
@@ -172,11 +173,12 @@ async def aliceblue_manual_connect(body: dict):
 
     token = aliceblue_auth.exchange_auth_code_for_session(auth_code)
     if not token:
-        raise HTTPException(status_code=400, detail="Alice Blue token exchange failed. Please verify credentials.")
+        raise HTTPException(
+            status_code=400, detail="Alice Blue token exchange failed. Please verify credentials."
+        )
 
     ensure_engine_running()
     return {"success": True, "message": "Alice Blue connected and streaming live!"}
-
 
 
 class AliceBlueLoginRequest(BaseModel):
@@ -215,9 +217,7 @@ async def aliceblue_direct_login(body: AliceBlueLoginRequest):
         raise HTTPException(status_code=400, detail="User ID and password are required.")
 
     loop = _asyncio.get_running_loop()
-    token = await loop.run_in_executor(
-        None, aliceblue_auth.authenticate_user, uid, pwd, otp
-    )
+    token = await loop.run_in_executor(None, aliceblue_auth.authenticate_user, uid, pwd, otp)
 
     if not token:
         raise HTTPException(
@@ -227,6 +227,7 @@ async def aliceblue_direct_login(body: AliceBlueLoginRequest):
 
     ensure_engine_running()
     return {"success": True, "message": "Alice Blue connected and streaming live!"}
+
 
 @app.get("/callback", response_class=HTMLResponse)
 async def broker_callback(request: Request):
@@ -493,4 +494,3 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run("app.main:app", host=config.HOST, port=config.PORT, reload=False)
-
