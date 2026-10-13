@@ -22,7 +22,9 @@ import {
   useMarketStream,
   useMarketMeta,
   useSymbols,
+  resyncMarketStream,
 } from "./hooks/useMarketStream.js";
+import PullToRefresh from "./components/PullToRefresh.jsx";
 import { marketStore } from "./store/marketStore.js";
 import { usePositionsCount } from "./hooks/useOrders.js";
 import { useTheme } from "./contexts/ThemeContext.jsx";
@@ -265,6 +267,27 @@ function Dashboard({ user, onLogout }) {
   const nifty = meta.nifty || {};
   const connected = meta.connected;
 
+  const handleRefresh = async () => {
+    // 1. Send WebSocket stream resync
+    resyncMarketStream();
+
+    // 2. Refresh initial state from /api/snapshot
+    try {
+      const r = await fetch("/api/snapshot", { credentials: "include" });
+      if (r.ok) {
+        const snap = await r.json();
+        if (snap?.data) {
+          marketStore.handleMessage(snap);
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+
+    // 3. Brief pause for smooth animation
+    await new Promise((resolve) => setTimeout(resolve, 400));
+  };
+
   return (
     <div className="min-h-screen bg-surface text-primary font-sans flex flex-col pb-16 md:pb-0">
       <TopNavbar
@@ -288,7 +311,7 @@ function Dashboard({ user, onLogout }) {
         }}
       />
 
-      <div className="flex-1 overflow-auto">
+      <PullToRefresh onRefresh={handleRefresh} className="flex-1">
         {fyersConnected === false && (
           <div className="mx-auto max-w-[1920px] w-full px-4 sm:px-6 pt-3">
             <ConnectBrokerBanner onOpenModal={() => setShowBrokerModal(true)} />
@@ -324,7 +347,7 @@ function Dashboard({ user, onLogout }) {
             )}
           </motion.div>
         </AnimatePresence>
-      </div>
+      </PullToRefresh>
 
       {/* Mobile Native Bottom Tab Bar for iOS & Android */}
       <MobileBottomBar

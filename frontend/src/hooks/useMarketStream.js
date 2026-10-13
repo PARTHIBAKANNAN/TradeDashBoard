@@ -279,3 +279,15 @@ export function useMarketMeta() {
     () => marketStore.getMeta(),
   );
 }
+
+export function resyncMarketStream() {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    try {
+      ws.send(JSON.stringify({ type: "resync" }));
+    } catch {
+      /* ignore */
+    }
+  } else if (!ws || ws.readyState === WebSocket.CLOSED) {
+    connect();
+  }
+}
