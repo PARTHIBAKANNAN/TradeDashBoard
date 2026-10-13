@@ -24,6 +24,7 @@ class MarketState:
             "symbol": "NIFTY50",
             "ltp": 0.0,
             "prev_close": 0.0,
+            "change": 0.0,
             "pct_change": 0.0,
         }
 
@@ -106,8 +107,9 @@ class MarketState:
                 self.nifty["ltp"] = ltp
                 if not self.nifty["prev_close"]:
                     self.nifty["prev_close"] = ltp
-            pc = self.nifty["prev_close"]
-            if pc:
+            pc = self.nifty.get("prev_close")
+            if pc and self.nifty.get("ltp"):
+                self.nifty["change"] = round(self.nifty["ltp"] - pc, 2)
                 self.nifty["pct_change"] = round((self.nifty["ltp"] - pc) / pc * 100, 2)
 
 

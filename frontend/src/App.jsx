@@ -15,6 +15,8 @@ import {
   Briefcase,
   Brain,
   LineChart,
+  MoreHorizontal,
+  X,
 } from "lucide-react";
 import {
   useMarketStream,
@@ -420,32 +422,42 @@ function TopNavbar({
 
         {/* Right side: Benchmark & AI Status & User */}
         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          {/* NIFTY 50 (Hidden on very narrow mobile screens to avoid overlap) */}
-          <div className="text-right border-l border-subtle pl-2 sm:pl-3 hidden sm:block">
-            <div className="text-[9px] text-faint font-bold uppercase tracking-wider">
+          {/* NIFTY 50 (Visible on both mobile and desktop) */}
+          <div className="text-right border-l border-subtle pl-2 sm:pl-3 flex flex-col justify-center">
+            <div className="text-[8px] sm:text-[9px] text-faint font-bold uppercase tracking-wider leading-tight">
               NIFTY 50
             </div>
-            <div className="font-mono text-xs font-bold flex items-center gap-1">
-              <span className="text-primary">
+            <div className="font-mono text-[11px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 leading-tight">
+              <span className="text-primary font-semibold">
                 {nifty.ltp?.toLocaleString("en-IN", {
                   minimumFractionDigits: 1,
                   maximumFractionDigits: 2,
                 }) || "—"}
               </span>
+              {nifty.change != null && (
+                <span
+                  className={`text-[9px] sm:text-xs font-bold ${
+                    nifty.change >= 0 ? "text-emerald-400" : "text-rose-400"
+                  }`}
+                >
+                  {nifty.change >= 0 ? "+" : ""}
+                  {Number(nifty.change).toFixed(2)}
+                </span>
+              )}
               <span
-                className={`text-[10px] sm:text-xs ${
+                className={`text-[9px] sm:text-xs font-bold ${
                   (nifty.pct_change || 0) >= 0
-                    ? "text-green-400"
-                    : "text-red-400"
+                    ? "text-emerald-400"
+                    : "text-rose-400"
                 }`}
               >
-                {(nifty.pct_change || 0) >= 0 ? "+" : ""}
-                {nifty.pct_change || 0}%
+                ({(nifty.pct_change || 0) >= 0 ? "+" : ""}
+                {nifty.pct_change || 0}%)
               </span>
             </div>
           </div>
 
-          {/* Live AI Status Badge */}
+          {/* Live AI Status Badge - Hidden on mobile view */}
           {aiStatus?.status === "LIVE" ? (
             <div
               className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-mono text-[10px] sm:text-[11px] font-bold shadow-sm whitespace-nowrap"
@@ -500,11 +512,12 @@ function TopNavbar({
   );
 }
 
-// -------- Mobile Native Bottom Bar for iOS & Android --------
+// -------- Mobile Native Bottom Bar for iOS & Android with More Drawer --------
 function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
-  const bottomTabs = [
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+
+  const mainTabs = [
     { key: "ranking", label: "Ranking", icon: BarChart3 },
-    { key: "watchlist", label: "Watchlist", icon: Star },
     { key: "charts", label: "Charts", icon: LineChart },
     {
       key: "paper-trading",
@@ -512,54 +525,165 @@ function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
       icon: Briefcase,
       badge: openPositionsCount > 0 ? openPositionsCount : null,
     },
-    { key: "insights", label: "Insights", icon: Lightbulb },
-    { key: "smart-money", label: "Smart", icon: Brain },
   ];
 
+  const moreTabs = [
+    { key: "heatmap", label: "Heatmap", icon: Flame, desc: "Market Sector Treemap" },
+    { key: "watchlist", label: "Watchlist", icon: Star, desc: "Pinned Stocks & Radar" },
+    { key: "insights", label: "Insights", icon: Lightbulb, desc: "ORB Breakouts & Drivers" },
+    { key: "smart-money", label: "Smart Money", icon: Brain, desc: "Institutional Volume Flow" },
+  ];
+
+  const isMoreActive = moreTabs.some((t) => t.key === activeTab);
+
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0c0e17]/95 backdrop-blur-2xl border-t border-border-subtle/80 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
-      <div className="grid grid-cols-6 h-[54px] items-center px-1">
-        {bottomTabs.map((tab) => {
-          const isActive = activeTab === tab.key;
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.key}
-              onClick={() => onTabChange(tab.key)}
-              className={`flex flex-col items-center justify-center py-1 transition-all relative ${
-                isActive
-                  ? "text-blue-400 font-bold"
-                  : "text-text-muted/80 hover:text-text-primary font-medium"
+    <>
+      {/* Slide-up "More" Drawer for Secondary Tabs */}
+      <AnimatePresence>
+        {isMoreOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMoreOpen(false)}
+              className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="md:hidden fixed bottom-[56px] left-0 right-0 z-50 bg-[#0c0e17] border-t border-blue-500/20 rounded-t-2xl p-4 shadow-2xl"
+            >
+              <div className="flex items-center justify-between pb-3 mb-2 border-b border-white/5">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                  More Views & Analytics
+                </span>
+                <button
+                  onClick={() => setIsMoreOpen(false)}
+                  className="w-7 h-7 rounded-lg bg-surface3 flex items-center justify-center text-muted hover:text-white"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2.5">
+                {moreTabs.map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.key;
+                  return (
+                    <button
+                      key={tab.key}
+                      onClick={() => {
+                        onTabChange(tab.key);
+                        setIsMoreOpen(false);
+                      }}
+                      className={`flex items-start gap-3 p-3 rounded-xl border text-left transition-all ${
+                        isActive
+                          ? "bg-blue-600/15 border-blue-500/40 text-blue-400 shadow-sm"
+                          : "bg-surface2/60 border-white/5 text-gray-300 hover:bg-surface3"
+                      }`}
+                    >
+                      <div className={`p-2 rounded-lg ${isActive ? "bg-blue-500/20 text-blue-400" : "bg-surface3 text-gray-400"}`}>
+                        <Icon size={18} />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold">{tab.label}</div>
+                        <div className="text-[10px] text-faint line-clamp-1">{tab.desc}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Primary Mobile Bottom Bar (4 items: Ranking, Charts, Positions, More) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0c0e17]/95 backdrop-blur-2xl border-t border-border-subtle/80 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
+        <div className="grid grid-cols-4 h-[54px] items-center px-2">
+          {mainTabs.map((tab) => {
+            const isActive = activeTab === tab.key;
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => {
+                  setIsMoreOpen(false);
+                  onTabChange(tab.key);
+                }}
+                className={`flex flex-col items-center justify-center py-1 transition-all relative ${
+                  isActive
+                    ? "text-blue-400 font-bold"
+                    : "text-text-muted/80 hover:text-text-primary font-medium"
+                }`}
+              >
+                <div className="relative">
+                  <Icon
+                    size={19}
+                    strokeWidth={isActive ? 2.3 : 1.8}
+                    className={isActive ? "text-blue-400" : "text-text-muted"}
+                  />
+                  {tab.badge != null && (
+                    <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-0.5 rounded-full bg-emerald-500 text-black text-[9px] font-black flex items-center justify-center shadow-sm">
+                      {tab.badge}
+                    </span>
+                  )}
+                </div>
+                <span
+                  className={`text-[10px] tracking-tight leading-none mt-1 truncate max-w-[65px] ${
+                    isActive ? "text-blue-400 font-semibold" : "text-text-muted/80"
+                  }`}
+                >
+                  {tab.label}
+                </span>
+                {isActive && (
+                  <motion.div
+                    layoutId="bottom-nav-active-indicator"
+                    className="absolute top-0 w-8 h-[2px] rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"
+                    transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                  />
+                )}
+              </button>
+            );
+          })}
+
+          {/* "More" Menu Toggle Button */}
+          <button
+            onClick={() => setIsMoreOpen(!isMoreOpen)}
+            className={`flex flex-col items-center justify-center py-1 transition-all relative ${
+              isMoreActive || isMoreOpen
+                ? "text-blue-400 font-bold"
+                : "text-text-muted/80 hover:text-text-primary font-medium"
+            }`}
+          >
+            <div className="relative">
+              <MoreHorizontal
+                size={19}
+                strokeWidth={isMoreActive || isMoreOpen ? 2.3 : 1.8}
+                className={isMoreActive || isMoreOpen ? "text-blue-400" : "text-text-muted"}
+              />
+            </div>
+            <span
+              className={`text-[10px] tracking-tight leading-none mt-1 truncate max-w-[65px] ${
+                isMoreActive || isMoreOpen ? "text-blue-400 font-semibold" : "text-text-muted/80"
               }`}
             >
-              <div className="relative">
-                <Icon
-                  size={19}
-                  strokeWidth={isActive ? 2.3 : 1.8}
-                  className={isActive ? "text-blue-400" : "text-text-muted"}
-                />
-                {tab.badge != null && (
-                  <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-0.5 rounded-full bg-emerald-500 text-black text-[9px] font-black flex items-center justify-center shadow-sm">
-                    {tab.badge}
-                  </span>
-                )}
-              </div>
-              <span
-                className={`text-[10px] tracking-tight leading-none mt-1 truncate max-w-[54px] ${isActive ? "text-blue-400 font-semibold" : "text-text-muted/80"}`}
-              >
-                {tab.label}
-              </span>
-              {isActive && (
-                <motion.div
-                  layoutId="bottom-nav-active-indicator"
-                  className="absolute top-0 w-8 h-[2px] rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"
-                  transition={{ type: "spring", stiffness: 450, damping: 35 }}
-                />
-              )}
-            </button>
-          );
-        })}
+              {isMoreActive
+                ? moreTabs.find((t) => t.key === activeTab)?.label || "More"
+                : "More"}
+            </span>
+            {isMoreActive && (
+              <motion.div
+                layoutId="bottom-nav-active-indicator"
+                className="absolute top-0 w-8 h-[2px] rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"
+                transition={{ type: "spring", stiffness: 450, damping: 35 }}
+              />
+            )}
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -189,8 +189,11 @@ class AliceBlueDataEngine:
             # 1. Restore or acquire session
             self.user_session = aliceblue_auth.get_cached_session()
             if not self.user_session:
+                logger.info("Alice Blue: No valid cached session found; attempting auto-login...")
+                self.user_session = aliceblue_auth.login_automatically()
+            if not self.user_session:
                 logger.warning(
-                    "Alice Blue: No valid cached session token found. Run `python manual_auth_aliceblue.py` or authorize."
+                    "Alice Blue: No valid session token found and auto-login failed. Verify credentials in .env."
                 )
                 return
 

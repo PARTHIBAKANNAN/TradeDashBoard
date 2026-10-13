@@ -118,9 +118,17 @@ def is_token_valid(token_str: str, updated_at_str: Optional[str] = None) -> bool
         if exp <= (time.time() + 300):
             return False
 
+        # Reject tokens issued on a previous calendar day in IST
+        iat = payload.get("iat", 0)
+        now_ist = datetime.now(IST)
+        if iat:
+            iat_date = datetime.fromtimestamp(iat, tz=IST).date()
+            if iat_date < now_ist.date():
+                logger.info("Alice Blue session token was issued on %s (< today %s) - expired for morning login.", iat_date, now_ist.date())
+                return False
+
         if updated_at_str:
             updated_dt = datetime.fromisoformat(updated_at_str)
-            now_ist = datetime.now(IST)
             if updated_dt.date() != now_ist.date():
                 return False
             # If generated before 06:00 AM IST today, Alice Blue overnight wipe invalidates it

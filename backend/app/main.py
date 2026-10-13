@@ -41,7 +41,12 @@ def _live_snapshot() -> dict:
     """Snapshot provider for the Broadcaster: reads state + patches broker connection flag."""
     snap = snapshot_from_state(market_state)
     if getattr(config, "BROKER", "aliceblue") == "aliceblue":
-        connected = bool(aliceblue_service.aliceblue_engine.connected)
+        is_auth = bool(aliceblue_auth.get_cached_session())
+        connected = (
+            is_auth
+            if not is_market_open()
+            else bool(is_auth and aliceblue_service.aliceblue_engine.connected)
+        )
     else:
         is_auth = bool(auth.auth_status()["authenticated"])
         connected = (
@@ -229,6 +234,22 @@ async def aliceblue_direct_login(body: AliceBlueLoginRequest):
     return {"success": True, "message": "Alice Blue connected and streaming live!"}
 
 
+@app.post("/api/auth/aliceblue/auto-login", dependencies=[Depends(require_login)])
+async def aliceblue_auto_login_endpoint():
+    """Triggers headless morning authentication using configured credentials and TOTP."""
+    import asyncio as _asyncio
+
+    loop = _asyncio.get_running_loop()
+    token = await loop.run_in_executor(None, aliceblue_auth.login_automatically)
+    if not token:
+        raise HTTPException(
+            status_code=401,
+            detail="Alice Blue auto-login failed. Verify ALICEBLUE_USER_ID, PASSWORD, and TOTP_KEY in .env.",
+        )
+    ensure_engine_running()
+    return {"success": True, "message": "Alice Blue auto-login succeeded!"}
+
+
 @app.get("/callback", response_class=HTMLResponse)
 async def broker_callback(request: Request):
     """Broker (Alice Blue or FYERS) redirects here after browser authorization; auto-capture the code."""
@@ -348,6 +369,7 @@ async def public_summary():
             "symbol": "NIFTY 50",
             "ltp": nifty.get("ltp") or 24252.0,
             "prev_close": nifty.get("prev_close") or 24200.0,
+            "change": nifty.get("change") or round((nifty.get("ltp") or 24252.0) - (nifty.get("prev_close") or 24200.0), 2),
             "pct_change": nifty.get("pct_change") or 0.21,
         },
         "market_breadth": {
