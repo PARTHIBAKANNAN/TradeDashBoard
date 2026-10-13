@@ -204,6 +204,17 @@ def save_session_token(token: str) -> None:
         logger.warning("Could not persist session token: %s", e)
 
 
+def clear_cached_session() -> None:
+    """Removes the cached Alice Blue session token from disk."""
+    cache_path = get_token_cache_path()
+    try:
+        if cache_path.exists():
+            cache_path.unlink()
+            logger.info("Cleared cached Alice Blue session token: %s", cache_path)
+    except Exception as e:
+        logger.warning("Could not clear cached token: %s", e)
+
+
 def authenticate_user(
     user_id: str,
     password: str,

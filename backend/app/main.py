@@ -41,12 +41,7 @@ def _live_snapshot() -> dict:
     """Snapshot provider for the Broadcaster: reads state + patches broker connection flag."""
     snap = snapshot_from_state(market_state)
     if getattr(config, "BROKER", "aliceblue") == "aliceblue":
-        is_auth = bool(aliceblue_auth.get_cached_session())
-        connected = (
-            is_auth
-            if not market_state.market_open
-            else bool(is_auth and aliceblue_service.aliceblue_engine.connected)
-        )
+        connected = bool(aliceblue_service.aliceblue_engine.connected)
     else:
         is_auth = bool(auth.auth_status()["authenticated"])
         connected = (
@@ -144,11 +139,11 @@ async def me(request: Request):
 @app.get("/api/auth/status", dependencies=[Depends(require_login)])
 async def broker_status():
     if getattr(config, "BROKER", "aliceblue") == "aliceblue":
-        session = aliceblue_auth.get_cached_session()
+        connected = bool(aliceblue_service.aliceblue_engine.connected)
         return {
-            "authenticated": bool(session),
+            "authenticated": connected,
             "broker": "aliceblue",
-            "expires_in": 86400 if session else 0,
+            "expires_in": 86400 if connected else 0,
         }
     return auth.auth_status()
 

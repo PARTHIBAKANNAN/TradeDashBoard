@@ -174,8 +174,17 @@ class AliceBlueDataEngine:
 
     def start_websocket(self):
         with self._lock:
-            if self._running:
+            # If already running and connected, no-op
+            if self._running and self._connected and self._handshake_done:
                 return
+            # If running but dead/disconnected, stop first
+            if self._running:
+                self._running = False
+                if self._ws:
+                    try:
+                        self._ws.close()
+                    except Exception:
+                        pass
 
             # 1. Restore or acquire session
             self.user_session = aliceblue_auth.get_cached_session()
@@ -340,12 +349,26 @@ class AliceBlueDataEngine:
                     return
 
                 # Handshake acknowledgement
-                if data.get("t") == "ck" and data.get("s") == "OK":
-                    logger.info("Alice Blue WebSocket handshake SUCCESSFUL!")
-                    with self._lock:
-                        self._handshake_done = True
-                    self._subscribe_watchlist()
-                    return
+                if data.get("t") == "ck":
+                    if data.get("s") == "OK":
+                        logger.info("Alice Blue WebSocket handshake SUCCESSFUL!")
+                        with self._lock:
+                            self._handshake_done = True
+                        self._subscribe_watchlist()
+                        return
+                    else:
+                        logger.error("Alice Blue WebSocket handshake REJECTED: %s", data)
+                        with self._lock:
+                            self._connected = False
+                            self._handshake_done = False
+                        # Clear invalid token cache
+                        aliceblue_auth.clear_cached_session()
+                        if self._ws:
+                            try:
+                                self._ws.close()
+                            except Exception:
+                                pass
+                        return
 
                 # Real-time tick message
                 if data.get("t") in ("tk", "tf"):
