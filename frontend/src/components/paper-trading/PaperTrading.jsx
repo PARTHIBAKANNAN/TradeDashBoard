@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Rocket, LineChart, History, FileBarChart } from "lucide-react";
+import { Rocket, LineChart, History, FileBarChart, PieChart } from "lucide-react";
 import Card from "../ui/Card.jsx";
 import {
   usePositions,
@@ -16,6 +16,7 @@ import EquityCurveChart from "./EquityCurveChart.jsx";
 import DateRangeFilter, { formatRangeLabel } from "./DateRangeFilter.jsx";
 import ChargesSummaryCard from "./ChargesSummaryCard.jsx";
 import ExportButtons from "./ExportButtons.jsx";
+import TradesAnalyticsCard from "./TradesAnalyticsCard.jsx";
 
 // A generous cap rather than true pagination — this is a personal paper-
 // trading log, not expected to run into thousands of rows in one range.
@@ -24,6 +25,7 @@ const HISTORY_EXPORT_LIMIT = 1000;
 const SUB_TABS = [
   { key: "trade", label: "Trade", icon: LineChart },
   { key: "history", label: "History", icon: History },
+  { key: "analytics", label: "Analytics", icon: PieChart },
   { key: "reports", label: "Reports", icon: FileBarChart },
 ];
 
@@ -85,6 +87,13 @@ export default function PaperTrading({ stocks }) {
         <div className="space-y-4">
           <DateRangeFilter activeKey={range.key} onChange={onRangeChange} />
           <OrderHistoryTable orders={history} />
+        </div>
+      )}
+
+      {subTab === "analytics" && (
+        <div className="space-y-4">
+          <DateRangeFilter activeKey={range.key} onChange={onRangeChange} />
+          <TradesAnalyticsCard orders={history} stocks={stocks} />
         </div>
       )}
 

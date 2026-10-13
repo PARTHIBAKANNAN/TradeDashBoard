@@ -96,8 +96,22 @@ const WatchlistRow = React.memo(
                 </span>
               )}
             </div>
-            <div className="text-[11px] text-faint font-semibold">
-              {stock.sector}
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="text-[11px] text-faint font-semibold">
+                {stock.sector}
+              </span>
+              {stock.cvd != null && stock.cvd !== 0 && (
+                <span
+                  title={`Cumulative Volume Delta: ${stock.cvd > 0 ? "Buyer Dominated" : "Seller Dominated"} (${stock.cvd} shares)`}
+                  className={`inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-mono font-bold ${
+                    stock.cvd > 0
+                      ? "bg-accent-green/15 text-accent-green border border-accent-green/30"
+                      : "bg-accent-red/15 text-accent-red border border-accent-red/30"
+                  }`}
+                >
+                  CVD {stock.cvd > 0 ? "+" : ""}{Math.round(stock.cvd / 1000)}k
+                </span>
+              )}
             </div>
           </td>
 
@@ -240,8 +254,21 @@ const WatchlistRow = React.memo(
                       </span>
                     )}
                   </div>
-                  <div className="text-[11px] text-faint font-semibold">
-                    {stock.sector}
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-[11px] text-faint font-semibold">
+                      {stock.sector}
+                    </span>
+                    {stock.cvd != null && stock.cvd !== 0 && (
+                      <span
+                        className={`inline-flex items-center rounded px-1.5 py-0.2 text-[9px] font-mono font-bold ${
+                          stock.cvd > 0
+                            ? "bg-accent-green/15 text-accent-green border border-accent-green/30"
+                            : "bg-accent-red/15 text-accent-red border border-accent-red/30"
+                        }`}
+                      >
+                        {stock.cvd > 0 ? "+" : ""}{Math.round(stock.cvd / 1000)}k
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

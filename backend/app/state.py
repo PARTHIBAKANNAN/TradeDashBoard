@@ -73,6 +73,17 @@ class MarketState:
                 # Positive → more rupee-value queued on the buy side.
                 # Zero when the symbol is not on the depth subscription.
                 "depth_delta": 0.0,
+                # Alice Blue Institutional Metrics & Order Flow Engine
+                "ap": 0.0,  # Official Exchange Average Traded Price (VWAP)
+                "tbq": 0,  # Total Buy Quantity (cumulative market depth)
+                "tsq": 0,  # Total Sell Quantity (cumulative market depth)
+                "oi": 0,  # Current Open Interest (if F&O stock)
+                "oi_pct": 0.0,  # Intraday OI change percentage
+                "tick_delta": 0.0,  # Current 5m candle order flow delta
+                "cvd": 0.0,  # Cumulative Volume Delta from 09:15
+                "book_imbalance": 0.0,  # (tbq - tsq) / (tbq + tsq) in range [-1.0, 1.0]
+                "strategy_score": 0.0,  # Alpha Composite Score (0 to 100)
+                "strategy_name": "",  # Name of qualifying strategy
             }
 
     # ---- context-managed access ----
@@ -90,6 +101,10 @@ class MarketState:
                 stock["candle1_low"] = 0.0
                 stock["two_sided_ok"] = False
                 stock["depth_delta"] = 0.0
+                stock["tick_delta"] = 0.0
+                stock["cvd"] = 0.0
+                stock["strategy_score"] = 0.0
+                stock["strategy_name"] = ""
                 # Intraday-derived ranking columns — zeroed so the Ranking tab
                 # shows a clean slate before the first live tick of the new day
                 # rather than carrying yesterday's RS / % change values forward.

@@ -454,6 +454,21 @@ def compile_symbol_context(sym: str) -> Dict[str, Any]:
             ),
             "tot_buy_qty": stock_data.get("tot_buy_qty", 0),
             "tot_sell_qty": stock_data.get("tot_sell_qty", 0),
+            # Alice Blue Institutional Order Flow & Depth Skew
+            "exchange_vwap": stock_data.get("ap", 0.0),
+            "tick_delta_5m": stock_data.get("tick_delta", 0.0),
+            "cumulative_volume_delta_cvd": stock_data.get("cvd", 0.0),
+            "book_imbalance_ratio": stock_data.get("book_imbalance", 0.0),
+            "open_interest": stock_data.get("oi", 0),
+            "oi_pct_change": stock_data.get("oi_pct", 0.0),
+            "strategy_score": stock_data.get("strategy_score", 0.0),
+            "strategy_name": stock_data.get("strategy_name", ""),
+        },
+        "order_flow_assessment": {
+            "cvd_trend": "ACCUMULATION (Aggressive Buyers)" if (stock_data.get("cvd") or 0) > 0 else "DISTRIBUTION (Aggressive Sellers)",
+            "bar_delta_state": "BUY_IMBALANCE" if (stock_data.get("tick_delta") or 0) > 0 else "SELL_IMBALANCE",
+            "book_pressure": "BIDS_DOMINATING" if (stock_data.get("book_imbalance") or 0) > 0.1 else ("ASKS_DOMINATING" if (stock_data.get("book_imbalance") or 0) < -0.1 else "NEUTRAL"),
+            "derivatives_buildup": "LONG_BUILDUP" if (stock_data.get("oi_pct") or 0) > 1.5 and stock_data.get("pct_change", 0) > 0 else ("SHORT_BUILDUP" if (stock_data.get("oi_pct") or 0) > 1.5 and stock_data.get("pct_change", 0) < 0 else "NORMAL"),
         },
         "technical_indicators": {
             "rsi_14_5m": rsi,
@@ -509,17 +524,18 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
 
     system_prompt = (
         "You are a strict quantitative risk manager and anomaly auditor for an NSE India intraday desk. "
-        "Your ONLY job is to find RED FLAGS (structural anomalies, unusual events, news risk) that disqualify a trade. "
+        "Your ONLY job is to find RED FLAGS (structural anomalies, order-flow divergences, news risk) that disqualify a trade. "
         "Do not generate buy/sell signals. Do not predict price direction. "
-        "The candidate has already passed a robust Momentum and Entry Quality scorer — "
-        "review the 'scores' object in the context to understand why it was selected. "
+        "The candidate has already passed a robust Momentum, Order Flow, and Entry Quality scorer — "
+        "review the 'scores', 'order_flow_assessment', and 'technical_indicators' objects in the context to understand why it was selected. "
         "Analyze the provided data and output SKIP_TRAP if any GENUINE, overriding red flag exists, "
         "or CONFIRM if the setup is technically clean. "
         "Genuine anomalies include: "
-        "• Unprecedented news/event risk for this specific stock today, "
-        "• Index heavily crashing while stock is trying to breakout (market regime misalignment), "
-        "• Extreme over-extension not captured by the entry quality score. "
-        "Do NOT red-flag standard technical pullbacks or borderline RSI. "
+        "• Institutional Divergence: Price making new highs while Cumulative Volume Delta (CVD) or 5m delta is heavily negative/dumping, "
+        "• Market Regime Misalignment: NIFTY index heavily crashing while stock is attempting a long breakout, "
+        "• Unprecedented single-stock news/event collapse risk today. "
+        "If order flow (CVD, Delta, Book Imbalance) confirms the direction, approve with CONFIRM_BUY or CONFIRM_SELL and high confidence (>= 80). "
+        "Do NOT red-flag standard technical pullbacks or healthy consolidations near VWAP. "
         "Return valid JSON only."
     )
 
@@ -768,12 +784,17 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
             tsl_type = computed_stops["tsl_type"]
             tsl_value = computed_stops["tsl_value"]
 
-            # Re-calculate risk dynamically
+            # Re-calculate risk dynamically with minimum notional floor (overcoming statutory fee drag)
             sl_distance = abs(entry - sl_price) if entry and sl_price else 0.0
             if sl_distance > 0 and risk_per_trade > 0:
-                quantity = max(1, int(risk_per_trade / sl_distance))
+                raw_quantity = int(risk_per_trade / sl_distance)
             else:
-                quantity = 1
+                raw_quantity = 1
+
+            # Minimum Notional Floor: ₹25,000 ensures turnover profits exceed statutory exchange charges
+            min_notional_floor = getattr(config, "MIN_ORDER_NOTIONAL_INR", 25000.0)
+            min_qty_for_floor = max(1, int(min_notional_floor / entry)) if entry > 0 else 1
+            quantity = max(raw_quantity, min_qty_for_floor)
 
             qty1 = quantity // 2
             qty2 = quantity - qty1

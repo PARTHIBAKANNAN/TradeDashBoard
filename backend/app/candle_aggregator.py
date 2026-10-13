@@ -69,14 +69,16 @@ def _five_min_bucket(now: datetime) -> int:
     return (now.hour * 60 + now.minute) // _FIVE_MIN * _FIVE_MIN
 
 
-def _tick_delta(sym: str, ltp: float, volume: int) -> tuple[float, float]:
-    """Returns (signed_delta, vol_delta) for this one tick. `vol_delta` is
-    simply the traded quantity since the last tick (unsigned); `signed_delta`
-    classifies it via the classic tick rule: uptick since the last tick ->
-    buy-side (+), downtick -> sell-side (-), unchanged price -> 0. This is an
-    approximation (no real bid/ask-crossed trade classification is available
-    from FYERS' feed) — directionally useful, not a true institutional
-    footprint read."""
+def _tick_delta(
+    sym: str, ltp: float, volume: int, bp1: float = 0.0, sp1: float = 0.0
+) -> tuple[float, float]:
+    """Returns (signed_delta, vol_delta) for this one tick.
+    If Level-1 quotes (bp1, sp1) are provided (e.g. from Alice Blue NorenWS),
+    uses aggressive trade classification:
+      - ltp >= sp1 (Ask) -> Buyer-initiated aggression (+vol_delta)
+      - ltp <= bp1 (Bid) -> Seller-initiated aggression (-vol_delta)
+    Otherwise falls back to the classic uptick/downtick rule.
+    """
     prev_ltp = _last_ltp.get(sym)
     prev_volume = _last_volume.get(sym, volume)
     vol_delta = max(0, volume - prev_volume)
@@ -84,6 +86,14 @@ def _tick_delta(sym: str, ltp: float, volume: int) -> tuple[float, float]:
     _last_volume[sym] = volume
     if prev_ltp is None or vol_delta == 0:
         return 0.0, float(vol_delta)
+
+    # 1. Level-1 Quote Aggressor Rule (Order Flow Ground Truth)
+    if sp1 > 0 and ltp >= sp1:
+        return float(vol_delta), float(vol_delta)
+    if bp1 > 0 and ltp <= bp1:
+        return -float(vol_delta), float(vol_delta)
+
+    # 2. Tick Rule Fallback
     if ltp > prev_ltp:
         return float(vol_delta), float(vol_delta)
     if ltp < prev_ltp:
@@ -91,11 +101,12 @@ def _tick_delta(sym: str, ltp: float, volume: int) -> tuple[float, float]:
     return 0.0, float(vol_delta)
 
 
-def on_tick(stock: dict, ltp: float, now: datetime) -> None:
+def on_tick(
+    stock: dict, ltp: float, now: datetime, bp1: float = 0.0, sp1: float = 0.0
+) -> None:
     """Called from calculations.process_incoming_tick for every tick, while
     the caller already holds MarketState's lock. Updates `stock["orb"]`
-    live, and once the opening range (09:15-09:45) completes, seeds
-    `candle1_high/low` and `two_sided_ok`."""
+    live, order flow tick_delta, cvd, and seeds opening range extremes."""
     now_t = now.time()
     # Do NOT break early — C0.5 (09:15-09:30) and C1 (09:15-09:45) overlap,
     # and both must track the live tick during their shared window.
@@ -106,7 +117,12 @@ def on_tick(stock: dict, ltp: float, now: datetime) -> None:
             bounds["low"] = min(bounds["low"], ltp)
 
     sym = stock["symbol"]
-    _track_day_candle(sym, ltp, now, stock.get("volume") or 0)
+    cur_delta, total_cvd = _track_day_candle(
+        sym, ltp, now, stock.get("volume") or 0, bp1=bp1, sp1=sp1
+    )
+    stock["tick_delta"] = cur_delta
+    stock["cvd"] = total_cvd
+
     if now_t < _OPENING_RANGE_END:
         _update_opening_5min(sym, ltp, now)
     elif sym in _opening_5min:
@@ -139,24 +155,34 @@ def _finalize_opening_range(stock: dict) -> None:
     stock["two_sided_ok"] = has_two_sided_range(rows)
 
 
-def _track_day_candle(sym: str, ltp: float, now: datetime, volume: int) -> None:
-    """Backtest groundwork only — persists each completed 5-min candle (OHLC
-    + tick-rule delta + traded volume) across the whole session, independent
-    of the opening-range-specific logic above."""
+def _track_day_candle(
+    sym: str, ltp: float, now: datetime, volume: int, bp1: float = 0.0, sp1: float = 0.0
+) -> tuple[float, float]:
+    """Persists each completed 5-min candle (OHLC + order flow delta + traded volume)
+    and computes the running bucket delta and cumulative volume delta (CVD)."""
     bucket = _five_min_bucket(now)
     today = now.date()
-    tick_delta, vol_delta = _tick_delta(sym, ltp, volume)
+    tick_delta, vol_delta = _tick_delta(sym, ltp, volume, bp1=bp1, sp1=sp1)
     prev = _day_candles.get(sym)
+
     if prev is None or prev[0] != today or prev[1] != bucket:
         if prev is not None:
             _persist_bucket(sym, *prev)
-        _day_candles[sym] = (today, bucket, [ltp, ltp, ltp, ltp], tick_delta, vol_delta)
+        cur_delta = tick_delta
+        cur_vol = vol_delta
+        _day_candles[sym] = (today, bucket, [ltp, ltp, ltp, ltp], cur_delta, cur_vol)
     else:
         _, _, ohlc, delta, bucket_volume = prev
         ohlc[1] = max(ohlc[1], ltp)
         ohlc[2] = min(ohlc[2], ltp)
         ohlc[3] = ltp
-        _day_candles[sym] = (today, bucket, ohlc, delta + tick_delta, bucket_volume + vol_delta)
+        cur_delta = delta + tick_delta
+        cur_vol = bucket_volume + vol_delta
+        _day_candles[sym] = (today, bucket, ohlc, cur_delta, cur_vol)
+
+    completed_delta = sum(c[3] for c in _completed_day_candles.get(sym, []))
+    total_cvd = completed_delta + cur_delta
+    return cur_delta, total_cvd
 
 
 def on_index_tick(sym: str, ltp: float, now: datetime) -> None:

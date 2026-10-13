@@ -12,9 +12,10 @@ from app.strategy_base import Direction, StrategyFamily
 def test_calculations_parity_and_registry():
     registry = get_default_strategy_registry()
     strategies = registry.get_strategies()
-    assert len(strategies) == 4
+    assert len(strategies) == 5
     assert any(s.family == StrategyFamily.ORB_BREAKOUT for s in strategies)
     assert any(s.family == StrategyFamily.VWAP_RETEST for s in strategies)
+    assert any(s.family == StrategyFamily.OI_SQUEEZE for s in strategies)
     assert any(s.family == StrategyFamily.SECTOR_SYMPATHY for s in strategies)
     assert any(s.family == StrategyFamily.SQUEEZE for s in strategies)
 

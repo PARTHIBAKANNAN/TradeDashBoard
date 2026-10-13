@@ -97,6 +97,7 @@ from .strategies.orb_strategy import (OrbStrategy, completed_candles,
                                       first_candle_extreme_intact,
                                       has_two_sided_range)
 from .strategies.sector_sympathy_strategy import SectorSympathyStrategy
+from .strategies.oi_squeeze_strategy import OISqueezeStrategy
 from .strategies.squeeze_strategy import SqueezeStrategy
 from .strategies.vwap_retest_strategy import VWAPRetestStrategy
 from .strategy_base import StrategyRegistry
@@ -105,6 +106,7 @@ from .strategy_base import StrategyRegistry
 _strategy_registry = StrategyRegistry()
 _strategy_registry.register(OrbStrategy())
 _strategy_registry.register(VWAPRetestStrategy())
+_strategy_registry.register(OISqueezeStrategy())
 _strategy_registry.register(SectorSympathyStrategy())
 _strategy_registry.register(SqueezeStrategy())
 
@@ -127,22 +129,15 @@ def process_incoming_tick(
     lower_ckt: float = 0.0,
     tot_buy_qty: int = 0,
     tot_sell_qty: int = 0,
+    ap: float = 0.0,
+    oi: int = 0,
+    bp1: float = 0.0,
+    sp1: float = 0.0,
 ):
     """
     Update one stock's derived fields from a raw tick. `state` is the
     MarketState singleton; caller holds no lock — we take it here.
-
-    `prev_close` lets the websocket feed supply the previous close (SymbolUpdate
-    carries `prev_close_price`), so %change / RS / ranges work even when the REST
-    backfill is unavailable (e.g. blocked by a corporate proxy).
-
-    `volume` is today's cumulative traded quantity (SymbolUpdate's
-    `vol_traded_today`), used for the treemap's traded-value sizing.
-
-    `upper_ckt`/`lower_ckt` are the exchange circuit limits and `tot_buy_qty`/
-    `tot_sell_qty` the aggregate outstanding order quantities — both carried
-    directly on SymbolUpdate ticks, used by the circuit-proximity and
-    buy/sell-pressure Insights widgets.
+    Supports official exchange VWAP (ap), Open Interest (oi), and Level-1 quotes (bp1, sp1).
     """
     with state.lock():
         stock = state.get_stock(short_sym)
@@ -152,10 +147,17 @@ def process_incoming_tick(
         if prev_close and not stock["prev_close"]:
             stock["prev_close"] = prev_close
         stock["ltp"] = ltp
+
+        # Exchange ATP (VWAP) integration
+        if ap > 0:
+            stock["ap"] = ap
+            stock["vwap"] = ap
+
         if volume:
-            stock["vwap_cum_pv"], stock["vwap_cum_vol"], stock["vwap"] = update_vwap(
-                stock["vwap_cum_pv"], stock["vwap_cum_vol"], stock["volume"], volume, ltp
-            )
+            if not ap:
+                stock["vwap_cum_pv"], stock["vwap_cum_vol"], stock["vwap"] = update_vwap(
+                    stock["vwap_cum_pv"], stock["vwap_cum_vol"], stock["volume"], volume, ltp
+                )
             stock["volume"] = volume
         if upper_ckt:
             stock["upper_ckt"] = upper_ckt
@@ -163,8 +165,24 @@ def process_incoming_tick(
             stock["lower_ckt"] = lower_ckt
         if tot_buy_qty:
             stock["tot_buy_qty"] = tot_buy_qty
+            stock["tbq"] = tot_buy_qty
         if tot_sell_qty:
             stock["tot_sell_qty"] = tot_sell_qty
+            stock["tsq"] = tot_sell_qty
+
+        # Book Imbalance calculation: (tbq - tsq) / (tbq + tsq)
+        tot_depth = (stock.get("tbq") or 0) + (stock.get("tsq") or 0)
+        if tot_depth > 0:
+            stock["book_imbalance"] = round(
+                ((stock.get("tbq") or 0) - (stock.get("tsq") or 0)) / tot_depth, 3
+            )
+
+        if oi > 0:
+            prev_oi = stock.get("oi") or oi
+            stock["oi"] = oi
+            if prev_oi > 0:
+                stock["oi_pct"] = round((oi - prev_oi) / prev_oi * 100, 2)
+
         # Expand today's high and low from tick high/low or LTP fallback
         eff_high = max(high or 0, ltp)
         eff_low = min(low or ltp, ltp) if low else ltp
@@ -178,7 +196,7 @@ def process_incoming_tick(
         )
 
         now_ist = datetime.now(IST)
-        candle_aggregator.on_tick(stock, ltp, now_ist)
+        candle_aggregator.on_tick(stock, ltp, now_ist, bp1=bp1, sp1=sp1)
 
         # Capture the signal BEFORE evaluation so we can detect state transitions.
         prev_signal = stock.get("signal")

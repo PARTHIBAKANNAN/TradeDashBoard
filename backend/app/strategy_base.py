@@ -19,6 +19,7 @@ class StrategyFamily(Enum):
     VWAP_RETEST = "VWAP"
     SECTOR_SYMPATHY = "SECTOR"
     SQUEEZE = "SQUEEZE"
+    OI_SQUEEZE = "OI_SQUEEZE"
 
 
 @dataclass(frozen=True, slots=True)
