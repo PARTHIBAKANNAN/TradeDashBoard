@@ -124,7 +124,11 @@ def is_token_valid(token_str: str, updated_at_str: Optional[str] = None) -> bool
         if iat:
             iat_date = datetime.fromtimestamp(iat, tz=IST).date()
             if iat_date < now_ist.date():
-                logger.info("Alice Blue session token was issued on %s (< today %s) - expired for morning login.", iat_date, now_ist.date())
+                logger.info(
+                    "Alice Blue session token was issued on %s (< today %s) - expired for morning login.",
+                    iat_date,
+                    now_ist.date(),
+                )
                 return False
 
         if updated_at_str:

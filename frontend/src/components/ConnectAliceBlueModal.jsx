@@ -23,7 +23,11 @@ import {
  * 5. Backend automatically exchanges authCode for developer userSession and starts the socket.
  * 6. Modal auto-detects completion via postMessage / polling and activates the live stream.
  */
-export default function ConnectAliceBlueModal({ isOpen, onClose, onConnected }) {
+export default function ConnectAliceBlueModal({
+  isOpen,
+  onClose,
+  onConnected,
+}) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -102,9 +106,12 @@ export default function ConnectAliceBlueModal({ isOpen, onClose, onConnected }) 
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/login-url", { credentials: "include" });
+      const res = await fetch("/api/auth/login-url", {
+        credentials: "include",
+      });
       const data = await res.json();
-      const loginUrl = data.url || "https://ant.aliceblueonline.com/?appcode=X926u86ZC6";
+      const loginUrl =
+        data.url || "https://ant.aliceblueonline.com/?appcode=X926u86ZC6";
 
       const width = 500;
       const height = 700;
@@ -114,7 +121,7 @@ export default function ConnectAliceBlueModal({ isOpen, onClose, onConnected }) 
       const popup = window.open(
         loginUrl,
         "AliceBlueAuth",
-        `width=${width},height=${height},left=${left},top=${top},status=yes,toolbar=no,menubar=no`
+        `width=${width},height=${height},left=${left},top=${top},status=yes,toolbar=no,menubar=no`,
       );
 
       if (!popup || popup.closed || typeof popup.closed === "undefined") {
@@ -201,8 +208,12 @@ export default function ConnectAliceBlueModal({ isOpen, onClose, onConnected }) 
               <ShieldCheck size={22} />
             </div>
             <div>
-              <h2 className="text-base font-bold text-primary">Connect Alice Blue</h2>
-              <p className="text-xs text-muted">Official Quantman-style broker authorization</p>
+              <h2 className="text-base font-bold text-primary">
+                Connect Alice Blue
+              </h2>
+              <p className="text-xs text-muted">
+                Official Quantman-style broker authorization
+              </p>
             </div>
           </div>
 
@@ -215,7 +226,9 @@ export default function ConnectAliceBlueModal({ isOpen, onClose, onConnected }) 
               <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                 <CheckCircle2 size={32} />
               </div>
-              <h3 className="text-sm font-bold text-emerald-400">Connected & Authorized!</h3>
+              <h3 className="text-sm font-bold text-emerald-400">
+                Connected & Authorized!
+              </h3>
               <p className="text-xs text-faint">
                 Live market data streaming has started.
               </p>
@@ -229,7 +242,11 @@ export default function ConnectAliceBlueModal({ isOpen, onClose, onConnected }) 
                     1
                   </div>
                   <p className="text-xs text-muted">
-                    Click <strong className="text-primary font-semibold">Authorize with Alice Blue</strong> below.
+                    Click{" "}
+                    <strong className="text-primary font-semibold">
+                      Authorize with Alice Blue
+                    </strong>{" "}
+                    below.
                   </p>
                 </div>
                 <div className="flex items-start gap-2.5">
@@ -237,7 +254,11 @@ export default function ConnectAliceBlueModal({ isOpen, onClose, onConnected }) 
                     2
                   </div>
                   <p className="text-xs text-muted">
-                    Enter your <strong className="text-primary font-semibold">Client ID, Password &amp; TOTP</strong> in the official Alice Blue window.
+                    Enter your{" "}
+                    <strong className="text-primary font-semibold">
+                      Client ID, Password &amp; TOTP
+                    </strong>{" "}
+                    in the official Alice Blue window.
                   </p>
                 </div>
                 <div className="flex items-start gap-2.5">
@@ -245,7 +266,8 @@ export default function ConnectAliceBlueModal({ isOpen, onClose, onConnected }) 
                     3
                   </div>
                   <p className="text-xs text-muted">
-                    Alice Blue automatically returns your token and begins live market streaming!
+                    Alice Blue automatically returns your token and begins live
+                    market streaming!
                   </p>
                 </div>
               </div>
@@ -295,13 +317,23 @@ export default function ConnectAliceBlueModal({ isOpen, onClose, onConnected }) 
                   onClick={() => setShowManual((v) => !v)}
                   className="text-[11px] text-faint hover:text-muted transition-colors flex items-center gap-1 mx-auto"
                 >
-                  <span>{showManual ? "Hide manual entry" : "Or enter redirect URL / authCode manually"}</span>
+                  <span>
+                    {showManual
+                      ? "Hide manual entry"
+                      : "Or enter redirect URL / authCode manually"}
+                  </span>
                 </button>
 
                 {showManual && (
-                  <form onSubmit={handleManualSubmit} className="mt-3 space-y-2">
+                  <form
+                    onSubmit={handleManualSubmit}
+                    className="mt-3 space-y-2"
+                  >
                     <div className="relative">
-                      <KeyRound size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
+                      <KeyRound
+                        size={13}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-faint"
+                      />
                       <input
                         type="text"
                         value={manualCode}

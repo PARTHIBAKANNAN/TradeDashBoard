@@ -551,10 +551,30 @@ function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
   ];
 
   const moreTabs = [
-    { key: "heatmap", label: "Heatmap", icon: Flame, desc: "Market Sector Treemap" },
-    { key: "watchlist", label: "Watchlist", icon: Star, desc: "Pinned Stocks & Radar" },
-    { key: "insights", label: "Insights", icon: Lightbulb, desc: "ORB Breakouts & Drivers" },
-    { key: "smart-money", label: "Smart Money", icon: Brain, desc: "Institutional Volume Flow" },
+    {
+      key: "heatmap",
+      label: "Heatmap",
+      icon: Flame,
+      desc: "Market Sector Treemap",
+    },
+    {
+      key: "watchlist",
+      label: "Watchlist",
+      icon: Star,
+      desc: "Pinned Stocks & Radar",
+    },
+    {
+      key: "insights",
+      label: "Insights",
+      icon: Lightbulb,
+      desc: "ORB Breakouts & Drivers",
+    },
+    {
+      key: "smart-money",
+      label: "Smart Money",
+      icon: Brain,
+      desc: "Institutional Volume Flow",
+    },
   ];
 
   const isMoreActive = moreTabs.some((t) => t.key === activeTab);
@@ -607,12 +627,16 @@ function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
                           : "bg-surface2/60 border-white/5 text-gray-300 hover:bg-surface3"
                       }`}
                     >
-                      <div className={`p-2 rounded-lg ${isActive ? "bg-blue-500/20 text-blue-400" : "bg-surface3 text-gray-400"}`}>
+                      <div
+                        className={`p-2 rounded-lg ${isActive ? "bg-blue-500/20 text-blue-400" : "bg-surface3 text-gray-400"}`}
+                      >
                         <Icon size={18} />
                       </div>
                       <div>
                         <div className="text-xs font-bold">{tab.label}</div>
-                        <div className="text-[10px] text-faint line-clamp-1">{tab.desc}</div>
+                        <div className="text-[10px] text-faint line-clamp-1">
+                          {tab.desc}
+                        </div>
                       </div>
                     </button>
                   );
@@ -656,7 +680,9 @@ function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
                 </div>
                 <span
                   className={`text-[10px] tracking-tight leading-none mt-1 truncate max-w-[65px] ${
-                    isActive ? "text-blue-400 font-semibold" : "text-text-muted/80"
+                    isActive
+                      ? "text-blue-400 font-semibold"
+                      : "text-text-muted/80"
                   }`}
                 >
                   {tab.label}
@@ -685,12 +711,18 @@ function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
               <MoreHorizontal
                 size={19}
                 strokeWidth={isMoreActive || isMoreOpen ? 2.3 : 1.8}
-                className={isMoreActive || isMoreOpen ? "text-blue-400" : "text-text-muted"}
+                className={
+                  isMoreActive || isMoreOpen
+                    ? "text-blue-400"
+                    : "text-text-muted"
+                }
               />
             </div>
             <span
               className={`text-[10px] tracking-tight leading-none mt-1 truncate max-w-[65px] ${
-                isMoreActive || isMoreOpen ? "text-blue-400 font-semibold" : "text-text-muted/80"
+                isMoreActive || isMoreOpen
+                  ? "text-blue-400 font-semibold"
+                  : "text-text-muted/80"
               }`}
             >
               {isMoreActive

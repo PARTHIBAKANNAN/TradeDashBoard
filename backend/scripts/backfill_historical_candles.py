@@ -39,7 +39,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger("backfill")
 
-DB_PATH = Path(getattr(config, "CANDLES_DB_PATH", PROJECT_ROOT / "backend" / "data" / "candles.sqlite"))
+DB_PATH = Path(
+    getattr(config, "CANDLES_DB_PATH", PROJECT_ROOT / "backend" / "data" / "candles.sqlite")
+)
 
 
 def get_sqlite_conn():
@@ -50,8 +52,7 @@ def get_sqlite_conn():
 
 
 def init_db(conn):
-    conn.execute(
-        """
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS candle_history (
             symbol TEXT NOT NULL,
             bucket_date TEXT NOT NULL,
@@ -64,14 +65,11 @@ def init_db(conn):
             delta REAL DEFAULT 0,
             PRIMARY KEY (symbol, bucket_date, bucket_minute)
         );
-        """
-    )
-    conn.execute(
-        """
+        """)
+    conn.execute("""
         CREATE INDEX IF NOT EXISTS idx_candles_sym_date
         ON candle_history (symbol, bucket_date);
-        """
-    )
+        """)
     conn.commit()
 
 
@@ -106,7 +104,12 @@ def backfill_via_fyers(lookback_days: int = 20):
     init_db(conn)
 
     total_inserted = 0
-    logger.info("Starting Fyers backfill for %d symbols (%s to %s)...", len(symbols_to_backfill), range_from, range_to)
+    logger.info(
+        "Starting Fyers backfill for %d symbols (%s to %s)...",
+        len(symbols_to_backfill),
+        range_from,
+        range_to,
+    )
 
     for i, fy_sym in enumerate(symbols_to_backfill, 1):
         clean_sym = "NIFTY50" if "NIFTY50" in fy_sym else short_symbol(fy_sym)
@@ -139,17 +142,19 @@ def backfill_via_fyers(lookback_days: int = 20):
                 if b_minute < 555 or b_minute > 930:
                     continue
 
-                rows_to_insert.append((
-                    clean_sym,
-                    b_date,
-                    b_minute,
-                    float(c[1]),
-                    float(c[2]),
-                    float(c[3]),
-                    float(c[4]),
-                    float(c[5]) if len(c) > 5 else 0.0,
-                    0.0,  # historical tick delta
-                ))
+                rows_to_insert.append(
+                    (
+                        clean_sym,
+                        b_date,
+                        b_minute,
+                        float(c[1]),
+                        float(c[2]),
+                        float(c[3]),
+                        float(c[4]),
+                        float(c[5]) if len(c) > 5 else 0.0,
+                        0.0,  # historical tick delta
+                    )
+                )
 
             if rows_to_insert:
                 conn.executemany(
@@ -170,7 +175,14 @@ def backfill_via_fyers(lookback_days: int = 20):
                 total_inserted += len(rows_to_insert)
 
             if i % 25 == 0 or i == len(symbols_to_backfill):
-                logger.info("[%d/%d] Processed %s (candles: %d, total in DB: %d)", i, len(symbols_to_backfill), clean_sym, len(rows_to_insert), total_inserted)
+                logger.info(
+                    "[%d/%d] Processed %s (candles: %d, total in DB: %d)",
+                    i,
+                    len(symbols_to_backfill),
+                    clean_sym,
+                    len(rows_to_insert),
+                    total_inserted,
+                )
 
         except Exception as e:
             logger.warning("Error backfilling %s: %s", clean_sym, e)
@@ -200,7 +212,9 @@ def backfill_via_aliceblue(lookback_days: int = 20):
 
     today = datetime.now(IST).date()
     from_date = today - timedelta(days=lookback_days + 10)
-    from_epoch = int(datetime(from_date.year, from_date.month, from_date.day, 9, 15, tzinfo=IST).timestamp())
+    from_epoch = int(
+        datetime(from_date.year, from_date.month, from_date.day, 9, 15, tzinfo=IST).timestamp()
+    )
     to_epoch = int(datetime(today.year, today.month, today.day, 15, 30, tzinfo=IST).timestamp())
 
     conn = get_sqlite_conn()
@@ -214,7 +228,9 @@ def backfill_via_aliceblue(lookback_days: int = 20):
     HIST_URL = "https://a3.aliceblueonline.com/open-api/od/v1/chart/history"
     symbols_to_backfill = list(ALL_SYMBOLS)
     total_inserted = 0
-    logger.info("Starting Alice Blue chart history backfill for %d symbols...", len(symbols_to_backfill))
+    logger.info(
+        "Starting Alice Blue chart history backfill for %d symbols...", len(symbols_to_backfill)
+    )
 
     for i, fy_sym in enumerate(symbols_to_backfill, 1):
         clean_sym = short_symbol(fy_sym)
@@ -260,7 +276,19 @@ def backfill_via_aliceblue(lookback_days: int = 20):
                 if b_minute < 555 or b_minute > 930:
                     continue
 
-                rows_to_insert.append((clean_sym, b_date, b_minute, float(o), float(h), float(l), float(cl), float(v), 0.0))
+                rows_to_insert.append(
+                    (
+                        clean_sym,
+                        b_date,
+                        b_minute,
+                        float(o),
+                        float(h),
+                        float(l),
+                        float(cl),
+                        float(v),
+                        0.0,
+                    )
+                )
 
             if rows_to_insert:
                 conn.executemany(
@@ -281,7 +309,14 @@ def backfill_via_aliceblue(lookback_days: int = 20):
                 total_inserted += len(rows_to_insert)
 
             if i % 25 == 0 or i == len(symbols_to_backfill):
-                logger.info("[%d/%d] Alice Blue: %s (inserted %d, total %d)", i, len(symbols_to_backfill), clean_sym, len(rows_to_insert), total_inserted)
+                logger.info(
+                    "[%d/%d] Alice Blue: %s (inserted %d, total %d)",
+                    i,
+                    len(symbols_to_backfill),
+                    clean_sym,
+                    len(rows_to_insert),
+                    total_inserted,
+                )
 
         except Exception as e:
             logger.warning("Alice Blue backfill failed for %s: %s", clean_sym, e)
@@ -309,8 +344,12 @@ def main():
     if success:
         logger.info("[✓] Successfully backfilled historical candles into SQLite!")
         from app import smart_money
+
         asyncio.run(smart_money.compute_rankings())
-        logger.info("[✓] Smart Money rankings recomputed! Current eligible symbols: %d", smart_money.get_latest()["eligible_symbols"])
+        logger.info(
+            "[✓] Smart Money rankings recomputed! Current eligible symbols: %d",
+            smart_money.get_latest()["eligible_symbols"],
+        )
     else:
         logger.error("Backfill failed: no broker API succeeded. Check API credentials.")
 

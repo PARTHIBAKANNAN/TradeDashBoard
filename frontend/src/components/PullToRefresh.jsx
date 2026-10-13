@@ -9,7 +9,7 @@ export default function PullToRefresh({ children, onRefresh, className = "" }) {
   const [pullY, setPullY] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  
+
   const startYRef = useRef(0);
   const isPullingRef = useRef(false);
   const containerRef = useRef(null);
@@ -113,10 +113,7 @@ export default function PullToRefresh({ children, onRefresh, className = "" }) {
                 </>
               ) : isRefreshing ? (
                 <>
-                  <RefreshCw
-                    size={14}
-                    className="text-blue-400 animate-spin"
-                  />
+                  <RefreshCw size={14} className="text-blue-400 animate-spin" />
                   <span className="text-[11px] font-bold text-blue-400">
                     Refreshing terminal…
                   </span>

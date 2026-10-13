@@ -369,7 +369,8 @@ async def public_summary():
             "symbol": "NIFTY 50",
             "ltp": nifty.get("ltp") or 24252.0,
             "prev_close": nifty.get("prev_close") or 24200.0,
-            "change": nifty.get("change") or round((nifty.get("ltp") or 24252.0) - (nifty.get("prev_close") or 24200.0), 2),
+            "change": nifty.get("change")
+            or round((nifty.get("ltp") or 24252.0) - (nifty.get("prev_close") or 24200.0), 2),
             "pct_change": nifty.get("pct_change") or 0.21,
         },
         "market_breadth": {
