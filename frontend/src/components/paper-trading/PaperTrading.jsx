@@ -1,5 +1,11 @@
 import React, { useMemo, useState } from "react";
-import { Rocket, LineChart, History, FileBarChart, PieChart } from "lucide-react";
+import {
+  Rocket,
+  LineChart,
+  History,
+  FileBarChart,
+  PieChart,
+} from "lucide-react";
 import Card from "../ui/Card.jsx";
 import {
   usePositions,

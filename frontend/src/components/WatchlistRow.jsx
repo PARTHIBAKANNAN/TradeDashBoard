@@ -109,7 +109,8 @@ const WatchlistRow = React.memo(
                       : "bg-accent-red/15 text-accent-red border border-accent-red/30"
                   }`}
                 >
-                  CVD {stock.cvd > 0 ? "+" : ""}{Math.round(stock.cvd / 1000)}k
+                  CVD {stock.cvd > 0 ? "+" : ""}
+                  {Math.round(stock.cvd / 1000)}k
                 </span>
               )}
             </div>
@@ -266,7 +267,8 @@ const WatchlistRow = React.memo(
                             : "bg-accent-red/15 text-accent-red border border-accent-red/30"
                         }`}
                       >
-                        {stock.cvd > 0 ? "+" : ""}{Math.round(stock.cvd / 1000)}k
+                        {stock.cvd > 0 ? "+" : ""}
+                        {Math.round(stock.cvd / 1000)}k
                       </span>
                     )}
                   </div>

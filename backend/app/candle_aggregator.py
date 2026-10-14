@@ -101,9 +101,7 @@ def _tick_delta(
     return 0.0, float(vol_delta)
 
 
-def on_tick(
-    stock: dict, ltp: float, now: datetime, bp1: float = 0.0, sp1: float = 0.0
-) -> None:
+def on_tick(stock: dict, ltp: float, now: datetime, bp1: float = 0.0, sp1: float = 0.0) -> None:
     """Called from calculations.process_incoming_tick for every tick, while
     the caller already holds MarketState's lock. Updates `stock["orb"]`
     live, order flow tick_delta, cvd, and seeds opening range extremes."""

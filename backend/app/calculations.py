@@ -91,13 +91,13 @@ def update_vwap(
     return new_cum_pv, new_cum_vol, round(new_cum_pv / new_cum_vol, 4)
 
 
+from .strategies.oi_squeeze_strategy import OISqueezeStrategy
 # Re-export pure helpers from strategies for backwards compatibility
 from .strategies.orb_strategy import (OrbStrategy, completed_candles,
                                       evaluate_orb,
                                       first_candle_extreme_intact,
                                       has_two_sided_range)
 from .strategies.sector_sympathy_strategy import SectorSympathyStrategy
-from .strategies.oi_squeeze_strategy import OISqueezeStrategy
 from .strategies.squeeze_strategy import SqueezeStrategy
 from .strategies.vwap_retest_strategy import VWAPRetestStrategy
 from .strategy_base import StrategyRegistry

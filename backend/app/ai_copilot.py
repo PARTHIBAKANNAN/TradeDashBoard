@@ -465,10 +465,32 @@ def compile_symbol_context(sym: str) -> Dict[str, Any]:
             "strategy_name": stock_data.get("strategy_name", ""),
         },
         "order_flow_assessment": {
-            "cvd_trend": "ACCUMULATION (Aggressive Buyers)" if (stock_data.get("cvd") or 0) > 0 else "DISTRIBUTION (Aggressive Sellers)",
-            "bar_delta_state": "BUY_IMBALANCE" if (stock_data.get("tick_delta") or 0) > 0 else "SELL_IMBALANCE",
-            "book_pressure": "BIDS_DOMINATING" if (stock_data.get("book_imbalance") or 0) > 0.1 else ("ASKS_DOMINATING" if (stock_data.get("book_imbalance") or 0) < -0.1 else "NEUTRAL"),
-            "derivatives_buildup": "LONG_BUILDUP" if (stock_data.get("oi_pct") or 0) > 1.5 and stock_data.get("pct_change", 0) > 0 else ("SHORT_BUILDUP" if (stock_data.get("oi_pct") or 0) > 1.5 and stock_data.get("pct_change", 0) < 0 else "NORMAL"),
+            "cvd_trend": (
+                "ACCUMULATION (Aggressive Buyers)"
+                if (stock_data.get("cvd") or 0) > 0
+                else "DISTRIBUTION (Aggressive Sellers)"
+            ),
+            "bar_delta_state": (
+                "BUY_IMBALANCE" if (stock_data.get("tick_delta") or 0) > 0 else "SELL_IMBALANCE"
+            ),
+            "book_pressure": (
+                "BIDS_DOMINATING"
+                if (stock_data.get("book_imbalance") or 0) > 0.1
+                else (
+                    "ASKS_DOMINATING"
+                    if (stock_data.get("book_imbalance") or 0) < -0.1
+                    else "NEUTRAL"
+                )
+            ),
+            "derivatives_buildup": (
+                "LONG_BUILDUP"
+                if (stock_data.get("oi_pct") or 0) > 1.5 and stock_data.get("pct_change", 0) > 0
+                else (
+                    "SHORT_BUILDUP"
+                    if (stock_data.get("oi_pct") or 0) > 1.5 and stock_data.get("pct_change", 0) < 0
+                    else "NORMAL"
+                )
+            ),
         },
         "technical_indicators": {
             "rsi_14_5m": rsi,

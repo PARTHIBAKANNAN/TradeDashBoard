@@ -80,7 +80,7 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
       const sl = Number(o.sl_price) || 0;
       const risk = Math.abs(entry - sl);
       if (risk > 0) {
-        const rRatio = (pnl / (risk * Number(o.quantity || 1)));
+        const rRatio = pnl / (risk * Number(o.quantity || 1));
         if (rRatio >= 2.0) rDistribution.target++;
         else if (rRatio >= 0.8) rDistribution.partial++;
         else if (rRatio > -0.2 && rRatio < 0.2) rDistribution.breakeven++;
@@ -93,7 +93,13 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
       // Sector Resolution
       const sec = stockMap[o.symbol]?.sector || "OTHER";
       if (!sectorBreakdown[sec]) {
-        sectorBreakdown[sec] = { count: 0, wins: 0, netPnl: 0, grossProfit: 0, grossLoss: 0 };
+        sectorBreakdown[sec] = {
+          count: 0,
+          wins: 0,
+          netPnl: 0,
+          grossProfit: 0,
+          grossLoss: 0,
+        };
       }
       sectorBreakdown[sec].count++;
       if (pnl > 0) sectorBreakdown[sec].wins++;
@@ -102,7 +108,12 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
       // Strategy Resolution from Notes
       let strat = "MANUAL";
       const notes = (o.notes || "").toUpperCase();
-      if (notes.includes("ORB") || notes.includes("C0.5") || notes.includes("C1") || notes.includes("C2")) {
+      if (
+        notes.includes("ORB") ||
+        notes.includes("C0.5") ||
+        notes.includes("C1") ||
+        notes.includes("C2")
+      ) {
         strat = "ORB Breakout & Retest";
       } else if (notes.includes("VWAP")) {
         strat = "Institutional VWAP Absorption";
@@ -123,7 +134,12 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
 
       // Symbol Resolution
       if (!symbolBreakdown[o.symbol]) {
-        symbolBreakdown[o.symbol] = { count: 0, wins: 0, netPnl: 0, sector: sec };
+        symbolBreakdown[o.symbol] = {
+          count: 0,
+          wins: 0,
+          netPnl: 0,
+          sector: sec,
+        };
       }
       symbolBreakdown[o.symbol].count++;
       if (pnl > 0) symbolBreakdown[o.symbol].wins++;
@@ -131,8 +147,15 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
     });
 
     const totalTrades = closed.length;
-    const winRate = totalTrades ? Math.round((winCount / totalTrades) * 100) : 0;
-    const profitFactor = grossLoss > 0 ? Number((grossProfit / grossLoss).toFixed(2)) : (grossProfit > 0 ? 99.9 : 0);
+    const winRate = totalTrades
+      ? Math.round((winCount / totalTrades) * 100)
+      : 0;
+    const profitFactor =
+      grossLoss > 0
+        ? Number((grossProfit / grossLoss).toFixed(2))
+        : grossProfit > 0
+          ? 99.9
+          : 0;
     const avgTradePnl = totalTrades ? Math.round(netPnl / totalTrades) : 0;
 
     return {
@@ -161,7 +184,9 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
             <Target size={12} className="text-accent-blue" />
             Total Trades
           </div>
-          <div className="font-mono text-lg font-bold text-primary">{stats.totalTrades}</div>
+          <div className="font-mono text-lg font-bold text-primary">
+            {stats.totalTrades}
+          </div>
           <div className="text-[10px] text-faint">
             {stats.winCount}W • {stats.lossCount}L
           </div>
@@ -169,15 +194,20 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
 
         <div className="rounded-xl border border-subtle bg-surface2/70 p-3 shadow-card">
           <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted uppercase tracking-wider mb-1">
-            <Award size={12} className={stats.winRate >= 50 ? "text-accent-green" : "text-amber-400"} />
+            <Award
+              size={12}
+              className={
+                stats.winRate >= 50 ? "text-accent-green" : "text-amber-400"
+              }
+            />
             Win Rate
           </div>
-          <div className={`font-mono text-lg font-bold ${stats.winRate >= 50 ? "text-accent-green" : "text-amber-400"}`}>
+          <div
+            className={`font-mono text-lg font-bold ${stats.winRate >= 50 ? "text-accent-green" : "text-amber-400"}`}
+          >
             {stats.winRate}%
           </div>
-          <div className="text-[10px] text-faint">
-            Target: &ge; 60%
-          </div>
+          <div className="text-[10px] text-faint">Target: &ge; 60%</div>
         </div>
 
         <div className="rounded-xl border border-subtle bg-surface2/70 p-3 shadow-card">
@@ -185,12 +215,12 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
             <Zap size={12} className="text-accent-blue" />
             Profit Factor
           </div>
-          <div className={`font-mono text-lg font-bold ${stats.profitFactor >= 1.5 ? "text-accent-green" : "text-primary"}`}>
+          <div
+            className={`font-mono text-lg font-bold ${stats.profitFactor >= 1.5 ? "text-accent-green" : "text-primary"}`}
+          >
             {stats.profitFactor}x
           </div>
-          <div className="text-[10px] text-faint">
-            Gross W/L Ratio
-          </div>
+          <div className="text-[10px] text-faint">Gross W/L Ratio</div>
         </div>
 
         <div className="rounded-xl border border-subtle bg-surface2/70 p-3 shadow-card">
@@ -201,9 +231,7 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
           <div className="font-mono text-lg font-bold text-accent-green">
             {formatMoney(stats.grossProfit)}
           </div>
-          <div className="text-[10px] text-faint">
-            Sum of winners
-          </div>
+          <div className="text-[10px] text-faint">Sum of winners</div>
         </div>
 
         <div className="rounded-xl border border-subtle bg-surface2/70 p-3 shadow-card">
@@ -214,17 +242,22 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
           <div className="font-mono text-lg font-bold text-accent-red">
             {formatMoney(-stats.grossLoss)}
           </div>
-          <div className="text-[10px] text-faint">
-            Sum of losers
-          </div>
+          <div className="text-[10px] text-faint">Sum of losers</div>
         </div>
 
         <div className="rounded-xl border border-subtle bg-surface2/70 p-3 shadow-card">
           <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted uppercase tracking-wider mb-1">
-            <ShieldCheck size={12} className={stats.netPnl >= 0 ? "text-accent-green" : "text-accent-red"} />
+            <ShieldCheck
+              size={12}
+              className={
+                stats.netPnl >= 0 ? "text-accent-green" : "text-accent-red"
+              }
+            />
             Net P&amp;L
           </div>
-          <div className={`font-mono text-lg font-bold ${stats.netPnl >= 0 ? "text-accent-green" : "text-accent-red"}`}>
+          <div
+            className={`font-mono text-lg font-bold ${stats.netPnl >= 0 ? "text-accent-green" : "text-accent-red"}`}
+          >
             {formatMoney(stats.netPnl)}
           </div>
           <div className="text-[10px] text-faint">
@@ -285,18 +318,25 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
           </h4>
 
           {Object.keys(stats.sectorBreakdown).length === 0 ? (
-            <div className="py-8 text-center text-xs text-faint">No closed trades recorded in this date range.</div>
+            <div className="py-8 text-center text-xs text-faint">
+              No closed trades recorded in this date range.
+            </div>
           ) : (
             <div className="space-y-3">
               {Object.entries(stats.sectorBreakdown)
                 .sort((a, b) => b[1].count - a[1].count)
                 .map(([sec, data]) => {
-                  const pctOfTotal = Math.round((data.count / stats.totalTrades) * 100);
+                  const pctOfTotal = Math.round(
+                    (data.count / stats.totalTrades) * 100,
+                  );
                   const winRate = Math.round((data.wins / data.count) * 100);
                   const isProfitable = data.netPnl >= 0;
 
                   return (
-                    <div key={sec} className="p-3 rounded-lg border border-subtle bg-surface3/40 space-y-2">
+                    <div
+                      key={sec}
+                      className="p-3 rounded-lg border border-subtle bg-surface3/40 space-y-2"
+                    >
                       <div className="flex items-center justify-between text-xs">
                         <div className="flex items-center gap-2 font-semibold text-primary">
                           <span className="w-2 h-2 rounded-full bg-accent-blue" />
@@ -306,10 +346,14 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
                           </span>
                         </div>
                         <div className="flex items-center gap-3 font-mono">
-                          <span className={`text-[11px] ${winRate >= 50 ? "text-accent-green" : "text-amber-400"}`}>
+                          <span
+                            className={`text-[11px] ${winRate >= 50 ? "text-accent-green" : "text-amber-400"}`}
+                          >
                             {winRate}% Win
                           </span>
-                          <span className={`font-bold ${isProfitable ? "text-accent-green" : "text-accent-red"}`}>
+                          <span
+                            className={`font-bold ${isProfitable ? "text-accent-green" : "text-accent-red"}`}
+                          >
                             {formatMoney(data.netPnl)}
                           </span>
                         </div>
@@ -344,42 +388,58 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
           </h4>
 
           {Object.keys(stats.strategyBreakdown).length === 0 ? (
-            <div className="py-8 text-center text-xs text-faint">No closed trades recorded in this date range.</div>
+            <div className="py-8 text-center text-xs text-faint">
+              No closed trades recorded in this date range.
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {Object.entries(stats.strategyBreakdown).map(([stratName, data]) => {
-                const winRate = Math.round((data.wins / data.count) * 100);
-                const isProfitable = data.netPnl >= 0;
+              {Object.entries(stats.strategyBreakdown).map(
+                ([stratName, data]) => {
+                  const winRate = Math.round((data.wins / data.count) * 100);
+                  const isProfitable = data.netPnl >= 0;
 
-                return (
-                  <div key={stratName} className="p-3.5 rounded-lg border border-subtle bg-surface3/40 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-xs text-primary">{stratName}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-surface2 text-faint border border-subtle">
-                        {data.count} trades
-                      </span>
-                    </div>
+                  return (
+                    <div
+                      key={stratName}
+                      className="p-3.5 rounded-lg border border-subtle bg-surface3/40 space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-xs text-primary">
+                          {stratName}
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-surface2 text-faint border border-subtle">
+                          {data.count} trades
+                        </span>
+                      </div>
 
-                    <div className="flex items-center justify-between text-xs pt-1">
-                      <span className="text-muted">Win Rate:</span>
-                      <span className={`font-mono font-bold ${winRate >= 50 ? "text-accent-green" : "text-amber-400"}`}>
-                        {winRate}% ({data.wins}W / {data.count - data.wins}L)
-                      </span>
-                    </div>
+                      <div className="flex items-center justify-between text-xs pt-1">
+                        <span className="text-muted">Win Rate:</span>
+                        <span
+                          className={`font-mono font-bold ${winRate >= 50 ? "text-accent-green" : "text-amber-400"}`}
+                        >
+                          {winRate}% ({data.wins}W / {data.count - data.wins}L)
+                        </span>
+                      </div>
 
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted">Net Realized:</span>
-                      <span className={`font-mono font-bold ${isProfitable ? "text-accent-green" : "text-accent-red"}`}>
-                        {formatMoney(data.netPnl)}
-                      </span>
-                    </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted">Net Realized:</span>
+                        <span
+                          className={`font-mono font-bold ${isProfitable ? "text-accent-green" : "text-accent-red"}`}
+                        >
+                          {formatMoney(data.netPnl)}
+                        </span>
+                      </div>
 
-                    <div className="w-full bg-surface2 h-1.5 rounded-full overflow-hidden mt-1">
-                      <div style={{ width: `${winRate}%` }} className="bg-accent-blue h-full" />
+                      <div className="w-full bg-surface2 h-1.5 rounded-full overflow-hidden mt-1">
+                        <div
+                          style={{ width: `${winRate}%` }}
+                          className="bg-accent-blue h-full"
+                        />
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                },
+              )}
             </div>
           )}
         </div>
@@ -393,7 +453,9 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
           </h4>
 
           {Object.keys(stats.symbolBreakdown).length === 0 ? (
-            <div className="py-8 text-center text-xs text-faint">No closed trades recorded in this date range.</div>
+            <div className="py-8 text-center text-xs text-faint">
+              No closed trades recorded in this date range.
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
@@ -410,19 +472,38 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
                   {Object.entries(stats.symbolBreakdown)
                     .sort((a, b) => b[1].netPnl - a[1].netPnl)
                     .map(([sym, data]) => {
-                      const winRate = Math.round((data.wins / data.count) * 100);
+                      const winRate = Math.round(
+                        (data.wins / data.count) * 100,
+                      );
                       const isUp = data.netPnl >= 0;
                       return (
-                        <tr key={sym} className="hover:bg-surface3/30 transition-colors">
-                          <td className="py-2 px-3 font-sans font-bold text-primary">{sym}</td>
-                          <td className="py-2 px-3 font-sans text-muted text-[11px]">{data.sector}</td>
-                          <td className="py-2 px-3 text-center text-muted">{data.count}</td>
+                        <tr
+                          key={sym}
+                          className="hover:bg-surface3/30 transition-colors"
+                        >
+                          <td className="py-2 px-3 font-sans font-bold text-primary">
+                            {sym}
+                          </td>
+                          <td className="py-2 px-3 font-sans text-muted text-[11px]">
+                            {data.sector}
+                          </td>
+                          <td className="py-2 px-3 text-center text-muted">
+                            {data.count}
+                          </td>
                           <td className="py-2 px-3 text-center">
-                            <span className={winRate >= 50 ? "text-accent-green" : "text-amber-400"}>
+                            <span
+                              className={
+                                winRate >= 50
+                                  ? "text-accent-green"
+                                  : "text-amber-400"
+                              }
+                            >
                               {winRate}%
                             </span>
                           </td>
-                          <td className={`py-2 px-3 text-right font-bold ${isUp ? "text-accent-green" : "text-accent-red"}`}>
+                          <td
+                            className={`py-2 px-3 text-right font-bold ${isUp ? "text-accent-green" : "text-accent-red"}`}
+                          >
                             {formatMoney(data.netPnl)}
                           </td>
                         </tr>
