@@ -23,11 +23,18 @@ ALICEBLUE_PASSWORD = os.getenv("ALICEBLUE_PASSWORD", "Thalamsd&7781").strip()
 ALICEBLUE_TOTP_KEY = (
     os.getenv("ALICEBLUE_TOTP_KEY", "NDAWXZFBTOUJKUBDGOSJMJBYZKFYGPDR").replace(" ", "").strip()
 )
-ALICEBLUE_APP_KEY = os.getenv("ALICEBLUE_APP_KEY", "X926u86ZC6").strip()
+ALICEBLUE_APP_KEY = os.getenv(
+    "ALICEBLUE_APP_KEY", os.getenv("ALICEBLUE_APP_CODE", "X926u86ZC6")
+).strip()
+ALICEBLUE_APP_CODE = ALICEBLUE_APP_KEY
 ALICEBLUE_API_SECRET = os.getenv(
     "ALICEBLUE_API_SECRET",
-    "0su1gFNZfoHtLMWOKpES8TudTfzM2SYVB4gKxpBPkSTw7bHEW2GTbB78LsUE1bRnlyz4OeGgohtkeHk9qFN5o0QMmvyQax2sEirx",
+    os.getenv(
+        "ALICEBLUE_API_KEY",
+        "0su1gFNZfoHtLMWOKpES8TudTfzM2SYVB4gKxpBPkSTw7bHEW2GTbB78LsUE1bRnlyz4OeGgohtkeHk9qFN5o0QMmvyQax2sEirx",
+    ),
 ).strip()
+ALICEBLUE_API_KEY = ALICEBLUE_API_SECRET
 ALICEBLUE_SESSION_TOKEN = os.getenv("ALICEBLUE_SESSION_TOKEN", "").strip()
 
 # ----------------- Secret credentials (backend only) -----------------

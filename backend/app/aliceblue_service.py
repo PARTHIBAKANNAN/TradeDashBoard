@@ -326,11 +326,27 @@ class AliceBlueDataEngine:
             latest_session = aliceblue_auth.get_cached_session()
             if latest_session:
                 self.user_session = latest_session
+            else:
+                logger.info("Alice Blue WS loop: requesting fresh session token...")
+                self.user_session = aliceblue_auth.login_automatically()
+
             if not self.user_session:
-                time.sleep(2)
+                logger.warning("Alice Blue WS loop: No valid session token available. Retrying in 5s...")
+                time.sleep(5)
                 continue
 
-            self._create_ws_session()
+            ws_ok = self._create_ws_session()
+            if not ws_ok:
+                logger.warning("createWsSess returned non-200. Refreshing session token...")
+                aliceblue_auth.clear_cached_session()
+                self.user_session = aliceblue_auth.login_automatically()
+                if self.user_session:
+                    ws_ok = self._create_ws_session()
+                if not ws_ok:
+                    logger.error("createWsSess failed after retry. Waiting 5s...")
+                    time.sleep(5)
+                    continue
+
             susertoken = self._compute_susertoken()
 
             def on_open(ws):

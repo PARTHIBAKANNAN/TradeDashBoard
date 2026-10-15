@@ -144,12 +144,7 @@ async def me(request: Request):
 @app.get("/api/auth/status", dependencies=[Depends(require_login)])
 async def broker_status():
     if getattr(config, "BROKER", "aliceblue") == "aliceblue":
-        connected = bool(aliceblue_service.aliceblue_engine.connected)
-        return {
-            "authenticated": connected,
-            "broker": "aliceblue",
-            "expires_in": 86400 if connected else 0,
-        }
+        return aliceblue_auth.auth_status()
     return auth.auth_status()
 
 
@@ -437,6 +432,8 @@ async def ai_analyze_stock(body: dict):
 
 @app.get("/api/health")
 async def health():
+    if getattr(config, "BROKER", "aliceblue") == "aliceblue":
+        return {"status": "ok", "market_open": is_market_open(), **aliceblue_auth.auth_status()}
     return {"status": "ok", "market_open": is_market_open(), **auth.auth_status()}
 
 
