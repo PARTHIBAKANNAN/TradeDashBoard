@@ -99,9 +99,10 @@ def get_token_cache_path() -> Path:
 
 def build_login_url() -> str:
     """Returns the Alice Blue user authorization URL with configured appcode."""
-    app_key = getattr(config, "ALICEBLUE_APP_KEY", "").strip() or getattr(
-        config, "ALICEBLUE_APP_CODE", ""
-    ).strip()
+    app_key = (
+        getattr(config, "ALICEBLUE_APP_KEY", "").strip()
+        or getattr(config, "ALICEBLUE_APP_CODE", "").strip()
+    )
     return f"https://ant.aliceblueonline.com/?appcode={app_key}"
 
 
@@ -264,9 +265,10 @@ def exchange_auth_code_for_session(auth_code: str) -> Optional[str]:
     Checksum = SHA256(userId + authCode + apiSecret)
     """
     user_id = getattr(config, "ALICEBLUE_USER_ID", "").strip()
-    api_secret = getattr(config, "ALICEBLUE_API_SECRET", "").strip() or getattr(
-        config, "ALICEBLUE_API_KEY", ""
-    ).strip()
+    api_secret = (
+        getattr(config, "ALICEBLUE_API_SECRET", "").strip()
+        or getattr(config, "ALICEBLUE_API_KEY", "").strip()
+    )
 
     if not user_id or not api_secret:
         logger.error("Missing ALICEBLUE_USER_ID or ALICEBLUE_API_SECRET in config")
@@ -321,12 +323,14 @@ def login_automatically() -> Optional[str]:
     then falls back to 4-step direct login if needed.
     """
     user_id = getattr(config, "ALICEBLUE_USER_ID", "").strip()
-    app_key = getattr(config, "ALICEBLUE_APP_KEY", "").strip() or getattr(
-        config, "ALICEBLUE_APP_CODE", ""
-    ).strip()
-    api_secret = getattr(config, "ALICEBLUE_API_SECRET", "").strip() or getattr(
-        config, "ALICEBLUE_API_KEY", ""
-    ).strip()
+    app_key = (
+        getattr(config, "ALICEBLUE_APP_KEY", "").strip()
+        or getattr(config, "ALICEBLUE_APP_CODE", "").strip()
+    )
+    api_secret = (
+        getattr(config, "ALICEBLUE_API_SECRET", "").strip()
+        or getattr(config, "ALICEBLUE_API_KEY", "").strip()
+    )
 
     if not user_id or not app_key or not api_secret:
         logger.warning(
@@ -385,7 +389,11 @@ def authenticate_user(
             json={"userId": user_id},
             timeout=15,
         )
-        if r1.status_code != 200 or r1.json().get("status", "").lower() not in ("ok", "success", "true"):
+        if r1.status_code != 200 or r1.json().get("status", "").lower() not in (
+            "ok",
+            "success",
+            "true",
+        ):
             logger.error("verify/user failed: HTTP %d - %s", r1.status_code, r1.text[:300])
             return None
     except Exception as e:

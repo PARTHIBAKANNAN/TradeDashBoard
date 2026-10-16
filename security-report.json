@@ -31,7 +31,7 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "account": "",
         "local_database_path": null,
         "safety_version": "3.8.1",
-        "timestamp": "2026-10-15 13:49:11",
+        "timestamp": "2026-10-16 13:39:35",
         "packages_found": 15,
         "vulnerabilities_found": 17,
         "vulnerabilities_ignored": 0,
@@ -56,7 +56,7 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "git": {
             "branch": "main",
             "tag": "",
-            "commit": "a8e35883c2235ef102d6ec0733ffd0b03954f6c4",
+            "commit": "e6fd5b9e2311b40734bfe0e8bc93ba288404f95a",
             "dirty": "True",
             "origin": "https://github.com/PARTHIBAKANNAN/TradeDashBoard"
         },
@@ -928,39 +928,6 @@ We highly encourage switching to the new `scan` command which is easier to use, 
             "more_info_url": "https://getsafety.com/v/86217/97c"
         },
         {
-            "vulnerability_id": "76170",
-            "package_name": "cryptography",
-            "ignored": {},
-            "ignored_reason": null,
-            "ignored_expires": null,
-            "vulnerable_spec": [
-                ">=42.0.0,<44.0.1"
-            ],
-            "all_vulnerable_specs": [
-                ">=42.0.0,<44.0.1"
-            ],
-            "analyzed_version": "44.0.0",
-            "analyzed_requirement": {
-                "raw": "cryptography==44.0.0  # ES256/RS256 support for verifying Supabase JWTs",
-                "extras": [],
-                "marker": null,
-                "name": "cryptography",
-                "specifier": "==44.0.0",
-                "url": null,
-                "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
-            },
-            "advisory": "Pyca/cryptography's wheels include a statically linked copy of OpenSSL. The versions of OpenSSL included in cryptography 42.0.0-44.0.0 are vulnerable to a security issue.",
-            "is_transitive": false,
-            "published_date": null,
-            "fixed_versions": [],
-            "closest_versions_without_known_vulnerabilities": [],
-            "resources": [],
-            "CVE": "CVE-2024-12797",
-            "severity": null,
-            "affected_versions": [],
-            "more_info_url": "https://getsafety.com/v/76170/97c"
-        },
-        {
             "vulnerability_id": "SFTY-20260327-04621",
             "package_name": "cryptography",
             "ignored": {},
@@ -992,6 +959,39 @@ We highly encourage switching to the new `scan` command which is easier to use, 
             "severity": null,
             "affected_versions": [],
             "more_info_url": "https://getsafety.com/v/SFTY-20260327-04621/97c"
+        },
+        {
+            "vulnerability_id": "76170",
+            "package_name": "cryptography",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                ">=42.0.0,<44.0.1"
+            ],
+            "all_vulnerable_specs": [
+                ">=42.0.0,<44.0.1"
+            ],
+            "analyzed_version": "44.0.0",
+            "analyzed_requirement": {
+                "raw": "cryptography==44.0.0  # ES256/RS256 support for verifying Supabase JWTs",
+                "extras": [],
+                "marker": null,
+                "name": "cryptography",
+                "specifier": "==44.0.0",
+                "url": null,
+                "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
+            },
+            "advisory": "Pyca/cryptography's wheels include a statically linked copy of OpenSSL. The versions of OpenSSL included in cryptography 42.0.0-44.0.0 are vulnerable to a security issue.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2024-12797",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://getsafety.com/v/76170/97c"
         },
         {
             "vulnerability_id": "SFTY-20260803-51569",

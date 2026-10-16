@@ -331,7 +331,9 @@ class AliceBlueDataEngine:
                 self.user_session = aliceblue_auth.login_automatically()
 
             if not self.user_session:
-                logger.warning("Alice Blue WS loop: No valid session token available. Retrying in 5s...")
+                logger.warning(
+                    "Alice Blue WS loop: No valid session token available. Retrying in 5s..."
+                )
                 time.sleep(5)
                 continue
 
