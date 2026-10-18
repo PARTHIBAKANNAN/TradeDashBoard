@@ -127,12 +127,14 @@ MIN_CONVICTION_SCORE = MIN_MOMENTUM_SCORE
 #   paper trades in a single trading day.  ₹3,400 = total stop loss budget.
 DAILY_MAX_RISK_INR = float(os.getenv("DAILY_MAX_RISK_INR", "3400.0"))
 #
-# MAX_DAILY_AUTO_TRADES: Hard cap on the number of auto paper trades per day (4 total across strategies).
+# MAX_DAILY_AUTO_TRADES: Hard cap on the number of auto paper trades per day (configurable via env).
 #   Risk per trade is dynamically allocated per strategy family via RiskAllocator.
 MAX_DAILY_AUTO_TRADES = int(os.getenv("MAX_DAILY_AUTO_TRADES", "4"))
 #
 # MAX_DAILY_MANUAL_ALERTS: Hard cap on manual approval Telegram alerts per day (4 total across strategies).
 MAX_DAILY_MANUAL_ALERTS = int(os.getenv("MAX_DAILY_MANUAL_ALERTS", "4"))
+# Minimum Notional Floor: ensures position turnover profits easily exceed statutory exchange costs
+MIN_ORDER_NOTIONAL_INR = float(os.getenv("MIN_ORDER_NOTIONAL_INR", "30000.0"))
 #
 # Execution & Scanning Cutoffs (Session minute 0 = 09:15 AM):
 #   ORB_EXECUTE_UNTIL_MINUTE (90 = 10:45 AM): Extended cutoff for prime breakout entries.

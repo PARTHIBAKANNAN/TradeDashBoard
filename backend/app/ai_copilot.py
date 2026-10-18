@@ -751,7 +751,15 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
 
     dec = res.get("decision", "SKIP")
     score = res.get("confidence_score", 0)
-    entry = res.get("suggested_entry", 0.0)
+
+    from .state import market_state
+
+    stock_snap = market_state.get_stock(sym) or {}
+    entry = float(stock_snap.get("ltp") or res.get("suggested_entry") or 0.0)
+    if entry <= 0:
+        logger.warning("ai_copilot: no live LTP available for %s, skipping auto trade", sym)
+        return
+
     sl = res.get("suggested_sl", 0.0)
     target = res.get("suggested_target", 0.0)
     tsl_t = res.get("tsl_type", "PERCENT")
@@ -797,6 +805,20 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
             from . import paper_trading, trade_management
 
             side = "BUY" if "BUY" in dec else "SELL"
+
+            # Anti-trap filter: Check distance to prior-day extreme
+            is_safe, barrier_reason = trade_management.check_support_resistance_proximity(
+                stock_snap, side, entry
+            )
+            if not is_safe:
+                logger.warning(
+                    "ai_copilot: barrier filter skipped auto trade for %s (%s): %s",
+                    sym,
+                    side,
+                    barrier_reason,
+                )
+                return
+
             notes = f"AI_COPILOT | {signal} | score={score} | auto"
 
             # Phase 3: Programmatic ATR/Structural Stops
@@ -808,18 +830,24 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
 
             # Re-calculate risk dynamically with minimum notional floor (overcoming statutory fee drag)
             sl_distance = abs(entry - sl_price) if entry and sl_price else 0.0
+
+            # Minimum Notional Floor: ₹30,000 ensures turnover profits exceed statutory exchange charges
+            min_notional_floor = getattr(config, "MIN_ORDER_NOTIONAL_INR", 30000.0)
+            min_qty_for_floor = max(1, int(min_notional_floor / entry)) if entry > 0 else 1
+
             if sl_distance > 0 and risk_per_trade > 0:
                 raw_quantity = int(risk_per_trade / sl_distance)
             else:
-                raw_quantity = 1
+                raw_quantity = min_qty_for_floor
 
-            # Minimum Notional Floor: ₹25,000 ensures turnover profits exceed statutory exchange charges
-            min_notional_floor = getattr(config, "MIN_ORDER_NOTIONAL_INR", 25000.0)
-            min_qty_for_floor = max(1, int(min_notional_floor / entry)) if entry > 0 else 1
             quantity = max(raw_quantity, min_qty_for_floor)
 
-            qty1 = quantity // 2
-            qty2 = quantity - qty1
+            if quantity >= 2:
+                qty1 = quantity // 2
+                qty2 = quantity - qty1
+            else:
+                qty1 = 0
+                qty2 = 1
 
             # Order 1: 50% partial exit at +1.5R
             target1 = entry + (1.5 * sl_distance) if side == "BUY" else entry - (1.5 * sl_distance)

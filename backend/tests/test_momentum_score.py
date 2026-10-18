@@ -6,12 +6,15 @@ aligned. Run from backend/:
     python -m pytest tests/test_momentum_score.py
 """
 
+import pytest
 from app import candle_aggregator
 from app.momentum_score import (build_sector_means, compute_recommended,
                                 evaluate_scores)
 
-# Mock the candle aggregator so tests run instantly without DB
-candle_aggregator.get_intraday_candles = lambda sym: []
+
+@pytest.fixture(autouse=True)
+def mock_candles_for_momentum(monkeypatch):
+    monkeypatch.setattr(candle_aggregator, "get_intraday_candles", lambda sym: [])
 
 
 def _stock(**overrides):

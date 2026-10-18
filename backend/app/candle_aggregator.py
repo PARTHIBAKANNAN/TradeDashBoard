@@ -230,18 +230,42 @@ def get_in_progress(sym: str):
     return (entry[0], entry[1], list(entry[2]), entry[3], entry[4]) if entry else None
 
 
+def _resolve_symbol(sym: str) -> str:
+    """Resolve symbol whether passed as short format ('COFORGE') or broker format ('NSE:COFORGE-EQ')."""
+    if sym in _completed_day_candles or sym in _day_candles:
+        return sym
+    from .config import WATCHLIST, short_symbol
+
+    for fy_sym in WATCHLIST:
+        if short_symbol(fy_sym) == sym:
+            if fy_sym in _completed_day_candles or fy_sym in _day_candles:
+                return fy_sym
+
+    if not sym.startswith("NSE:"):
+        cand = f"NSE:{sym}-EQ"
+        if cand in _completed_day_candles or cand in _day_candles:
+            return cand
+    else:
+        short = short_symbol(sym)
+        if short in _completed_day_candles or short in _day_candles:
+            return short
+    return sym
+
+
 def get_completed_candles(sym: str) -> list[tuple]:
     """Read-only snapshot of all completed 5-min buckets for `sym` today."""
-    return list(_completed_day_candles.get(sym, []))
+    resolved = _resolve_symbol(sym)
+    return list(_completed_day_candles.get(resolved, []))
 
 
 def get_intraday_closes(sym: str) -> list[float]:
     """Return chronological list of today's 5m close prices for technical indicators."""
+    resolved = _resolve_symbol(sym)
     closes: list[float] = []
-    for comp in _completed_day_candles.get(sym, []):
+    for comp in _completed_day_candles.get(resolved, []):
         closes.append(float(comp[2][3]))
 
-    cur = _day_candles.get(sym)
+    cur = _day_candles.get(resolved)
     if cur and cur[2]:
         closes.append(float(cur[2][3]))
     return closes
@@ -249,8 +273,9 @@ def get_intraday_closes(sym: str) -> list[float]:
 
 def get_intraday_candles(sym: str) -> list[dict]:
     """Return chronological list of today's 5m candles with full OHLC for ATR & Swing calculations."""
+    resolved = _resolve_symbol(sym)
     candles: list[dict] = []
-    for comp in _completed_day_candles.get(sym, []):
+    for comp in _completed_day_candles.get(resolved, []):
         ohlc = comp[2]
         candles.append(
             {
@@ -263,7 +288,7 @@ def get_intraday_candles(sym: str) -> list[dict]:
             }
         )
 
-    cur = _day_candles.get(sym)
+    cur = _day_candles.get(resolved)
     if cur and cur[2]:
         ohlc = cur[2]
         candles.append(
