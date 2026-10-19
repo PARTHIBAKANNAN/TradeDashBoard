@@ -1,5 +1,5 @@
 import pytest
-from app import candle_aggregator, trade_management, config
+from app import candle_aggregator, config, trade_management
 from app.state import market_state
 
 
@@ -67,6 +67,8 @@ def test_support_resistance_proximity_guard():
     assert is_safe_far is True
 
     # BUY at 20,360 is only 7 pts (0.034%) below yesterday_high -> Bull trap
-    is_safe_buy, reason_buy = trade_management.check_support_resistance_proximity(stock, "BUY", 20360.0)
+    is_safe_buy, reason_buy = trade_management.check_support_resistance_proximity(
+        stock, "BUY", 20360.0
+    )
     assert is_safe_buy is False
     assert "resistance" in reason_buy.lower()

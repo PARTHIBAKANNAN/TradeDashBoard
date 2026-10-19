@@ -37,7 +37,9 @@ def compute_structural_level(candles: list[dict], side: str, lookback: int = 6) 
         return max(c["high"] for c in recent)
 
 
-def check_support_resistance_proximity(stock: dict, side: str, entry: float, threshold_pct: float = 0.003) -> tuple[bool, str]:
+def check_support_resistance_proximity(
+    stock: dict, side: str, entry: float, threshold_pct: float = 0.003
+) -> tuple[bool, str]:
     """
     Anti-trap guard: Prevents shorting directly into major prior-day support,
     or buying directly into prior-day resistance (the trap that caught SOLARINDS).
@@ -53,7 +55,10 @@ def check_support_resistance_proximity(stock: dict, side: str, entry: float, thr
     elif side == "BUY":
         y_high = float(stock.get("yesterday_high") or 0.0)
         if y_high > 0 and entry <= y_high and ((y_high - entry) / entry) < threshold_pct:
-            return False, f"Near prior-day resistance (₹{y_high:.2f}), high rejection/bull-trap risk"
+            return (
+                False,
+                f"Near prior-day resistance (₹{y_high:.2f}), high rejection/bull-trap risk",
+            )
 
     return True, "Clear of immediate structural barriers"
 
