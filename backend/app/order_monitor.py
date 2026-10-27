@@ -56,6 +56,11 @@ def unregister(order_id: int, symbol: str) -> None:
     _open_brackets[symbol] = [o for o in _open_brackets.get(symbol, []) if o["id"] != order_id]
 
 
+def has_active_order(symbol: str) -> bool:
+    """Returns True if the symbol currently has an open bracket position or pending limit order."""
+    return bool(_open_brackets.get(symbol) or _pending_limits.get(symbol))
+
+
 def _limit_hit(order: dict, ltp: float) -> bool:
     if order["side"] == "BUY":
         return ltp <= float(order["limit_price"])

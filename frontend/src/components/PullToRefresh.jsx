@@ -87,7 +87,7 @@ export default function PullToRefresh({ children, onRefresh, className = "" }) {
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      className={`relative overflow-y-auto overscroll-y-contain ${className}`}
+      className={`relative overflow-y-auto overscroll-y-contain min-h-0 w-full ${className}`}
     >
       {/* Animated Pull-to-Refresh Indicator */}
       <AnimatePresence>

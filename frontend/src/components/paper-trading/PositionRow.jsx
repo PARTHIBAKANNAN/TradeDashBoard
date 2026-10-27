@@ -4,6 +4,22 @@ import { useStock } from "../../hooks/useMarketStream.js";
 import { cancelOrder, closeOrder } from "../../hooks/useOrders.js";
 import EditPositionModal from "./EditPositionModal.jsx";
 
+function formatTime(isoStr) {
+  if (!isoStr) return "—";
+  try {
+    const d = new Date(isoStr);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
+  } catch {
+    return "—";
+  }
+}
+
 function unrealizedPnl(side, quantity, entryPrice, ltp) {
   const direction = side === "BUY" ? 1 : -1;
   return Math.round(direction * (ltp - entryPrice) * quantity * 100) / 100;
@@ -21,6 +37,11 @@ export default function PositionRow({ order }) {
   const pnl =
     !isPending && ltp
       ? unrealizedPnl(order.side, order.quantity, order.entry_price, ltp)
+      : null;
+  const entryTimeStr = order.filled_at
+    ? formatTime(order.filled_at)
+    : order.placed_at
+      ? formatTime(order.placed_at)
       : null;
 
   const act = async (fn) => {
@@ -112,7 +133,17 @@ export default function PositionRow({ order }) {
               />
             )}
           </div>
-          <div className="text-[10px] text-faint">{order.order_type}</div>
+          <div className="text-[10px] text-faint flex items-center gap-1.5 mt-0.5">
+            <span>{order.order_type}</span>
+            {entryTimeStr && (
+              <>
+                <span>·</span>
+                <span className="font-mono text-muted" title={isPending ? "Placed Time" : "Entry Time"}>
+                  {entryTimeStr}
+                </span>
+              </>
+            )}
+          </div>
         </td>
         <td className="py-2.5 px-4 text-center">
           <span
@@ -159,6 +190,7 @@ export default function PositionRow({ order }) {
                 </span>
                 <span className="text-[10px] text-faint">
                   {order.order_type}
+                  {entryTimeStr && ` · ${entryTimeStr}`}
                 </span>
                 {order.notes && (
                   <StickyNote

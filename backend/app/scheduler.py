@@ -162,6 +162,13 @@ def _stop_engine():
     logger.info("Data engine stopped (market closed / standby).")
 
 
+def _intraday_square_off():
+    """15:15 IST cron job — squares off all open paper positions ahead of 15:30 close,
+    matching standard Indian broker MIS auto-square-off cutoff."""
+    logger.info("15:15 IST: Executing intraday paper trading square-off.")
+    paper_trading.square_off_all_sync()
+
+
 def _market_close():
     """15:30 IST cron job only — stops the engine AND squares off every open
     paper position (matches real intraday/MIS broker rules). Kept separate
@@ -282,6 +289,13 @@ def init_scheduler():
         _refresh_opening_range,
         CronTrigger(day_of_week="mon-fri", hour=9, minute=46, timezone=IST),
         id="opening_range_refresh",
+        replace_existing=True,
+    )
+    # 15:15 intraday square-off (broker MIS cutoff)
+    scheduler.add_job(
+        _intraday_square_off,
+        CronTrigger(day_of_week="mon-fri", hour=15, minute=15, timezone=IST),
+        id="intraday_square_off",
         replace_existing=True,
     )
     # 15:30 market close -> standby + square off all open paper positions

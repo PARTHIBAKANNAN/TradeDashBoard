@@ -289,7 +289,7 @@ function Dashboard({ user, onLogout }) {
   };
 
   return (
-    <div className="min-h-screen bg-surface text-primary font-sans flex flex-col pb-16 md:pb-0">
+    <div className="h-screen h-dvh bg-surface text-primary font-sans flex flex-col overflow-hidden pb-16 md:pb-0">
       <TopNavbar
         user={user}
         onLogout={onLogout}
@@ -311,7 +311,7 @@ function Dashboard({ user, onLogout }) {
         }}
       />
 
-      <PullToRefresh onRefresh={handleRefresh} className="flex-1">
+      <PullToRefresh onRefresh={handleRefresh} className="flex-1 min-h-0">
         {fyersConnected === false && (
           <div className="mx-auto max-w-[1920px] w-full px-4 sm:px-6 pt-3">
             <ConnectBrokerBanner onOpenModal={() => setShowBrokerModal(true)} />
@@ -391,7 +391,7 @@ function TopNavbar({
   ];
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-subtle bg-surface2/95 backdrop-blur-xl shadow-sm pt-safe">
+    <nav className="sticky top-0 z-50 border-b border-subtle bg-surface2/95 backdrop-blur-xl shadow-sm pt-safe flex-shrink-0">
       <div className="mx-auto max-w-[1920px] w-full px-3 sm:px-6 py-2.5 flex items-center justify-between gap-2 sm:gap-4">
         {/* Left: Brand & Status */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">

@@ -9,6 +9,54 @@ const REASON_LABEL = {
   SQUARE_OFF: "Square-off",
 };
 
+function formatTime(isoStr) {
+  if (!isoStr) return "—";
+  try {
+    const d = new Date(isoStr);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
+  } catch {
+    return "—";
+  }
+}
+
+function formatDate(isoStr) {
+  if (!isoStr) return "";
+  try {
+    const d = new Date(isoStr);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+    });
+  } catch {
+    return "";
+  }
+}
+
+function formatDuration(startIso, endIso) {
+  if (!startIso || !endIso) return null;
+  try {
+    const start = new Date(startIso).getTime();
+    const end = new Date(endIso).getTime();
+    if (isNaN(start) || isNaN(end) || end < start) return null;
+    const diffSec = Math.floor((end - start) / 1000);
+    const hours = Math.floor(diffSec / 3600);
+    const mins = Math.floor((diffSec % 3600) / 60);
+    const secs = diffSec % 60;
+    if (hours > 0) return `${hours}h ${mins}m`;
+    if (mins > 0) return `${mins}m ${secs}s`;
+    return `${secs}s`;
+  } catch {
+    return null;
+  }
+}
+
 export default function OrderHistoryTable({ orders }) {
   return (
     <Card
@@ -18,7 +66,7 @@ export default function OrderHistoryTable({ orders }) {
       bodyClassName="p-0"
     >
       {orders.length > 0 ? (
-        <div className="overflow-x-auto max-h-96">
+        <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead className="hidden md:table-header-group">
               <tr className="bg-surface3/60 border-b border-subtle sticky top-0">
@@ -30,6 +78,9 @@ export default function OrderHistoryTable({ orders }) {
                 </th>
                 <th className="py-2.5 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-right">
                   Qty
+                </th>
+                <th className="py-2.5 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-left">
+                  Timing
                 </th>
                 <th className="py-2.5 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-right">
                   Entry
@@ -53,6 +104,10 @@ export default function OrderHistoryTable({ orders }) {
                 const netPnl = o.net_pnl;
                 const grossPnl = o.realized_pnl;
                 const cancelled = o.status === "CANCELLED";
+                const entryTimeStr = formatTime(o.filled_at || o.placed_at);
+                const exitTimeStr = cancelled ? "Cancelled" : formatTime(o.closed_at);
+                const duration = formatDuration(o.filled_at || o.placed_at, o.closed_at);
+                const dateStr = formatDate(o.placed_at || o.filled_at);
                 const chargesTitle = cancelled
                   ? undefined
                   : `Brokerage ₹${o.brokerage ?? 0} · STT ₹${o.stt ?? 0} · Exchange ₹${o.exchange_charges ?? 0} · SEBI ₹${o.sebi_charges ?? 0} · Stamp Duty ₹${o.stamp_duty ?? 0} · GST ₹${o.gst ?? 0}`;
@@ -114,6 +169,19 @@ export default function OrderHistoryTable({ orders }) {
                       <td className="py-2.5 px-4 text-right font-mono tabular-nums">
                         {o.quantity}
                       </td>
+                      <td className="py-2.5 px-4 text-left font-mono tabular-nums">
+                        <div className="flex items-center gap-1.5 text-xs text-primary font-medium whitespace-nowrap">
+                          <span title={`Entry: ${entryTimeStr}`}>{entryTimeStr}</span>
+                          <span className="text-faint">→</span>
+                          <span title={`Exit: ${exitTimeStr}`}>{exitTimeStr}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[10px] text-faint mt-0.5">
+                          {duration && (
+                            <span className="text-accent-violet font-semibold">⏱ {duration}</span>
+                          )}
+                          {dateStr && <span>· {dateStr}</span>}
+                        </div>
+                      </td>
                       <td className="py-2.5 px-4 text-right font-mono tabular-nums">
                         {o.entry_price ?? "—"}
                       </td>
@@ -138,7 +206,7 @@ export default function OrderHistoryTable({ orders }) {
 
                     {/* Mobile card */}
                     <tr className="md:hidden border-b border-subtle/70">
-                      <td colSpan={8} className="p-3">
+                      <td colSpan={9} className="p-3">
                         <div className="flex items-start justify-between gap-2">
                           <div>
                             <div className="flex items-center gap-2">
@@ -164,6 +232,12 @@ export default function OrderHistoryTable({ orders }) {
                             <div className="text-[11px] text-faint mt-0.5">
                               Qty {o.quantity} · {o.entry_price ?? "—"} →{" "}
                               {o.exit_price ?? "—"}
+                            </div>
+                            <div className="text-[11px] font-mono text-muted flex items-center gap-1.5 mt-0.5">
+                              <span>{entryTimeStr} → {exitTimeStr}</span>
+                              {duration && (
+                                <span className="text-accent-violet font-semibold">({duration})</span>
+                              )}
                             </div>
                             <div
                               className="text-[11px] font-mono mt-0.5"

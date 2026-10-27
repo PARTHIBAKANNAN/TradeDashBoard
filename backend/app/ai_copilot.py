@@ -585,14 +585,14 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
         except Exception as e:
             logger.error("ai_copilot: failed to parse setup JSON: %s", e)
 
-    # Heuristic Mathematical Fallback (when API key is not set or network fails)
+    # Defensive Fallback: If AI API fails or is rate-limited, safely reject to prevent false entries
     return {
         "symbol": sym,
-        "decision": "CONFIRM_BUY" if is_bull else "CONFIRM_SELL",
-        "confidence_score": 80 if s.get("signal") != "None" else 50,
+        "decision": "SKIP_AI_UNAVAILABLE",
+        "confidence_score": 0,
         "rationale": [
-            "Quant score meets threshold.",
-            "Fallback activated: AI copilot skipped (network or API key error).",
+            "AI Copilot audit unavailable (API rate limit or network error).",
+            "Defensive gate: trade skipped to protect capital.",
         ],
         "is_fallback": True,
         "timestamp": datetime.now(IST).strftime("%H:%M:%S IST"),
@@ -793,10 +793,16 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
         else:
             under_cap = _get_auto_trade_count() < config.MAX_DAILY_AUTO_TRADES
 
+        from . import order_monitor
+
         with _notified_lock:
             already_traded = sym in _auto_traded_symbols_today
 
-        if within_window and under_cap and not already_traded:
+        has_active_order = order_monitor.has_active_order(sym)
+        if has_active_order:
+            logger.info("ai_copilot: %s already has an active position/order. Skipping duplicate.", sym)
+
+        if within_window and under_cap and not already_traded and not has_active_order:
             if use_risk_alloc:
                 risk_per_trade = risk_alloc.get_risk_per_trade(family, today)
             else:
