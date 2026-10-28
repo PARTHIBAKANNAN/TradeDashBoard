@@ -195,45 +195,56 @@ export default function RankingScreen({ stocks, nifty }) {
 
         {/* Main Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-3 mb-4">
-            {!showFilters ? (
-              <button
-                onClick={() => setShowFilters(true)}
-                className="text-xs font-bold text-accent-blue hover:text-accent-violet transition-colors flex items-center gap-2 flex-shrink-0"
-              >
-                <SlidersHorizontal size={13} />
-                Show Filters
-                {activeFilterCount > 0 && (
-                  <span className="w-4 h-4 grid place-items-center rounded-full bg-accent-blue text-white text-[9px]">
-                    {activeFilterCount}
-                  </span>
-                )}
-              </button>
-            ) : (
-              <div className="flex items-center gap-1.5 text-xs font-bold text-faint flex-shrink-0">
-                <TrendingUp size={13} className="text-accent-blue" />
-                Live rankings
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-4">
+            <div className="flex items-center justify-between gap-3 w-full sm:w-auto">
+              {!showFilters ? (
+                <button
+                  onClick={() => setShowFilters(true)}
+                  className="text-xs font-bold text-accent-blue hover:text-accent-violet transition-colors flex items-center gap-2 flex-shrink-0 py-1"
+                >
+                  <SlidersHorizontal size={13} />
+                  Show Filters
+                  {activeFilterCount > 0 && (
+                    <span className="w-4 h-4 grid place-items-center rounded-full bg-accent-blue text-white text-[9px]">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </button>
+              ) : (
+                <div className="flex items-center gap-1.5 text-xs font-bold text-faint flex-shrink-0 py-1">
+                  <TrendingUp size={13} className="text-accent-blue" />
+                  Live rankings
+                </div>
+              )}
+              <div className="sm:hidden text-xs text-faint flex-shrink-0">
+                <span className="font-bold text-primary">
+                  {filteredStocks.length}
+                </span>{" "}
+                stocks
               </div>
-            )}
-            <div className="relative w-full max-w-[220px] ml-auto">
-              <Search
-                size={13}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-faint"
-              />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search symbol…"
-                className="w-full bg-surface3 border border-strong rounded-lg pl-8 pr-3 py-1.5 text-xs text-primary focus:outline-none focus:border-accent-blue transition-colors"
-              />
             </div>
-            <div className="text-xs text-faint flex-shrink-0">
-              Showing{" "}
-              <span className="font-bold text-primary">
-                {filteredStocks.length}
-              </span>{" "}
-              stocks
+
+            <div className="flex items-center gap-3 w-full sm:w-auto sm:ml-auto">
+              <div className="relative w-full sm:w-60">
+                <Search
+                  size={13}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-faint"
+                />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search symbol…"
+                  className="w-full bg-surface3 border border-strong rounded-lg pl-8 pr-3 py-1.5 text-xs text-primary focus:outline-none focus:border-accent-blue transition-colors"
+                />
+              </div>
+              <div className="hidden sm:block text-xs text-faint flex-shrink-0">
+                Showing{" "}
+                <span className="font-bold text-primary">
+                  {filteredStocks.length}
+                </span>{" "}
+                stocks
+              </div>
             </div>
           </div>
 

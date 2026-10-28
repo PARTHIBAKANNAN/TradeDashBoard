@@ -127,72 +127,86 @@ export default function ChartModal({ symbol, stock: stockProp, onClose }) {
             className="relative flex flex-col w-full h-full bg-surface border-t border-subtle shadow-glow overflow-hidden pb-safe"
           >
             {/* ── Modal header ──────────────────────────────────────────── */}
-            <div className="flex items-center justify-between gap-4 px-3 sm:px-5 py-2.5 sm:py-3 border-b border-subtle flex-shrink-0 bg-surface2/80 backdrop-blur pt-safe">
-              {/* Left: symbol + price info */}
-              <div className="flex items-center gap-3 min-w-0 flex-wrap">
-                <span className="font-extrabold text-xl text-primary tracking-tight">
-                  {symbol}
-                </span>
-                {stock && (
-                  <>
-                    <span className="font-mono text-base font-semibold text-primary">
-                      {stock.ltp?.toLocaleString("en-IN", {
-                        minimumFractionDigits: 2,
-                      })}
-                    </span>
-                    {pointChange != null && (
-                      <span
-                        className={`font-mono text-sm font-semibold ${
-                          pointChange >= 0 ? "text-bull" : "text-bear"
-                        }`}
-                      >
-                        {pointChange >= 0 ? "▲" : "▼"}{" "}
-                        {Math.abs(pointChange).toLocaleString("en-IN", {
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2.5 sm:gap-4 px-3 sm:px-5 py-2.5 sm:py-3 border-b border-subtle flex-shrink-0 bg-surface2/80 backdrop-blur pt-safe">
+              {/* Row 1 on mobile: Symbol + price + Close button */}
+              <div className="flex items-center justify-between gap-3 min-w-0">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-wrap">
+                  <span className="font-extrabold text-lg sm:text-xl text-primary tracking-tight">
+                    {symbol}
+                  </span>
+                  {stock && (
+                    <>
+                      <span className="font-mono text-sm sm:text-base font-semibold text-primary">
+                        {stock.ltp?.toLocaleString("en-IN", {
                           minimumFractionDigits: 2,
                         })}
                       </span>
-                    )}
-                    <span
-                      className={`text-sm font-mono font-semibold ${
-                        (stock.pct_change ?? 0) >= 0 ? "text-bull" : "text-bear"
+                      {pointChange != null && (
+                        <span
+                          className={`hidden sm:inline font-mono text-sm font-semibold ${
+                            pointChange >= 0 ? "text-bull" : "text-bear"
+                          }`}
+                        >
+                          {pointChange >= 0 ? "▲" : "▼"}{" "}
+                          {Math.abs(pointChange).toLocaleString("en-IN", {
+                            minimumFractionDigits: 2,
+                          })}
+                        </span>
+                      )}
+                      <span
+                        className={`text-xs sm:text-sm font-mono font-semibold ${
+                          (stock.pct_change ?? 0) >= 0 ? "text-bull" : "text-bear"
+                        }`}
+                      >
+                        ({(stock.pct_change ?? 0) >= 0 ? "+" : ""}
+                        {stock.pct_change ?? 0}%)
+                      </span>
+                      {stock.sector && (
+                        <span className="text-xs text-faint hidden sm:block truncate">
+                          {stock.sector}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Close Button for mobile placed on Row 1 right */}
+                <button
+                  onClick={onClose}
+                  aria-label="Close modal"
+                  className="md:hidden w-8 h-8 grid place-items-center rounded-lg border border-subtle bg-surface3 text-muted hover:text-primary transition-colors flex-shrink-0 ml-auto"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Row 2 on mobile / Center on desktop: resolution picker + desktop close */}
+              <div className="flex items-center justify-between md:justify-end gap-2 w-full md:w-auto">
+                <div className="flex items-center gap-1 rounded-xl border border-subtle bg-surface3 p-0.5 sm:p-1 overflow-x-auto no-scrollbar w-full sm:w-auto justify-between sm:justify-start">
+                  {RESOLUTIONS.map(({ label, minutes }) => (
+                    <button
+                      key={label}
+                      onClick={() => setResolution(minutes)}
+                      className={`flex-1 sm:flex-initial px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all text-center whitespace-nowrap ${
+                        resolution === minutes
+                          ? "bg-accent-blue text-white shadow"
+                          : "text-muted hover:text-primary hover:bg-surface3"
                       }`}
                     >
-                      ({(stock.pct_change ?? 0) >= 0 ? "+" : ""}
-                      {stock.pct_change ?? 0}%)
-                    </span>
-                    {stock.sector && (
-                      <span className="text-xs text-faint hidden sm:block truncate">
-                        {stock.sector}
-                      </span>
-                    )}
-                  </>
-                )}
-              </div>
+                      {label}
+                    </button>
+                  ))}
+                </div>
 
-              {/* Center: resolution picker */}
-              <div className="flex items-center gap-1 rounded-xl border border-subtle bg-surface3 p-1">
-                {RESOLUTIONS.map(({ label, minutes }) => (
-                  <button
-                    key={label}
-                    onClick={() => setResolution(minutes)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                      resolution === minutes
-                        ? "bg-accent-blue text-white shadow"
-                        : "text-muted hover:text-primary hover:bg-surface3"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
+                {/* Desktop Close button */}
+                <button
+                  onClick={onClose}
+                  aria-label="Close modal"
+                  className="hidden md:grid w-8 h-8 place-items-center rounded-lg border border-subtle bg-surface3 text-muted hover:text-primary hover:border-strong transition-colors flex-shrink-0 ml-2"
+                >
+                  <X size={16} />
+                </button>
               </div>
-
-              {/* Right: close */}
-              <button
-                onClick={onClose}
-                className="w-8 h-8 grid place-items-center rounded-lg border border-subtle bg-surface3 text-muted hover:text-primary hover:border-strong transition-colors flex-shrink-0"
-              >
-                <X size={16} />
-              </button>
             </div>
 
             {/* ── Chart area ────────────────────────────────────────────── */}
@@ -229,7 +243,7 @@ export default function ChartModal({ symbol, stock: stockProp, onClose }) {
                   Last available: {candleDate}
                 </span>
               )}
-              <span>Press Esc to close</span>
+              <span className="hidden sm:inline">Press Esc to close</span>
             </div>
           </motion.div>
         </motion.div>

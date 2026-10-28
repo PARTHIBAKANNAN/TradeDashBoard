@@ -171,6 +171,15 @@ body {
   background: rgb(var(--text-faint));
 }
 
+/* Utility to suppress scrollbars completely for clean tab bars */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 @keyframes shimmer {
   0% {
     background-position: -200% 0;

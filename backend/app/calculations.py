@@ -276,56 +276,123 @@ def process_incoming_tick(
                 mom_summary = ", ".join(f"{f['name']}={f['pts']}/{f['max']}" for f in mom_factors)
                 eq_summary = ", ".join(f"{f['name']}={f['pts']}/{f['max']}" for f in eq_factors)
 
-                if passes_eval:
-                    import threading
+                from .strategy_base import StrategyFamily
+                family = signal_event.strategy_family if signal_event else StrategyFamily.ORB_BREAKOUT
+                is_pure_quant = family in (
+                    StrategyFamily.OI_SQUEEZE,
+                    StrategyFamily.VWAP_RETEST,
+                    StrategyFamily.SQUEEZE,
+                    StrategyFamily.SECTOR_SYMPATHY,
+                )
+                side = "BUY" if (signal_event.is_bull if signal_event else ("Bull" in signal)) else "SELL"
 
+                # ── Hard Veto Pre-Flight Checks ──────────────────────────────
+                hard_veto = False
+                veto_reason = ""
+
+                # Veto 1: Severe VWAP breach
+                if eq_score < 0:
+                    hard_veto = True
+                    veto_reason = "Hard VWAP Veto"
+
+                # Veto 2: Market regime crash (NIFTY < -0.75% with breadth collapse >= 75% declining)
+                if not hard_veto and side == "BUY":
+                    nifty_pct = state.nifty.get("pct_change", 0.0)
+                    if nifty_pct < -0.75:
+                        declining_stocks = sum(1 for s in all_stocks_list if (s.get("pct_change") or 0.0) < 0)
+                        tot_stocks = max(1, len(all_stocks_list))
+                        if (declining_stocks / tot_stocks) >= 0.75:
+                            hard_veto = True
+                            veto_reason = f"Market Regime Crash (NIFTY {nifty_pct:.2f}% | {int((declining_stocks/tot_stocks)*100)}% declining)"
+
+                # Veto 3: ADR Exhaustion (> 90% day range consumed)
+                if not hard_veto:
+                    adr_pct = _ti.compute_adr_pct(stock)
+                    today_h = stock.get("today_high") or ltp
+                    today_l = stock.get("today_low") or ltp
+                    if ltp > 0 and adr_pct > 0:
+                        range_used = (today_h - today_l) / ltp * 100.0
+                        if range_used >= (0.90 * adr_pct):
+                            hard_veto = True
+                            veto_reason = f"ADR Exhaustion (Range used {range_used:.1f}% >= 90% of ADR {adr_pct:.1f}%)"
+
+                if passes_eval and not hard_veto:
+                    import threading
                     from . import ai_copilot
 
-                    # Store scores on stock for AI context & UI inspection
+                    # Store scores on stock for UI inspection & audit
                     stock["momentum_score"] = mom_score
                     stock["momentum_factors"] = mom_factors
                     stock["entry_quality_score"] = eq_score
                     stock["entry_quality_factors"] = eq_factors
-                    stock["conviction_score"] = mom_score
+                    stock["conviction_score"] = composite_score
                     stock["conviction_factors"] = mom_factors + eq_factors
 
-                    # Check symbol-level lock before spawning thread
-                    if ai_copilot.can_audit_symbol(short_sym, signal):
+                    # Check symbol/strategy daily deduplication
+                    if not ai_copilot.can_audit_symbol(short_sym, signal):
+                        logger.info(
+                            "[V2 EVAL] QUALIFIED %s (%d/%d, %d/%d) but symbol already executed/audited today; skipping duplicate.",
+                            short_sym, mom_score, min_mom, eq_score, min_eq
+                        )
+                    elif is_pure_quant:
+                        # ── 1. Pure Quant Autonomous Execution (No AI dependency) ──
+                        logger.info(
+                            "[QUANT AUTONOMOUS] EXECUTING %s | Strategy: %s | Signal: %s | Score: %d | Time: %s",
+                            short_sym, family.name, signal, composite_score, signal_time
+                        )
                         threading.Thread(
-                            target=ai_copilot.audit_and_notify_signal,
-                            args=(short_sym, signal, signal_time),
+                            target=ai_copilot.execute_auto_trade,
+                            kwargs={
+                                "sym": short_sym,
+                                "signal": signal,
+                                "side": side,
+                                "score": composite_score,
+                                "rationale": [f"Pure Quant {family.name} Engine", f"Score: {composite_score}/100"],
+                                "is_pure_quant": True,
+                                "signal_time": signal_time,
+                            },
                             daemon=True,
-                            name=f"ai-audit-{short_sym}",
+                            name=f"quant-exec-{short_sym}",
                         ).start()
-
-                        logger.info(
-                            "[V2 EVAL] QUALIFIED %s | Signal: %s | Time: %s\n"
-                            "  • MOMENTUM: %d/%d [%s]\n"
-                            "  • ENTRY QUALITY: %d/%d [%s]\n"
-                            "  → Spawning AI Red-Flag Audit",
-                            short_sym,
-                            signal,
-                            signal_time,
-                            mom_score,
-                            min_mom,
-                            mom_summary,
-                            eq_score,
-                            min_eq,
-                            eq_summary,
-                        )
                     else:
-                        logger.info(
-                            "[V2 EVAL] QUALIFIED %s (%d/%d, %d/%d) but symbol already audited today; skipping redundant thread",
-                            short_sym,
-                            mom_score,
-                            min_mom,
-                            eq_score,
-                            min_eq,
-                        )
+                        # ── 2. ORB Breakout Routing ──
+                        min_elite = getattr(_cfg, "MIN_ELITE_ORB_AI_SCORE", 80)
+                        if composite_score >= min_elite:
+                            # Elite ORB Breakout candidate -> Gemini Red-Flag Auditor (max 3-5/day)
+                            logger.info(
+                                "[ELITE AI GATE] QUALIFIED %s | Signal: %s | Score: %d >= %d -> Spawning Gemini Audit",
+                                short_sym, signal, composite_score, min_elite
+                            )
+                            threading.Thread(
+                                target=ai_copilot.audit_and_notify_signal,
+                                args=(short_sym, signal, signal_time),
+                                daemon=True,
+                                name=f"ai-audit-{short_sym}",
+                            ).start()
+                        else:
+                            # Standard ORB Breakout (score 68-79) -> Execute autonomously without consuming AI quota
+                            logger.info(
+                                "[QUANT AUTONOMOUS ORB] EXECUTING %s | Signal: %s | Score: %d -> Quant Execution (AI quota saved)",
+                                short_sym, signal, composite_score
+                            )
+                            threading.Thread(
+                                target=ai_copilot.execute_auto_trade,
+                                kwargs={
+                                    "sym": short_sym,
+                                    "signal": signal,
+                                    "side": side,
+                                    "score": composite_score,
+                                    "rationale": ["Quant Autonomous ORB Breakout", f"Score: {composite_score}/100"],
+                                    "is_pure_quant": True,
+                                    "signal_time": signal_time,
+                                },
+                                daemon=True,
+                                name=f"quant-orb-{short_sym}",
+                            ).start()
                 else:
                     rejection_reasons = []
-                    if eq_score < 0:
-                        rejection_reasons.append("Hard VWAP Veto")
+                    if hard_veto:
+                        rejection_reasons.append(veto_reason)
                     else:
                         if mom_score < min_mom:
                             weak_mom = [f["name"] for f in mom_factors if f["pts"] < f["max"] * 0.4]
@@ -337,6 +404,8 @@ def process_incoming_tick(
                             rejection_reasons.append(
                                 f"Entry Quality {eq_score}/{min_eq} (weak: {', '.join(weak_eq[:2]) or 'extended'})"
                             )
+                        if composite_score < min_comp:
+                            rejection_reasons.append(f"Composite Conviction {composite_score}/{min_comp}")
 
                     logger.info(
                         "[V2 EVAL] REJECTED %s | Signal: %s | Time: %s\n"

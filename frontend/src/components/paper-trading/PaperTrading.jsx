@@ -59,19 +59,19 @@ export default function PaperTrading({ stocks }) {
           of which one is active. */}
       <WalletSummaryCard summary={summary} marginInUse={marginInUse} />
 
-      <div className="flex gap-0.5 overflow-x-auto border-b border-subtle">
+      <div className="grid grid-cols-4 sm:flex gap-1 overflow-x-auto no-scrollbar border-b border-subtle">
         {SUB_TABS.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
             onClick={() => setSubTab(key)}
-            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-semibold whitespace-nowrap transition-colors border-b-2 ${
+            className={`flex items-center justify-center gap-1.5 px-2 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors border-b-2 ${
               subTab === key
                 ? "border-accent-blue text-accent-blue"
                 : "border-transparent text-muted hover:text-primary"
             }`}
           >
-            <Icon size={13} />
-            {label}
+            <Icon size={13} className="flex-shrink-0" />
+            <span className="truncate">{label}</span>
           </button>
         ))}
       </div>
@@ -83,7 +83,7 @@ export default function PaperTrading({ stocks }) {
               <PlaceOrderForm stocks={stocks} />
             </Card>
             <div className="lg:col-span-2">
-              <PositionsTable positions={positions} />
+              <PositionsTable positions={positions} summary={summary} marginInUse={marginInUse} />
             </div>
           </div>
         </div>

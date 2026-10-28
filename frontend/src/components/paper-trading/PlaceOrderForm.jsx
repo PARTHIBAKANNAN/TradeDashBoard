@@ -420,90 +420,93 @@ export default function PlaceOrderForm({
 
       {error && <p className="text-bear text-xs">{error}</p>}
 
-      {showConfirm ? (
-        <div className="rounded-lg border border-accent-blue/40 bg-accent-blue/5 px-3 py-3 space-y-2">
-          <div className="text-[10px] font-bold text-accent-blue uppercase tracking-wider">
-            Confirm order
-          </div>
-          <div className="text-xs space-y-1.5">
-            <div className="flex justify-between font-mono tabular-nums">
-              <span className="text-faint">Side / Qty</span>
-              <span className="font-semibold text-primary">
-                {side} {quantity} {symbol}
-              </span>
+      {/* Sticky Execution Footer so submit button is always accessible on mobile */}
+      <div className="sticky bottom-0 bg-surface2/95 backdrop-blur-md pt-3 pb-1 -mx-1 px-1 border-t border-subtle/60 mt-3">
+        {showConfirm ? (
+          <div className="rounded-lg border border-accent-blue/40 bg-accent-blue/5 px-3 py-3 space-y-2">
+            <div className="text-[10px] font-bold text-accent-blue uppercase tracking-wider">
+              Confirm order
             </div>
-            <div className="flex justify-between font-mono tabular-nums">
-              <span className="text-faint">Order type</span>
-              <span className="font-semibold text-primary">
-                {orderType}
-                {orderType === "LIMIT" ? ` @ ₹${limitPrice}` : ""}
-              </span>
-            </div>
-            {positionValue != null && (
+            <div className="text-xs space-y-1.5">
               <div className="flex justify-between font-mono tabular-nums">
-                <span className="text-faint">
-                  Position value ({margin.leverage}x leverage)
-                </span>
+                <span className="text-faint">Side / Qty</span>
                 <span className="font-semibold text-primary">
-                  ₹{Math.round(positionValue).toLocaleString("en-IN")}
+                  {side} {quantity} {symbol}
                 </span>
               </div>
-            )}
-            {requiredMargin != null && (
               <div className="flex justify-between font-mono tabular-nums">
-                <span className="text-faint">From your wallet</span>
+                <span className="text-faint">Order type</span>
                 <span className="font-semibold text-primary">
-                  ₹{requiredMargin.toLocaleString("en-IN")}
-                  {walletPct != null ? ` (${walletPct.toFixed(1)}%)` : ""}
+                  {orderType}
+                  {orderType === "LIMIT" ? ` @ ₹${limitPrice}` : ""}
                 </span>
               </div>
-            )}
-            {(slPrice || targetPrice || tslType) && (
-              <div className="flex justify-between font-mono tabular-nums">
-                <span className="text-faint">SL / Target / Trail</span>
-                <span className="font-semibold text-primary">
-                  {slPrice ? `₹${slPrice}` : "—"} /{" "}
-                  {targetPrice ? `₹${targetPrice}` : "—"} /{" "}
-                  {tslType ? `${tslType} ${tslValue}` : "—"}
-                </span>
-              </div>
-            )}
-          </div>
-          {highRisk && (
-            <div className="flex items-start gap-1.5 rounded-md bg-accent-amber/10 border border-accent-amber/30 px-2 py-1.5 text-[11px] text-accent-amber">
-              <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />
-              This order uses {walletPct.toFixed(0)}% of your available balance
-              — a big move against you will hit hard.
+              {positionValue != null && (
+                <div className="flex justify-between font-mono tabular-nums">
+                  <span className="text-faint">
+                    Position value ({margin.leverage}x leverage)
+                  </span>
+                  <span className="font-semibold text-primary">
+                    ₹{Math.round(positionValue).toLocaleString("en-IN")}
+                  </span>
+                </div>
+              )}
+              {requiredMargin != null && (
+                <div className="flex justify-between font-mono tabular-nums">
+                  <span className="text-faint">From your wallet</span>
+                  <span className="font-semibold text-primary">
+                    ₹{requiredMargin.toLocaleString("en-IN")}
+                    {walletPct != null ? ` (${walletPct.toFixed(1)}%)` : ""}
+                  </span>
+                </div>
+              )}
+              {(slPrice || targetPrice || tslType) && (
+                <div className="flex justify-between font-mono tabular-nums">
+                  <span className="text-faint">SL / Target / Trail</span>
+                  <span className="font-semibold text-primary">
+                    {slPrice ? `₹${slPrice}` : "—"} /{" "}
+                    {targetPrice ? `₹${targetPrice}` : "—"} /{" "}
+                    {tslType ? `${tslType} ${tslValue}` : "—"}
+                  </span>
+                </div>
+              )}
             </div>
-          )}
-          <div className="grid grid-cols-2 gap-2 pt-1">
-            <button
-              type="button"
-              onClick={() => setShowConfirm(false)}
-              disabled={busy}
-              className="rounded-lg py-2 text-sm font-bold border border-subtle text-muted hover:text-primary disabled:opacity-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={confirmSubmit}
-              disabled={busy}
-              className="rounded-lg bg-gradient-to-r from-accent-blue to-accent-violet hover:opacity-90 disabled:opacity-50 py-2 text-sm font-bold text-white transition-opacity"
-            >
-              {busy ? "Placing…" : "Confirm"}
-            </button>
+            {highRisk && (
+              <div className="flex items-start gap-1.5 rounded-md bg-accent-amber/10 border border-accent-amber/30 px-2 py-1.5 text-[11px] text-accent-amber">
+                <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />
+                This order uses {walletPct.toFixed(0)}% of your available balance
+                — a big move against you will hit hard.
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowConfirm(false)}
+                disabled={busy}
+                className="rounded-lg py-2 text-sm font-bold border border-subtle text-muted hover:text-primary disabled:opacity-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmSubmit}
+                disabled={busy}
+                className="rounded-lg bg-gradient-to-r from-accent-blue to-accent-violet hover:opacity-90 disabled:opacity-50 py-2 text-sm font-bold text-white transition-opacity"
+              >
+                {busy ? "Placing…" : "Confirm"}
+              </button>
+            </div>
           </div>
-        </div>
-      ) : (
-        <button
-          type="submit"
-          disabled={busy || overBudget || !margin?.ltp}
-          className="w-full bg-gradient-to-r from-accent-blue to-accent-violet hover:opacity-90 disabled:opacity-50 rounded-lg py-2.5 text-sm font-bold text-white transition-opacity"
-        >
-          {`Review ${orderType} ${side}`}
-        </button>
-      )}
+        ) : (
+          <button
+            type="submit"
+            disabled={busy || overBudget || !margin?.ltp}
+            className="w-full bg-gradient-to-r from-accent-blue to-accent-violet hover:opacity-90 disabled:opacity-50 rounded-lg py-2.5 text-sm font-bold text-white transition-opacity shadow-sm"
+          >
+            {`Review ${orderType} ${side}`}
+          </button>
+        )}
+      </div>
     </form>
   );
 }

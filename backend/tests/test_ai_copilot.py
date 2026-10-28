@@ -55,7 +55,7 @@ def test_analyze_trade_setup_heuristic_fallback():
             }
             res = ai_copilot.analyze_trade_setup("RELIANCE")
             assert res["symbol"] == "RELIANCE"
-            assert res["decision"] == "SKIP_AI_UNAVAILABLE"
+            assert res["decision"] == "QUANT_FALLBACK"
             assert res["confidence_score"] == 0
             assert res.get("is_fallback") is True
 

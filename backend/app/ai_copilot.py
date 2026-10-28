@@ -72,6 +72,7 @@ def call_gemini(
     prompt: str,
     system_instruction: Optional[str] = None,
     enable_search: bool = False,
+    timeout: float = 30.0,
 ) -> Optional[str]:
     """
     Call Google Gemini REST API directly using standard urllib (no heavy SDK needed).
@@ -118,7 +119,7 @@ def call_gemini(
                 headers={"Content-Type": "application/json"},
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
                 body = json.loads(resp.read().decode("utf-8"))
                 candidates = body.get("candidates", [])
                 if candidates:
@@ -281,7 +282,7 @@ def run_premarket_briefing() -> Dict[str, Any]:
         "}"
     )
 
-    raw_response = call_gemini(prompt, system_instruction=system_prompt)
+    raw_response = call_gemini(prompt, system_instruction=system_prompt, enable_search=True, timeout=30.0)
     if raw_response:
         parsed = _extract_json(raw_response)
         if parsed:
@@ -575,7 +576,7 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
         "Otherwise return SKIP_TRAP."
     )
 
-    raw_response = call_gemini(prompt, system_instruction=system_prompt)
+    raw_response = call_gemini(prompt, system_instruction=system_prompt, timeout=3.5)
     if raw_response:
         try:
             parsed = json.loads(raw_response)
@@ -585,14 +586,15 @@ def analyze_trade_setup(sym: str) -> Dict[str, Any]:
         except Exception as e:
             logger.error("ai_copilot: failed to parse setup JSON: %s", e)
 
-    # Defensive Fallback: If AI API fails or is rate-limited, safely reject to prevent false entries
+    # Non-blocking Fallback: If AI API fails, rate-limits (429), or times out (>3.5s),
+    # return QUANT_FALLBACK so high-conviction trades execute under pure quant rules.
     return {
         "symbol": sym,
-        "decision": "SKIP_AI_UNAVAILABLE",
+        "decision": "QUANT_FALLBACK",
         "confidence_score": 0,
         "rationale": [
-            "AI Copilot audit unavailable (API rate limit or network error).",
-            "Defensive gate: trade skipped to protect capital.",
+            "AI Copilot audit unavailable (API rate limit or timeout).",
+            "Autonomous Quant execution active.",
         ],
         "is_fallback": True,
         "timestamp": datetime.now(IST).strftime("%H:%M:%S IST"),
@@ -696,23 +698,219 @@ def can_audit_symbol(sym: str, signal: str = "") -> bool:
         return key not in _notified_signals_today
 
 
-# ── 4. Main Audit & Notify Entry Point ───────────────────────────────────────
+
+# ── 4. Unified Auto Execution Engine ──────────────────────────────────────────
+
+
+def execute_auto_trade(
+    sym: str,
+    signal: str,
+    side: str,
+    score: float,
+    rationale: Optional[List[str]] = None,
+    is_fallback: bool = False,
+    is_pure_quant: bool = False,
+    signal_time: Optional[str] = None,
+) -> Tuple[bool, str]:
+    """
+    Unified execution engine for both Pure Quant and AI-confirmed trades.
+    
+    Performs:
+      1. Trading window and daily quota checks (per strategy family)
+      2. Symbol deduplication and active order verification
+      3. S/R barrier proximity guard
+      4. Programmatic ATR/structural stop and target calculation
+      5. Minimum ₹30,000 notional order sizing floor
+      6. Split execution (50% partial 1.5R exit + trailing runner)
+      7. Telegram notification
+    
+    Returns (success: bool, reason: str).
+    """
+    if not config.AUTO_PAPER_USER_ID:
+        return False, "AUTO_PAPER_USER_ID not configured"
+
+    today = datetime.now(IST).date()
+    _reset_daily_counters_if_needed(today)
+
+    from .state import market_state
+    stock_snap = market_state.get_stock(sym) or {}
+    entry = float(stock_snap.get("ltp") or 0.0)
+    if entry <= 0:
+        return False, f"No live price available for {sym}"
+
+    from .risk_allocator import get_risk_allocator
+    from .strategy_base import StrategyFamily
+    family = get_signal_family(signal)
+
+    now_ist = datetime.now(IST)
+    if not signal_time:
+        signal_time = now_ist.strftime("%H:%M")
+
+    session_minute = (now_ist.hour - 9) * 60 + (now_ist.minute - 15)
+    is_orb = family == StrategyFamily.ORB_BREAKOUT
+    cutoff_minute = (
+        config.ORB_EXECUTE_UNTIL_MINUTE if is_orb else config.RECLAIM_EXECUTE_UNTIL_MINUTE
+    )
+    if session_minute > cutoff_minute:
+        cutoff_label = "10:15 AM (ORB)" if is_orb else "11:00 AM (Reclaim)"
+        return False, f"After {cutoff_label} cutoff (session min {session_minute} > {cutoff_minute})"
+
+    use_risk_alloc = getattr(config, "ENABLE_RISK_ALLOCATOR", True)
+    risk_alloc = get_risk_allocator()
+    if use_risk_alloc:
+        under_cap = risk_alloc.can_trade(family, today)
+    else:
+        under_cap = _get_auto_trade_count() < config.MAX_DAILY_AUTO_TRADES
+
+    if not under_cap:
+        if use_risk_alloc:
+            return False, f"Daily budget reached for strategy {family.name}"
+        return False, f"Daily auto trade cap reached ({_get_auto_trade_count()}/{config.MAX_DAILY_AUTO_TRADES} trades)"
+
+    with _notified_lock:
+        already_traded = sym in _auto_traded_symbols_today
+    if already_traded:
+        return False, f"Symbol {sym} has already been auto-traded today. Deduplicating."
+
+    from . import order_monitor
+    if order_monitor.has_active_order(sym):
+        return False, f"Symbol {sym} already has an active position/order. Skipping duplicate."
+
+    from . import paper_trading, trade_management
+    is_safe, barrier_reason = trade_management.check_support_resistance_proximity(
+        stock_snap, side, entry
+    )
+    if not is_safe:
+        return False, f"Barrier filter: {barrier_reason}"
+
+    if use_risk_alloc:
+        risk_per_trade = risk_alloc.get_risk_per_trade(family, today)
+    else:
+        risk_per_trade = config.DAILY_MAX_RISK_INR / config.MAX_DAILY_AUTO_TRADES
+
+    notes_prefix = "QUANT_AUTONOMOUS" if (is_pure_quant or is_fallback) else "AI_COPILOT"
+    notes = f"{notes_prefix} | {signal} | score={int(score)} | auto"
+
+    computed_stops = trade_management.calculate_initial_stops(sym, side, entry)
+    sl_price = computed_stops["sl_price"]
+    target_price = computed_stops["target_price"]
+    tsl_type = computed_stops["tsl_type"]
+    tsl_value = computed_stops["tsl_value"]
+
+    sl_distance = abs(entry - sl_price) if entry and sl_price else 0.0
+    min_notional_floor = getattr(config, "MIN_ORDER_NOTIONAL_INR", 30000.0)
+    min_qty_for_floor = max(1, int(min_notional_floor / entry)) if entry > 0 else 1
+
+    if sl_distance > 0 and risk_per_trade > 0:
+        raw_quantity = int(risk_per_trade / sl_distance)
+    else:
+        raw_quantity = min_qty_for_floor
+
+    quantity = max(raw_quantity, min_qty_for_floor)
+
+    if quantity >= 2:
+        qty1 = quantity // 2
+        qty2 = quantity - qty1
+    else:
+        qty1 = 0
+        qty2 = 1
+
+    target1 = entry + (1.5 * sl_distance) if side == "BUY" else entry - (1.5 * sl_distance)
+
+    success_count = 0
+    if qty1 > 0:
+        res1 = paper_trading.place_auto_paper_order_sync(
+            user_id=config.AUTO_PAPER_USER_ID,
+            symbol=sym,
+            side=side,
+            quantity=qty1,
+            sl_price=sl_price,
+            target_price=round(target1, 2),
+            tsl_type=tsl_type,
+            tsl_value=tsl_value,
+            notes=notes + " | 50% Partial 1.5R",
+        )
+        if res1:
+            success_count += 1
+
+    if qty2 > 0:
+        res2 = paper_trading.place_auto_paper_order_sync(
+            user_id=config.AUTO_PAPER_USER_ID,
+            symbol=sym,
+            side=side,
+            quantity=qty2,
+            sl_price=sl_price,
+            target_price=target_price,
+            tsl_type=tsl_type,
+            tsl_value=tsl_value,
+            notes=notes + " | Trailing Runner",
+        )
+        if res2:
+            success_count += 1
+
+    if success_count > 0:
+        with _notified_lock:
+            _auto_traded_symbols_today.add(sym)
+        auto_count = _increment_auto_trade_count()
+        if use_risk_alloc:
+            risk_alloc.consume(family, quantity * sl_distance, today)
+
+        logger.info(
+            "ai_copilot: auto paper trade placed for %s | %s %d qty @ %.2f (mode: %s)",
+            sym,
+            side,
+            quantity,
+            entry,
+            notes_prefix,
+        )
+
+        from . import telegram_notify
+        actual_risk = round(quantity * sl_distance, 2)
+        tgt_dist = abs(target_price - entry)
+        rr_str = f"1:{round(tgt_dist / max(0.01, sl_distance), 1)}"
+
+        if is_pure_quant:
+            title = f"⚡ *QUANT AUTONOMOUS ORDER PLACED ({auto_count}/{config.MAX_DAILY_AUTO_TRADES})*"
+            score_line = f"📐 *Quant Conviction:* {int(score)}/100"
+        elif is_fallback:
+            title = f"⚡ *QUANT FALLBACK ORDER PLACED ({auto_count}/{config.MAX_DAILY_AUTO_TRADES})*"
+            score_line = f"⚡ *Quant Conviction (AI Bypassed):* {int(score)}/100"
+        else:
+            title = f"✅ *AI CONFIRMED ORDER PLACED ({auto_count}/{config.MAX_DAILY_AUTO_TRADES})*"
+            score_line = f"🤖 *AI Confidence:* {int(score)}%"
+
+        lines = [
+            title,
+            "",
+            f"📌 *Stock:* `{sym}` | *{side}*",
+            f"🔢 *Quantity:* {quantity} shares",
+            f"📍 *Entry:* ₹{entry:.2f}",
+            f"🛑 *Stop Loss:* ₹{sl_price:.2f}  _(Risk: ₹{actual_risk:,.0f})_",
+            f"🎯 *Target:* ₹{target_price:.2f}",
+            f"📊 *RR Ratio:* {rr_str}",
+            f"🔄 *Trailing SL:* {tsl_type} {tsl_value}",
+            score_line,
+            f"⏱ *Signal:* `{signal}` @ {signal_time}",
+        ]
+        if rationale:
+            lines.append("")
+            for r in rationale[:2]:
+                lines.append(f"• {r}")
+
+        text = "\n".join(lines)
+        telegram_notify.send_message(text)
+        return True, "Order placed successfully"
+
+    return False, "Order placement failed (insufficient margin or DB error)"
+
+
+# ── 5. Main Audit & Notify Entry Point ────────────────────────────────────────
 
 
 def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
     """
-    Automated background worker: Audits a newly triggered breakout signal
-    using Gemini's Red-Flag Filter and sends a rich Telegram alert.
-
-    Pipeline:
-      1. Symbol-level daily dedup check — each symbol fires AT MOST ONCE per day (or per strategy family).
-      2. Gemini Red-Flag audit — SKIP_TRAP if any red flag found.
-      3. Confidence threshold check — must reach MIN_AI_CONFIDENCE (85%).
-      4. Auto paper trade execution (if within session window and auto trade cap not hit).
-      5. Telegram notification:
-         - Up to MAX_DAILY_AUTO_TRADES (3) placed orders
-         - Up to MAX_DAILY_MANUAL_ALERTS (3) manual approval alerts
-         - Zero spam once quota is met or for low confidence/traps.
+    Automated background worker: Audits a newly triggered breakout signal.
+    Applies Gemini Red-Flag audit with non-blocking fallback to Quant Autonomous execution.
     """
     if not config.ENABLE_AI_TELEGRAM_ALERTS:
         logger.info("ai_copilot: ENABLE_AI_TELEGRAM_ALERTS is false; skipping alert for %s", sym)
@@ -723,13 +921,11 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
 
     from .risk_allocator import get_risk_allocator
     from .strategy_base import StrategyFamily
-
     family = get_signal_family(signal)
     multi_strat_dedup = getattr(config, "ENABLE_MULTI_STRATEGY_DEDUP", False)
     use_risk_alloc = getattr(config, "ENABLE_RISK_ALLOCATOR", True)
     risk_alloc = get_risk_allocator()
 
-    # Step 1 — Symbol/Strategy Deduplication
     with _notified_lock:
         dedup_key = f"{today}:{sym}:{family.name}" if multi_strat_dedup else f"{today}:{sym}"
         if dedup_key in _notified_signals_today:
@@ -743,17 +939,14 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
         _notified_signals_today.add(dedup_key)
 
     from . import telegram_notify
-
     logger.info("ai_copilot: auditing signal %s for %s ...", signal, sym)
 
-    # Step 2 — Gemini Red-Flag Filter
     res = analyze_trade_setup(sym)
-
     dec = res.get("decision", "SKIP")
     score = res.get("confidence_score", 0)
+    is_fallback = res.get("is_fallback", False)
 
     from .state import market_state
-
     stock_snap = market_state.get_stock(sym) or {}
     entry = float(stock_snap.get("ltp") or res.get("suggested_entry") or 0.0)
     if entry <= 0:
@@ -762,261 +955,96 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
 
     sl = res.get("suggested_sl", 0.0)
     target = res.get("suggested_target", 0.0)
-    tsl_t = res.get("tsl_type", "PERCENT")
-    tsl_v = res.get("tsl_value", 0.5)
     rationale = res.get("rationale", [])
+    side = "BUY" if "Bull" in signal or "BUY" in dec else "SELL"
+
+    # Non-blocking AI Fallback: if Gemini times out or rate-limits (429), execute under Quant Autonomous gate
+    if is_fallback:
+        mom_score = stock_snap.get("momentum_score", 0)
+        eq_score = stock_snap.get("entry_quality_score", 0)
+        composite = (eq_score * 0.55 + mom_score * 0.45) if eq_score else stock_snap.get("conviction_score", 0)
+        min_fallback = getattr(config, "MIN_FALLBACK_CONVICTION", 70)
+
+        if composite >= min_fallback:
+            logger.info(
+                "ai_copilot: AI rate-limited/timed out for %s, but Quant Conviction %.1f >= %d. Triggering Quant Autonomous execution.",
+                sym, composite, min_fallback
+            )
+            ok, reason = execute_auto_trade(
+                sym=sym,
+                signal=signal,
+                side=side,
+                score=composite,
+                rationale=["AI Gateway unavailable (429/timeout)", "Executed via Quant Autonomous fallback"],
+                is_fallback=True,
+                signal_time=signal_time,
+            )
+            if not ok:
+                logger.info("ai_copilot: fallback auto trade skipped: %s", reason)
+            return
+        else:
+            logger.info(
+                "ai_copilot: AI unavailable and Quant Conviction %.1f < %d for %s. Skipping trade.",
+                sym, composite, min_fallback
+            )
+            return
 
     is_confirm = ("BUY" in dec.upper() or "SELL" in dec.upper()) and "SKIP" not in dec.upper()
-
-    # Step 3 — Confidence threshold (must reach MIN_AI_CONFIDENCE >= 85)
     passes_confidence = is_confirm and score >= config.MIN_AI_CONFIDENCE
 
-    # Step 4 — Auto paper trade execution (if within session window + daily cap)
-    auto_order_result: Optional[dict] = None
-    auto_skipped_reason: str = ""
-
-    if passes_confidence and config.AUTO_PAPER_USER_ID:
-        now_ist = datetime.now(IST)
-        session_minute = (now_ist.hour - 9) * 60 + (now_ist.minute - 15)
-        # Determine cutoff based on setup family: ORB (10:15 AM) vs VWAP Reclaim (11:00 AM)
-        is_orb = family == StrategyFamily.ORB_BREAKOUT
-        cutoff_minute = (
-            config.ORB_EXECUTE_UNTIL_MINUTE if is_orb else config.RECLAIM_EXECUTE_UNTIL_MINUTE
+    if passes_confidence:
+        ok, reason = execute_auto_trade(
+            sym=sym,
+            signal=signal,
+            side=side,
+            score=score,
+            rationale=rationale,
+            is_fallback=False,
+            signal_time=signal_time,
         )
-        within_window = session_minute <= cutoff_minute
-
-        use_risk_alloc = getattr(config, "ENABLE_RISK_ALLOCATOR", True)
-        risk_alloc = get_risk_allocator()
-
-        if use_risk_alloc:
-            under_cap = risk_alloc.can_trade(family, today)
-        else:
-            under_cap = _get_auto_trade_count() < config.MAX_DAILY_AUTO_TRADES
-
-        from . import order_monitor
-
-        with _notified_lock:
-            already_traded = sym in _auto_traded_symbols_today
-
-        has_active_order = order_monitor.has_active_order(sym)
-        if has_active_order:
-            logger.info(
-                "ai_copilot: %s already has an active position/order. Skipping duplicate.", sym
+        if not ok:
+            # Manual approval alert if auto execution was blocked by timing or cap
+            current_manual_count = _get_manual_alert_count()
+            can_manual = (
+                risk_alloc.can_alert(family, today)
+                if use_risk_alloc
+                else (current_manual_count < config.MAX_DAILY_MANUAL_ALERTS)
             )
-
-        if within_window and under_cap and not already_traded and not has_active_order:
-            if use_risk_alloc:
-                risk_per_trade = risk_alloc.get_risk_per_trade(family, today)
-            else:
-                risk_per_trade = config.DAILY_MAX_RISK_INR / config.MAX_DAILY_AUTO_TRADES
-
-            from . import paper_trading, trade_management
-
-            side = "BUY" if "BUY" in dec else "SELL"
-
-            # Anti-trap filter: Check distance to prior-day extreme
-            is_safe, barrier_reason = trade_management.check_support_resistance_proximity(
-                stock_snap, side, entry
-            )
-            if not is_safe:
-                logger.warning(
-                    "ai_copilot: barrier filter skipped auto trade for %s (%s): %s",
-                    sym,
-                    side,
-                    barrier_reason,
-                )
-                return
-
-            notes = f"AI_COPILOT | {signal} | score={score} | auto"
-
-            # Phase 3: Programmatic ATR/Structural Stops
-            computed_stops = trade_management.calculate_initial_stops(sym, side, entry)
-            sl_price = computed_stops["sl_price"]
-            target_price = computed_stops["target_price"]
-            tsl_type = computed_stops["tsl_type"]
-            tsl_value = computed_stops["tsl_value"]
-
-            # Re-calculate risk dynamically with minimum notional floor (overcoming statutory fee drag)
-            sl_distance = abs(entry - sl_price) if entry and sl_price else 0.0
-
-            # Minimum Notional Floor: ₹30,000 ensures turnover profits exceed statutory exchange charges
-            min_notional_floor = getattr(config, "MIN_ORDER_NOTIONAL_INR", 30000.0)
-            min_qty_for_floor = max(1, int(min_notional_floor / entry)) if entry > 0 else 1
-
-            if sl_distance > 0 and risk_per_trade > 0:
-                raw_quantity = int(risk_per_trade / sl_distance)
-            else:
-                raw_quantity = min_qty_for_floor
-
-            quantity = max(raw_quantity, min_qty_for_floor)
-
-            if quantity >= 2:
-                qty1 = quantity // 2
-                qty2 = quantity - qty1
-            else:
-                qty1 = 0
-                qty2 = 1
-
-            # Order 1: 50% partial exit at +1.5R
-            target1 = entry + (1.5 * sl_distance) if side == "BUY" else entry - (1.5 * sl_distance)
-
-            success_count = 0
-            if qty1 > 0:
-                res1 = paper_trading.place_auto_paper_order_sync(
-                    user_id=config.AUTO_PAPER_USER_ID,
-                    symbol=sym,
-                    side=side,
-                    quantity=qty1,
-                    sl_price=sl_price,
-                    target_price=round(target1, 2),
-                    tsl_type=tsl_type,
-                    tsl_value=tsl_value,
-                    notes=notes + " | 50% Partial 1.5R",
-                )
-                if res1:
-                    success_count += 1
-
-            if qty2 > 0:
-                res2 = paper_trading.place_auto_paper_order_sync(
-                    user_id=config.AUTO_PAPER_USER_ID,
-                    symbol=sym,
-                    side=side,
-                    quantity=qty2,
-                    sl_price=sl_price,
-                    target_price=target_price,
-                    tsl_type=tsl_type,
-                    tsl_value=tsl_value,
-                    notes=notes + " | Trailing Runner",
-                )
-                if res2:
-                    success_count += 1
-
-            if success_count > 0:
-                with _notified_lock:
-                    _auto_traded_symbols_today.add(sym)
-                _increment_auto_trade_count()
+            if can_manual and current_manual_count < config.MAX_DAILY_MANUAL_ALERTS:
+                new_manual_count = _increment_manual_alert_count()
                 if use_risk_alloc:
-                    trade_risk = quantity * sl_distance
-                    risk_alloc.consume(family, trade_risk, today)
-                logger.info(
-                    "ai_copilot: auto paper trade placed for %s | %s %d qty @ %.2f",
-                    sym,
-                    side,
-                    quantity,
-                    entry,
-                )
-            else:
-                auto_skipped_reason = "Order placement failed (insufficient margin or DB error)"
-        elif already_traded:
-            auto_skipped_reason = f"Symbol {sym} has already been auto-traded today. Deduplicating."
-        elif not within_window:
-            cutoff_label = "10:15 AM (ORB)" if is_orb else "11:00 AM (Reclaim)"
-            auto_skipped_reason = (
-                f"After {cutoff_label} cutoff (session min {session_minute} > {cutoff_minute})"
-            )
-        elif not under_cap:
-            if use_risk_alloc:
-                auto_skipped_reason = f"Daily budget reached for strategy {family.name}"
-            else:
-                auto_skipped_reason = f"Daily auto trade cap reached ({_get_auto_trade_count()}/{config.MAX_DAILY_AUTO_TRADES} trades)"
-    elif passes_confidence and not config.AUTO_PAPER_USER_ID:
-        auto_skipped_reason = "AUTO_PAPER_USER_ID not configured"
+                    risk_alloc.consume_alert(family, today)
+                lines = [
+                    f"⏸ *HIGH CONVICTION — MANUAL APPROVAL ({new_manual_count}/{config.MAX_DAILY_MANUAL_ALERTS})*",
+                    "",
+                    f"📌 *Stock:* `{sym}` | *Signal:* `{signal}` ({signal_time})",
+                    f"🤖 *AI:* `{dec}` | *Confidence:* {score}%",
+                    "",
+                    f"📍 *Suggested Entry:* ₹{entry:.2f}" if entry else None,
+                    f"🛑 *Suggested SL:* ₹{sl:.2f}" if sl else None,
+                    f"🎯 *Suggested Target:* ₹{target:.2f}" if target else None,
+                    f"⚠️ *Reason for Manual Approval:* {reason}",
+                ]
+                lines = [line for line in lines if line]
+                if rationale:
+                    lines.append("")
+                    for r in rationale[:2]:
+                        lines.append(f"• {r}")
+                telegram_notify.send_message("\n".join(lines))
 
-    # Step 5 — Telegram message routing with strict quota caps
-    rr_str = "N/A"
-    if entry and sl and target:
-        sl_dist = abs(entry - sl)
-        tgt_dist = abs(target - entry)
-        if sl_dist > 0:
-            rr_str = f"1:{round(tgt_dist / sl_dist, 1)}"
-
-    if passes_confidence and auto_order_result:
-        # ── 1. Auto-executed trade notification (Max 3/day) ──
-        risk_per_trade = config.DAILY_MAX_RISK_INR / config.MAX_DAILY_AUTO_TRADES
-        sl_distance = abs(entry - sl) if entry and sl else 0.0
-        quantity = max(1, int(risk_per_trade / sl_distance)) if sl_distance > 0 else 1
-        actual_risk = round(quantity * sl_distance, 2)
-        auto_count = _get_auto_trade_count()
-
-        lines = [
-            f"✅ *PAPER ORDER PLACED ({auto_count}/{config.MAX_DAILY_AUTO_TRADES})*",
-            f"",
-            f"📌 *Stock:* `{sym}` | *{('BUY' if 'BUY' in dec else 'SELL')}*",
-            f"🔢 *Quantity:* {quantity} shares",
-            f"📍 *Entry:* ₹{entry:.2f}",
-            f"🛑 *Stop Loss:* ₹{sl:.2f}  _(Risk: ₹{actual_risk:,.0f})_",
-            f"🎯 *Target:* ₹{target:.2f}",
-            f"📊 *RR Ratio:* {rr_str}",
-            f"🔄 *Trailing SL:* {tsl_t} {tsl_v}",
-            f"🤖 *AI Confidence:* {score}%",
-            f"⏱ *Signal:* `{signal}` @ {signal_time}",
-        ]
-        if rationale:
-            lines.append("")
-            for r in rationale[:2]:
-                lines.append(f"• {r}")
-
-        text = "\n".join(lines)
-        logger.info("ai_copilot: pushing Telegram alert for placed order %s", sym)
-        telegram_notify.send_message(text)
-
-    elif passes_confidence and not auto_order_result and auto_skipped_reason:
-        # ── 2. Manual Approval High-Conviction Alert (1 per strategy / Max 4/day) ──
-        current_manual_count = _get_manual_alert_count()
-        can_manual = (
-            risk_alloc.can_alert(family, today)
-            if use_risk_alloc
-            else (current_manual_count < config.MAX_DAILY_MANUAL_ALERTS)
-        )
-        if can_manual and current_manual_count < config.MAX_DAILY_MANUAL_ALERTS:
-            new_manual_count = _increment_manual_alert_count()
-            if use_risk_alloc:
-                risk_alloc.consume_alert(family, today)
-            lines = [
-                f"⏸ *HIGH CONVICTION — MANUAL APPROVAL ({new_manual_count}/{config.MAX_DAILY_MANUAL_ALERTS})*",
-                f"",
-                f"📌 *Stock:* `{sym}` | *Signal:* `{signal}` ({signal_time})",
-                f"🤖 *AI:* `{dec}` | *Confidence:* {score}%",
-                f"",
-                f"📍 *Suggested Entry:* ₹{entry:.2f}" if entry else None,
-                f"🛑 *Suggested SL:* ₹{sl:.2f}" if sl else None,
-                f"🎯 *Suggested Target:* ₹{target:.2f}" if target else None,
-                f"📊 *RR Ratio:* {rr_str}",
-                f"⚠️ *Reason for Manual Approval:* {auto_skipped_reason}",
-            ]
-            lines = [line for line in lines if line]
-            if rationale:
-                lines.append("")
-                for r in rationale[:2]:
-                    lines.append(f"• {r}")
-
-            text = "\n".join(lines)
-            logger.info("ai_copilot: pushing manual approval alert for %s", sym)
-            telegram_notify.send_message(text)
-
-            # Daily summary alert after manual quota hits
-            global _daily_summary_sent
-            with _quota_lock:
-                if new_manual_count >= config.MAX_DAILY_MANUAL_ALERTS and not _daily_summary_sent:
-                    _daily_summary_sent = True
-                    summary_text = (
-                        f"🔒 *DAILY SIGNALS COMPLETED*\n\n"
-                        f"Market delivery quotas reached for today:\n"
-                        f"✅ Auto Paper Trades: {_get_auto_trade_count()}/{config.MAX_DAILY_AUTO_TRADES}\n"
-                        f"⏸ Manual Approval Alerts: {new_manual_count}/{config.MAX_DAILY_MANUAL_ALERTS}\n\n"
-                        f"Scanning remains active on web dashboard. Further Telegram alerts silenced until tomorrow's open."
-                    )
-                    telegram_notify.send_message(summary_text)
-        else:
-            logger.info(
-                "ai_copilot: manual alert cap reached (%d/%d) - suppressing Telegram alert for %s",
-                current_manual_count,
-                config.MAX_DAILY_MANUAL_ALERTS,
-                sym,
-            )
-
+                global _daily_summary_sent
+                with _quota_lock:
+                    if new_manual_count >= config.MAX_DAILY_MANUAL_ALERTS and not _daily_summary_sent:
+                        _daily_summary_sent = True
+                        summary_text = (
+                            f"🔒 *DAILY SIGNALS COMPLETED*\n\n"
+                            f"Market delivery quotas reached for today:\n"
+                            f"✅ Auto Paper Trades: {_get_auto_trade_count()}/{config.MAX_DAILY_AUTO_TRADES}\n"
+                            f"⏸ Manual Approval Alerts: {new_manual_count}/{config.MAX_DAILY_MANUAL_ALERTS}\n\n"
+                            f"Scanning remains active on web dashboard. Further Telegram alerts silenced until tomorrow's open."
+                        )
+                        telegram_notify.send_message(summary_text)
     else:
-        # Silent rejection for SKIP_TRAP or low-confidence — no Telegram spam
         logger.info(
             "ai_copilot: trade rejected (%s, %d%%) - silently ignored (no Telegram notification)",
             dec,

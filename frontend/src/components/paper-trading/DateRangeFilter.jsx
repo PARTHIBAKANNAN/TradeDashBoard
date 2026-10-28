@@ -47,19 +47,19 @@ export default function DateRangeFilter({ activeKey, onChange }) {
           </button>
         ))}
 
-        <div className="flex items-center gap-2 ml-2 pl-2 border-l border-subtle">
+        <div className="flex flex-wrap items-center gap-2 sm:ml-2 sm:pl-2 sm:border-l sm:border-subtle pt-2 sm:pt-0 w-full sm:w-auto">
           <input
             type="date"
             value={customFrom}
             onChange={(e) => setCustomFrom(e.target.value)}
-            className="bg-surface3 border border-strong rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-accent-blue"
+            className="bg-surface3 border border-strong rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-accent-blue max-w-[130px] sm:max-w-none flex-1 sm:flex-initial"
           />
           <span className="text-faint text-xs">to</span>
           <input
             type="date"
             value={customTo}
             onChange={(e) => setCustomTo(e.target.value)}
-            className="bg-surface3 border border-strong rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-accent-blue"
+            className="bg-surface3 border border-strong rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-accent-blue max-w-[130px] sm:max-w-none flex-1 sm:flex-initial"
           />
           <button
             type="button"

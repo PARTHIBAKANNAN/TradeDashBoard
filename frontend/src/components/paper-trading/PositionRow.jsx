@@ -38,6 +38,20 @@ export default function PositionRow({ order }) {
     !isPending && ltp
       ? unrealizedPnl(order.side, order.quantity, order.entry_price, ltp)
       : null;
+
+  const entryPrice = Number(order.entry_price || order.limit_price) || 0;
+  const quantity = Number(order.quantity) || 0;
+  const totalExposure = entryPrice * quantity;
+  const marginLocked =
+    Number(order.margin_locked) ||
+    (totalExposure > 0 ? Math.round(totalExposure / 5) : 0);
+  const leverage =
+    marginLocked > 0 ? Math.round(totalExposure / marginLocked) : 5;
+  const roi =
+    marginLocked > 0 && pnl != null
+      ? Math.round((pnl / marginLocked) * 1000) / 10
+      : null;
+
   const entryTimeStr = order.filled_at
     ? formatTime(order.filled_at)
     : order.placed_at
@@ -73,20 +87,6 @@ export default function PositionRow({ order }) {
       </span>
     ) : (
       <span className="text-faint">—</span>
-    );
-
-  const pnlText =
-    pnl == null ? (
-      <span className="text-faint">—</span>
-    ) : (
-      <span
-        className={
-          pnl >= 0 ? "text-bull font-semibold" : "text-bear font-semibold"
-        }
-      >
-        {pnl >= 0 ? "+" : ""}
-        {pnl}
-      </span>
     );
 
   const actions = isPending ? (
@@ -150,7 +150,9 @@ export default function PositionRow({ order }) {
         </td>
         <td className="py-2.5 px-4 text-center">
           <span
-            className={`text-xs font-bold uppercase ${order.side === "BUY" ? "text-bull" : "text-bear"}`}
+            className={`text-xs font-bold uppercase ${
+              order.side === "BUY" ? "text-bull" : "text-bear"
+            }`}
           >
             {order.side}
           </span>
@@ -169,17 +171,50 @@ export default function PositionRow({ order }) {
           {isPending ? "—" : (ltp ?? "—")}
         </td>
         <td className="py-2.5 px-4 text-right font-mono tabular-nums">
+          <div className="text-xs font-semibold text-primary">
+            ₹{Math.round(marginLocked).toLocaleString("en-IN")}
+          </div>
+          <div className="text-[10px] text-accent-amber font-bold">
+            {leverage}x
+          </div>
+        </td>
+        <td className="py-2.5 px-4 text-right font-mono tabular-nums text-xs text-muted">
+          ₹{Math.round(totalExposure).toLocaleString("en-IN")}
+        </td>
+        <td className="py-2.5 px-4 text-right font-mono tabular-nums">
           {bracketText}
         </td>
         <td className="py-2.5 px-4 text-right font-mono tabular-nums">
-          {pnlText}
+          {pnl == null ? (
+            <span className="text-faint">—</span>
+          ) : (
+            <div>
+              <div
+                className={`text-xs font-bold ${
+                  pnl >= 0 ? "text-bull" : "text-bear"
+                }`}
+              >
+                {pnl >= 0 ? "+" : ""}₹{pnl}
+              </div>
+              {roi != null && (
+                <div
+                  className={`text-[10px] font-semibold ${
+                    roi >= 0 ? "text-bull" : "text-bear"
+                  }`}
+                >
+                  {roi >= 0 ? "+" : ""}
+                  {roi}% ROI
+                </div>
+              )}
+            </div>
+          )}
         </td>
         <td className="py-2.5 px-4 text-center">{actions}</td>
       </tr>
 
       {/* Mobile card — kept inside a tr/td so table markup stays valid */}
       <tr className="md:hidden border-b border-subtle/70">
-        <td colSpan={8} className="p-3">
+        <td colSpan={10} className="p-3">
           <div className="flex items-start justify-between gap-2">
             <div>
               <div className="flex items-center gap-2">
@@ -187,7 +222,9 @@ export default function PositionRow({ order }) {
                   {order.symbol}
                 </span>
                 <span
-                  className={`text-[11px] font-bold uppercase ${order.side === "BUY" ? "text-bull" : "text-bear"}`}
+                  className={`text-[11px] font-bold uppercase ${
+                    order.side === "BUY" ? "text-bull" : "text-bear"
+                  }`}
                 >
                   {order.side}
                 </span>
@@ -208,9 +245,44 @@ export default function PositionRow({ order }) {
                 {isPending ? order.limit_price : order.entry_price}
                 {!isPending && <> · LTP {ltp ?? "—"}</>}
               </div>
+              <div className="text-[10px] font-mono text-muted flex items-center gap-1.5 mt-1">
+                <span>
+                  Margin:{" "}
+                  <strong className="text-primary font-bold">
+                    ₹{Math.round(marginLocked).toLocaleString("en-IN")}
+                  </strong>{" "}
+                  ({leverage}x)
+                </span>
+                <span>·</span>
+                <span>
+                  Exp: ₹{Math.round(totalExposure).toLocaleString("en-IN")}
+                </span>
+              </div>
             </div>
-            <div className="text-right font-mono tabular-nums text-sm">
-              {pnlText}
+            <div className="text-right font-mono tabular-nums">
+              {pnl == null ? (
+                <span className="text-faint text-sm">—</span>
+              ) : (
+                <>
+                  <div
+                    className={`text-sm font-bold ${
+                      pnl >= 0 ? "text-bull" : "text-bear"
+                    }`}
+                  >
+                    {pnl >= 0 ? "+" : ""}₹{pnl}
+                  </div>
+                  {roi != null && (
+                    <div
+                      className={`text-[10px] font-semibold ${
+                        roi >= 0 ? "text-bull" : "text-bear"
+                      }`}
+                    >
+                      {roi >= 0 ? "+" : ""}
+                      {roi}% ROI
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
           <div className="mt-1.5">{bracketText}</div>

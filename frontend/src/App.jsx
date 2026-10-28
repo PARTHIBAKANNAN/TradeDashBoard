@@ -325,6 +325,7 @@ function Dashboard({ user, onLogout }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
+            className="pb-24 md:pb-6"
           >
             {activeTab === "ranking" && (
               <RankingScreen stocks={stocks} nifty={nifty} />
@@ -404,16 +405,17 @@ function TopNavbar({
             <h1 className="text-xs font-extrabold tracking-tight bg-gradient-to-r from-accent-blue via-cyan-400 to-accent-violet bg-clip-text text-transparent font-display">
               PulseHunter
             </h1>
-            <div className="flex items-center gap-1.5 ml-1 pl-2 border-l border-subtle">
+            <div className="flex items-center gap-1.5 ml-1 pl-1.5 sm:pl-2 border-l border-subtle">
               <span
                 className={`w-2 h-2 rounded-full ${
                   connected && marketOpen
                     ? "bg-green-500 animate-pulse"
                     : "bg-faint"
                 }`}
+                title={marketOpen ? "Market Open" : connected ? "Market Closed" : "Feed Offline"}
               />
               <span
-                className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                className={`hidden sm:inline-block text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
                   marketOpen
                     ? "bg-green-950 text-green-400"
                     : "bg-surface3 text-muted"
@@ -444,31 +446,34 @@ function TopNavbar({
         </div>
 
         {/* Right side: Benchmark & AI Status & User */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
           {/* NIFTY 50 (Visible on both mobile and desktop) */}
           <div className="text-right border-l border-subtle pl-2 sm:pl-3 flex flex-col justify-center">
-            <div className="text-[8px] sm:text-[9px] text-faint font-bold uppercase tracking-wider leading-tight">
+            <div className="hidden sm:block text-[8px] sm:text-[9px] text-faint font-bold uppercase tracking-wider leading-tight">
               NIFTY 50
             </div>
-            <div className="font-mono text-[11px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 leading-tight">
+            <div className="font-mono text-[11px] sm:text-xs font-bold flex items-center justify-end gap-1 sm:gap-1.5 leading-tight">
+              <span className="sm:hidden text-[9px] text-faint font-semibold uppercase mr-0.5">NIFTY</span>
               <span className="text-primary font-semibold">
                 {nifty.ltp?.toLocaleString("en-IN", {
                   minimumFractionDigits: 1,
                   maximumFractionDigits: 2,
                 }) || "—"}
               </span>
-              {nifty.change != null && (
-                <span
-                  className={`text-[9px] sm:text-xs font-bold ${
-                    nifty.change >= 0 ? "text-emerald-400" : "text-rose-400"
-                  }`}
-                >
-                  {nifty.change >= 0 ? "+" : ""}
-                  {Number(nifty.change).toFixed(2)}
-                </span>
-              )}
+              <span className="hidden sm:inline-block">
+                {nifty.change != null && (
+                  <span
+                    className={`text-[9px] sm:text-xs font-bold ${
+                      nifty.change >= 0 ? "text-emerald-400" : "text-rose-400"
+                    }`}
+                  >
+                    {nifty.change >= 0 ? "+" : ""}
+                    {Number(nifty.change).toFixed(2)}
+                  </span>
+                )}
+              </span>
               <span
-                className={`text-[9px] sm:text-xs font-bold ${
+                className={`text-[10px] sm:text-xs font-bold ${
                   (nifty.pct_change || 0) >= 0
                     ? "text-emerald-400"
                     : "text-rose-400"

@@ -119,6 +119,10 @@ MIN_MOMENTUM_SCORE = int(os.getenv("MIN_MOMENTUM_SCORE", "62"))
 MIN_ENTRY_QUALITY_SCORE = int(os.getenv("MIN_ENTRY_QUALITY_SCORE", "65"))
 # Minimum combined conviction score (weighted average of EQ 55% + Mom 45%)
 MIN_COMPOSITE_CONVICTION = int(os.getenv("MIN_COMPOSITE_CONVICTION", "68"))
+# Elite AI Gate Filter: Only ORB signals scoring >= this score query Gemini (max 3-5 AI audits/day)
+MIN_ELITE_ORB_AI_SCORE = int(os.getenv("MIN_ELITE_ORB_AI_SCORE", "80"))
+# Non-blocking fallback floor: if Gemini times out or hits 429, execute autonomously if score >= this floor
+MIN_FALLBACK_CONVICTION = int(os.getenv("MIN_FALLBACK_CONVICTION", "70"))
 # Legacy alias for backwards compatibility
 MIN_CONVICTION_SCORE = MIN_MOMENTUM_SCORE
 
