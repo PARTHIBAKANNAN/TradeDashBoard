@@ -138,7 +138,10 @@ export default function PositionRow({ order }) {
             {entryTimeStr && (
               <>
                 <span>·</span>
-                <span className="font-mono text-muted" title={isPending ? "Placed Time" : "Entry Time"}>
+                <span
+                  className="font-mono text-muted"
+                  title={isPending ? "Placed Time" : "Entry Time"}
+                >
                   {entryTimeStr}
                 </span>
               </>

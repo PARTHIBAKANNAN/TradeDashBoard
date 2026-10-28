@@ -105,8 +105,13 @@ export default function OrderHistoryTable({ orders }) {
                 const grossPnl = o.realized_pnl;
                 const cancelled = o.status === "CANCELLED";
                 const entryTimeStr = formatTime(o.filled_at || o.placed_at);
-                const exitTimeStr = cancelled ? "Cancelled" : formatTime(o.closed_at);
-                const duration = formatDuration(o.filled_at || o.placed_at, o.closed_at);
+                const exitTimeStr = cancelled
+                  ? "Cancelled"
+                  : formatTime(o.closed_at);
+                const duration = formatDuration(
+                  o.filled_at || o.placed_at,
+                  o.closed_at,
+                );
                 const dateStr = formatDate(o.placed_at || o.filled_at);
                 const chargesTitle = cancelled
                   ? undefined
@@ -171,13 +176,19 @@ export default function OrderHistoryTable({ orders }) {
                       </td>
                       <td className="py-2.5 px-4 text-left font-mono tabular-nums">
                         <div className="flex items-center gap-1.5 text-xs text-primary font-medium whitespace-nowrap">
-                          <span title={`Entry: ${entryTimeStr}`}>{entryTimeStr}</span>
+                          <span title={`Entry: ${entryTimeStr}`}>
+                            {entryTimeStr}
+                          </span>
                           <span className="text-faint">→</span>
-                          <span title={`Exit: ${exitTimeStr}`}>{exitTimeStr}</span>
+                          <span title={`Exit: ${exitTimeStr}`}>
+                            {exitTimeStr}
+                          </span>
                         </div>
                         <div className="flex items-center gap-1.5 text-[10px] text-faint mt-0.5">
                           {duration && (
-                            <span className="text-accent-violet font-semibold">⏱ {duration}</span>
+                            <span className="text-accent-violet font-semibold">
+                              ⏱ {duration}
+                            </span>
                           )}
                           {dateStr && <span>· {dateStr}</span>}
                         </div>
@@ -234,9 +245,13 @@ export default function OrderHistoryTable({ orders }) {
                               {o.exit_price ?? "—"}
                             </div>
                             <div className="text-[11px] font-mono text-muted flex items-center gap-1.5 mt-0.5">
-                              <span>{entryTimeStr} → {exitTimeStr}</span>
+                              <span>
+                                {entryTimeStr} → {exitTimeStr}
+                              </span>
                               {duration && (
-                                <span className="text-accent-violet font-semibold">({duration})</span>
+                                <span className="text-accent-violet font-semibold">
+                                  ({duration})
+                                </span>
                               )}
                             </div>
                             <div

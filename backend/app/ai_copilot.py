@@ -800,7 +800,9 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
 
         has_active_order = order_monitor.has_active_order(sym)
         if has_active_order:
-            logger.info("ai_copilot: %s already has an active position/order. Skipping duplicate.", sym)
+            logger.info(
+                "ai_copilot: %s already has an active position/order. Skipping duplicate.", sym
+            )
 
         if within_window and under_cap and not already_traded and not has_active_order:
             if use_risk_alloc:
