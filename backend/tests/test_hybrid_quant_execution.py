@@ -1,10 +1,11 @@
-import pytest
-from datetime import datetime, time as dt_time
+from datetime import datetime
+from datetime import time as dt_time
 from unittest.mock import MagicMock, patch
 
-from app.strategy_base import SignalEvent, StrategyFamily, Direction
-from app import config, calculations, ai_copilot
+import pytest
+from app import ai_copilot, calculations, config
 from app.config import IST
+from app.strategy_base import Direction, SignalEvent, StrategyFamily
 
 
 def test_pure_quant_strategy_execution_bypasses_gemini():
@@ -14,13 +15,17 @@ def test_pure_quant_strategy_execution_bypasses_gemini():
 
     test_time = datetime(today.year, today.month, today.day, 10, 0, 0, tzinfo=IST)
 
-    with patch("app.ai_copilot.call_gemini") as mock_gemini, \
-         patch("app.paper_trading.place_auto_paper_order_sync", return_value={"id": "test_order"}) as mock_paper, \
-         patch.object(config, "AUTO_PAPER_USER_ID", "test-user-id"), \
-         patch("app.state.market_state.get_stock") as mock_get_stock, \
-         patch("app.order_monitor.has_active_order", return_value=False), \
-         patch("app.trade_management.check_support_resistance_proximity", return_value=(True, "")), \
-         patch("app.ai_copilot.datetime") as mock_dt:
+    with patch("app.ai_copilot.call_gemini") as mock_gemini, patch(
+        "app.paper_trading.place_auto_paper_order_sync", return_value={"id": "test_order"}
+    ) as mock_paper, patch.object(config, "AUTO_PAPER_USER_ID", "test-user-id"), patch(
+        "app.state.market_state.get_stock"
+    ) as mock_get_stock, patch(
+        "app.order_monitor.has_active_order", return_value=False
+    ), patch(
+        "app.trade_management.check_support_resistance_proximity", return_value=(True, "")
+    ), patch(
+        "app.ai_copilot.datetime"
+    ) as mock_dt:
 
         mock_dt.now.return_value = test_time
         mock_get_stock.return_value = {
@@ -65,10 +70,11 @@ def test_non_blocking_fallback_executes_on_gemini_unavailable():
     today = datetime.now(IST).date()
     ai_copilot._reset_daily_counters_if_needed(today, force=True)
 
-    with patch("app.ai_copilot.analyze_trade_setup") as mock_analyze, \
-         patch("app.ai_copilot.execute_auto_trade", return_value=(True, "Executed")) as mock_exec, \
-         patch.object(config, "AUTO_PAPER_USER_ID", "test-user-id"), \
-         patch("app.state.market_state.get_stock") as mock_get_stock:
+    with patch("app.ai_copilot.analyze_trade_setup") as mock_analyze, patch(
+        "app.ai_copilot.execute_auto_trade", return_value=(True, "Executed")
+    ) as mock_exec, patch.object(config, "AUTO_PAPER_USER_ID", "test-user-id"), patch(
+        "app.state.market_state.get_stock"
+    ) as mock_get_stock:
 
         mock_get_stock.return_value = {
             "symbol": "DALBHARAT",

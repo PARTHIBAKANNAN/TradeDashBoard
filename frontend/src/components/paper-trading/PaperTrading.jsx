@@ -83,7 +83,11 @@ export default function PaperTrading({ stocks }) {
               <PlaceOrderForm stocks={stocks} />
             </Card>
             <div className="lg:col-span-2">
-              <PositionsTable positions={positions} summary={summary} marginInUse={marginInUse} />
+              <PositionsTable
+                positions={positions}
+                summary={summary}
+                marginInUse={marginInUse}
+              />
             </div>
           </div>
         </div>

@@ -123,7 +123,16 @@ export default function CircuitProximity({ stocks }) {
       <div className="space-y-2.5">
         {items.map((s) => {
           const isUpper = s.side === "upper";
-          const closeness = Math.max(0, Math.min(100, 100 - (s.distPct / (mode === "bands" ? PROXIMITY_THRESHOLD_PCT : 1.5)) * 100));
+          const closeness = Math.max(
+            0,
+            Math.min(
+              100,
+              100 -
+                (s.distPct /
+                  (mode === "bands" ? PROXIMITY_THRESHOLD_PCT : 1.5)) *
+                  100,
+            ),
+          );
 
           return (
             <div

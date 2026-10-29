@@ -277,14 +277,21 @@ def process_incoming_tick(
                 eq_summary = ", ".join(f"{f['name']}={f['pts']}/{f['max']}" for f in eq_factors)
 
                 from .strategy_base import StrategyFamily
-                family = signal_event.strategy_family if signal_event else StrategyFamily.ORB_BREAKOUT
+
+                family = (
+                    signal_event.strategy_family if signal_event else StrategyFamily.ORB_BREAKOUT
+                )
                 is_pure_quant = family in (
                     StrategyFamily.OI_SQUEEZE,
                     StrategyFamily.VWAP_RETEST,
                     StrategyFamily.SQUEEZE,
                     StrategyFamily.SECTOR_SYMPATHY,
                 )
-                side = "BUY" if (signal_event.is_bull if signal_event else ("Bull" in signal)) else "SELL"
+                side = (
+                    "BUY"
+                    if (signal_event.is_bull if signal_event else ("Bull" in signal))
+                    else "SELL"
+                )
 
                 # ── Hard Veto Pre-Flight Checks ──────────────────────────────
                 hard_veto = False
@@ -299,7 +306,9 @@ def process_incoming_tick(
                 if not hard_veto and side == "BUY":
                     nifty_pct = state.nifty.get("pct_change", 0.0)
                     if nifty_pct < -0.75:
-                        declining_stocks = sum(1 for s in all_stocks_list if (s.get("pct_change") or 0.0) < 0)
+                        declining_stocks = sum(
+                            1 for s in all_stocks_list if (s.get("pct_change") or 0.0) < 0
+                        )
                         tot_stocks = max(1, len(all_stocks_list))
                         if (declining_stocks / tot_stocks) >= 0.75:
                             hard_veto = True
@@ -318,6 +327,7 @@ def process_incoming_tick(
 
                 if passes_eval and not hard_veto:
                     import threading
+
                     from . import ai_copilot
 
                     # Store scores on stock for UI inspection & audit
@@ -332,13 +342,21 @@ def process_incoming_tick(
                     if not ai_copilot.can_audit_symbol(short_sym, signal):
                         logger.info(
                             "[V2 EVAL] QUALIFIED %s (%d/%d, %d/%d) but symbol already executed/audited today; skipping duplicate.",
-                            short_sym, mom_score, min_mom, eq_score, min_eq
+                            short_sym,
+                            mom_score,
+                            min_mom,
+                            eq_score,
+                            min_eq,
                         )
                     elif is_pure_quant:
                         # ── 1. Pure Quant Autonomous Execution (No AI dependency) ──
                         logger.info(
                             "[QUANT AUTONOMOUS] EXECUTING %s | Strategy: %s | Signal: %s | Score: %d | Time: %s",
-                            short_sym, family.name, signal, composite_score, signal_time
+                            short_sym,
+                            family.name,
+                            signal,
+                            composite_score,
+                            signal_time,
                         )
                         threading.Thread(
                             target=ai_copilot.execute_auto_trade,
@@ -347,7 +365,10 @@ def process_incoming_tick(
                                 "signal": signal,
                                 "side": side,
                                 "score": composite_score,
-                                "rationale": [f"Pure Quant {family.name} Engine", f"Score: {composite_score}/100"],
+                                "rationale": [
+                                    f"Pure Quant {family.name} Engine",
+                                    f"Score: {composite_score}/100",
+                                ],
                                 "is_pure_quant": True,
                                 "signal_time": signal_time,
                             },
@@ -361,7 +382,10 @@ def process_incoming_tick(
                             # Elite ORB Breakout candidate -> Gemini Red-Flag Auditor (max 3-5/day)
                             logger.info(
                                 "[ELITE AI GATE] QUALIFIED %s | Signal: %s | Score: %d >= %d -> Spawning Gemini Audit",
-                                short_sym, signal, composite_score, min_elite
+                                short_sym,
+                                signal,
+                                composite_score,
+                                min_elite,
                             )
                             threading.Thread(
                                 target=ai_copilot.audit_and_notify_signal,
@@ -373,7 +397,9 @@ def process_incoming_tick(
                             # Standard ORB Breakout (score 68-79) -> Execute autonomously without consuming AI quota
                             logger.info(
                                 "[QUANT AUTONOMOUS ORB] EXECUTING %s | Signal: %s | Score: %d -> Quant Execution (AI quota saved)",
-                                short_sym, signal, composite_score
+                                short_sym,
+                                signal,
+                                composite_score,
                             )
                             threading.Thread(
                                 target=ai_copilot.execute_auto_trade,
@@ -382,7 +408,10 @@ def process_incoming_tick(
                                     "signal": signal,
                                     "side": side,
                                     "score": composite_score,
-                                    "rationale": ["Quant Autonomous ORB Breakout", f"Score: {composite_score}/100"],
+                                    "rationale": [
+                                        "Quant Autonomous ORB Breakout",
+                                        f"Score: {composite_score}/100",
+                                    ],
                                     "is_pure_quant": True,
                                     "signal_time": signal_time,
                                 },
@@ -405,7 +434,9 @@ def process_incoming_tick(
                                 f"Entry Quality {eq_score}/{min_eq} (weak: {', '.join(weak_eq[:2]) or 'extended'})"
                             )
                         if composite_score < min_comp:
-                            rejection_reasons.append(f"Composite Conviction {composite_score}/{min_comp}")
+                            rejection_reasons.append(
+                                f"Composite Conviction {composite_score}/{min_comp}"
+                            )
 
                     logger.info(
                         "[V2 EVAL] REJECTED %s | Signal: %s | Time: %s\n"

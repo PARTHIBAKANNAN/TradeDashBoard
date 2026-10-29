@@ -412,7 +412,13 @@ function TopNavbar({
                     ? "bg-green-500 animate-pulse"
                     : "bg-faint"
                 }`}
-                title={marketOpen ? "Market Open" : connected ? "Market Closed" : "Feed Offline"}
+                title={
+                  marketOpen
+                    ? "Market Open"
+                    : connected
+                      ? "Market Closed"
+                      : "Feed Offline"
+                }
               />
               <span
                 className={`hidden sm:inline-block text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
@@ -453,7 +459,9 @@ function TopNavbar({
               NIFTY 50
             </div>
             <div className="font-mono text-[11px] sm:text-xs font-bold flex items-center justify-end gap-1 sm:gap-1.5 leading-tight">
-              <span className="sm:hidden text-[9px] text-faint font-semibold uppercase mr-0.5">NIFTY</span>
+              <span className="sm:hidden text-[9px] text-faint font-semibold uppercase mr-0.5">
+                NIFTY
+              </span>
               <span className="text-primary font-semibold">
                 {nifty.ltp?.toLocaleString("en-IN", {
                   minimumFractionDigits: 1,

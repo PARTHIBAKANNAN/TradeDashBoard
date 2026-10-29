@@ -282,7 +282,9 @@ def run_premarket_briefing() -> Dict[str, Any]:
         "}"
     )
 
-    raw_response = call_gemini(prompt, system_instruction=system_prompt, enable_search=True, timeout=30.0)
+    raw_response = call_gemini(
+        prompt, system_instruction=system_prompt, enable_search=True, timeout=30.0
+    )
     if raw_response:
         parsed = _extract_json(raw_response)
         if parsed:
@@ -698,7 +700,6 @@ def can_audit_symbol(sym: str, signal: str = "") -> bool:
         return key not in _notified_signals_today
 
 
-
 # ── 4. Unified Auto Execution Engine ──────────────────────────────────────────
 
 
@@ -714,7 +715,7 @@ def execute_auto_trade(
 ) -> Tuple[bool, str]:
     """
     Unified execution engine for both Pure Quant and AI-confirmed trades.
-    
+
     Performs:
       1. Trading window and daily quota checks (per strategy family)
       2. Symbol deduplication and active order verification
@@ -723,7 +724,7 @@ def execute_auto_trade(
       5. Minimum ₹30,000 notional order sizing floor
       6. Split execution (50% partial 1.5R exit + trailing runner)
       7. Telegram notification
-    
+
     Returns (success: bool, reason: str).
     """
     if not config.AUTO_PAPER_USER_ID:
@@ -733,6 +734,7 @@ def execute_auto_trade(
     _reset_daily_counters_if_needed(today)
 
     from .state import market_state
+
     stock_snap = market_state.get_stock(sym) or {}
     entry = float(stock_snap.get("ltp") or 0.0)
     if entry <= 0:
@@ -740,6 +742,7 @@ def execute_auto_trade(
 
     from .risk_allocator import get_risk_allocator
     from .strategy_base import StrategyFamily
+
     family = get_signal_family(signal)
 
     now_ist = datetime.now(IST)
@@ -753,7 +756,10 @@ def execute_auto_trade(
     )
     if session_minute > cutoff_minute:
         cutoff_label = "10:15 AM (ORB)" if is_orb else "11:00 AM (Reclaim)"
-        return False, f"After {cutoff_label} cutoff (session min {session_minute} > {cutoff_minute})"
+        return (
+            False,
+            f"After {cutoff_label} cutoff (session min {session_minute} > {cutoff_minute})",
+        )
 
     use_risk_alloc = getattr(config, "ENABLE_RISK_ALLOCATOR", True)
     risk_alloc = get_risk_allocator()
@@ -765,7 +771,10 @@ def execute_auto_trade(
     if not under_cap:
         if use_risk_alloc:
             return False, f"Daily budget reached for strategy {family.name}"
-        return False, f"Daily auto trade cap reached ({_get_auto_trade_count()}/{config.MAX_DAILY_AUTO_TRADES} trades)"
+        return (
+            False,
+            f"Daily auto trade cap reached ({_get_auto_trade_count()}/{config.MAX_DAILY_AUTO_TRADES} trades)",
+        )
 
     with _notified_lock:
         already_traded = sym in _auto_traded_symbols_today
@@ -773,10 +782,12 @@ def execute_auto_trade(
         return False, f"Symbol {sym} has already been auto-traded today. Deduplicating."
 
     from . import order_monitor
+
     if order_monitor.has_active_order(sym):
         return False, f"Symbol {sym} already has an active position/order. Skipping duplicate."
 
     from . import paper_trading, trade_management
+
     is_safe, barrier_reason = trade_management.check_support_resistance_proximity(
         stock_snap, side, entry
     )
@@ -865,15 +876,20 @@ def execute_auto_trade(
         )
 
         from . import telegram_notify
+
         actual_risk = round(quantity * sl_distance, 2)
         tgt_dist = abs(target_price - entry)
         rr_str = f"1:{round(tgt_dist / max(0.01, sl_distance), 1)}"
 
         if is_pure_quant:
-            title = f"⚡ *QUANT AUTONOMOUS ORDER PLACED ({auto_count}/{config.MAX_DAILY_AUTO_TRADES})*"
+            title = (
+                f"⚡ *QUANT AUTONOMOUS ORDER PLACED ({auto_count}/{config.MAX_DAILY_AUTO_TRADES})*"
+            )
             score_line = f"📐 *Quant Conviction:* {int(score)}/100"
         elif is_fallback:
-            title = f"⚡ *QUANT FALLBACK ORDER PLACED ({auto_count}/{config.MAX_DAILY_AUTO_TRADES})*"
+            title = (
+                f"⚡ *QUANT FALLBACK ORDER PLACED ({auto_count}/{config.MAX_DAILY_AUTO_TRADES})*"
+            )
             score_line = f"⚡ *Quant Conviction (AI Bypassed):* {int(score)}/100"
         else:
             title = f"✅ *AI CONFIRMED ORDER PLACED ({auto_count}/{config.MAX_DAILY_AUTO_TRADES})*"
@@ -921,6 +937,7 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
 
     from .risk_allocator import get_risk_allocator
     from .strategy_base import StrategyFamily
+
     family = get_signal_family(signal)
     multi_strat_dedup = getattr(config, "ENABLE_MULTI_STRATEGY_DEDUP", False)
     use_risk_alloc = getattr(config, "ENABLE_RISK_ALLOCATOR", True)
@@ -939,6 +956,7 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
         _notified_signals_today.add(dedup_key)
 
     from . import telegram_notify
+
     logger.info("ai_copilot: auditing signal %s for %s ...", signal, sym)
 
     res = analyze_trade_setup(sym)
@@ -947,6 +965,7 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
     is_fallback = res.get("is_fallback", False)
 
     from .state import market_state
+
     stock_snap = market_state.get_stock(sym) or {}
     entry = float(stock_snap.get("ltp") or res.get("suggested_entry") or 0.0)
     if entry <= 0:
@@ -962,20 +981,29 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
     if is_fallback:
         mom_score = stock_snap.get("momentum_score", 0)
         eq_score = stock_snap.get("entry_quality_score", 0)
-        composite = (eq_score * 0.55 + mom_score * 0.45) if eq_score else stock_snap.get("conviction_score", 0)
+        composite = (
+            (eq_score * 0.55 + mom_score * 0.45)
+            if eq_score
+            else stock_snap.get("conviction_score", 0)
+        )
         min_fallback = getattr(config, "MIN_FALLBACK_CONVICTION", 70)
 
         if composite >= min_fallback:
             logger.info(
                 "ai_copilot: AI rate-limited/timed out for %s, but Quant Conviction %.1f >= %d. Triggering Quant Autonomous execution.",
-                sym, composite, min_fallback
+                sym,
+                composite,
+                min_fallback,
             )
             ok, reason = execute_auto_trade(
                 sym=sym,
                 signal=signal,
                 side=side,
                 score=composite,
-                rationale=["AI Gateway unavailable (429/timeout)", "Executed via Quant Autonomous fallback"],
+                rationale=[
+                    "AI Gateway unavailable (429/timeout)",
+                    "Executed via Quant Autonomous fallback",
+                ],
                 is_fallback=True,
                 signal_time=signal_time,
             )
@@ -985,7 +1013,9 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
         else:
             logger.info(
                 "ai_copilot: AI unavailable and Quant Conviction %.1f < %d for %s. Skipping trade.",
-                sym, composite, min_fallback
+                sym,
+                composite,
+                min_fallback,
             )
             return
 
@@ -1034,7 +1064,10 @@ def audit_and_notify_signal(sym: str, signal: str, signal_time: str) -> None:
 
                 global _daily_summary_sent
                 with _quota_lock:
-                    if new_manual_count >= config.MAX_DAILY_MANUAL_ALERTS and not _daily_summary_sent:
+                    if (
+                        new_manual_count >= config.MAX_DAILY_MANUAL_ALERTS
+                        and not _daily_summary_sent
+                    ):
                         _daily_summary_sent = True
                         summary_text = (
                             f"🔒 *DAILY SIGNALS COMPLETED*\n\n"

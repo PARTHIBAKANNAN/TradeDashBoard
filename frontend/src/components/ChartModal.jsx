@@ -155,7 +155,9 @@ export default function ChartModal({ symbol, stock: stockProp, onClose }) {
                       )}
                       <span
                         className={`text-xs sm:text-sm font-mono font-semibold ${
-                          (stock.pct_change ?? 0) >= 0 ? "text-bull" : "text-bear"
+                          (stock.pct_change ?? 0) >= 0
+                            ? "text-bull"
+                            : "text-bear"
                         }`}
                       >
                         ({(stock.pct_change ?? 0) >= 0 ? "+" : ""}

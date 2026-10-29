@@ -1,9 +1,20 @@
 import React, { useMemo } from "react";
-import { LineChart, Wallet, Lock, Layers, TrendingUp, TrendingDown } from "lucide-react";
+import {
+  LineChart,
+  Wallet,
+  Lock,
+  Layers,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react";
 import Card from "../ui/Card.jsx";
 import PositionRow from "./PositionRow.jsx";
 
-export default function PositionsTable({ positions = [], summary, marginInUse = 0 }) {
+export default function PositionsTable({
+  positions = [],
+  summary,
+  marginInUse = 0,
+}) {
   const totalExposure = useMemo(
     () =>
       positions.reduce((sum, o) => {

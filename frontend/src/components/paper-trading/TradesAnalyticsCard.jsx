@@ -107,10 +107,25 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
     const shortStats = { count: 0, wins: 0, losses: 0, netPnl: 0, winRate: 0 };
 
     const hourlyBreakdown = {
-      "09:15 - 10:00": { label: "Opening Drive & ORB", count: 0, wins: 0, netPnl: 0 },
-      "10:00 - 11:30": { label: "Morning Momentum", count: 0, wins: 0, netPnl: 0 },
+      "09:15 - 10:00": {
+        label: "Opening Drive & ORB",
+        count: 0,
+        wins: 0,
+        netPnl: 0,
+      },
+      "10:00 - 11:30": {
+        label: "Morning Momentum",
+        count: 0,
+        wins: 0,
+        netPnl: 0,
+      },
       "11:30 - 13:30": { label: "Midday Range", count: 0, wins: 0, netPnl: 0 },
-      "13:30 - 15:30": { label: "Afternoon & Square-off", count: 0, wins: 0, netPnl: 0 },
+      "13:30 - 15:30": {
+        label: "Afternoon & Square-off",
+        count: 0,
+        wins: 0,
+        netPnl: 0,
+      },
     };
 
     const exitReasonBreakdown = {};
@@ -145,10 +160,22 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
 
       // Best / Worst trade tracker
       if (!bestTrade || net > (bestTrade.netPnl ?? bestTrade.pnl)) {
-        bestTrade = { symbol: o.symbol, pnl, netPnl: net, side: o.side, date: o.closed_at };
+        bestTrade = {
+          symbol: o.symbol,
+          pnl,
+          netPnl: net,
+          side: o.side,
+          date: o.closed_at,
+        };
       }
       if (!worstTrade || net < (worstTrade.netPnl ?? worstTrade.pnl)) {
-        worstTrade = { symbol: o.symbol, pnl, netPnl: net, side: o.side, date: o.closed_at };
+        worstTrade = {
+          symbol: o.symbol,
+          pnl,
+          netPnl: net,
+          side: o.side,
+          date: o.closed_at,
+        };
       }
 
       // Win / Loss / Breakeven counts
@@ -210,9 +237,12 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
         const m = entryDate.getMinutes();
         const timeDecimal = h + m / 60;
         let sessionKey = "10:00 - 11:30";
-        if (timeDecimal >= 9.25 && timeDecimal < 10.0) sessionKey = "09:15 - 10:00";
-        else if (timeDecimal >= 10.0 && timeDecimal < 11.5) sessionKey = "10:00 - 11:30";
-        else if (timeDecimal >= 11.5 && timeDecimal < 13.5) sessionKey = "11:30 - 13:30";
+        if (timeDecimal >= 9.25 && timeDecimal < 10.0)
+          sessionKey = "09:15 - 10:00";
+        else if (timeDecimal >= 10.0 && timeDecimal < 11.5)
+          sessionKey = "10:00 - 11:30";
+        else if (timeDecimal >= 11.5 && timeDecimal < 13.5)
+          sessionKey = "11:30 - 13:30";
         else if (timeDecimal >= 13.5) sessionKey = "13:30 - 15:30";
 
         if (hourlyBreakdown[sessionKey]) {
@@ -231,7 +261,11 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
         exitReason = "Trailing Stop Hit";
       } else if (notes.includes("SL") || notes.includes("STOP")) {
         exitReason = "Stop Loss Hit";
-      } else if (notes.includes("EOD") || notes.includes("3:15") || notes.includes("SQUARE")) {
+      } else if (
+        notes.includes("EOD") ||
+        notes.includes("3:15") ||
+        notes.includes("SQUARE")
+      ) {
         exitReason = "EOD Square-Off";
       } else if (notes.includes("AI_COPILOT") || notes.includes("AI EXIT")) {
         exitReason = "AI Copilot Signal Exit";
@@ -269,7 +303,12 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
 
       // Strategy Resolution
       let strat = "MANUAL";
-      if (notes.includes("ORB") || notes.includes("C0.5") || notes.includes("C1") || notes.includes("C2")) {
+      if (
+        notes.includes("ORB") ||
+        notes.includes("C0.5") ||
+        notes.includes("C1") ||
+        notes.includes("C2")
+      ) {
         strat = "ORB Breakout & Retest";
       } else if (notes.includes("VWAP")) {
         strat = "Institutional VWAP Absorption";
@@ -290,7 +329,12 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
 
       // Symbol Resolution
       if (!symbolBreakdown[o.symbol]) {
-        symbolBreakdown[o.symbol] = { count: 0, wins: 0, netPnl: 0, sector: sec };
+        symbolBreakdown[o.symbol] = {
+          count: 0,
+          wins: 0,
+          netPnl: 0,
+          sector: sec,
+        };
       }
       symbolBreakdown[o.symbol].count++;
       if (pnl > 0) symbolBreakdown[o.symbol].wins++;
@@ -304,31 +348,40 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
       if (lastPnl > 0) {
         currentStreakType = "WIN";
         for (let i = chronological.length - 1; i >= 0; i--) {
-          if ((Number(chronological[i].realized_pnl) || 0) > 0) currentStreakCount++;
+          if ((Number(chronological[i].realized_pnl) || 0) > 0)
+            currentStreakCount++;
           else break;
         }
       } else if (lastPnl < 0) {
         currentStreakType = "LOSS";
         for (let i = chronological.length - 1; i >= 0; i--) {
-          if ((Number(chronological[i].realized_pnl) || 0) < 0) currentStreakCount++;
+          if ((Number(chronological[i].realized_pnl) || 0) < 0)
+            currentStreakCount++;
           else break;
         }
       }
     }
 
     const totalTrades = closed.length;
-    const winRate = totalTrades ? Math.round((winCount / totalTrades) * 100) : 0;
+    const winRate = totalTrades
+      ? Math.round((winCount / totalTrades) * 100)
+      : 0;
     const profitFactor =
       grossLoss > 0
         ? Number((grossProfit / grossLoss).toFixed(2))
         : grossProfit > 0
-        ? 99.9
-        : 0;
+          ? 99.9
+          : 0;
 
     const avgTradePnl = totalTrades ? Math.round(netPnl / totalTrades) : 0;
     const avgWin = winCount > 0 ? grossProfit / winCount : 0;
     const avgLoss = lossCount > 0 ? grossLoss / lossCount : 0;
-    const payoffRatio = avgLoss > 0 ? Number((avgWin / avgLoss).toFixed(2)) : avgWin > 0 ? 99.9 : 0;
+    const payoffRatio =
+      avgLoss > 0
+        ? Number((avgWin / avgLoss).toFixed(2))
+        : avgWin > 0
+          ? 99.9
+          : 0;
 
     // Mathematical Expectancy Per Trade
     const winRateDec = totalTrades ? winCount / totalTrades : 0;
@@ -336,8 +389,12 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
     const expectancy = Math.round(winRateDec * avgWin - lossRateDec * avgLoss);
 
     // Long & Short Win Rates
-    longStats.winRate = longStats.count ? Math.round((longStats.wins / longStats.count) * 100) : 0;
-    shortStats.winRate = shortStats.count ? Math.round((shortStats.wins / shortStats.count) * 100) : 0;
+    longStats.winRate = longStats.count
+      ? Math.round((longStats.wins / longStats.count) * 100)
+      : 0;
+    shortStats.winRate = shortStats.count
+      ? Math.round((shortStats.wins / shortStats.count) * 100)
+      : 0;
 
     // Average durations
     const avgWinDurationMins = winDurations.length
@@ -408,7 +465,9 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
           <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted uppercase tracking-wider mb-1">
             <Award
               size={12}
-              className={stats.winRate >= 50 ? "text-accent-green" : "text-amber-400"}
+              className={
+                stats.winRate >= 50 ? "text-accent-green" : "text-amber-400"
+              }
             />
             Win Rate
           </div>
@@ -467,7 +526,9 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
           <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted uppercase tracking-wider mb-1">
             <ShieldCheck
               size={12}
-              className={stats.netPnl >= 0 ? "text-accent-green" : "text-accent-red"}
+              className={
+                stats.netPnl >= 0 ? "text-accent-green" : "text-accent-red"
+              }
             />
             Net P&amp;L
           </div>
@@ -591,14 +652,17 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
                       <ArrowUpRight size={14} /> LONG (BUY)
                     </span>
                     <span className="font-mono text-muted text-[11px]">
-                      {stats.longStats.count} trades · {stats.longStats.winRate}% Win
+                      {stats.longStats.count} trades · {stats.longStats.winRate}
+                      % Win
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs font-mono">
                     <span className="text-faint">Net P&amp;L:</span>
                     <span
                       className={`font-bold ${
-                        stats.longStats.netPnl >= 0 ? "text-accent-green" : "text-accent-red"
+                        stats.longStats.netPnl >= 0
+                          ? "text-accent-green"
+                          : "text-accent-red"
                       }`}
                     >
                       {formatMoney(stats.longStats.netPnl)}
@@ -619,14 +683,17 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
                       <ArrowDownRight size={14} /> SHORT (SELL)
                     </span>
                     <span className="font-mono text-muted text-[11px]">
-                      {stats.shortStats.count} trades · {stats.shortStats.winRate}% Win
+                      {stats.shortStats.count} trades ·{" "}
+                      {stats.shortStats.winRate}% Win
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs font-mono">
                     <span className="text-faint">Net P&amp;L:</span>
                     <span
                       className={`font-bold ${
-                        stats.shortStats.netPnl >= 0 ? "text-accent-green" : "text-accent-red"
+                        stats.shortStats.netPnl >= 0
+                          ? "text-accent-green"
+                          : "text-accent-red"
                       }`}
                     >
                       {formatMoney(stats.shortStats.netPnl)}
@@ -679,7 +746,9 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
                     <span className="font-mono text-base font-bold text-primary">
                       {stats.winRate}%
                     </span>
-                    <span className="text-[9px] text-faint uppercase font-bold">Wins</span>
+                    <span className="text-[9px] text-faint uppercase font-bold">
+                      Wins
+                    </span>
                   </div>
                 </div>
 
@@ -687,25 +756,38 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                     <span className="text-muted">Wins:</span>
-                    <span className="font-mono font-bold text-primary">{stats.winCount}</span>
+                    <span className="font-mono font-bold text-primary">
+                      {stats.winCount}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
                     <span className="text-muted">Losses:</span>
-                    <span className="font-mono font-bold text-primary">{stats.lossCount}</span>
+                    <span className="font-mono font-bold text-primary">
+                      {stats.lossCount}
+                    </span>
                   </div>
                   {stats.breakevenCount > 0 && (
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
                       <span className="text-muted">Breakeven:</span>
-                      <span className="font-mono font-bold text-primary">{stats.breakevenCount}</span>
+                      <span className="font-mono font-bold text-primary">
+                        {stats.breakevenCount}
+                      </span>
                     </div>
                   )}
                 </div>
               </div>
 
               <div className="text-[11px] text-faint text-center pt-2 border-t border-subtle">
-                Gross Profit: <span className="text-emerald-400 font-bold">{formatMoney(stats.grossProfit)}</span> · Gross Loss: <span className="text-rose-400 font-bold">{formatMoney(stats.grossLoss)}</span>
+                Gross Profit:{" "}
+                <span className="text-emerald-400 font-bold">
+                  {formatMoney(stats.grossProfit)}
+                </span>{" "}
+                · Gross Loss:{" "}
+                <span className="text-rose-400 font-bold">
+                  {formatMoney(stats.grossLoss)}
+                </span>
               </div>
             </div>
 
@@ -723,12 +805,17 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
                   <div className="flex items-center gap-1.5 font-mono font-bold">
                     {stats.currentStreak.type === "WIN" ? (
                       <span className="text-emerald-400 flex items-center gap-1">
-                        <Flame size={13} className="text-amber-400 animate-pulse" />
-                        +{stats.currentStreak.count} Win{stats.currentStreak.count > 1 ? "s" : ""}
+                        <Flame
+                          size={13}
+                          className="text-amber-400 animate-pulse"
+                        />
+                        +{stats.currentStreak.count} Win
+                        {stats.currentStreak.count > 1 ? "s" : ""}
                       </span>
                     ) : stats.currentStreak.type === "LOSS" ? (
                       <span className="text-rose-400">
-                        -{stats.currentStreak.count} Loss{stats.currentStreak.count > 1 ? "es" : ""}
+                        -{stats.currentStreak.count} Loss
+                        {stats.currentStreak.count > 1 ? "es" : ""}
                       </span>
                     ) : (
                       <span className="text-faint">None</span>
@@ -756,9 +843,13 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
               {/* Holding Duration Summary */}
               <div className="pt-2 border-t border-subtle flex items-center justify-between text-[11px]">
                 <span className="text-faint">Avg Win Hold:</span>
-                <span className="font-mono text-emerald-400 font-bold">{formatMinutes(stats.avgWinDurationMins)}</span>
+                <span className="font-mono text-emerald-400 font-bold">
+                  {formatMinutes(stats.avgWinDurationMins)}
+                </span>
                 <span className="text-faint">Avg Loss Hold:</span>
-                <span className="font-mono text-rose-400 font-bold">{formatMinutes(stats.avgLossDurationMins)}</span>
+                <span className="font-mono text-rose-400 font-bold">
+                  {formatMinutes(stats.avgLossDurationMins)}
+                </span>
               </div>
             </div>
           </div>
@@ -766,7 +857,9 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
           {/* Payoff & Best/Worst Trade Banner */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="rounded-xl border border-subtle bg-surface2/70 p-3 shadow-card space-y-1">
-              <div className="text-[10px] uppercase font-bold text-faint">Average Win</div>
+              <div className="text-[10px] uppercase font-bold text-faint">
+                Average Win
+              </div>
               <div className="font-mono text-base font-bold text-emerald-400">
                 {formatMoney(stats.avgWin)}
               </div>
@@ -774,7 +867,9 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
             </div>
 
             <div className="rounded-xl border border-subtle bg-surface2/70 p-3 shadow-card space-y-1">
-              <div className="text-[10px] uppercase font-bold text-faint">Average Loss</div>
+              <div className="text-[10px] uppercase font-bold text-faint">
+                Average Loss
+              </div>
               <div className="font-mono text-base font-bold text-rose-400">
                 {formatMoney(-stats.avgLoss)}
               </div>
@@ -782,19 +877,31 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
             </div>
 
             <div className="rounded-xl border border-subtle bg-surface2/70 p-3 shadow-card space-y-1">
-              <div className="text-[10px] uppercase font-bold text-faint">Biggest Winner</div>
-              <div className="font-mono text-base font-bold text-emerald-400 truncate">
-                {stats.bestTrade ? `${formatMoney(stats.bestTrade.netPnl)} (${stats.bestTrade.symbol})` : "—"}
+              <div className="text-[10px] uppercase font-bold text-faint">
+                Biggest Winner
               </div>
-              <div className="text-[10px] text-faint truncate">Top single trade gain</div>
+              <div className="font-mono text-base font-bold text-emerald-400 truncate">
+                {stats.bestTrade
+                  ? `${formatMoney(stats.bestTrade.netPnl)} (${stats.bestTrade.symbol})`
+                  : "—"}
+              </div>
+              <div className="text-[10px] text-faint truncate">
+                Top single trade gain
+              </div>
             </div>
 
             <div className="rounded-xl border border-subtle bg-surface2/70 p-3 shadow-card space-y-1">
-              <div className="text-[10px] uppercase font-bold text-faint">Biggest Loser</div>
-              <div className="font-mono text-base font-bold text-rose-400 truncate">
-                {stats.worstTrade ? `${formatMoney(stats.worstTrade.netPnl)} (${stats.worstTrade.symbol})` : "—"}
+              <div className="text-[10px] uppercase font-bold text-faint">
+                Biggest Loser
               </div>
-              <div className="text-[10px] text-faint truncate">Max single trade loss</div>
+              <div className="font-mono text-base font-bold text-rose-400 truncate">
+                {stats.worstTrade
+                  ? `${formatMoney(stats.worstTrade.netPnl)} (${stats.worstTrade.symbol})`
+                  : "—"}
+              </div>
+              <div className="text-[10px] text-faint truncate">
+                Max single trade loss
+              </div>
             </div>
           </div>
         </div>
@@ -809,63 +916,75 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
               Intraday Session Edge &amp; Hourly Heatmap
             </h4>
             <p className="text-[11px] text-faint mt-0.5">
-              Identifies which trading window yields your highest alpha vs where trades tend to chop or stop out.
+              Identifies which trading window yields your highest alpha vs where
+              trades tend to chop or stop out.
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {Object.entries(stats.hourlyBreakdown).map(([timeRange, session]) => {
-              const winRate = session.count > 0 ? Math.round((session.wins / session.count) * 100) : 0;
-              const isGreen = session.netPnl >= 0;
+            {Object.entries(stats.hourlyBreakdown).map(
+              ([timeRange, session]) => {
+                const winRate =
+                  session.count > 0
+                    ? Math.round((session.wins / session.count) * 100)
+                    : 0;
+                const isGreen = session.netPnl >= 0;
 
-              return (
-                <div
-                  key={timeRange}
-                  className={`p-3.5 rounded-xl border transition-all ${
-                    session.count === 0
-                      ? "bg-surface3/30 border-subtle opacity-70"
-                      : isGreen
-                      ? "bg-emerald-500/5 border-emerald-500/30"
-                      : "bg-rose-500/5 border-rose-500/30"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-mono text-xs font-bold text-primary">{timeRange}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface3 text-faint font-mono">
-                      {session.count} trades
-                    </span>
-                  </div>
-
-                  <div className="text-[11px] text-muted font-medium mb-2.5 truncate">
-                    {session.label}
-                  </div>
-
-                  <div className="space-y-1.5 text-xs pt-1 border-t border-subtle/60">
-                    <div className="flex justify-between">
-                      <span className="text-faint">Win Rate:</span>
-                      <span className={`font-mono font-bold ${winRate >= 50 ? "text-emerald-400" : "text-amber-400"}`}>
-                        {session.count > 0 ? `${winRate}%` : "—"}
+                return (
+                  <div
+                    key={timeRange}
+                    className={`p-3.5 rounded-xl border transition-all ${
+                      session.count === 0
+                        ? "bg-surface3/30 border-subtle opacity-70"
+                        : isGreen
+                          ? "bg-emerald-500/5 border-emerald-500/30"
+                          : "bg-rose-500/5 border-rose-500/30"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-mono text-xs font-bold text-primary">
+                        {timeRange}
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface3 text-faint font-mono">
+                        {session.count} trades
                       </span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-faint">Net P&amp;L:</span>
-                      <span className={`font-mono font-bold ${isGreen ? "text-emerald-400" : "text-rose-400"}`}>
-                        {formatMoney(session.netPnl)}
-                      </span>
-                    </div>
-                  </div>
 
-                  {session.count > 0 && (
-                    <div className="w-full bg-surface2 h-1.5 rounded-full overflow-hidden mt-3">
-                      <div
-                        style={{ width: `${winRate}%` }}
-                        className={`h-full ${isGreen ? "bg-emerald-500" : "bg-rose-500"}`}
-                      />
+                    <div className="text-[11px] text-muted font-medium mb-2.5 truncate">
+                      {session.label}
                     </div>
-                  )}
-                </div>
-              );
-            })}
+
+                    <div className="space-y-1.5 text-xs pt-1 border-t border-subtle/60">
+                      <div className="flex justify-between">
+                        <span className="text-faint">Win Rate:</span>
+                        <span
+                          className={`font-mono font-bold ${winRate >= 50 ? "text-emerald-400" : "text-amber-400"}`}
+                        >
+                          {session.count > 0 ? `${winRate}%` : "—"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-faint">Net P&amp;L:</span>
+                        <span
+                          className={`font-mono font-bold ${isGreen ? "text-emerald-400" : "text-rose-400"}`}
+                        >
+                          {formatMoney(session.netPnl)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {session.count > 0 && (
+                      <div className="w-full bg-surface2 h-1.5 rounded-full overflow-hidden mt-3">
+                        <div
+                          style={{ width: `${winRate}%` }}
+                          className={`h-full ${isGreen ? "bg-emerald-500" : "bg-rose-500"}`}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              },
+            )}
           </div>
         </div>
       )}
@@ -879,7 +998,8 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
               Exit Triggers &amp; R-Multiple Distribution
             </h4>
             <p className="text-[11px] text-faint mt-0.5">
-              Audits execution quality: verifies if gains came from target limits vs trailing stops vs forced EOD square-offs.
+              Audits execution quality: verifies if gains came from target
+              limits vs trailing stops vs forced EOD square-offs.
             </p>
           </div>
 
@@ -890,26 +1010,43 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
                 Exit Reason Classification
               </h5>
               <div className="space-y-2">
-                {Object.entries(stats.exitReasonBreakdown).map(([reason, data]) => {
-                  const pct = Math.round((data.count / stats.totalTrades) * 100);
-                  const winRate = Math.round((data.wins / data.count) * 100);
-                  return (
-                    <div key={reason} className="p-2.5 rounded-lg bg-surface2 border border-subtle text-xs space-y-1.5">
-                      <div className="flex justify-between font-medium">
-                        <span className="text-primary font-semibold">{reason}</span>
-                        <span className="font-mono text-muted text-[11px]">
-                          {data.count} ({pct}%)
-                        </span>
+                {Object.entries(stats.exitReasonBreakdown).map(
+                  ([reason, data]) => {
+                    const pct = Math.round(
+                      (data.count / stats.totalTrades) * 100,
+                    );
+                    const winRate = Math.round((data.wins / data.count) * 100);
+                    return (
+                      <div
+                        key={reason}
+                        className="p-2.5 rounded-lg bg-surface2 border border-subtle text-xs space-y-1.5"
+                      >
+                        <div className="flex justify-between font-medium">
+                          <span className="text-primary font-semibold">
+                            {reason}
+                          </span>
+                          <span className="font-mono text-muted text-[11px]">
+                            {data.count} ({pct}%)
+                          </span>
+                        </div>
+                        <div className="flex justify-between font-mono text-[11px]">
+                          <span className="text-faint">
+                            {winRate}% Win Rate
+                          </span>
+                          <span
+                            className={
+                              data.netPnl >= 0
+                                ? "text-emerald-400 font-bold"
+                                : "text-rose-400 font-bold"
+                            }
+                          >
+                            {formatMoney(data.netPnl)}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex justify-between font-mono text-[11px]">
-                        <span className="text-faint">{winRate}% Win Rate</span>
-                        <span className={data.netPnl >= 0 ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"}>
-                          {formatMoney(data.netPnl)}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  },
+                )}
               </div>
             </div>
 
@@ -921,34 +1058,58 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
               <div className="space-y-2.5 text-xs">
                 <div className="p-2.5 rounded-lg bg-surface2 border border-subtle flex items-center justify-between">
                   <div>
-                    <div className="font-bold text-emerald-400">&ge; +2.0R (Target Hit)</div>
-                    <div className="text-[10px] text-faint">Outsized runners</div>
+                    <div className="font-bold text-emerald-400">
+                      &ge; +2.0R (Target Hit)
+                    </div>
+                    <div className="text-[10px] text-faint">
+                      Outsized runners
+                    </div>
                   </div>
-                  <span className="font-mono text-sm font-bold text-primary">{stats.rDistribution.target}</span>
+                  <span className="font-mono text-sm font-bold text-primary">
+                    {stats.rDistribution.target}
+                  </span>
                 </div>
 
                 <div className="p-2.5 rounded-lg bg-surface2 border border-subtle flex items-center justify-between">
                   <div>
-                    <div className="font-bold text-emerald-300">+0.8R to +1.9R (Partial / TSL)</div>
-                    <div className="text-[10px] text-faint">Core trend captures</div>
+                    <div className="font-bold text-emerald-300">
+                      +0.8R to +1.9R (Partial / TSL)
+                    </div>
+                    <div className="text-[10px] text-faint">
+                      Core trend captures
+                    </div>
                   </div>
-                  <span className="font-mono text-sm font-bold text-primary">{stats.rDistribution.partial}</span>
+                  <span className="font-mono text-sm font-bold text-primary">
+                    {stats.rDistribution.partial}
+                  </span>
                 </div>
 
                 <div className="p-2.5 rounded-lg bg-surface2 border border-subtle flex items-center justify-between">
                   <div>
-                    <div className="font-bold text-amber-400">0.0R (Breakeven / Cost Exit)</div>
-                    <div className="text-[10px] text-faint">Preserved capital</div>
+                    <div className="font-bold text-amber-400">
+                      0.0R (Breakeven / Cost Exit)
+                    </div>
+                    <div className="text-[10px] text-faint">
+                      Preserved capital
+                    </div>
                   </div>
-                  <span className="font-mono text-sm font-bold text-primary">{stats.rDistribution.breakeven}</span>
+                  <span className="font-mono text-sm font-bold text-primary">
+                    {stats.rDistribution.breakeven}
+                  </span>
                 </div>
 
                 <div className="p-2.5 rounded-lg bg-surface2 border border-subtle flex items-center justify-between">
                   <div>
-                    <div className="font-bold text-rose-400">-1.0R (Controlled Stop Loss)</div>
-                    <div className="text-[10px] text-faint">Calculated structural invalidations</div>
+                    <div className="font-bold text-rose-400">
+                      -1.0R (Controlled Stop Loss)
+                    </div>
+                    <div className="text-[10px] text-faint">
+                      Calculated structural invalidations
+                    </div>
                   </div>
-                  <span className="font-mono text-sm font-bold text-primary">{stats.rDistribution.sl}</span>
+                  <span className="font-mono text-sm font-bold text-primary">
+                    {stats.rDistribution.sl}
+                  </span>
                 </div>
               </div>
             </div>
@@ -973,7 +1134,9 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
               {Object.entries(stats.sectorBreakdown)
                 .sort((a, b) => b[1].count - a[1].count)
                 .map(([sec, data]) => {
-                  const pctOfTotal = Math.round((data.count / stats.totalTrades) * 100);
+                  const pctOfTotal = Math.round(
+                    (data.count / stats.totalTrades) * 100,
+                  );
                   const winRate = Math.round((data.wins / data.count) * 100);
                   const isProfitable = data.netPnl >= 0;
 
@@ -1039,51 +1202,53 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {Object.entries(stats.strategyBreakdown).map(([stratName, data]) => {
-                const winRate = Math.round((data.wins / data.count) * 100);
-                const isProfitable = data.netPnl >= 0;
+              {Object.entries(stats.strategyBreakdown).map(
+                ([stratName, data]) => {
+                  const winRate = Math.round((data.wins / data.count) * 100);
+                  const isProfitable = data.netPnl >= 0;
 
-                return (
-                  <div
-                    key={stratName}
-                    className="p-3.5 rounded-lg border border-subtle bg-surface3/40 space-y-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-xs text-primary">
-                        {stratName}
-                      </span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-surface2 text-faint border border-subtle">
-                        {data.count} trades
-                      </span>
-                    </div>
+                  return (
+                    <div
+                      key={stratName}
+                      className="p-3.5 rounded-lg border border-subtle bg-surface3/40 space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-xs text-primary">
+                          {stratName}
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-surface2 text-faint border border-subtle">
+                          {data.count} trades
+                        </span>
+                      </div>
 
-                    <div className="flex items-center justify-between text-xs pt-1">
-                      <span className="text-muted">Win Rate:</span>
-                      <span
-                        className={`font-mono font-bold ${winRate >= 50 ? "text-accent-green" : "text-amber-400"}`}
-                      >
-                        {winRate}% ({data.wins}W / {data.count - data.wins}L)
-                      </span>
-                    </div>
+                      <div className="flex items-center justify-between text-xs pt-1">
+                        <span className="text-muted">Win Rate:</span>
+                        <span
+                          className={`font-mono font-bold ${winRate >= 50 ? "text-accent-green" : "text-amber-400"}`}
+                        >
+                          {winRate}% ({data.wins}W / {data.count - data.wins}L)
+                        </span>
+                      </div>
 
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted">Net Realized:</span>
-                      <span
-                        className={`font-mono font-bold ${isProfitable ? "text-accent-green" : "text-accent-red"}`}
-                      >
-                        {formatMoney(data.netPnl)}
-                      </span>
-                    </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted">Net Realized:</span>
+                        <span
+                          className={`font-mono font-bold ${isProfitable ? "text-accent-green" : "text-accent-red"}`}
+                        >
+                          {formatMoney(data.netPnl)}
+                        </span>
+                      </div>
 
-                    <div className="w-full bg-surface2 h-1.5 rounded-full overflow-hidden mt-1">
-                      <div
-                        style={{ width: `${winRate}%` }}
-                        className="bg-accent-blue h-full"
-                      />
+                      <div className="w-full bg-surface2 h-1.5 rounded-full overflow-hidden mt-1">
+                        <div
+                          style={{ width: `${winRate}%` }}
+                          className="bg-accent-blue h-full"
+                        />
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                },
+              )}
             </div>
           )}
         </div>
@@ -1117,7 +1282,9 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
                   {Object.entries(stats.symbolBreakdown)
                     .sort((a, b) => b[1].netPnl - a[1].netPnl)
                     .map(([sym, data]) => {
-                      const winRate = Math.round((data.wins / data.count) * 100);
+                      const winRate = Math.round(
+                        (data.wins / data.count) * 100,
+                      );
                       const isUp = data.netPnl >= 0;
                       return (
                         <tr
@@ -1169,22 +1336,30 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
                 Cumulative Realized Equity &amp; Drawdown Trace
               </h4>
               <p className="text-[11px] text-faint mt-0.5">
-                Displays account equity trajectory trade-by-trade along with maximum depth of drawdown from peak.
+                Displays account equity trajectory trade-by-trade along with
+                maximum depth of drawdown from peak.
               </p>
             </div>
             <div className="flex items-center gap-3 text-xs font-mono">
               <span className="text-faint">
-                Max DD: <strong className="text-rose-400">-{formatMoney(stats.maxDrawdown)}</strong>
+                Max DD:{" "}
+                <strong className="text-rose-400">
+                  -{formatMoney(stats.maxDrawdown)}
+                </strong>
               </span>
               <span className="text-faint">
-                Peak: <strong className="text-emerald-400">{formatMoney(stats.peakEquity)}</strong>
+                Peak:{" "}
+                <strong className="text-emerald-400">
+                  {formatMoney(stats.peakEquity)}
+                </strong>
               </span>
             </div>
           </div>
 
           {stats.equityPoints.length < 2 ? (
             <div className="py-12 text-center text-xs text-faint">
-              Need at least 2 closed trades to chart the equity trajectory curve.
+              Need at least 2 closed trades to chart the equity trajectory
+              curve.
             </div>
           ) : (
             <div className="space-y-3">
@@ -1195,12 +1370,27 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
                   <span>Latest (Trade #{stats.equityPoints.length})</span>
                 </div>
                 <div className="relative h-28 w-full flex items-end">
-                  <svg viewBox={`0 0 ${stats.equityPoints.length - 1} 100`} preserveAspectRatio="none" className="w-full h-full overflow-visible">
+                  <svg
+                    viewBox={`0 0 ${stats.equityPoints.length - 1} 100`}
+                    preserveAspectRatio="none"
+                    className="w-full h-full overflow-visible"
+                  >
                     {/* Zero line */}
-                    <line x1="0" y1="50" x2={stats.equityPoints.length - 1} y2="50" stroke="currentColor" strokeDasharray="3 3" className="text-subtle" />
+                    <line
+                      x1="0"
+                      y1="50"
+                      x2={stats.equityPoints.length - 1}
+                      y2="50"
+                      stroke="currentColor"
+                      strokeDasharray="3 3"
+                      className="text-subtle"
+                    />
                     {/* Path */}
                     {(() => {
-                      const maxVal = Math.max(1, ...stats.equityPoints.map((p) => Math.abs(p.cumPnl)));
+                      const maxVal = Math.max(
+                        1,
+                        ...stats.equityPoints.map((p) => Math.abs(p.cumPnl)),
+                      );
                       const coords = stats.equityPoints.map((p, i) => {
                         const y = 50 - (p.cumPnl / (maxVal * 1.25)) * 45;
                         return `${i},${Math.max(5, Math.min(95, y))}`;
