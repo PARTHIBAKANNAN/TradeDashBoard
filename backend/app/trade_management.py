@@ -86,9 +86,9 @@ def calculate_initial_stops(sym: str, side: str, entry: float) -> dict:
         atr = max(entry * 0.0075, 1.0)  # ~0.75% fallback ATR
 
     structural_level = compute_structural_level(candles, side)
-    buffer = atr * 0.2  # 20% of ATR buffer
+    buffer = atr * 0.35  # 35% of ATR buffer
 
-    min_risk_pct = 0.0085  # Minimum 0.85% floor
+    min_risk_pct = 0.0090  # Minimum 0.90% floor (prevents sub-tick noise stopouts)
     max_risk_pct = 0.0200  # Maximum 2.00% cap
 
     min_sl_dist = entry * min_risk_pct

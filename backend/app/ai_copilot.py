@@ -819,47 +819,20 @@ def execute_auto_trade(
 
     quantity = max(raw_quantity, min_qty_for_floor)
 
-    if quantity >= 2:
-        qty1 = quantity // 2
-        qty2 = quantity - qty1
-    else:
-        qty1 = 0
-        qty2 = 1
+    # ── Single Order Architecture: exactly 1 unified position per stock ──────
+    res = paper_trading.place_auto_paper_order_sync(
+        user_id=config.AUTO_PAPER_USER_ID,
+        symbol=sym,
+        side=side,
+        quantity=quantity,
+        sl_price=sl_price,
+        target_price=target_price,
+        tsl_type=tsl_type,
+        tsl_value=tsl_value,
+        notes=notes,
+    )
 
-    target1 = entry + (1.5 * sl_distance) if side == "BUY" else entry - (1.5 * sl_distance)
-
-    success_count = 0
-    if qty1 > 0:
-        res1 = paper_trading.place_auto_paper_order_sync(
-            user_id=config.AUTO_PAPER_USER_ID,
-            symbol=sym,
-            side=side,
-            quantity=qty1,
-            sl_price=sl_price,
-            target_price=round(target1, 2),
-            tsl_type=tsl_type,
-            tsl_value=tsl_value,
-            notes=notes + " | 50% Partial 1.5R",
-        )
-        if res1:
-            success_count += 1
-
-    if qty2 > 0:
-        res2 = paper_trading.place_auto_paper_order_sync(
-            user_id=config.AUTO_PAPER_USER_ID,
-            symbol=sym,
-            side=side,
-            quantity=qty2,
-            sl_price=sl_price,
-            target_price=target_price,
-            tsl_type=tsl_type,
-            tsl_value=tsl_value,
-            notes=notes + " | Trailing Runner",
-        )
-        if res2:
-            success_count += 1
-
-    if success_count > 0:
+    if res:
         with _notified_lock:
             _auto_traded_symbols_today.add(sym)
         auto_count = _increment_auto_trade_count()

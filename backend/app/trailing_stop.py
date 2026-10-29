@@ -55,13 +55,21 @@ def trailing_sl_price(
     enable_breakeven: bool = True,
 ) -> float:
     """
-    Computes candidate trailing SL price:
-    - Never tightens the initial structural Stop Loss below initial_sl.
-    - If enable_breakeven=True and peak >= +1.0R profit, automatically ratchets
-      the minimum stop floor to Entry + Buffer (risk-free trade guarantee).
-    - For BUY: only lifts SL above initial_sl/breakeven when peak > entry.
-    - For SELL: only lowers SL below initial_sl/breakeven when peak < entry.
+    Computes candidate trailing SL price with delayed activation:
+    - Stage 1 (Breathing Room): Until peak reaches at least +1.0R profit,
+      the stop loss remains anchored at initial_sl to prevent noise stopouts.
+    - Stage 2 (Auto-Breakeven): Once peak reaches +1.0R, moves stop to entry.
+    - Stage 3 (Trailing Runner): Beyond +1.0R, trails behind peak with tsl_value offset.
     """
+    # ── Stage 1: Full structural breathing room until +1.0R ──────────────────
+    if initial_sl is not None and entry > 0:
+        r_dist = abs(entry - initial_sl)
+        if r_dist > 0:
+            if side == "BUY" and peak < (entry + r_dist):
+                return initial_sl
+            elif side == "SELL" and peak > (entry - r_dist):
+                return initial_sl
+
     offset = peak * (tsl_value / 100.0) if tsl_type == "PERCENT" else tsl_value
     be_sl = compute_breakeven_sl(side, entry, initial_sl, peak) if enable_breakeven else None
 

@@ -101,3 +101,44 @@ def test_non_blocking_fallback_executes_on_gemini_unavailable():
         assert call_kwargs.get("is_fallback") is True
         assert call_kwargs.get("sym") == "DALBHARAT"
         assert call_kwargs.get("score") >= 70
+
+
+def test_single_order_architecture():
+    """Verify that execute_auto_trade places exactly ONE unified order per stock."""
+    today = datetime.now(IST).date()
+    ai_copilot._reset_daily_counters_if_needed(today, force=True)
+    test_time = datetime(today.year, today.month, today.day, 10, 0, 0, tzinfo=IST)
+
+    with patch("app.paper_trading.place_auto_paper_order_sync", return_value={"id": "single_order_1"}) as mock_paper, \
+         patch.object(config, "AUTO_PAPER_USER_ID", "test-user-id"), \
+         patch("app.state.market_state.get_stock") as mock_get_stock, \
+         patch("app.order_monitor.has_active_order", return_value=False), \
+         patch("app.trade_management.check_support_resistance_proximity", return_value=(True, "")), \
+         patch("app.ai_copilot.datetime") as mock_dt:
+
+        mock_dt.now.return_value = test_time
+        mock_get_stock.return_value = {
+            "symbol": "SAIL",
+            "ltp": 160.0,
+            "today_high": 162.0,
+            "today_low": 158.0,
+            "yesterday_high": 163.0,
+            "yesterday_low": 159.0,
+            "vwap": 161.0,
+        }
+
+        ok, reason = ai_copilot.execute_auto_trade(
+            sym="SAIL",
+            signal="Bear • OI Squeeze",
+            side="SELL",
+            score=75.0,
+            is_pure_quant=True,
+        )
+
+        assert ok is True
+        # Must be exactly 1 call — no duplicate tranche orders!
+        assert mock_paper.call_count == 1
+        call_kwargs = mock_paper.call_args[1]
+        assert call_kwargs["symbol"] == "SAIL"
+        assert call_kwargs["side"] == "SELL"
+        assert call_kwargs["quantity"] > 0

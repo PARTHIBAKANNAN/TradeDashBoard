@@ -83,6 +83,22 @@ def test_trailing_sl_price_with_breakeven():
     assert sl >= 1000.0
 
 
+def test_delayed_trailing_stop_activation():
+    # SELL: Entry 872.90, Initial SL 881.46 (R = 8.56 pts).
+    # When price only dips to 870.00 (+0.34R profit), trailing stop MUST NOT ratchet tighter than initial SL!
+    sl_minor_dip = trailing_sl_price(
+        "SELL", 872.90, 870.00, "PERCENT", 0.90, initial_sl=881.46, enable_breakeven=True
+    )
+    assert sl_minor_dip == 881.46, f"Expected initial SL 881.46 preserved, got {sl_minor_dip}"
+
+    # BUY: Entry 1000.0, Initial SL 980.0 (R = 20 pts).
+    # When price only moves to 1005.0 (+0.25R profit), trailing stop MUST NOT ratchet tighter!
+    sl_minor_rise = trailing_sl_price(
+        "BUY", 1000.0, 1005.0, "PERCENT", 0.90, initial_sl=980.0, enable_breakeven=True
+    )
+    assert sl_minor_rise == 980.0, f"Expected initial SL 980.0 preserved, got {sl_minor_rise}"
+
+
 def run_all():
     tests = [v for k, v in globals().items() if k.startswith("test_") and callable(v)]
     for t in tests:
