@@ -17,6 +17,8 @@ import {
   LineChart,
   MoreHorizontal,
   X,
+  LayoutDashboard,
+  Settings,
 } from "lucide-react";
 import {
   useMarketStream,
@@ -36,6 +38,9 @@ import WatchlistScreen from "./screens/WatchlistScreen.jsx";
 import ChartsScreen from "./screens/ChartsScreen.jsx";
 import SmartMoneyScreen from "./screens/SmartMoneyScreen.jsx";
 import PaperTradingScreen from "./screens/PaperTradingScreen.jsx";
+import PositionsScreen from "./screens/PositionsScreen.jsx";
+import DashboardScreen from "./screens/DashboardScreen.jsx";
+import SettingsScreen from "./screens/SettingsScreen.jsx";
 import LandingPage from "./screens/LandingPage.jsx";
 import ThemeToggle from "./components/ThemeToggle.jsx";
 import ConnectAliceBlueModal from "./components/ConnectAliceBlueModal.jsx";
@@ -343,8 +348,14 @@ function Dashboard({ user, onLogout }) {
               />
             )}
             {activeTab === "smart-money" && <SmartMoneyScreen />}
-            {activeTab === "paper-trading" && (
-              <PaperTradingScreen stocks={stocks} />
+            {(activeTab === "positions" || activeTab === "paper-trading") && (
+              <PositionsScreen stocks={stocks} />
+            )}
+            {activeTab === "dashboard" && (
+              <DashboardScreen stocks={stocks} />
+            )}
+            {activeTab === "settings" && (
+              <SettingsScreen />
             )}
           </motion.div>
         </AnimatePresence>
@@ -382,13 +393,15 @@ function TopNavbar({
     { key: "charts", label: "Charts", icon: "📈" },
     { key: "smart-money", label: "Smart Money", icon: "🧠" },
     {
-      key: "paper-trading",
+      key: "positions",
       label:
         openPositionsCount > 0
           ? `Positions (${openPositionsCount})`
           : "Positions",
-      icon: "🧪",
+      icon: "⚡",
     },
+    { key: "dashboard", label: "Dashboard", icon: "📑" },
+    { key: "settings", label: "Settings", icon: "⚙️" },
   ];
 
   return (
@@ -556,7 +569,7 @@ function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
     { key: "ranking", label: "Ranking", icon: BarChart3 },
     { key: "charts", label: "Charts", icon: LineChart },
     {
-      key: "paper-trading",
+      key: "positions",
       label: "Positions",
       icon: Briefcase,
       badge: openPositionsCount > 0 ? openPositionsCount : null,
@@ -587,6 +600,18 @@ function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
       label: "Smart Money",
       icon: Brain,
       desc: "Institutional Volume Flow",
+    },
+    {
+      key: "dashboard",
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      desc: "Journal, Analytics & Reports",
+    },
+    {
+      key: "settings",
+      label: "Settings",
+      icon: Settings,
+      desc: "Wallet & Trading Controls",
     },
   ];
 

@@ -3,6 +3,7 @@ import { X, Ban, PencilLine, StickyNote } from "lucide-react";
 import { useStock } from "../../hooks/useMarketStream.js";
 import { cancelOrder, closeOrder } from "../../hooks/useOrders.js";
 import EditPositionModal from "./EditPositionModal.jsx";
+import TradeProgressSlider from "./TradeProgressSlider.jsx";
 
 function formatTime(isoStr) {
   if (!isoStr) return "—";
@@ -211,6 +212,20 @@ export default function PositionRow({ order }) {
         </td>
         <td className="py-2.5 px-4 text-center">{actions}</td>
       </tr>
+      {order.sl_price && (
+        <tr className="hidden md:table-row bg-surface2/30 border-b border-subtle/40">
+          <td colSpan={10} className="px-4 py-1.5">
+            <TradeProgressSlider
+              side={order.side}
+              entryPrice={entryPrice}
+              slPrice={order.sl_price}
+              targetPrice={order.target_price}
+              tslPrice={order.tsl_price || order.current_sl}
+              ltp={ltp}
+            />
+          </td>
+        </tr>
+      )}
 
       {/* Mobile card — kept inside a tr/td so table markup stays valid */}
       <tr className="md:hidden border-b border-subtle/70">
@@ -286,6 +301,18 @@ export default function PositionRow({ order }) {
             </div>
           </div>
           <div className="mt-1.5">{bracketText}</div>
+          {order.sl_price && (
+            <div className="mt-2">
+              <TradeProgressSlider
+                side={order.side}
+                entryPrice={entryPrice}
+                slPrice={order.sl_price}
+                targetPrice={order.target_price}
+                tslPrice={order.tsl_price || order.current_sl}
+                ltp={ltp}
+              />
+            </div>
+          )}
           <div className="mt-2 flex items-center justify-end">{actions}</div>
         </td>
       </tr>

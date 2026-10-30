@@ -430,6 +430,39 @@ async def ai_analyze_stock(body: dict):
     return ai_copilot.analyze_trade_setup(sym)
 
 
+@app.get("/api/config", dependencies=[Depends(require_login)])
+async def get_trading_config():
+    return {
+        "max_risk_per_trade": getattr(config, "MAX_RISK_PER_TRADE", 1000.0),
+        "daily_max_risk": getattr(config, "DAILY_MAX_RISK_INR", 3400.0),
+        "max_daily_trades": getattr(config, "MAX_DAILY_AUTO_TRADES", 4),
+        "min_ai_confidence": getattr(config, "MIN_AI_CONFIDENCE", 70),
+        "auto_trading_enabled": bool(getattr(config, "AUTO_PAPER_USER_ID", "")),
+        "telegram_alerts_enabled": getattr(config, "ENABLE_AI_TELEGRAM_ALERTS", True),
+        "broker": getattr(config, "BROKER", "aliceblue"),
+        "orb_budget_trades": getattr(config, "ORB_BUDGET_TRADES", 1),
+        "orb_budget_risk": getattr(config, "ORB_BUDGET_RISK", 1000.0),
+        "vwap_budget_trades": getattr(config, "VWAP_BUDGET_TRADES", 1),
+        "vwap_budget_risk": getattr(config, "VWAP_BUDGET_RISK", 800.0),
+        "tsl_breakeven_threshold": 0.80,
+        "tsl_profit_harvest": 1.50,
+        "tsl_runner_buffer": 0.90,
+    }
+
+
+@app.post("/api/config", dependencies=[Depends(require_login)])
+async def update_trading_config(body: dict):
+    if "daily_max_risk" in body:
+        config.DAILY_MAX_RISK_INR = float(body["daily_max_risk"])
+    if "max_daily_trades" in body:
+        config.MAX_DAILY_AUTO_TRADES = int(body["max_daily_trades"])
+    if "min_ai_confidence" in body:
+        config.MIN_AI_CONFIDENCE = int(body["min_ai_confidence"])
+    if "telegram_alerts_enabled" in body:
+        config.ENABLE_AI_TELEGRAM_ALERTS = bool(body["telegram_alerts_enabled"])
+    return {"status": "ok", "updated": body}
+
+
 @app.get("/api/health")
 async def health():
     if getattr(config, "BROKER", "aliceblue") == "aliceblue":

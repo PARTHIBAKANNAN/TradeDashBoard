@@ -29,3 +29,4 @@ def test_vwap_elasticity_allows_pullback_entry():
     ok, reason = check_vwap_elasticity_and_exhaustion(stock, "SELL", 1014.0, now_ist=time_0948)
     assert ok is True
     assert "clear" in reason.lower()
+

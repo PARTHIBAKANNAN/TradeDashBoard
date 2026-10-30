@@ -52,3 +52,4 @@ def test_get_levels_includes_cpr():
     assert "cpr_top" in levels
     assert "cpr_width_pct" in levels
     assert levels["pivot"] == 1010.0
+
