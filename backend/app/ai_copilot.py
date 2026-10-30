@@ -616,6 +616,7 @@ _daily_summary_sent: bool = False
 _quota_lock = threading.RLock()
 _quota_reset_date: date | None = None
 _auto_traded_symbols_today: set[str] = set()
+_in_flight_evaluations: dict[str, float] = {}
 
 
 def _reset_daily_counters_if_needed(today: date, force: bool = False) -> None:
@@ -625,6 +626,7 @@ def _reset_daily_counters_if_needed(today: date, force: bool = False) -> None:
         with _notified_lock:
             _notified_signals_today.clear()
             _auto_traded_symbols_today.clear()
+            _in_flight_evaluations.clear()
             _last_reset_date = today
     with _quota_lock:
         if force or _quota_reset_date != today:
@@ -718,11 +720,11 @@ def execute_auto_trade(
 
     Performs:
       1. Trading window and daily quota checks (per strategy family)
-      2. Symbol deduplication and active order verification
-      3. S/R barrier proximity guard
-      4. Programmatic ATR/structural stop and target calculation
-      5. Minimum ₹30,000 notional order sizing floor
-      6. Split execution (50% partial 1.5R exit + trailing runner)
+      2. In-flight evaluation mutex and daily symbol deduplication
+      3. Active order verification
+      4. S/R barrier proximity guard and VWAP elasticity/exhaustion filter
+      5. Strict ₹1,000 Risk Ceiling and programmatic stop/target calculation
+      6. Single order execution
       7. Telegram notification
 
     Returns (success: bool, reason: str).
@@ -733,164 +735,194 @@ def execute_auto_trade(
     today = datetime.now(IST).date()
     _reset_daily_counters_if_needed(today)
 
-    from .state import market_state
-
-    stock_snap = market_state.get_stock(sym) or {}
-    entry = float(stock_snap.get("ltp") or 0.0)
-    if entry <= 0:
-        return False, f"No live price available for {sym}"
-
-    from .risk_allocator import get_risk_allocator
-    from .strategy_base import StrategyFamily
-
-    family = get_signal_family(signal)
-
-    now_ist = datetime.now(IST)
-    if not signal_time:
-        signal_time = now_ist.strftime("%H:%M")
-
-    session_minute = (now_ist.hour - 9) * 60 + (now_ist.minute - 15)
-    is_orb = family == StrategyFamily.ORB_BREAKOUT
-    cutoff_minute = (
-        config.ORB_EXECUTE_UNTIL_MINUTE if is_orb else config.RECLAIM_EXECUTE_UNTIL_MINUTE
-    )
-    if session_minute > cutoff_minute:
-        cutoff_label = "10:15 AM (ORB)" if is_orb else "11:00 AM (Reclaim)"
-        return (
-            False,
-            f"After {cutoff_label} cutoff (session min {session_minute} > {cutoff_minute})",
-        )
-
-    use_risk_alloc = getattr(config, "ENABLE_RISK_ALLOCATOR", True)
-    risk_alloc = get_risk_allocator()
-    if use_risk_alloc:
-        under_cap = risk_alloc.can_trade(family, today)
-    else:
-        under_cap = _get_auto_trade_count() < config.MAX_DAILY_AUTO_TRADES
-
-    if not under_cap:
-        if use_risk_alloc:
-            return False, f"Daily budget reached for strategy {family.name}"
-        return (
-            False,
-            f"Daily auto trade cap reached ({_get_auto_trade_count()}/{config.MAX_DAILY_AUTO_TRADES} trades)",
-        )
-
+    import time
+    now_ts = time.time()
     with _notified_lock:
-        already_traded = sym in _auto_traded_symbols_today
-    if already_traded:
-        return False, f"Symbol {sym} has already been auto-traded today. Deduplicating."
+        # Expire any in-flight reservations older than 8.0 seconds
+        expired = [s for s, ts in _in_flight_evaluations.items() if (now_ts - ts) > 8.0]
+        for s in expired:
+            _in_flight_evaluations.pop(s, None)
 
-    from . import order_monitor
+        if sym in _auto_traded_symbols_today:
+            return False, f"Symbol {sym} has already been auto-traded today. Deduplicating."
 
-    if order_monitor.has_active_order(sym):
-        return False, f"Symbol {sym} already has an active position/order. Skipping duplicate."
+        if sym in _in_flight_evaluations:
+            return False, f"Symbol {sym} is currently in-flight evaluating/executing. Skipping duplicate."
 
-    from . import paper_trading, trade_management
+        # Atomically claim in-flight execution mutex
+        _in_flight_evaluations[sym] = now_ts
 
-    is_safe, barrier_reason = trade_management.check_support_resistance_proximity(
-        stock_snap, side, entry
-    )
-    if not is_safe:
-        return False, f"Barrier filter: {barrier_reason}"
+    try:
+        from .state import market_state
 
-    if use_risk_alloc:
-        risk_per_trade = risk_alloc.get_risk_per_trade(family, today)
-    else:
-        risk_per_trade = config.DAILY_MAX_RISK_INR / config.MAX_DAILY_AUTO_TRADES
+        stock_snap = market_state.get_stock(sym) or {}
+        entry = float(stock_snap.get("ltp") or 0.0)
+        if entry <= 0:
+            return False, f"No live price available for {sym}"
 
-    notes_prefix = "QUANT_AUTONOMOUS" if (is_pure_quant or is_fallback) else "AI_COPILOT"
-    notes = f"{notes_prefix} | {signal} | score={int(score)} | auto"
+        from .risk_allocator import get_risk_allocator
+        from .strategy_base import StrategyFamily
 
-    computed_stops = trade_management.calculate_initial_stops(sym, side, entry)
-    sl_price = computed_stops["sl_price"]
-    target_price = computed_stops["target_price"]
-    tsl_type = computed_stops["tsl_type"]
-    tsl_value = computed_stops["tsl_value"]
+        family = get_signal_family(signal)
 
-    sl_distance = abs(entry - sl_price) if entry and sl_price else 0.0
-    min_notional_floor = getattr(config, "MIN_ORDER_NOTIONAL_INR", 30000.0)
-    min_qty_for_floor = max(1, int(min_notional_floor / entry)) if entry > 0 else 1
+        now_ist = datetime.now(IST)
+        if not signal_time:
+            signal_time = now_ist.strftime("%H:%M")
 
-    if sl_distance > 0 and risk_per_trade > 0:
-        raw_quantity = int(risk_per_trade / sl_distance)
-    else:
-        raw_quantity = min_qty_for_floor
+        session_minute = (now_ist.hour - 9) * 60 + (now_ist.minute - 15)
+        is_orb = family == StrategyFamily.ORB_BREAKOUT
+        cutoff_minute = (
+            config.ORB_EXECUTE_UNTIL_MINUTE if is_orb else config.RECLAIM_EXECUTE_UNTIL_MINUTE
+        )
+        if session_minute > cutoff_minute:
+            cutoff_label = "10:15 AM (ORB)" if is_orb else "11:00 AM (Reclaim)"
+            return (
+                False,
+                f"After {cutoff_label} cutoff (session min {session_minute} > {cutoff_minute})",
+            )
 
-    quantity = max(raw_quantity, min_qty_for_floor)
-
-    # ── Single Order Architecture: exactly 1 unified position per stock ──────
-    res = paper_trading.place_auto_paper_order_sync(
-        user_id=config.AUTO_PAPER_USER_ID,
-        symbol=sym,
-        side=side,
-        quantity=quantity,
-        sl_price=sl_price,
-        target_price=target_price,
-        tsl_type=tsl_type,
-        tsl_value=tsl_value,
-        notes=notes,
-    )
-
-    if res:
-        with _notified_lock:
-            _auto_traded_symbols_today.add(sym)
-        auto_count = _increment_auto_trade_count()
+        use_risk_alloc = getattr(config, "ENABLE_RISK_ALLOCATOR", True)
+        risk_alloc = get_risk_allocator()
         if use_risk_alloc:
-            risk_alloc.consume(family, quantity * sl_distance, today)
+            under_cap = risk_alloc.can_trade(family, today)
+        else:
+            under_cap = _get_auto_trade_count() < config.MAX_DAILY_AUTO_TRADES
 
-        logger.info(
-            "ai_copilot: auto paper trade placed for %s | %s %d qty @ %.2f (mode: %s)",
-            sym,
-            side,
-            quantity,
-            entry,
-            notes_prefix,
+        if not under_cap:
+            if use_risk_alloc:
+                return False, f"Daily budget reached for strategy {family.name}"
+            return (
+                False,
+                f"Daily auto trade cap reached ({_get_auto_trade_count()}/{config.MAX_DAILY_AUTO_TRADES} trades)",
+            )
+
+        from . import order_monitor
+
+        if order_monitor.has_active_order(sym):
+            return False, f"Symbol {sym} already has an active position/order. Skipping duplicate."
+
+        from . import paper_trading, trade_management
+
+        is_safe, barrier_reason = trade_management.check_support_resistance_proximity(
+            stock_snap, side, entry
+        )
+        if not is_safe:
+            return False, f"Barrier filter: {barrier_reason}"
+
+        is_elastic, elastic_reason = trade_management.check_vwap_elasticity_and_exhaustion(
+            stock_snap, side, entry, now_ist
+        )
+        if not is_elastic:
+            return False, f"Elasticity filter: {elastic_reason}"
+
+        if use_risk_alloc:
+            risk_per_trade = risk_alloc.get_risk_per_trade(family, today)
+        else:
+            risk_per_trade = config.DAILY_MAX_RISK_INR / config.MAX_DAILY_AUTO_TRADES
+
+        notes_prefix = "QUANT_AUTONOMOUS" if (is_pure_quant or is_fallback) else "AI_COPILOT"
+        notes = f"{notes_prefix} | {signal} | score={int(score)} | auto"
+
+        computed_stops = trade_management.calculate_initial_stops(sym, side, entry)
+        sl_price = computed_stops["sl_price"]
+        target_price = computed_stops["target_price"]
+        tsl_type = computed_stops["tsl_type"]
+        tsl_value = computed_stops["tsl_value"]
+
+        sl_distance = abs(entry - sl_price) if entry and sl_price else 0.0
+        min_notional_floor = getattr(config, "MIN_ORDER_NOTIONAL_INR", 30000.0)
+        min_qty_for_floor = max(1, int(min_notional_floor / entry)) if entry > 0 else 1
+
+        # Strict ₹1,000 Risk Ceiling Enforcement
+        max_risk_allowed = min(risk_per_trade, 1000.0)
+        if sl_distance > 0 and max_risk_allowed > 0:
+            raw_quantity = int(max_risk_allowed / sl_distance)
+        else:
+            raw_quantity = min_qty_for_floor
+
+        quantity = max(raw_quantity, min_qty_for_floor)
+        # Ensure hard ceiling of ₹1,000 risk
+        if sl_distance > 0 and (quantity * sl_distance) > 1000.0:
+            capped_qty = int(1000.0 / sl_distance)
+            if capped_qty >= 1:
+                quantity = capped_qty
+
+        # ── Single Order Architecture: exactly 1 unified position per stock ──────
+        res = paper_trading.place_auto_paper_order_sync(
+            user_id=config.AUTO_PAPER_USER_ID,
+            symbol=sym,
+            side=side,
+            quantity=quantity,
+            sl_price=sl_price,
+            target_price=target_price,
+            tsl_type=tsl_type,
+            tsl_value=tsl_value,
+            notes=notes,
         )
 
-        from . import telegram_notify
+        if res:
+            with _notified_lock:
+                _auto_traded_symbols_today.add(sym)
+            auto_count = _increment_auto_trade_count()
+            if use_risk_alloc:
+                risk_alloc.consume(family, quantity * sl_distance, today)
 
-        actual_risk = round(quantity * sl_distance, 2)
-        tgt_dist = abs(target_price - entry)
-        rr_str = f"1:{round(tgt_dist / max(0.01, sl_distance), 1)}"
-
-        if is_pure_quant:
-            title = (
-                f"⚡ *QUANT AUTONOMOUS ORDER PLACED ({auto_count}/{config.MAX_DAILY_AUTO_TRADES})*"
+            logger.info(
+                "ai_copilot: auto paper trade placed for %s | %s %d qty @ %.2f (mode: %s)",
+                sym,
+                side,
+                quantity,
+                entry,
+                notes_prefix,
             )
-            score_line = f"📐 *Quant Conviction:* {int(score)}/100"
-        elif is_fallback:
-            title = (
-                f"⚡ *QUANT FALLBACK ORDER PLACED ({auto_count}/{config.MAX_DAILY_AUTO_TRADES})*"
-            )
-            score_line = f"⚡ *Quant Conviction (AI Bypassed):* {int(score)}/100"
-        else:
-            title = f"✅ *AI CONFIRMED ORDER PLACED ({auto_count}/{config.MAX_DAILY_AUTO_TRADES})*"
-            score_line = f"🤖 *AI Confidence:* {int(score)}%"
 
-        lines = [
-            title,
-            "",
-            f"📌 *Stock:* `{sym}` | *{side}*",
-            f"🔢 *Quantity:* {quantity} shares",
-            f"📍 *Entry:* ₹{entry:.2f}",
-            f"🛑 *Stop Loss:* ₹{sl_price:.2f}  _(Risk: ₹{actual_risk:,.0f})_",
-            f"🎯 *Target:* ₹{target_price:.2f}",
-            f"📊 *RR Ratio:* {rr_str}",
-            f"🔄 *Trailing SL:* {tsl_type} {tsl_value}",
-            score_line,
-            f"⏱ *Signal:* `{signal}` @ {signal_time}",
-        ]
-        if rationale:
-            lines.append("")
-            for r in rationale[:2]:
-                lines.append(f"• {r}")
+            from . import telegram_notify
 
-        text = "\n".join(lines)
-        telegram_notify.send_message(text)
-        return True, "Order placed successfully"
+            actual_risk = round(quantity * sl_distance, 2)
+            tgt_dist = abs(target_price - entry)
+            rr_str = f"1:{round(tgt_dist / max(0.01, sl_distance), 1)}"
 
-    return False, "Order placement failed (insufficient margin or DB error)"
+            if is_pure_quant:
+                title = (
+                    f"⚡ *QUANT AUTONOMOUS ORDER PLACED ({auto_count}/{config.MAX_DAILY_AUTO_TRADES})*"
+                )
+                score_line = f"📐 *Quant Conviction:* {int(score)}/100"
+            elif is_fallback:
+                title = (
+                    f"⚡ *QUANT FALLBACK ORDER PLACED ({auto_count}/{config.MAX_DAILY_AUTO_TRADES})*"
+                )
+                score_line = f"⚡ *Quant Conviction (AI Bypassed):* {int(score)}/100"
+            else:
+                title = f"✅ *AI CONFIRMED ORDER PLACED ({auto_count}/{config.MAX_DAILY_AUTO_TRADES})*"
+                score_line = f"🤖 *AI Confidence:* {int(score)}%"
+
+            lines = [
+                title,
+                "",
+                f"📌 *Stock:* `{sym}` | *{side}*",
+                f"🔢 *Quantity:* {quantity} shares",
+                f"📍 *Entry:* ₹{entry:.2f}",
+                f"🛑 *Stop Loss:* ₹{sl_price:.2f}  _(Risk: ₹{actual_risk:,.0f})_",
+                f"🎯 *Target:* ₹{target_price:.2f}",
+                f"📊 *RR Ratio:* {rr_str}",
+                f"🔄 *Trailing SL:* {tsl_type} {tsl_value}",
+                score_line,
+                f"⏱ *Signal:* `{signal}` @ {signal_time}",
+            ]
+            if rationale:
+                lines.append("")
+                for r in rationale[:2]:
+                    lines.append(f"• {r}")
+
+            text = "\n".join(lines)
+            telegram_notify.send_message(text)
+            return True, "Order placed successfully"
+
+        return False, "Order placement failed (insufficient margin or DB error)"
+    finally:
+        with _notified_lock:
+            _in_flight_evaluations.pop(sym, None)
+
 
 
 # ── 5. Main Audit & Notify Entry Point ────────────────────────────────────────

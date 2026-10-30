@@ -99,6 +99,34 @@ def test_delayed_trailing_stop_activation():
     assert sl_minor_rise == 980.0, f"Expected initial SL 980.0 preserved, got {sl_minor_rise}"
 
 
+def test_staged_rung_trailing_stop():
+    # BUY: Entry 1000.0, Initial SL 980.0 (Risk R = 20 pts).
+    # Stage 0: Peak 1010.0 (+0.5R, < 0.8R) -> Initial SL 980.0 preserved!
+    assert trailing_sl_price("BUY", 1000.0, 1010.0, "PERCENT", 1.0, initial_sl=980.0) == 980.0
+
+    # Stage 1: Peak 1020.0 (+1.0R, in [0.8R, 1.5R)) -> Auto-Breakeven at 1000.0!
+    assert trailing_sl_price("BUY", 1000.0, 1020.0, "PERCENT", 1.0, initial_sl=980.0) == 1000.0
+
+    # Stage 2: Peak 1032.0 (+1.6R, in [1.5R, 2.0R)) -> Profit Harvest at 1000 + 0.75*20 = 1015.0!
+    assert trailing_sl_price("BUY", 1000.0, 1032.0, "PERCENT", 1.0, initial_sl=980.0) == 1015.0
+
+    # Stage 3: Peak 1050.0 (+2.5R, >= 2.0R) -> At least +1.2R (1024.0) and trails peak (1050 - 1% = 1039.5)!
+    assert trailing_sl_price("BUY", 1000.0, 1050.0, "PERCENT", 1.0, initial_sl=980.0) == 1039.5
+
+    # SELL: Entry 1000.0, Initial SL 1020.0 (Risk R = 20 pts).
+    # Stage 0: Peak 990.0 (+0.5R) -> Initial SL 1020.0 preserved
+    assert trailing_sl_price("SELL", 1000.0, 990.0, "PERCENT", 1.0, initial_sl=1020.0) == 1020.0
+
+    # Stage 1: Peak 980.0 (+1.0R) -> Auto-Breakeven at 1000.0
+    assert trailing_sl_price("SELL", 1000.0, 980.0, "PERCENT", 1.0, initial_sl=1020.0) == 1000.0
+
+    # Stage 2: Peak 968.0 (+1.6R) -> Profit Harvest at 1000 - 0.75*20 = 985.0
+    assert trailing_sl_price("SELL", 1000.0, 968.0, "PERCENT", 1.0, initial_sl=1020.0) == 985.0
+
+    # Stage 3: Peak 950.0 (+2.5R) -> At least +1.2R (976.0) and trails peak (950 + 1% = 959.5)!
+    assert trailing_sl_price("SELL", 1000.0, 950.0, "PERCENT", 1.0, initial_sl=1020.0) == 959.5
+
+
 def run_all():
     tests = [v for k, v in globals().items() if k.startswith("test_") and callable(v)]
     for t in tests:

@@ -37,6 +37,52 @@ def compute_structural_level(candles: list[dict], side: str, lookback: int = 6) 
         return max(c["high"] for c in recent)
 
 
+
+def check_vwap_elasticity_and_exhaustion(
+    stock: dict, side: str, entry: float, now_ist=None
+) -> tuple[bool, str]:
+    """
+    Exhaustion & Elasticity Guard:
+    Prevents shorting the bottom wick or buying the top wick when price is
+    already stretched (>0.75%) away from VWAP without a micro-pullback.
+    Protects against mean-reversion squeeze traps (e.g. HAVELLS).
+    """
+    if entry <= 0:
+        return True, "Valid entry"
+
+    from datetime import datetime
+    from .calculations import IST
+    if now_ist is None:
+        now_ist = datetime.now(IST)
+
+    session_minute = (now_ist.hour - 9) * 60 + (now_ist.minute - 15)
+    if session_minute < 20:  # Before 09:35 AM
+        return True, "Early opening expansion allowed"
+
+    vwap = float(stock.get("vwap") or stock.get("ap") or 0.0)
+    if vwap <= 0:
+        return True, "No live VWAP available"
+
+    vwap_stretch = abs(entry - vwap) / vwap
+    if vwap_stretch > 0.0075:  # > 0.75% away from VWAP
+        day_low = float(stock.get("low") or stock.get("day_low") or 0.0)
+        day_high = float(stock.get("high") or stock.get("day_high") or 0.0)
+
+        if side == "SELL" and day_low > 0:
+            if entry <= (day_low * 1.0015):
+                return (
+                    False,
+                    f"Exhaustion wick guard: Shorting at day's low (₹{entry:.2f}) with VWAP stretch {vwap_stretch*100:.2f}%. Awaiting pullback.",
+                )
+        elif side == "BUY" and day_high > 0:
+            if entry >= (day_high * 0.9985):
+                return (
+                    False,
+                    f"Exhaustion wick guard: Buying at day's high (₹{entry:.2f}) with VWAP stretch {vwap_stretch*100:.2f}%. Awaiting pullback.",
+                )
+
+    return True, "Clear of exhaustion traps"
+
 def check_support_resistance_proximity(
     stock: dict, side: str, entry: float, threshold_pct: float = 0.003
 ) -> tuple[bool, str]:

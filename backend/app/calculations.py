@@ -362,6 +362,17 @@ def process_incoming_tick(
                             hard_veto = True
                             veto_reason = f"Late Entry ADR Exhaustion (Range used {range_used:.1f}% >= 60% of ADR {adr_pct:.1f}%)"
 
+                # Veto 4: CPR Regime Guard (Avoid breakout traps on Wide CPR chop days)
+                if not hard_veto:
+                    from .candle_query import get_cpr_regime
+                    cpr_info = get_cpr_regime(stock)
+                    if cpr_info.get("is_wide") and family in (StrategyFamily.ORB_BREAKOUT, StrategyFamily.SECTOR_SYMPATHY):
+                        hard_veto = True
+                        veto_reason = f"Wide CPR Trap Veto: CPR width {cpr_info['cpr_width_pct']:.2f}% >= 0.60% indicates range-bound chop"
+                    elif cpr_info.get("is_narrow") and family in (StrategyFamily.ORB_BREAKOUT, StrategyFamily.MOMENTUM_RUNNER):
+                        mom_score = min(100, mom_score + 5)
+                        mom_factors.append(f"Narrow CPR ({cpr_info['cpr_width_pct']:.2f}%): High Expansion Day")
+
                 if passes_eval and not hard_veto:
                     import threading
 

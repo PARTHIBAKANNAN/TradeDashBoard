@@ -148,7 +148,7 @@ async def get_multi_day_candles(symbol: str, days: int = 21) -> dict:
 
 
 def get_levels(stock: dict) -> dict:
-    """Opening-range (C1) + previous-day high/low/pivot — derived from fields
+    """Opening-range (C1) + previous-day high/low/pivot + CPR — derived from fields
     already computed live by the existing ORB engine / REST backfill."""
     c1 = (stock.get("orb") or {}).get("C1") or {}
     prev_high = stock.get("yesterday_high") or None
@@ -157,13 +157,53 @@ def get_levels(stock: dict) -> dict:
     pivot = (
         (prev_high + prev_low + prev_close) / 3 if prev_high and prev_low and prev_close else None
     )
+    bc = ((prev_high + prev_low) / 2) if prev_high and prev_low else None
+    tc = ((pivot - bc) + pivot) if pivot and bc else None
+    cpr_bottom = min(bc, tc) if bc and tc else None
+    cpr_top = max(bc, tc) if bc and tc else None
+    cpr_width_pct = (abs(tc - bc) / pivot * 100) if pivot and bc and tc and pivot > 0 else None
+
     return {
         "opening_range_high": c1.get("high"),
         "opening_range_low": c1.get("low"),
         "prev_day_high": prev_high,
         "prev_day_low": prev_low,
         "pivot": pivot,
+        "cpr_bottom": round(cpr_bottom, 2) if cpr_bottom is not None else None,
+        "cpr_top": round(cpr_top, 2) if cpr_top is not None else None,
+        "cpr_width_pct": round(cpr_width_pct, 3) if cpr_width_pct is not None else None,
     }
+
+
+def get_cpr_regime(stock: dict) -> dict:
+    """
+    Computes Central Pivot Range (CPR) metrics and regime classification:
+    - Narrow CPR (< 0.30% of price): Strong directional expansion day (boost ORB/Breakout).
+    - Wide CPR (> 0.60% of price): Range-bound / choppy day (veto breakout traps).
+    """
+    prev_high = float(stock.get("yesterday_high") or 0.0)
+    prev_low = float(stock.get("yesterday_low") or 0.0)
+    prev_close = float(stock.get("prev_close") or 0.0)
+    if prev_high <= 0 or prev_low <= 0 or prev_close <= 0:
+        return {"has_cpr": False, "is_narrow": False, "is_wide": False, "cpr_width_pct": 0.0}
+
+    pivot = (prev_high + prev_low + prev_close) / 3.0
+    bc = (prev_high + prev_low) / 2.0
+    tc = (pivot - bc) + pivot
+    cpr_width_pct = abs(tc - bc) / pivot * 100.0 if pivot > 0 else 0.0
+
+    return {
+        "has_cpr": True,
+        "pivot": round(pivot, 2),
+        "bc": round(bc, 2),
+        "tc": round(tc, 2),
+        "cpr_bottom": round(min(bc, tc), 2),
+        "cpr_top": round(max(bc, tc), 2),
+        "cpr_width_pct": round(cpr_width_pct, 3),
+        "is_narrow": cpr_width_pct <= 0.30,
+        "is_wide": cpr_width_pct >= 0.60,
+    }
+
 
 
 async def get_all_mini_candles() -> dict[str, list[dict]]:
