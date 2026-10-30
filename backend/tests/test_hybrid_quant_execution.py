@@ -109,12 +109,17 @@ def test_single_order_architecture():
     ai_copilot._reset_daily_counters_if_needed(today, force=True)
     test_time = datetime(today.year, today.month, today.day, 10, 0, 0, tzinfo=IST)
 
-    with patch("app.paper_trading.place_auto_paper_order_sync", return_value={"id": "single_order_1"}) as mock_paper, \
-         patch.object(config, "AUTO_PAPER_USER_ID", "test-user-id"), \
-         patch("app.state.market_state.get_stock") as mock_get_stock, \
-         patch("app.order_monitor.has_active_order", return_value=False), \
-         patch("app.trade_management.check_support_resistance_proximity", return_value=(True, "")), \
-         patch("app.ai_copilot.datetime") as mock_dt:
+    with patch(
+        "app.paper_trading.place_auto_paper_order_sync", return_value={"id": "single_order_1"}
+    ) as mock_paper, patch.object(config, "AUTO_PAPER_USER_ID", "test-user-id"), patch(
+        "app.state.market_state.get_stock"
+    ) as mock_get_stock, patch(
+        "app.order_monitor.has_active_order", return_value=False
+    ), patch(
+        "app.trade_management.check_support_resistance_proximity", return_value=(True, "")
+    ), patch(
+        "app.ai_copilot.datetime"
+    ) as mock_dt:
 
         mock_dt.now.return_value = test_time
         mock_get_stock.return_value = {
