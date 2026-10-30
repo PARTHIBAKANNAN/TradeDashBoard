@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { X, Ban, PencilLine, StickyNote } from "lucide-react";
+import { X, Ban, PencilLine, StickyNote, LineChart } from "lucide-react";
 import { useStock } from "../../hooks/useMarketStream.js";
 import { cancelOrder, closeOrder } from "../../hooks/useOrders.js";
 import EditPositionModal from "./EditPositionModal.jsx";
+import ExitReasonModal from "./ExitReasonModal.jsx";
 import TradeProgressSlider from "./TradeProgressSlider.jsx";
 
 function formatTime(isoStr) {
@@ -28,7 +29,7 @@ function unrealizedPnl(side, quantity, entryPrice, ltp) {
 
 // Self-subscribes to live ticks (like WatchlistRow) so OPEN rows re-render
 // only when their own symbol's price actually moves.
-export default function PositionRow({ order }) {
+export default function PositionRow({ order, onOpenChart, onOrderClosed }) {
   const live = useStock(order.symbol);
   const [busy, setBusy] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -65,6 +66,20 @@ export default function PositionRow({ order }) {
       await fn(order.id);
     } catch {
       /* surfaced via the shared poll-refresh; nothing row-local to show */
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleImmediateExit = async () => {
+    setBusy(true);
+    try {
+      await closeOrder(order.id);
+      if (onOrderClosed) {
+        onOrderClosed(order);
+      }
+    } catch {
+      /* surfaced via refresh */
     } finally {
       setBusy(false);
     }
@@ -109,7 +124,7 @@ export default function PositionRow({ order }) {
         <PencilLine size={12} /> Edit
       </button>
       <button
-        onClick={() => act(closeOrder)}
+        onClick={handleImmediateExit}
         disabled={busy}
         title="Exit position at market"
         className="inline-flex items-center gap-1 text-[11px] font-bold text-muted hover:text-bear disabled:opacity-50 transition-colors"
@@ -125,7 +140,17 @@ export default function PositionRow({ order }) {
       <tr className="hidden md:table-row border-b border-subtle/70 hover:bg-surface3/40 transition-colors">
         <td className="py-2.5 px-4">
           <div className="flex items-center gap-1.5">
-            <span className="font-bold text-primary">{order.symbol}</span>
+            <button
+              onClick={() => onOpenChart?.(order.symbol)}
+              className="font-bold text-primary hover:text-accent-blue transition-colors flex items-center gap-1 group text-left cursor-pointer"
+              title="Click to view chart with SL/TP levels"
+            >
+              <span>{order.symbol}</span>
+              <LineChart
+                size={12}
+                className="opacity-0 group-hover:opacity-100 text-accent-blue transition-opacity"
+              />
+            </button>
             {order.notes && (
               <StickyNote
                 size={11}
@@ -233,9 +258,14 @@ export default function PositionRow({ order }) {
           <div className="flex items-start justify-between gap-2">
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-primary text-sm">
-                  {order.symbol}
-                </span>
+                <button
+                  onClick={() => onOpenChart?.(order.symbol)}
+                  className="font-bold text-primary hover:text-accent-blue transition-colors flex items-center gap-1 group text-left text-sm"
+                  title="Click to view chart with SL/TP levels"
+                >
+                  <span>{order.symbol}</span>
+                  <LineChart size={12} className="text-accent-blue opacity-70" />
+                </button>
                 <span
                   className={`text-[11px] font-bold uppercase ${
                     order.side === "BUY" ? "text-bull" : "text-bear"

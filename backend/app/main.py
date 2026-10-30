@@ -434,6 +434,7 @@ async def ai_analyze_stock(body: dict):
 async def get_trading_config():
     return {
         "max_risk_per_trade": getattr(config, "MAX_RISK_PER_TRADE", 1000.0),
+        "max_margin_per_trade": getattr(config, "MAX_MARGIN_PER_TRADE", 25000.0),
         "daily_max_risk": getattr(config, "DAILY_MAX_RISK_INR", 3400.0),
         "max_daily_trades": getattr(config, "MAX_DAILY_AUTO_TRADES", 4),
         "min_ai_confidence": getattr(config, "MIN_AI_CONFIDENCE", 70),
@@ -447,6 +448,17 @@ async def get_trading_config():
         "tsl_breakeven_threshold": 0.80,
         "tsl_profit_harvest": 1.50,
         "tsl_runner_buffer": 0.90,
+        "strategy_states": getattr(
+            config,
+            "STRATEGY_STATES",
+            {
+                "ORB_BREAKOUT": "RUNNING",
+                "VWAP_RETEST": "RUNNING",
+                "OI_SQUEEZE": "RUNNING",
+                "SECTOR_SYMPATHY": "RUNNING",
+                "MOMENTUM_RUNNER": "RUNNING",
+            },
+        ),
     }
 
 
@@ -454,12 +466,20 @@ async def get_trading_config():
 async def update_trading_config(body: dict):
     if "daily_max_risk" in body:
         config.DAILY_MAX_RISK_INR = float(body["daily_max_risk"])
+    if "max_risk_per_trade" in body:
+        config.MAX_RISK_PER_TRADE = float(body["max_risk_per_trade"])
+    if "max_margin_per_trade" in body:
+        config.MAX_MARGIN_PER_TRADE = float(body["max_margin_per_trade"])
     if "max_daily_trades" in body:
         config.MAX_DAILY_AUTO_TRADES = int(body["max_daily_trades"])
     if "min_ai_confidence" in body:
         config.MIN_AI_CONFIDENCE = int(body["min_ai_confidence"])
     if "telegram_alerts_enabled" in body:
         config.ENABLE_AI_TELEGRAM_ALERTS = bool(body["telegram_alerts_enabled"])
+    if "strategy_states" in body and isinstance(body["strategy_states"], dict):
+        current_states = getattr(config, "STRATEGY_STATES", {}).copy()
+        current_states.update(body["strategy_states"])
+        config.STRATEGY_STATES = current_states
     return {"status": "ok", "updated": body}
 
 

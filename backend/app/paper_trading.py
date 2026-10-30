@@ -71,6 +71,39 @@ async def close_pool() -> None:
 # --------------- Programmatic auto paper trade (called by AI Copilot, no HTTP context) ---------------
 
 
+def get_realistic_fill_price(stock: dict, side: str, is_exit: bool = False) -> tuple[float, float]:
+    """
+    Computes realistic execution fill price and slippage pts using Level-1 Bid/Ask depth:
+    - Entry BUY or Exit SELL (buy to cover): matches Best Ask (sp1).
+    - Entry SELL or Exit BUY (sell to close): matches Best Bid (bp1).
+    - If quotes are absent, applies dynamic 0.03% spread + slippage buffer.
+    Returns: (fill_price, slippage_pts)
+    """
+    ltp = float(stock.get("ltp") or 0.0)
+    if ltp <= 0:
+        return 0.0, 0.0
+
+    bp1 = float(stock.get("bp1") or 0.0)
+    sp1 = float(stock.get("sp1") or 0.0)
+
+    is_buying = (side.upper() == "BUY" and not is_exit) or (side.upper() == "SELL" and is_exit)
+
+    if is_buying:
+        if sp1 > 0:
+            fill_price = sp1
+        else:
+            fill_price = round(ltp * 1.0003, 2)
+        slippage_pts = round(max(0.0, fill_price - ltp), 2)
+    else:
+        if bp1 > 0:
+            fill_price = bp1
+        else:
+            fill_price = round(ltp * 0.9997, 2)
+        slippage_pts = round(max(0.0, ltp - fill_price), 2)
+
+    return fill_price, slippage_pts
+
+
 async def place_auto_paper_order(
     user_id: str,
     symbol: str,
@@ -107,8 +140,15 @@ async def place_auto_paper_order(
         logger.warning("place_auto_paper_order: no live price for %s, skipping", symbol)
         return None
 
-    margin = paper_margin.required_margin(ltp, quantity)
-    peak_price = ltp if tsl_type else None
+    entry_price, slippage_pts = get_realistic_fill_price(stock, side, is_exit=False)
+    if entry_price <= 0:
+        entry_price = ltp
+    if slippage_pts > 0:
+        slip_tag = f"Slippage: ₹{slippage_pts}"
+        notes = f"{notes} | {slip_tag}" if notes else slip_tag
+
+    margin = paper_margin.required_margin(entry_price, quantity)
+    peak_price = entry_price if tsl_type else None
 
     async with pool.acquire() as conn:
         async with conn.transaction():
@@ -135,7 +175,7 @@ async def place_auto_paper_order(
                 margin,
                 user_id,
             )
-            initial_risk_per_share = abs(ltp - sl_price) if sl_price else None
+            initial_risk_per_share = abs(entry_price - sl_price) if sl_price else None
 
             row = await conn.fetchrow(
                 "insert into public.paper_orders "
@@ -152,13 +192,13 @@ async def place_auto_paper_order(
                 tsl_type,
                 tsl_value,
                 peak_price,
-                ltp,
+                entry_price,
                 margin,
                 notes,
                 sl_price,
                 initial_risk_per_share,
-                ltp,  # mfe_price starts at entry price
-                ltp,  # mae_price starts at entry price
+                entry_price,  # mfe_price starts at entry price
+                entry_price,  # mae_price starts at entry price
             )
     if sl_price or target_price or tsl_type:
         order_monitor.register_open_bracket(dict(row))
@@ -617,9 +657,17 @@ async def place_order(body: PlaceOrderBody, request: Request):
         order_monitor.register_pending_limit(dict(row))
         return _serialize(dict(row))
 
-    # MARKET: fills immediately at the live LTP.
-    margin = paper_margin.required_margin(ltp, body.quantity)
-    peak_price = ltp if body.tsl_type else None
+    # MARKET: fills realistically at Best Bid/Ask or with dynamic slippage.
+    entry_price, slippage_pts = get_realistic_fill_price(stock, body.side, is_exit=False)
+    if entry_price <= 0:
+        entry_price = ltp
+    order_notes = body.notes
+    if slippage_pts > 0:
+        slip_tag = f"Slippage: ₹{slippage_pts}"
+        order_notes = f"{order_notes} | {slip_tag}" if order_notes else slip_tag
+
+    margin = paper_margin.required_margin(entry_price, body.quantity)
+    peak_price = entry_price if body.tsl_type else None
     async with pool.acquire() as conn:
         async with conn.transaction():
             wallet = await conn.fetchrow(
@@ -648,9 +696,9 @@ async def place_order(body: PlaceOrderBody, request: Request):
                 body.tsl_type,
                 body.tsl_value,
                 peak_price,
-                ltp,
+                entry_price,
                 margin,
-                body.notes,
+                order_notes,
             )
     if body.sl_price or body.target_price or body.tsl_type:
         order_monitor.register_open_bracket(dict(row))
@@ -723,7 +771,7 @@ async def close_position(order_id: int, request: Request):
     pool = _require_pool()
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
-            "select symbol from public.paper_orders where id=$1 and user_id=$2 and status='OPEN'",
+            "select symbol, side from public.paper_orders where id=$1 and user_id=$2 and status='OPEN'",
             order_id,
             user_id,
         )
@@ -733,10 +781,63 @@ async def close_position(order_id: int, request: Request):
     ltp = stock["ltp"] if stock else None
     if not ltp:
         raise HTTPException(status_code=409, detail="no live price available to close at")
-    result = await close_order(order_id, user_id, "MANUAL", ltp)
+
+    # Match against Best Bid/Ask for realistic exit execution
+    exit_price, slippage_pts = get_realistic_fill_price(stock, row["side"], is_exit=True)
+    if exit_price <= 0:
+        exit_price = ltp
+
+    # Check for optional reason/notes in payload
+    reason = "MANUAL"
+    custom_notes = None
+    try:
+        body = await request.json()
+        if isinstance(body, dict):
+            reason = body.get("reason") or "MANUAL"
+            custom_notes = body.get("notes")
+    except Exception:
+        pass
+
+    result = await close_order(order_id, user_id, reason, exit_price)
     if result is None:
         raise HTTPException(status_code=404, detail="position not found")
+
+    if custom_notes:
+        async with pool.acquire() as conn:
+            await conn.execute(
+                "update public.paper_orders set notes = COALESCE(notes || ' | ', '') || $1 where id = $2",
+                custom_notes,
+                order_id,
+            )
+            result["notes"] = (result.get("notes") or "") + f" | {custom_notes}"
+
     return result
+
+
+@router.post("/orders/{order_id}/exit-reason")
+async def update_exit_reason(order_id: int, request: Request):
+    user_id = await _current_user_id(request)
+    pool = _require_pool()
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    reason = body.get("reason")
+    notes = body.get("notes")
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            update public.paper_orders
+            set close_reason = COALESCE($1, close_reason),
+                notes = CASE WHEN $2 IS NOT NULL AND $2 != '' THEN COALESCE(notes || ' | ', '') || $2 ELSE notes END
+            where id = $3 and user_id = $4
+            """,
+            reason,
+            notes,
+            order_id,
+            user_id,
+        )
+    return {"status": "ok"}
 
 
 @router.get("/positions")

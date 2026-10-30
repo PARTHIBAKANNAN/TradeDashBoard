@@ -38,6 +38,7 @@ export default function PlaceOrderForm({
   const [tslType, setTslType] = useState("");
   const [tslValue, setTslValue] = useState("");
   const [notes, setNotes] = useState("");
+  const [showNotes, setShowNotes] = useState(false);
   const [margin, setMargin] = useState(null);
   const [marginLoading, setMarginLoading] = useState(false);
   const [error, setError] = useState("");
@@ -176,26 +177,26 @@ export default function PlaceOrderForm({
   };
 
   return (
-    <form onSubmit={submit} className="space-y-3">
-      {/* AI Copilot Widget */}
-      <div className="rounded-xl border border-accent-blue/30 bg-accent-blue/10 p-3 space-y-2">
+    <form onSubmit={submit} className="space-y-2.5">
+      {/* AI Copilot Widget - Compact Bar */}
+      <div className="rounded-lg border border-accent-blue/30 bg-accent-blue/10 p-2 space-y-1.5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-accent-blue">
-            <span>🤖 AI Copilot (Gemini 3.6 Flash)</span>
+          <div className="flex items-center gap-1.5 text-[11px] font-bold text-accent-blue">
+            <span>🤖 AI Copilot</span>
           </div>
           <button
             type="button"
             onClick={fetchAiAnalysis}
             disabled={aiLoading}
-            className="px-2 py-1 rounded bg-accent-blue/20 hover:bg-accent-blue/30 border border-accent-blue/40 text-[11px] font-bold text-accent-blue transition-colors flex items-center gap-1"
+            className="px-2 py-0.5 rounded bg-accent-blue/20 hover:bg-accent-blue/30 border border-accent-blue/40 text-[10px] font-bold text-accent-blue transition-colors flex items-center gap-1"
           >
-            {aiLoading ? <Loader2 size={11} className="animate-spin" /> : null}
+            {aiLoading ? <Loader2 size={10} className="animate-spin" /> : null}
             {aiLoading ? "Analyzing..." : "Audit & Auto-fill"}
           </button>
         </div>
 
         {aiResult && (
-          <div className="space-y-1.5 pt-1 text-xs border-t border-accent-blue/20">
+          <div className="space-y-1 pt-1 text-[11px] border-t border-accent-blue/20">
             <div className="flex items-center justify-between font-mono">
               <span className="text-muted">Decision:</span>
               <span
@@ -207,33 +208,35 @@ export default function PlaceOrderForm({
                       : "text-accent-amber"
                 }`}
               >
-                {aiResult.decision} ({aiResult.confidence_score}% score)
+                {aiResult.decision} ({aiResult.confidence_score}%)
               </span>
             </div>
             {aiResult.rationale && (
-              <ul className="text-[11px] text-faint list-disc list-inside space-y-0.5">
-                {aiResult.rationale.map((r, idx) => (
-                  <li key={idx}>{r}</li>
+              <ul className="text-[10px] text-faint list-disc list-inside space-y-0.5">
+                {aiResult.rationale.slice(0, 2).map((r, idx) => (
+                  <li key={idx} className="truncate">{r}</li>
                 ))}
               </ul>
             )}
           </div>
         )}
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+      {/* Row 1: Symbol & Quantity */}
+      <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-[10px] font-bold text-muted uppercase tracking-wider mb-1.5">
+          <label className="block text-[9px] font-bold text-muted uppercase tracking-wider mb-1">
             Symbol
           </label>
           {lockSymbol ? (
-            <div className="w-full bg-surface3 border border-subtle rounded-lg p-2 text-sm font-bold text-primary">
+            <div className="w-full bg-surface3 border border-subtle rounded-md px-2 py-1.5 text-xs font-bold text-primary truncate">
               {symbol}
             </div>
           ) : (
             <select
               value={symbol}
               onChange={(e) => setSymbol(e.target.value)}
-              className="w-full bg-surface3 border border-strong rounded-lg p-2 text-sm text-primary font-bold focus:outline-none focus:border-accent-blue"
+              className="w-full bg-surface3 border border-strong rounded-md px-2 py-1.5 text-xs text-primary font-bold focus:outline-none focus:border-accent-blue"
             >
               {symbols.map((s) => (
                 <option key={s} value={s}>
@@ -244,7 +247,7 @@ export default function PlaceOrderForm({
           )}
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-muted uppercase tracking-wider mb-1.5">
+          <label className="block text-[9px] font-bold text-muted uppercase tracking-wider mb-1">
             Quantity
           </label>
           <input
@@ -253,61 +256,65 @@ export default function PlaceOrderForm({
             step={1}
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
-            className="w-full bg-surface3 border border-strong rounded-lg p-2 text-sm text-primary font-mono focus:outline-none focus:border-accent-blue"
+            className="w-full bg-surface3 border border-strong rounded-md px-2 py-1.5 text-xs text-primary font-mono focus:outline-none focus:border-accent-blue"
           />
         </div>
       </div>
 
+      {/* Row 2: Side & Order Type */}
       <div className="grid grid-cols-2 gap-2">
-        {SIDES.map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => setSide(s)}
-            className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-bold transition-colors border ${
-              side === s
-                ? s === "BUY"
-                  ? "bg-bull/15 border-bull/40 text-bull"
-                  : "bg-bear/15 border-bear/40 text-bear"
-                : "bg-surface3 border-subtle text-muted hover:text-primary"
-            }`}
-          >
-            {s === "BUY" ? (
-              <ArrowUpCircle size={14} />
-            ) : (
-              <ArrowDownCircle size={14} />
-            )}
-            {s}
-          </button>
-        ))}
-      </div>
+        <div>
+          <label className="block text-[9px] font-bold text-muted uppercase tracking-wider mb-1">
+            Side
+          </label>
+          <div className="grid grid-cols-2 gap-1">
+            {SIDES.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setSide(s)}
+                className={`flex items-center justify-center gap-1 rounded-md py-1 text-xs font-bold transition-colors border ${
+                  side === s
+                    ? s === "BUY"
+                      ? "bg-bull/15 border-bull/40 text-bull"
+                      : "bg-bear/15 border-bear/40 text-bear"
+                    : "bg-surface3 border-subtle text-muted hover:text-primary"
+                }`}
+              >
+                {s === "BUY" ? <ArrowUpCircle size={12} /> : <ArrowDownCircle size={12} />}
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
 
-      <div>
-        <label className="block text-[10px] font-bold text-muted uppercase tracking-wider mb-1.5">
-          Order Type
-        </label>
-        <div className="grid grid-cols-2 gap-2">
-          {ORDER_TYPES.map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setOrderType(t)}
-              className={`rounded-lg py-2 text-sm font-semibold transition-colors border ${
-                orderType === t
-                  ? "bg-accent-blue/15 border-accent-blue/40 text-accent-blue"
-                  : "bg-surface3 border-subtle text-muted hover:text-primary"
-              }`}
-            >
-              {t}
-            </button>
-          ))}
+        <div>
+          <label className="block text-[9px] font-bold text-muted uppercase tracking-wider mb-1">
+            Type
+          </label>
+          <div className="grid grid-cols-2 gap-1">
+            {ORDER_TYPES.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setOrderType(t)}
+                className={`rounded-md py-1 text-xs font-semibold transition-colors border ${
+                  orderType === t
+                    ? "bg-accent-blue/15 border-accent-blue/40 text-accent-blue"
+                    : "bg-surface3 border-subtle text-muted hover:text-primary"
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {orderType === "LIMIT" && (
         <div>
-          <label className="block text-[10px] font-bold text-muted uppercase tracking-wider mb-1.5">
-            Limit Price
+          <label className="block text-[9px] font-bold text-muted uppercase tracking-wider mb-1">
+            Limit Price (₹)
           </label>
           <input
             type="number"
@@ -315,34 +322,37 @@ export default function PlaceOrderForm({
             value={limitPrice}
             onChange={(e) => setLimitPrice(e.target.value)}
             placeholder={margin?.ltp ? String(margin.ltp) : ""}
-            className="w-full bg-surface3 border border-strong rounded-lg p-2 text-sm text-primary font-mono focus:outline-none focus:border-accent-blue"
+            className="w-full bg-surface3 border border-strong rounded-md px-2 py-1 text-xs text-primary font-mono focus:outline-none focus:border-accent-blue"
           />
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* Row 3: Stop Loss & Target */}
+      <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-[10px] font-bold text-muted uppercase tracking-wider mb-1.5">
-            Stop Loss <span className="text-faint font-normal">(optional)</span>
+          <label className="block text-[9px] font-bold text-muted uppercase tracking-wider mb-1">
+            Stop Loss <span className="text-faint font-normal">(opt)</span>
           </label>
           <input
             type="number"
             step="0.05"
             value={slPrice}
             onChange={(e) => setSlPrice(e.target.value)}
-            className="w-full bg-surface3 border border-strong rounded-lg p-2 text-sm text-primary font-mono focus:outline-none focus:border-accent-blue"
+            placeholder="0.00"
+            className="w-full bg-surface3 border border-strong rounded-md px-2 py-1.5 text-xs text-primary font-mono focus:outline-none focus:border-accent-blue"
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-muted uppercase tracking-wider mb-1.5">
-            Target <span className="text-faint font-normal">(optional)</span>
+          <label className="block text-[9px] font-bold text-muted uppercase tracking-wider mb-1">
+            Target <span className="text-faint font-normal">(opt)</span>
           </label>
           <input
             type="number"
             step="0.05"
             value={targetPrice}
             onChange={(e) => setTargetPrice(e.target.value)}
-            className="w-full bg-surface3 border border-strong rounded-lg p-2 text-sm text-primary font-mono focus:outline-none focus:border-accent-blue"
+            placeholder="0.00"
+            className="w-full bg-surface3 border border-strong rounded-md px-2 py-1.5 text-xs text-primary font-mono focus:outline-none focus:border-accent-blue"
           />
         </div>
       </div>
@@ -354,136 +364,88 @@ export default function PlaceOrderForm({
         onValueChange={setTslValue}
       />
 
+      {/* Collapsible Journal Note Accordion */}
       <div>
-        <label className="block text-[10px] font-bold text-muted uppercase tracking-wider mb-1.5">
-          Journal Note{" "}
-          <span className="text-faint font-normal">(optional)</span>
-        </label>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={2}
-          placeholder="Why this trade? Setup, conviction, plan…"
-          className="w-full bg-surface3 border border-strong rounded-lg p-2 text-sm text-primary focus:outline-none focus:border-accent-blue resize-none"
-        />
+        {!showNotes ? (
+          <button
+            type="button"
+            onClick={() => setShowNotes(true)}
+            className="text-[10px] text-accent-blue hover:underline font-medium flex items-center gap-1"
+          >
+            <span>+ Add Journal Note (optional)</span>
+          </button>
+        ) : (
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <label className="block text-[9px] font-bold text-muted uppercase tracking-wider">
+                Journal Note
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowNotes(false)}
+                className="text-[9px] text-faint hover:text-primary"
+              >
+                Hide
+              </button>
+            </div>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={1}
+              placeholder="Why this trade? Setup, plan..."
+              className="w-full bg-surface3 border border-strong rounded-md px-2 py-1 text-xs text-primary focus:outline-none focus:border-accent-blue resize-none"
+            />
+          </div>
+        )}
       </div>
 
-      <div className="rounded-lg border border-subtle bg-surface3/50 px-3 py-2.5 text-xs space-y-1">
+      {/* Sizing & Margin Summary Strip */}
+      <div className="rounded-md border border-subtle bg-surface3/50 px-2.5 py-1.5 text-[11px] space-y-0.5">
         {marginLoading ? (
-          <span className="flex items-center gap-1.5 text-faint">
-            <Loader2 size={12} className="animate-spin" /> Checking margin…
+          <span className="flex items-center gap-1 text-faint text-[10px]">
+            <Loader2 size={10} className="animate-spin" /> Margin...
           </span>
         ) : margin ? (
           <>
-            <div className="flex justify-between font-mono tabular-nums">
-              <span className="text-faint">LTP</span>
-              <span className="text-primary font-semibold">₹{margin.ltp}</span>
+            <div className="flex justify-between font-mono tabular-nums text-faint">
+              <span>LTP: <strong className="text-primary">₹{margin.ltp}</strong></span>
+              <span>Max: <strong className="text-accent-blue">{margin.max_qty} sh</strong></span>
             </div>
-            <div className="flex justify-between font-mono tabular-nums">
-              <span className="text-faint">
-                Max affordable qty ({margin.leverage}x)
-              </span>
-              <span className="text-accent-blue font-semibold">
-                {margin.max_qty} shares
-              </span>
+            <div className="flex justify-between font-mono tabular-nums text-faint">
+              <span>Val: <strong className="text-primary">₹{Math.round(positionValue || 0).toLocaleString("en-IN")}</strong></span>
+              <span>Margin: <strong className={overBudget ? "text-bear" : "text-primary"}>₹{requiredMargin?.toLocaleString("en-IN") || 0}{walletPct != null ? ` (${walletPct.toFixed(0)}%)` : ""}</strong></span>
             </div>
-            {positionValue != null && (
-              <div className="flex justify-between font-mono tabular-nums">
-                <span className="text-faint">
-                  Position value ({margin.leverage}x leverage)
-                </span>
-                <span className="text-primary font-semibold">
-                  ₹{Math.round(positionValue).toLocaleString("en-IN")}
-                </span>
-              </div>
-            )}
-            {requiredMargin != null && (
-              <div className="flex justify-between font-mono tabular-nums">
-                <span className="text-faint">From your wallet</span>
-                <span
-                  className={
-                    overBudget
-                      ? "text-bear font-semibold"
-                      : "text-primary font-semibold"
-                  }
-                >
-                  ₹{requiredMargin.toLocaleString("en-IN")}
-                  {walletPct != null ? ` (${walletPct.toFixed(1)}%)` : ""}
-                </span>
-              </div>
-            )}
           </>
         ) : (
-          <span className="text-faint">No live price yet for this symbol.</span>
+          <span className="text-faint text-[10px]">No live price yet for this symbol.</span>
         )}
       </div>
 
       {error && <p className="text-bear text-xs">{error}</p>}
 
-      {/* Sticky Execution Footer so submit button is always accessible on mobile */}
-      <div className="sticky bottom-0 bg-surface2/95 backdrop-blur-md pt-3 pb-1 -mx-1 px-1 border-t border-subtle/60 mt-3">
+      {/* Sticky Execution Footer */}
+      <div className="pt-1">
         {showConfirm ? (
-          <div className="rounded-lg border border-accent-blue/40 bg-accent-blue/5 px-3 py-3 space-y-2">
+          <div className="rounded-lg border border-accent-blue/40 bg-accent-blue/5 p-2 space-y-1.5">
             <div className="text-[10px] font-bold text-accent-blue uppercase tracking-wider">
-              Confirm order
+              Confirm {side} {quantity} {symbol}
             </div>
-            <div className="text-xs space-y-1.5">
-              <div className="flex justify-between font-mono tabular-nums">
-                <span className="text-faint">Side / Qty</span>
-                <span className="font-semibold text-primary">
-                  {side} {quantity} {symbol}
-                </span>
-              </div>
-              <div className="flex justify-between font-mono tabular-nums">
-                <span className="text-faint">Order type</span>
-                <span className="font-semibold text-primary">
-                  {orderType}
-                  {orderType === "LIMIT" ? ` @ ₹${limitPrice}` : ""}
-                </span>
-              </div>
-              {positionValue != null && (
-                <div className="flex justify-between font-mono tabular-nums">
-                  <span className="text-faint">
-                    Position value ({margin.leverage}x leverage)
-                  </span>
-                  <span className="font-semibold text-primary">
-                    ₹{Math.round(positionValue).toLocaleString("en-IN")}
-                  </span>
-                </div>
-              )}
-              {requiredMargin != null && (
-                <div className="flex justify-between font-mono tabular-nums">
-                  <span className="text-faint">From your wallet</span>
-                  <span className="font-semibold text-primary">
-                    ₹{requiredMargin.toLocaleString("en-IN")}
-                    {walletPct != null ? ` (${walletPct.toFixed(1)}%)` : ""}
-                  </span>
-                </div>
-              )}
-              {(slPrice || targetPrice || tslType) && (
-                <div className="flex justify-between font-mono tabular-nums">
-                  <span className="text-faint">SL / Target / Trail</span>
-                  <span className="font-semibold text-primary">
-                    {slPrice ? `₹${slPrice}` : "—"} /{" "}
-                    {targetPrice ? `₹${targetPrice}` : "—"} /{" "}
-                    {tslType ? `${tslType} ${tslValue}` : "—"}
-                  </span>
-                </div>
-              )}
+            <div className="flex justify-between font-mono text-[11px] tabular-nums">
+              <span className="text-faint">Margin Required:</span>
+              <span className="font-semibold text-primary">₹{requiredMargin?.toLocaleString("en-IN")}</span>
             </div>
             {highRisk && (
-              <div className="flex items-start gap-1.5 rounded-md bg-accent-amber/10 border border-accent-amber/30 px-2 py-1.5 text-[11px] text-accent-amber">
-                <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />
-                This order uses {walletPct.toFixed(0)}% of your available
-                balance — a big move against you will hit hard.
+              <div className="flex items-start gap-1 rounded bg-accent-amber/10 border border-accent-amber/30 p-1 text-[10px] text-accent-amber">
+                <AlertTriangle size={11} className="flex-shrink-0 mt-0.5" />
+                <span>Uses {walletPct.toFixed(0)}% of balance.</span>
               </div>
             )}
-            <div className="grid grid-cols-2 gap-2 pt-1">
+            <div className="grid grid-cols-2 gap-1.5 pt-1">
               <button
                 type="button"
                 onClick={() => setShowConfirm(false)}
                 disabled={busy}
-                className="rounded-lg py-2 text-sm font-bold border border-subtle text-muted hover:text-primary disabled:opacity-50 transition-colors"
+                className="rounded-md py-1 text-xs font-bold border border-subtle text-muted hover:text-primary transition-colors"
               >
                 Cancel
               </button>
@@ -491,7 +453,7 @@ export default function PlaceOrderForm({
                 type="button"
                 onClick={confirmSubmit}
                 disabled={busy}
-                className="rounded-lg bg-gradient-to-r from-accent-blue to-accent-violet hover:opacity-90 disabled:opacity-50 py-2 text-sm font-bold text-white transition-opacity"
+                className="rounded-md bg-gradient-to-r from-accent-blue to-accent-violet hover:opacity-90 py-1 text-xs font-bold text-white transition-opacity"
               >
                 {busy ? "Placing…" : "Confirm"}
               </button>
@@ -501,7 +463,7 @@ export default function PlaceOrderForm({
           <button
             type="submit"
             disabled={busy || overBudget || !margin?.ltp}
-            className="w-full bg-gradient-to-r from-accent-blue to-accent-violet hover:opacity-90 disabled:opacity-50 rounded-lg py-2.5 text-sm font-bold text-white transition-opacity shadow-sm"
+            className="w-full bg-gradient-to-r from-accent-blue to-accent-violet hover:opacity-90 disabled:opacity-50 rounded-lg py-2 text-xs font-bold text-white transition-opacity shadow-sm"
           >
             {`Review ${orderType} ${side}`}
           </button>

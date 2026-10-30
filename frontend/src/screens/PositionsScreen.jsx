@@ -1,9 +1,10 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Rocket, LineChart, TrendingUp, TrendingDown, Layers, Wallet, Lock } from "lucide-react";
 import Card from "../components/ui/Card.jsx";
 import PlaceOrderForm from "../components/paper-trading/PlaceOrderForm.jsx";
 import PositionsTable from "../components/paper-trading/PositionsTable.jsx";
 import TodayClosedPositions from "../components/paper-trading/TodayClosedPositions.jsx";
+import ChartModal from "../components/ChartModal.jsx";
 import {
   usePositions,
   useOrderHistory,
@@ -16,6 +17,7 @@ export default function PositionsScreen({ stocks }) {
   const positions = usePositions();
   const history = useOrderHistory();
   const summary = usePnlSummary();
+  const [closedChartSymbol, setClosedChartSymbol] = useState(null);
 
   const marginInUse = useMemo(
     () => positions.reduce((sum, o) => sum + (Number(o.margin_locked) || 0), 0),
@@ -133,10 +135,21 @@ export default function PositionsScreen({ stocks }) {
             />
 
             {/* Today's Closed Positions Section */}
-            <TodayClosedPositions orders={todayClosedOrders} />
+            <TodayClosedPositions
+              orders={todayClosedOrders}
+              onOpenChart={(sym) => setClosedChartSymbol(sym)}
+            />
           </div>
         </div>
+
+        {closedChartSymbol && (
+          <ChartModal
+            symbol={closedChartSymbol}
+            onClose={() => setClosedChartSymbol(null)}
+          />
+        )}
       </div>
     </div>
   );
 }
+

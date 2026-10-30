@@ -83,10 +83,25 @@ export async function cancelOrder(id) {
   return order;
 }
 
-export async function closeOrder(id) {
-  const order = await api(`/api/paper/orders/${id}/close`, { method: "POST" });
+export async function closeOrder(id, payload) {
+  const options = { method: "POST" };
+  if (payload) {
+    options.headers = { "Content-Type": "application/json" };
+    options.body = JSON.stringify(payload);
+  }
+  const order = await api(`/api/paper/orders/${id}/close`, options);
   await Promise.all([fetchPositions(), fetchHistory(), fetchSummary()]);
   return order;
+}
+
+export async function logExitReason(id, reason, notes) {
+  const result = await api(`/api/paper/orders/${id}/exit-reason`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reason, notes }),
+  });
+  await fetchHistory();
+  return result;
 }
 
 export async function depositToWallet(amount) {

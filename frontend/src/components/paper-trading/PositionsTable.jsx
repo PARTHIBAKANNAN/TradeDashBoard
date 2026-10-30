@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   LineChart,
   Wallet,
@@ -9,12 +9,17 @@ import {
 } from "lucide-react";
 import Card from "../ui/Card.jsx";
 import PositionRow from "./PositionRow.jsx";
+import ChartModal from "../ChartModal.jsx";
+import ExitReasonModal from "./ExitReasonModal.jsx";
 
 export default function PositionsTable({
   positions = [],
   summary,
   marginInUse = 0,
 }) {
+  const [chartSymbol, setChartSymbol] = useState(null);
+  const [closedOrderForJournal, setClosedOrderForJournal] = useState(null);
+
   const totalExposure = useMemo(
     () =>
       positions.reduce((sum, o) => {
@@ -131,7 +136,12 @@ export default function PositionsTable({
             </thead>
             <tbody>
               {positions.map((order) => (
-                <PositionRow key={order.id} order={order} />
+                <PositionRow
+                  key={order.id}
+                  order={order}
+                  onOpenChart={(sym) => setChartSymbol(sym)}
+                  onOrderClosed={(ord) => setClosedOrderForJournal(ord)}
+                />
               ))}
             </tbody>
           </table>
@@ -141,6 +151,20 @@ export default function PositionsTable({
           <LineChart size={28} className="mx-auto mb-2 text-faint" />
           <p className="text-faint text-sm">No open or pending orders</p>
         </div>
+      )}
+
+      {chartSymbol && (
+        <ChartModal
+          symbol={chartSymbol}
+          onClose={() => setChartSymbol(null)}
+        />
+      )}
+
+      {closedOrderForJournal && (
+        <ExitReasonModal
+          order={closedOrderForJournal}
+          onClose={() => setClosedOrderForJournal(null)}
+        />
       )}
     </Card>
   );

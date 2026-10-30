@@ -200,15 +200,12 @@ def _persist_bucket(
         (bucket_date, bucket_minute, list(ohlc), delta, volume)
     )
 
-    from . import order_monitor
-    from .candle_history import persist_candle
+    from .candle_history import persist_candle_sync
 
-    loop = order_monitor.get_loop()
-    if loop is None:
-        return  # paper trading (and its DB pool) not configured
-    asyncio.run_coroutine_threadsafe(
-        persist_candle(sym, bucket_date, bucket_minute, list(ohlc), delta, volume), loop
-    )
+    try:
+        persist_candle_sync(sym, bucket_date, bucket_minute, list(ohlc), delta, volume)
+    except Exception:
+        pass
 
 
 def flush_all() -> None:

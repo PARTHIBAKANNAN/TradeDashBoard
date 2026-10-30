@@ -1,62 +1,261 @@
-import React, { useState, useMemo } from "react";
-import { Search, Star, PlusCircle } from "lucide-react";
+import React, { useState, useMemo, useEffect } from "react";
+import { Search, Star, PlusCircle, FolderPlus, Trash2, Check, X } from "lucide-react";
 import WatchlistRow from "../components/WatchlistRow.jsx";
 import { useRecommendedStocks } from "../hooks/useRecommendedStocks.js";
 
+const DEFAULT_WATCHLISTS = {
+  "Core Focus": ["RELIANCE", "TCS", "HCLTECH", "INFY", "WIPRO"],
+  "High Beta": ["HAVELLS", "ANGELONE", "DIXON", "POLYCAB"],
+  "Breakouts": ["360ONE", "ABB", "COFORGE"],
+};
+
 export default function WatchlistScreen({ stocks, nifty }) {
-  const [watchlist, setWatchlist] = useState(
-    JSON.parse(localStorage.getItem("watchlist") || "[]"),
-  );
+  // Load named watchlists from localStorage
+  const [watchlists, setWatchlists] = useState(() => {
+    try {
+      const saved = localStorage.getItem("pulsehunter_watchlists_v2");
+      if (saved) return JSON.parse(saved);
+      // Migrate legacy single watchlist if present
+      const legacy = localStorage.getItem("watchlist");
+      if (legacy) {
+        const parsed = JSON.parse(legacy);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return { "My Watchlist": parsed, ...DEFAULT_WATCHLISTS };
+        }
+      }
+      return DEFAULT_WATCHLISTS;
+    } catch {
+      return DEFAULT_WATCHLISTS;
+    }
+  });
+
+  const [activeListName, setActiveListName] = useState(() => {
+    return Object.keys(watchlists)[0] || "Core Focus";
+  });
+
   const [searchTerm, setSearchTerm] = useState("");
-  // Computed over the full watchlist universe (not just the starred subset)
-  // so sector means / volume percentile stay meaningful — same as Ranking.
+  const [globalSearch, setGlobalSearch] = useState("");
+  const [isAddingList, setIsAddingList] = useState(false);
+  const [newListName, setNewListName] = useState("");
+
+  // Persist whenever watchlists change
+  useEffect(() => {
+    localStorage.setItem("pulsehunter_watchlists_v2", JSON.stringify(watchlists));
+    // sync back to legacy key for backwards compatibility with row star toggles
+    const activeSymbols = watchlists[activeListName] || [];
+    localStorage.setItem("watchlist", JSON.stringify(activeSymbols));
+  }, [watchlists, activeListName]);
+
   const recommended = useRecommendedStocks(stocks, nifty?.pct_change || 0);
 
+  const activeSymbols = useMemo(() => {
+    return watchlists[activeListName] || [];
+  }, [watchlists, activeListName]);
+
+  // Filtered stocks in current active watchlist
   const watchlistStocks = useMemo(() => {
     return (stocks || []).filter(
       (stock) =>
-        watchlist.includes(stock.symbol) &&
-        stock.symbol.toLowerCase().includes(searchTerm.toLowerCase()),
+        activeSymbols.includes(stock.symbol) &&
+        (stock.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (stock.sector && stock.sector.toLowerCase().includes(searchTerm.toLowerCase())))
     );
-  }, [stocks, watchlist, searchTerm]);
+  }, [stocks, activeSymbols, searchTerm]);
 
-  const toggleWatchlist = (symbol) => {
-    const updated = watchlist.includes(symbol)
-      ? watchlist.filter((s) => s !== symbol)
-      : [...watchlist, symbol];
-    setWatchlist(updated);
-    localStorage.setItem("watchlist", JSON.stringify(updated));
+  // Global search across all 210 stocks
+  const globalSearchResults = useMemo(() => {
+    if (!globalSearch.trim()) return [];
+    const term = globalSearch.toLowerCase().trim();
+    return (stocks || [])
+      .filter(
+        (s) =>
+          s.symbol.toLowerCase().includes(term) ||
+          (s.sector && s.sector.toLowerCase().includes(term))
+      )
+      .slice(0, 15);
+  }, [stocks, globalSearch]);
+
+  const toggleStockInActiveList = (symbol) => {
+    setWatchlists((prev) => {
+      const currentList = prev[activeListName] || [];
+      const updatedList = currentList.includes(symbol)
+        ? currentList.filter((s) => s !== symbol)
+        : [...currentList, symbol];
+      return { ...prev, [activeListName]: updatedList };
+    });
+  };
+
+  const handleCreateList = (e) => {
+    e.preventDefault();
+    const trimmed = newListName.trim();
+    if (!trimmed || watchlists[trimmed]) return;
+    setWatchlists((prev) => ({ ...prev, [trimmed]: [] }));
+    setActiveListName(trimmed);
+    setNewListName("");
+    setIsAddingList(false);
+  };
+
+  const handleDeleteList = (nameToDelete) => {
+    const listNames = Object.keys(watchlists);
+    if (listNames.length <= 1) {
+      alert("You must keep at least one watchlist.");
+      return;
+    }
+    if (!window.confirm(`Delete watchlist "${nameToDelete}"?`)) return;
+    setWatchlists((prev) => {
+      const copy = { ...prev };
+      delete copy[nameToDelete];
+      return copy;
+    });
+    if (activeListName === nameToDelete) {
+      const remaining = listNames.filter((n) => n !== nameToDelete);
+      setActiveListName(remaining[0]);
+    }
   };
 
   return (
     <div className="min-h-screen bg-surface">
-      <div className="mx-auto max-w-[1920px] w-full px-4 sm:px-6 py-4">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="grid place-items-center w-9 h-9 rounded-lg bg-accent-blue/10 text-accent-blue border border-accent-blue/20">
-              <Star size={17} />
-            </span>
-            <h2 className="text-lg font-bold text-primary font-display">
-              My Watchlist
-            </h2>
+      <div className="mx-auto max-w-[1920px] w-full px-3 sm:px-6 py-4 space-y-4">
+        {/* Header & Watchlist Tabs */}
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <span className="grid place-items-center w-8 h-8 rounded-lg bg-accent-amber/15 text-accent-amber border border-accent-amber/30">
+                <Star size={16} fill="currentColor" />
+              </span>
+              <div>
+                <h2 className="text-sm sm:text-base font-bold text-primary font-display flex items-center gap-2">
+                  Multi-Watchlists
+                  <span className="text-[10px] font-mono text-muted bg-surface3 px-2 py-0.5 rounded-full">
+                    210 NSE Stocks
+                  </span>
+                </h2>
+              </div>
+            </div>
+
+            {/* List Pills Bar */}
+            <div className="flex items-center gap-1.5 overflow-x-auto py-1">
+              {Object.keys(watchlists).map((name) => {
+                const isActive = activeListName === name;
+                const count = watchlists[name]?.length || 0;
+                return (
+                  <div
+                    key={name}
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all ${
+                      isActive
+                        ? "bg-accent-blue/15 text-accent-blue border border-accent-blue/40 shadow-sm"
+                        : "bg-surface2 text-muted hover:text-primary border border-subtle"
+                    }`}
+                    onClick={() => setActiveListName(name)}
+                  >
+                    <span>{name}</span>
+                    <span className="text-[10px] opacity-75 font-mono">({count})</span>
+                    {isActive && Object.keys(watchlists).length > 1 && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteList(name);
+                        }}
+                        className="ml-1 text-faint hover:text-rose-400"
+                        title="Delete this watchlist"
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+
+              {isAddingList ? (
+                <form onSubmit={handleCreateList} className="flex items-center gap-1">
+                  <input
+                    type="text"
+                    placeholder="List name..."
+                    autoFocus
+                    value={newListName}
+                    onChange={(e) => setNewListName(e.target.value)}
+                    className="bg-surface3 border border-accent-blue px-2 py-1 text-xs text-primary rounded-lg focus:outline-none w-28"
+                  />
+                  <button type="submit" className="text-emerald-400 hover:text-emerald-300 p-1">
+                    <Check size={13} />
+                  </button>
+                  <button type="button" onClick={() => setIsAddingList(false)} className="text-faint hover:text-primary p-1">
+                    <X size={13} />
+                  </button>
+                </form>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsAddingList(true)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-surface3/60 text-muted hover:text-primary border border-subtle transition-all"
+                  title="Create new named watchlist"
+                >
+                  <FolderPlus size={13} />
+                  <span className="hidden sm:inline">New List</span>
+                </button>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search
-                size={14}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-faint"
-              />
+
+          {/* Search Row: Filter Active List + Universal 210 Stock Search */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+            <div className="md:col-span-6 relative">
+              <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-faint" />
               <input
                 type="text"
-                placeholder="Search watchlist..."
+                placeholder={`Search in ${activeListName} (${watchlistStocks.length} stocks)...`}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-surface2/70 backdrop-blur-xl border border-subtle rounded-lg pl-9 pr-4 py-2.5 text-sm text-primary placeholder-faint focus:outline-none focus:border-accent-blue transition-colors"
+                className="w-full bg-surface2/80 border border-subtle rounded-xl pl-9 pr-4 py-2 text-xs text-primary placeholder-faint focus:outline-none focus:border-accent-blue transition-colors"
               />
             </div>
-            <div className="text-sm font-semibold text-muted whitespace-nowrap">
-              {watchlistStocks.length} stocks
+
+            <div className="md:col-span-6 relative">
+              <PlusCircle size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-accent-blue" />
+              <input
+                type="text"
+                placeholder="Find & Pin any of 210 stocks (e.g. HCLTECH, TCS, SBIN)..."
+                value={globalSearch}
+                onChange={(e) => setGlobalSearch(e.target.value)}
+                className="w-full bg-surface2/80 border border-accent-blue/30 rounded-xl pl-9 pr-4 py-2 text-xs text-primary placeholder-faint focus:outline-none focus:border-accent-blue transition-colors"
+              />
+
+              {/* Fast Popover for Universal Search */}
+              {globalSearchResults.length > 0 && (
+                <div className="absolute left-0 right-0 top-full mt-1.5 bg-surface2/95 backdrop-blur-xl border border-subtle rounded-xl shadow-2xl p-2 z-50 max-h-60 overflow-y-auto space-y-1">
+                  <div className="text-[10px] font-bold text-muted uppercase tracking-wider px-2 py-1 flex justify-between">
+                    <span>Matches in 210 Stock Universe</span>
+                    <button onClick={() => setGlobalSearch("")} className="text-faint hover:text-primary">Close</button>
+                  </div>
+                  {globalSearchResults.map((stock) => {
+                    const isPinned = activeSymbols.includes(stock.symbol);
+                    return (
+                      <div
+                        key={stock.symbol}
+                        className="flex items-center justify-between p-2 rounded-lg hover:bg-surface3 transition-colors text-xs"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-primary">{stock.symbol}</span>
+                          <span className="text-[10px] text-faint">{stock.sector}</span>
+                          <span className="font-mono text-primary">₹{stock.ltp}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => toggleStockInActiveList(stock.symbol)}
+                          className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                            isPinned
+                              ? "bg-rose-950/60 text-rose-400 border border-rose-800/60 hover:bg-rose-900"
+                              : "bg-accent-blue/15 text-accent-blue border border-accent-blue/40 hover:bg-accent-blue/30"
+                          }`}
+                        >
+                          {isPinned ? "Unpin" : "+ Pin"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -68,23 +267,23 @@ export default function WatchlistScreen({ stocks, nifty }) {
               <table className="w-full text-left border-collapse">
                 <thead className="hidden md:table-header-group">
                   <tr className="bg-surface3/60 border-b border-subtle">
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider w-8" />
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider">
+                    <th className="py-2.5 px-3 text-[10px] uppercase font-bold text-muted tracking-wider w-8" />
+                    <th className="py-2.5 px-3 text-[10px] uppercase font-bold text-muted tracking-wider">
                       Stock
                     </th>
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-right">
+                    <th className="py-2.5 px-3 text-[10px] uppercase font-bold text-muted tracking-wider text-right">
                       LTP
                     </th>
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-center">
+                    <th className="py-2.5 px-3 text-[10px] uppercase font-bold text-muted tracking-wider text-center">
                       Day Range
                     </th>
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-center">
+                    <th className="py-2.5 px-3 text-[10px] uppercase font-bold text-muted tracking-wider text-center">
                       Signal
                     </th>
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-right">
+                    <th className="py-2.5 px-3 text-[10px] uppercase font-bold text-muted tracking-wider text-right">
                       RS vs NIFTY
                     </th>
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-center">
+                    <th className="py-2.5 px-3 text-[10px] uppercase font-bold text-muted tracking-wider text-center">
                       Trade
                     </th>
                   </tr>
@@ -99,11 +298,11 @@ export default function WatchlistScreen({ stocks, nifty }) {
                       isRecommended={recommended.includes(stock.symbol)}
                       leading={
                         <button
-                          onClick={() => toggleWatchlist(stock.symbol)}
+                          onClick={() => toggleStockInActiveList(stock.symbol)}
                           className="text-accent-amber hover:scale-110 transition-transform"
-                          title="Remove from watchlist"
+                          title="Unpin from this watchlist"
                         >
-                          <Star size={16} fill="currentColor" />
+                          <Star size={15} fill="currentColor" />
                         </button>
                       }
                     />
@@ -112,141 +311,16 @@ export default function WatchlistScreen({ stocks, nifty }) {
               </table>
             </div>
           ) : (
-            <div className="py-14 text-center">
-              <Star size={32} className="mx-auto mb-3 text-faint" />
-              <p className="text-faint text-sm mb-1">Your watchlist is empty</p>
-              <p className="text-faint text-xs">
-                Add stocks below, or from the Ranking / Heatmap tabs
+            <div className="py-12 text-center">
+              <Star size={28} className="mx-auto mb-2 text-faint" />
+              <p className="text-primary text-xs font-semibold mb-1">
+                "{activeListName}" has no stocks yet.
+              </p>
+              <p className="text-faint text-[11px]">
+                Use the search box above to pin any of the 210 stocks to this list.
               </p>
             </div>
           )}
-        </div>
-
-        {/* All Stocks - Add to Watchlist */}
-        <div className="mt-8">
-          <h3 className="flex items-center gap-2 text-sm font-bold text-primary mb-4">
-            <PlusCircle size={14} className="text-accent-blue" />
-            Add stocks to your watchlist
-          </h3>
-          <div className="bg-surface2/70 backdrop-blur-xl border border-subtle rounded-xl overflow-hidden shadow-card">
-            <div className="overflow-x-auto max-h-96">
-              <table className="w-full text-left border-collapse">
-                <thead className="hidden md:table-header-group">
-                  <tr className="bg-surface3/60 border-b border-subtle sticky top-0">
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider w-8" />
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider">
-                      Stock
-                    </th>
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-right">
-                      LTP
-                    </th>
-                    <th className="py-3 px-4 text-[10px] uppercase font-bold text-muted tracking-wider text-center">
-                      Change %
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(stocks || [])
-                    .slice()
-                    .sort(
-                      (a, b) => Math.abs(b.pct_change) - Math.abs(a.pct_change),
-                    )
-                    .slice(0, 20)
-                    .map((stock) => {
-                      const isWatched = watchlist.includes(stock.symbol);
-                      const isPositive = stock.pct_change >= 0;
-                      const starButton = (
-                        <button
-                          onClick={() => toggleWatchlist(stock.symbol)}
-                          className={`transition-all hover:scale-110 ${
-                            isWatched
-                              ? "text-accent-amber"
-                              : "text-faint hover:text-accent-amber"
-                          }`}
-                          title={
-                            isWatched
-                              ? "Remove from watchlist"
-                              : "Add to watchlist"
-                          }
-                        >
-                          <Star
-                            size={16}
-                            fill={isWatched ? "currentColor" : "none"}
-                          />
-                        </button>
-                      );
-                      return (
-                        <React.Fragment key={stock.symbol}>
-                          <tr className="hidden md:table-row border-b border-subtle/70 hover:bg-surface3/40 transition-colors">
-                            <td className="py-3 px-4">{starButton}</td>
-                            <td className="py-3 px-4">
-                              <div className="text-sm font-semibold text-primary">
-                                {stock.symbol}
-                              </div>
-                              <div className="text-xs text-faint">
-                                {stock.sector}
-                              </div>
-                            </td>
-                            <td className="py-3 px-4 text-right">
-                              <div className="text-sm font-mono text-primary tabular-nums">
-                                ₹
-                                {stock.ltp?.toLocaleString("en-IN", {
-                                  maximumFractionDigits: 2,
-                                })}
-                              </div>
-                            </td>
-                            <td className="py-3 px-4 text-center">
-                              <span
-                                className={`text-sm font-semibold tabular-nums ${
-                                  isPositive ? "text-bull" : "text-bear"
-                                }`}
-                              >
-                                {isPositive ? "+" : ""}
-                                {stock.pct_change}%
-                              </span>
-                            </td>
-                          </tr>
-
-                          <tr className="md:hidden border-b border-subtle/70">
-                            <td colSpan={4} className="p-3">
-                              <div className="flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-2">
-                                  {starButton}
-                                  <div>
-                                    <div className="text-sm font-semibold text-primary">
-                                      {stock.symbol}
-                                    </div>
-                                    <div className="text-xs text-faint">
-                                      {stock.sector}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <div className="text-sm font-mono text-primary tabular-nums">
-                                    ₹
-                                    {stock.ltp?.toLocaleString("en-IN", {
-                                      maximumFractionDigits: 2,
-                                    })}
-                                  </div>
-                                  <span
-                                    className={`text-xs font-semibold tabular-nums ${
-                                      isPositive ? "text-bull" : "text-bear"
-                                    }`}
-                                  >
-                                    {isPositive ? "+" : ""}
-                                    {stock.pct_change}%
-                                  </span>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        </React.Fragment>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
       </div>
     </div>

@@ -76,9 +76,9 @@ async def get_today_candles(symbol: str) -> dict:
     candle_date = today_str
     if not candles:
         latest = await candle_history.get_latest_candle_date(symbol)
-        if latest and latest != today:
-            prev_rows = await candle_history.get_candles(symbol, latest)
-            lat_str = latest.isoformat()
+        if latest and str(latest) != today_str:
+            lat_str = str(latest)
+            prev_rows = await candle_history.get_candles(symbol, lat_str)
             candles = [_format_row(r, lat_str) for r in prev_rows]
             is_previous_day = True
             candle_date = lat_str

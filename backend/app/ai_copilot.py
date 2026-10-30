@@ -764,6 +764,10 @@ def execute_auto_trade(
         from .strategy_base import StrategyFamily
 
         family = get_signal_family(signal)
+        strat_key = family.name if hasattr(family, "name") else str(family)
+        strat_states = getattr(config, "STRATEGY_STATES", {})
+        if strat_states.get(strat_key, "RUNNING") != "RUNNING":
+            return False, f"Strategy family {strat_key} is currently {strat_states.get(strat_key)} in Control Center"
 
         now_ist = datetime.now(IST)
         if not signal_time:

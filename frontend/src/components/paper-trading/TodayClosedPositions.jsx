@@ -32,7 +32,7 @@ function calculateDuration(startIso, endIso) {
   }
 }
 
-export default function TodayClosedPositions({ orders = [] }) {
+export default function TodayClosedPositions({ orders = [], onOpenChart }) {
   if (!orders || orders.length === 0) {
     return (
       <div className="bg-surface2/40 border border-subtle/60 rounded-2xl p-6 text-center text-faint text-xs">
@@ -132,7 +132,13 @@ export default function TodayClosedPositions({ orders = [] }) {
               return (
                 <tr key={o.id} className="hover:bg-surface3/30 transition-colors">
                   <td className="py-2.5 px-3 font-sans font-bold text-primary">
-                    {o.symbol}
+                    <button
+                      onClick={() => onOpenChart?.(o.symbol)}
+                      className="hover:text-accent-blue transition-colors text-left"
+                      title="Click to view chart"
+                    >
+                      {o.symbol}
+                    </button>
                   </td>
                   <td className="py-2.5 px-3">
                     <span
@@ -205,3 +211,4 @@ export default function TodayClosedPositions({ orders = [] }) {
     </div>
   );
 }
+

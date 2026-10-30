@@ -19,6 +19,9 @@ import {
   X,
   LayoutDashboard,
   Settings,
+  User,
+  ChevronDown,
+  CheckCircle2,
 } from "lucide-react";
 import {
   useMarketStream,
@@ -195,32 +198,6 @@ function Login({ onSuccess }) {
   );
 }
 
-// ---------------- Connect Alice Blue Banner ----------------
-function ConnectBrokerBanner({ onOpenModal }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -8 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="mb-5 flex items-center justify-between gap-4 rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-3"
-    >
-      <div className="flex items-center gap-3 text-sm text-blue-400">
-        <AlertTriangle size={16} className="flex-shrink-0 text-amber-400" />
-        <span>
-          <b>Alice Blue not connected.</b> Live market data is paused until you
-          authorize today&apos;s broker session.
-        </span>
-      </div>
-      <button
-        onClick={onOpenModal}
-        className="whitespace-nowrap flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 transition-all"
-      >
-        Connect Alice Blue
-        <ArrowUpRight size={13} />
-      </button>
-    </motion.div>
-  );
-}
-
 // -------- Dashboard --------
 function Dashboard({ user, onLogout }) {
   useMarketStream(); // Start/stop singleton WebSocket
@@ -229,33 +206,6 @@ function Dashboard({ user, onLogout }) {
   const [activeTab, setActiveTab] = useState("ranking");
   const [chartsFocusSymbol, setChartsFocusSymbol] = useState(null);
   const [showBrokerModal, setShowBrokerModal] = useState(false);
-  const [aiStatus, setAiStatus] = useState({
-    status: "LIVE",
-    model: "gemini-3.6-flash",
-    label: "Gemini 3.6 Flash Live",
-    connected: true,
-  });
-
-  useEffect(() => {
-    let mounted = true;
-    async function checkAiStatus() {
-      try {
-        const r = await fetch("/api/ai/status", { credentials: "include" });
-        if (r.ok && mounted) {
-          const j = await r.json();
-          setAiStatus(j);
-        }
-      } catch {
-        /* ignore */
-      }
-    }
-    checkAiStatus();
-    const interval = setInterval(checkAiStatus, 30000);
-    return () => {
-      mounted = false;
-      clearInterval(interval);
-    };
-  }, []);
 
   const openInCharts = (symbol) => {
     setChartsFocusSymbol(symbol);
@@ -304,7 +254,6 @@ function Dashboard({ user, onLogout }) {
         marketOpen={marketOpen}
         connected={connected}
         fyersConnected={fyersConnected}
-        aiStatus={aiStatus}
         onOpenBrokerModal={() => setShowBrokerModal(true)}
       />
 
@@ -317,12 +266,6 @@ function Dashboard({ user, onLogout }) {
       />
 
       <PullToRefresh onRefresh={handleRefresh} className="flex-1 min-h-0">
-        {fyersConnected === false && (
-          <div className="mx-auto max-w-[1920px] w-full px-4 sm:px-6 pt-3">
-            <ConnectBrokerBanner onOpenModal={() => setShowBrokerModal(true)} />
-          </div>
-        )}
-
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -355,7 +298,7 @@ function Dashboard({ user, onLogout }) {
               <DashboardScreen stocks={stocks} />
             )}
             {activeTab === "settings" && (
-              <SettingsScreen />
+              <SettingsScreen onOpenBrokerModal={() => setShowBrokerModal(true)} />
             )}
           </motion.div>
         </AnimatePresence>
@@ -381,17 +324,16 @@ function TopNavbar({
   marketOpen,
   connected,
   fyersConnected,
-  aiStatus,
   onOpenBrokerModal,
 }) {
   const openPositionsCount = usePositionsCount();
-  const tabs = [
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const primaryTabs = [
     { key: "ranking", label: "Ranking", icon: "📊" },
-    { key: "heatmap", label: "Heatmap", icon: "🔥" },
-    { key: "insights", label: "Insights", icon: "💡" },
     { key: "watchlist", label: "Watchlist", icon: "⭐" },
     { key: "charts", label: "Charts", icon: "📈" },
-    { key: "smart-money", label: "Smart Money", icon: "🧠" },
     {
       key: "positions",
       label:
@@ -404,10 +346,18 @@ function TopNavbar({
     { key: "settings", label: "Settings", icon: "⚙️" },
   ];
 
+  const secondaryTabs = [
+    { key: "heatmap", label: "Heatmap", icon: "🔥" },
+    { key: "insights", label: "Insights", icon: "💡" },
+    { key: "smart-money", label: "Smart Money", icon: "🧠" },
+  ];
+
+  const isAnalyticsActive = ["heatmap", "insights", "smart-money"].includes(activeTab);
+
   return (
     <nav className="sticky top-0 z-50 border-b border-subtle bg-surface2/95 backdrop-blur-xl shadow-sm pt-safe flex-shrink-0">
-      <div className="mx-auto max-w-[1920px] w-full px-3 sm:px-6 py-2.5 flex items-center justify-between gap-2 sm:gap-4">
-        {/* Left: Brand & Status */}
+      <div className="mx-auto max-w-[1920px] w-full px-3 sm:px-6 py-2 flex items-center justify-between gap-2 sm:gap-4">
+        {/* Left: Brand & Market Pulse */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <div className="flex items-center gap-2 flex-shrink-0">
             <img
@@ -418,23 +368,16 @@ function TopNavbar({
             <h1 className="text-xs font-extrabold tracking-tight bg-gradient-to-r from-accent-blue via-cyan-400 to-accent-violet bg-clip-text text-transparent font-display">
               PulseHunter
             </h1>
-            <div className="flex items-center gap-1.5 ml-1 pl-1.5 sm:pl-2 border-l border-subtle">
+            <div className="flex items-center gap-1.5 ml-1 pl-1.5 border-l border-subtle">
               <span
                 className={`w-2 h-2 rounded-full ${
                   connected && marketOpen
                     ? "bg-green-500 animate-pulse"
                     : "bg-faint"
                 }`}
-                title={
-                  marketOpen
-                    ? "Market Open"
-                    : connected
-                      ? "Market Closed"
-                      : "Feed Offline"
-                }
               />
               <span
-                className={`hidden sm:inline-block text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
                   marketOpen
                     ? "bg-green-950 text-green-400"
                     : "bg-surface3 text-muted"
@@ -442,31 +385,85 @@ function TopNavbar({
               >
                 {marketOpen ? "Live" : connected ? "Closed" : "Offline"}
               </span>
+
+              {/* Integrated Compact Broker Indicator */}
+              <button
+                type="button"
+                onClick={onOpenBrokerModal}
+                title={fyersConnected ? "Alice Blue: Session Active" : "Click to connect Alice Blue"}
+                className={`flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase transition-colors ${
+                  fyersConnected
+                    ? "bg-blue-950/60 text-blue-400 border border-blue-500/30"
+                    : "bg-amber-950/60 text-amber-400 border border-amber-500/40 hover:bg-amber-900/40 cursor-pointer"
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${fyersConnected ? "bg-blue-400" : "bg-amber-400 animate-ping"}`} />
+                <span>{fyersConnected ? "Broker Live" : "Connect Broker"}</span>
+              </button>
             </div>
           </div>
 
-          {/* Desktop Navigation Tabs (Hidden on mobile) */}
-          <div className="hidden md:flex items-center gap-1 overflow-x-auto py-0.5 border-l border-subtle pl-2.5">
-            {tabs.map((tab) => (
+          {/* Desktop Navigation Tabs: Zero Horizontal Scroll */}
+          <div className="hidden md:flex items-center gap-1 py-0.5 border-l border-subtle pl-2.5">
+            {primaryTabs.map((tab) => (
               <button
                 key={tab.key}
-                onClick={() => onTabChange(tab.key)}
-                className={`px-3 py-1.5 text-xs font-semibold whitespace-nowrap rounded-lg transition-all ${
+                onClick={() => {
+                  onTabChange(tab.key);
+                  setAnalyticsOpen(false);
+                }}
+                className={`px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap rounded-lg transition-all ${
                   activeTab === tab.key
                     ? "bg-accent-blue/15 text-accent-blue border border-accent-blue/30 shadow-sm"
                     : "text-muted hover:text-primary hover:bg-surface3/60"
                 }`}
               >
-                <span className="mr-1.5">{tab.icon}</span>
+                <span className="mr-1">{tab.icon}</span>
                 {tab.label}
               </button>
             ))}
+
+            {/* Analytics Dropdown Menu */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setAnalyticsOpen(!analyticsOpen)}
+                className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap rounded-lg transition-all ${
+                  isAnalyticsActive
+                    ? "bg-accent-violet/15 text-accent-violet border border-accent-violet/30 shadow-sm"
+                    : "text-muted hover:text-primary hover:bg-surface3/60"
+                }`}
+              >
+                <span>📊 Analytics</span>
+                <ChevronDown size={12} className={`transition-transform ${analyticsOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {analyticsOpen && (
+                <div
+                  className="absolute left-0 mt-1.5 w-44 rounded-xl border border-subtle bg-surface2/95 backdrop-blur-xl shadow-xl py-1 z-50 animate-in fade-in slide-in-from-top-1"
+                  onClick={() => setAnalyticsOpen(false)}
+                >
+                  {secondaryTabs.map((sub) => (
+                    <button
+                      key={sub.key}
+                      onClick={() => onTabChange(sub.key)}
+                      className={`w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2 hover:bg-surface3 transition-colors ${
+                        activeTab === sub.key ? "text-accent-blue font-bold bg-accent-blue/10" : "text-primary"
+                      }`}
+                    >
+                      <span>{sub.icon}</span>
+                      <span>{sub.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Right side: Benchmark & AI Status & User */}
-        <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
-          {/* NIFTY 50 (Visible on both mobile and desktop) */}
+        {/* Right side: Benchmark & Compact Profile */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          {/* NIFTY 50 */}
           <div className="text-right border-l border-subtle pl-2 sm:pl-3 flex flex-col justify-center">
             <div className="hidden sm:block text-[8px] sm:text-[9px] text-faint font-bold uppercase tracking-wider leading-tight">
               NIFTY 50
@@ -506,54 +503,65 @@ function TopNavbar({
             </div>
           </div>
 
-          {/* Live AI Status Badge - Hidden on mobile view */}
-          {aiStatus?.status === "LIVE" ? (
-            <div
-              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-mono text-[10px] sm:text-[11px] font-bold shadow-sm whitespace-nowrap"
-              title="Google Gemini 3.6 Flash Connected & Live"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span> Gemini 3.6 Flash Live</span>
-            </div>
-          ) : (
-            <div
-              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 font-mono text-[10px] sm:text-[11px] font-bold shadow-sm whitespace-nowrap"
-              title="Quantitative Structural Math Fallback Engine Active"
-            >
-              <span>⚡ Institutional Model</span>
-            </div>
-          )}
-
           <div className="border-l border-subtle pl-2 sm:pl-3 flex items-center gap-1.5 sm:gap-2">
-            {!fyersConnected && (
-              <button
-                onClick={onOpenBrokerModal}
-                className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors shadow-sm"
-                title="Connect Alice Blue broker account"
-              >
-                <span>Connect</span>
-                <ArrowUpRight size={12} />
-              </button>
-            )}
-            <div className="text-right hidden lg:block">
-              <div className="text-[11px] text-faint truncate max-w-[130px]">
-                {user}
-              </div>
-              <button
-                onClick={onLogout}
-                className="text-[10px] font-bold text-muted hover:text-primary transition-colors"
-              >
-                Log out
-              </button>
-            </div>
-            <button
-              onClick={onLogout}
-              title="Log out"
-              className="lg:hidden w-7 h-7 grid place-items-center rounded-lg border border-subtle bg-surface3 text-muted hover:text-primary transition-colors"
-            >
-              <LogOut size={13} />
-            </button>
             <ThemeToggle />
+
+            {/* Collapsed Profile Avatar Dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setProfileOpen(!profileOpen)}
+                className="w-8 h-8 rounded-full bg-surface3 border border-subtle hover:border-accent-blue/50 grid place-items-center text-primary transition-all shadow-sm"
+                title={user || "User Profile"}
+              >
+                <User size={15} className="text-muted hover:text-accent-blue" />
+              </button>
+
+              {profileOpen && (
+                <div
+                  className="absolute right-0 mt-2 w-56 rounded-2xl border border-subtle bg-surface2/95 backdrop-blur-xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-2"
+                  onClick={() => setProfileOpen(false)}
+                >
+                  <div className="px-3 py-2 border-b border-subtle/70 mb-1">
+                    <p className="text-[10px] uppercase font-bold text-faint tracking-wider">Signed In As</p>
+                    <p className="text-xs font-semibold text-primary truncate" title={user}>
+                      {user}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={onOpenBrokerModal}
+                    className="w-full text-left px-3 py-2 text-xs rounded-lg text-primary hover:bg-surface3 flex items-center justify-between transition-colors"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Radio size={13} className={fyersConnected ? "text-emerald-400" : "text-amber-400"} />
+                      Broker Status
+                    </span>
+                    <span className="text-[10px] font-bold uppercase text-muted">
+                      {fyersConnected ? "Active" : "Connect"}
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => onTabChange("settings")}
+                    className="w-full text-left px-3 py-2 text-xs rounded-lg text-primary hover:bg-surface3 flex items-center gap-2 transition-colors"
+                  >
+                    <Settings size={13} className="text-muted" />
+                    <span>Control Center</span>
+                  </button>
+
+                  <div className="border-t border-subtle/70 my-1" />
+
+                  <button
+                    onClick={onLogout}
+                    className="w-full text-left px-3 py-2 text-xs rounded-lg text-bear hover:bg-bear/10 flex items-center gap-2 transition-colors font-semibold"
+                  >
+                    <LogOut size={13} />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -59,7 +59,7 @@ def _get_connection() -> sqlite3.Connection:
     return conn
 
 
-async def persist_candle(
+def persist_candle_sync(
     symbol: str,
     bucket_date: Any,
     bucket_minute: int,
@@ -67,7 +67,7 @@ async def persist_candle(
     delta: float = 0.0,
     volume: float = 0.0,
 ) -> None:
-    """Persists a completed 5-min candle into the local SQLite database."""
+    """Synchronously persists a completed 5-min candle into the local SQLite database."""
     open_, high, low, close = ohlc
     b_date = str(bucket_date)
     try:
@@ -100,7 +100,19 @@ async def persist_candle(
             )
         conn.close()
     except Exception:
-        logger.warning("persist_candle failed for %s", symbol, exc_info=True)
+        logger.warning("persist_candle_sync failed for %s", symbol, exc_info=True)
+
+
+async def persist_candle(
+    symbol: str,
+    bucket_date: Any,
+    bucket_minute: int,
+    ohlc: list,
+    delta: float = 0.0,
+    volume: float = 0.0,
+) -> None:
+    """Persists a completed 5-min candle into the local SQLite database."""
+    persist_candle_sync(symbol, bucket_date, bucket_minute, ohlc, delta, volume)
 
 
 async def get_candles(symbol: str, bucket_date: Any) -> List[dict]:
@@ -188,7 +200,7 @@ async def get_candles_range(symbol: str, from_date: Any, to_date: Any) -> List[d
 
 
 async def get_latest_candle_date(symbol: str) -> Optional[str]:
-    """Returns the most recent `bucket_date` stored for `symbol`, or None."""
+    """Returns the most recent `bucket_date` stored for `symbol`, or global latest."""
     try:
         conn = _get_connection()
         cursor = conn.cursor()
@@ -197,8 +209,13 @@ async def get_latest_candle_date(symbol: str) -> Optional[str]:
             (symbol,),
         )
         row = cursor.fetchone()
+        latest = row["latest_date"] if row and row["latest_date"] else None
+        if not latest:
+            cursor.execute("SELECT MAX(bucket_date) AS latest_date FROM candle_history")
+            row_all = cursor.fetchone()
+            latest = row_all["latest_date"] if row_all and row_all["latest_date"] else None
         conn.close()
-        return str(row["latest_date"]) if row and row["latest_date"] else None
+        return str(latest) if latest else None
     except Exception as e:
         logger.warning("get_latest_candle_date failed for %s: %s", symbol, e)
         return None

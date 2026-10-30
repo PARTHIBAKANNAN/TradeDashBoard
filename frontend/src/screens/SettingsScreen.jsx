@@ -22,7 +22,7 @@ import {
   usePaperTradingSync,
 } from "../hooks/useOrders.js";
 
-export default function SettingsScreen() {
+export default function SettingsScreen({ onOpenBrokerModal }) {
   usePaperTradingSync();
   const summary = usePnlSummary();
   const positions = usePositions();
@@ -34,6 +34,7 @@ export default function SettingsScreen() {
   // Configuration state
   const [configData, setConfigData] = useState({
     max_risk_per_trade: 1000,
+    max_margin_per_trade: 25000,
     daily_max_risk: 3400,
     max_daily_trades: 4,
     min_ai_confidence: 70,
@@ -44,9 +45,21 @@ export default function SettingsScreen() {
     tsl_profit_harvest: 1.5,
     tsl_runner_buffer: 0.9,
     broker: "aliceblue",
+    strategy_states: {
+      ORB_BREAKOUT: "RUNNING",
+      VWAP_RETEST: "RUNNING",
+      OI_SQUEEZE: "RUNNING",
+      SECTOR_SYMPATHY: "RUNNING",
+      MOMENTUM_RUNNER: "RUNNING",
+    },
   });
 
   const [brokerStatus, setBrokerStatus] = useState(null);
+  const [aiStatus, setAiStatus] = useState({
+    status: "LIVE",
+    model: "gemini-3.6-flash",
+    label: "Gemini 3.6 Flash Live",
+  });
 
   // Fetch backend configs & broker status on mount
   useEffect(() => {
@@ -63,7 +76,71 @@ export default function SettingsScreen() {
         if (data) setBrokerStatus(data);
       })
       .catch(() => {});
+
+    fetch("/api/ai/status")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setAiStatus(data);
+      })
+      .catch(() => {});
   }, []);
+
+  const isMarketOpen = Boolean(brokerStatus?.market_open);
+
+  const handleRiskPerTradeChange = (val) => {
+    const risk = Number(val);
+    const trades = configData.max_daily_trades;
+    const minBudget = risk * trades;
+    const newBudget = Math.max(configData.daily_max_risk, minBudget);
+    saveConfig({
+      ...configData,
+      max_risk_per_trade: risk,
+      daily_max_risk: newBudget,
+    });
+  };
+
+  const handleMaxTradesChange = (val) => {
+    const trades = Number(val);
+    const risk = configData.max_risk_per_trade;
+    const minBudget = risk * trades;
+    const newBudget = Math.max(configData.daily_max_risk, minBudget);
+    saveConfig({
+      ...configData,
+      max_daily_trades: trades,
+      daily_max_risk: newBudget,
+    });
+  };
+
+  const handleDailyBudgetChange = (val) => {
+    const budget = Number(val);
+    const risk = configData.max_risk_per_trade;
+    const allowedTrades = Math.max(1, Math.floor(budget / risk));
+    const newTrades = Math.min(configData.max_daily_trades, allowedTrades);
+    saveConfig({
+      ...configData,
+      daily_max_risk: budget,
+      max_daily_trades: newTrades,
+    });
+  };
+
+  const handleStrategyStateChange = (stratKey, newState) => {
+    const updatedStates = {
+      ...(configData.strategy_states || {}),
+      [stratKey]: newState,
+    };
+    saveConfig({
+      ...configData,
+      strategy_states: updatedStates,
+    });
+  };
+
+  const STRATEGIES = [
+    { key: "ORB_BREAKOUT", name: "ORB Breakout", defaultRisk: 1000, desc: "Opening 15m/30m high-low breach with 2-sided gate" },
+    { key: "VWAP_RETEST", name: "VWAP Retest", defaultRisk: 800, desc: "Pullback to dynamic session volume-weighted average price" },
+    { key: "OI_SQUEEZE", name: "OI Squeeze", defaultRisk: 800, desc: "Option strike build-up & short covering momentum" },
+    { key: "SECTOR_SYMPATHY", name: "Sector Sympathy", defaultRisk: 800, desc: "Laggard catch-up within surging industry sectors" },
+    { key: "MOMENTUM_RUNNER", name: "Momentum Runner", defaultRisk: 800, desc: "Multi-timeframe trend continuation with ATR trail" },
+  ];
 
   const handleDeposit = async () => {
     const val = Number(depositAmount);
@@ -230,9 +307,18 @@ export default function SettingsScreen() {
             </div>
           </Card>
 
-          {/* Section 2: Risk Ceiling & Budget Allocator */}
+          {/* Section 2: Risk Ceiling & Budget Allocator (Coupled Math) */}
           <Card title="Risk Ceiling & Capital Discipline" icon={Shield} className="shadow-sm">
             <div className="space-y-4 text-xs font-mono">
+              {isMarketOpen && (
+                <div className="p-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-400 flex items-start gap-2 font-sans">
+                  <AlertTriangle size={14} className="flex-shrink-0 mt-0.5 text-amber-400" />
+                  <span className="text-[10px] leading-tight">
+                    <b>Market Hours Freeze Active:</b> Risk parameters are locked between 09:15 and 15:30 IST to prevent runtime order collisions.
+                  </span>
+                </div>
+              )}
+
               <div>
                 <div className="flex justify-between font-sans font-semibold mb-1">
                   <span>Strict Max Risk Per Trade</span>
@@ -243,45 +329,15 @@ export default function SettingsScreen() {
                 <input
                   type="range"
                   min="500"
-                  max="1500"
+                  max="2000"
                   step="50"
+                  disabled={isMarketOpen}
                   value={configData.max_risk_per_trade}
-                  onChange={(e) =>
-                    saveConfig({
-                      ...configData,
-                      max_risk_per_trade: Number(e.target.value),
-                    })
-                  }
-                  className="w-full accent-accent-blue"
+                  onChange={(e) => handleRiskPerTradeChange(e.target.value)}
+                  className="w-full accent-accent-blue disabled:opacity-40"
                 />
                 <span className="text-[10px] text-faint font-sans">
-                  Clamps position quantity so potential loss never exceeds this limit.
-                </span>
-              </div>
-
-              <div>
-                <div className="flex justify-between font-sans font-semibold mb-1">
-                  <span>Daily Stop Loss Budget</span>
-                  <span className="font-mono font-bold text-accent-amber">
-                    ₹{configData.daily_max_risk}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="2000"
-                  max="6000"
-                  step="200"
-                  value={configData.daily_max_risk}
-                  onChange={(e) =>
-                    saveConfig({
-                      ...configData,
-                      daily_max_risk: Number(e.target.value),
-                    })
-                  }
-                  className="w-full accent-accent-amber"
-                />
-                <span className="text-[10px] text-faint font-sans">
-                  Total loss circuit-breaker across all automated strategies.
+                  Clamps position sizing so loss never exceeds this ceiling.
                 </span>
               </div>
 
@@ -294,35 +350,145 @@ export default function SettingsScreen() {
                 </div>
                 <input
                   type="range"
-                  min="2"
-                  max="8"
+                  min="1"
+                  max="6"
                   step="1"
+                  disabled={isMarketOpen}
                   value={configData.max_daily_trades}
-                  onChange={(e) =>
-                    saveConfig({
-                      ...configData,
-                      max_daily_trades: Number(e.target.value),
-                    })
-                  }
-                  className="w-full accent-emerald-500"
+                  onChange={(e) => handleMaxTradesChange(e.target.value)}
+                  className="w-full accent-emerald-500 disabled:opacity-40"
                 />
               </div>
 
-              <div className="p-2.5 bg-surface3/40 rounded-xl border border-subtle text-[11px] font-sans text-muted">
-                <span className="font-bold text-primary">Strategy Family Allocations:</span>
-                <div className="grid grid-cols-2 gap-2 mt-1.5 text-[10px] font-mono">
-                  <div>ORB: 1 Trade · ₹1,000 Risk</div>
-                  <div>VWAP Retest: 1 Trade · ₹800 Risk</div>
-                  <div>OI Squeeze: 1 Trade · ₹800 Risk</div>
-                  <div>Sector Lag: 1 Trade · ₹800 Risk</div>
+              <div>
+                <div className="flex justify-between font-sans font-semibold mb-1">
+                  <span>Daily Stop Loss Budget</span>
+                  <span className="font-mono font-bold text-accent-amber">
+                    ₹{configData.daily_max_risk}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={Math.max(1500, configData.max_risk_per_trade * configData.max_daily_trades)}
+                  max="8000"
+                  step="100"
+                  disabled={isMarketOpen}
+                  value={configData.daily_max_risk}
+                  onChange={(e) => handleDailyBudgetChange(e.target.value)}
+                  className="w-full accent-accent-amber disabled:opacity-40"
+                />
+                <span className="text-[10px] text-faint font-sans">
+                  Total loss circuit-breaker across all active strategies.
+                </span>
+              </div>
+
+              {/* Mathematical Coupling Formula Bar */}
+              <div className="p-2.5 bg-surface3/40 rounded-xl border border-subtle text-[11px] font-sans">
+                <div className="flex items-center justify-between text-muted text-[10px]">
+                  <span>Risk Coupling:</span>
+                  <span className="font-mono text-emerald-400 font-bold">
+                    ✓ {configData.max_daily_trades} Trades × ₹{configData.max_risk_per_trade} = ₹{configData.max_daily_trades * configData.max_risk_per_trade} Min Budget
+                  </span>
+                </div>
+                <div className="mt-1 text-[10px] text-faint font-mono">
+                  Daily Budget: ₹{configData.daily_max_risk} ({configData.daily_max_risk >= configData.max_daily_trades * configData.max_risk_per_trade ? "Fully Covered" : "Deficit"})
                 </div>
               </div>
             </div>
           </Card>
 
-          {/* Section 3: Automation & AI Engine */}
+          {/* Section 3: Live Strategy Control Matrix */}
+          <Card title="Quantitative Strategy Management Matrix" icon={Zap} className="md:col-span-2 shadow-sm">
+            <div className="space-y-3">
+              <div className="text-[11px] text-faint">
+                Individually pause, resume, or halt any of the 5 quantitative intraday engines. Pausing releases trade allocations.
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {STRATEGIES.map((strat) => {
+                  const state = configData.strategy_states?.[strat.key] || "RUNNING";
+                  return (
+                    <div
+                      key={strat.key}
+                      className="p-3 bg-surface3/40 rounded-xl border border-subtle/80 flex flex-col justify-between space-y-2.5"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="font-bold text-xs text-primary">{strat.name}</div>
+                          <div className="text-[10px] text-faint leading-tight mt-0.5">{strat.desc}</div>
+                        </div>
+                        <span
+                          className={`text-[9px] font-mono px-2 py-0.5 rounded-full uppercase font-bold flex-shrink-0 ${
+                            state === "RUNNING"
+                              ? "bg-emerald-950/80 text-emerald-400 border border-emerald-800"
+                              : state === "PAUSED"
+                                ? "bg-amber-950/80 text-amber-400 border border-amber-800"
+                                : "bg-rose-950/80 text-rose-400 border border-rose-800"
+                          }`}
+                        >
+                          {state}
+                        </span>
+                      </div>
+
+                      <div className="pt-2 border-t border-subtle/50 flex items-center justify-between text-[10px] font-mono">
+                        <span className="text-muted">Quota: 1 Trade · ₹{strat.defaultRisk}</span>
+                        <div className="flex items-center gap-1 font-sans">
+                          {state === "RUNNING" ? (
+                            <button
+                              type="button"
+                              onClick={() => handleStrategyStateChange(strat.key, "PAUSED")}
+                              className="px-2 py-0.5 rounded bg-amber-950/40 hover:bg-amber-950/80 text-amber-400 border border-amber-800/60 font-bold transition-colors"
+                            >
+                              Pause
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleStrategyStateChange(strat.key, "RUNNING")}
+                              className="px-2 py-0.5 rounded bg-emerald-950/40 hover:bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 font-bold transition-colors"
+                            >
+                              Resume
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleStrategyStateChange(strat.key, state === "STOPPED" ? "RUNNING" : "STOPPED")}
+                            className={`px-2 py-0.5 rounded font-bold border transition-colors ${
+                              state === "STOPPED"
+                                ? "bg-blue-950/40 text-blue-400 border-blue-800/60 hover:bg-blue-950/80"
+                                : "bg-rose-950/40 text-rose-400 border-rose-800/60 hover:bg-rose-950/80"
+                            }`}
+                          >
+                            {state === "STOPPED" ? "Restart" : "Stop"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </Card>
+
+          {/* Section 4: Automation & AI Engine (Gemini Relocated Here) */}
           <Card title="Automation & AI Copilot Engine" icon={Bot} className="shadow-sm">
             <div className="space-y-4 text-xs font-sans">
+              {/* Gemini AI Status Header */}
+              <div className="p-3 bg-accent-blue/10 rounded-xl border border-accent-blue/30 flex items-center justify-between">
+                <div>
+                  <div className="font-bold text-accent-blue flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-accent-blue animate-pulse" />
+                    <span>Google Gemini 3.6 Flash</span>
+                  </div>
+                  <div className="text-[10px] text-faint">
+                    Real-time market sentiment & multi-timeframe trade validation
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-accent-blue/20 text-accent-blue font-bold">
+                  {aiStatus?.status || "LIVE"}
+                </span>
+              </div>
+
               <div className="flex items-center justify-between p-3 bg-surface3/50 rounded-xl border border-subtle">
                 <div>
                   <div className="font-bold text-primary">Auto-Execution Master Switch</div>
@@ -388,7 +554,7 @@ export default function SettingsScreen() {
             </div>
           </Card>
 
-          {/* Section 4: Staged Trailing Stop Rungs */}
+          {/* Section 5: Staged Trailing Stop Rungs */}
           <Card title="Staged Trailing Rungs (Harvesting Rules)" icon={TrendingUp} className="shadow-sm">
             <div className="space-y-3 text-xs font-sans">
               <div className="p-2.5 bg-surface3/50 rounded-xl border border-subtle flex items-start gap-2.5">
@@ -429,10 +595,10 @@ export default function SettingsScreen() {
             </div>
           </Card>
 
-          {/* Section 5: Broker Diagnostics */}
+          {/* Section 6: Broker Diagnostics */}
           <Card title="Broker & Market Feed Diagnostics" icon={Radio} className="md:col-span-2 shadow-sm">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono">
-              <div className="p-3 bg-surface3/60 rounded-xl border border-subtle space-y-1">
+              <div className="p-3 bg-surface3/60 rounded-xl border border-subtle space-y-1.5">
                 <span className="text-[10px] uppercase font-bold text-muted font-sans">
                   Primary Broker (AliceBlue)
                 </span>
@@ -449,13 +615,21 @@ export default function SettingsScreen() {
                 <div className="text-[10px] text-faint">
                   Status: {brokerStatus?.authenticated ? "Token Active" : "Token Expired"}
                 </div>
-                <button
-                  onClick={handleAliceBlueLogin}
-                  disabled={busy}
-                  className="mt-2 text-[10px] font-sans font-bold px-2 py-1 bg-accent-blue/15 hover:bg-accent-blue/25 text-accent-blue border border-accent-blue/30 rounded-lg transition-all"
-                >
-                  Trigger Morning Re-login
-                </button>
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    onClick={onOpenBrokerModal}
+                    className="text-[10px] font-sans font-bold px-2 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-all"
+                  >
+                    Connect Broker
+                  </button>
+                  <button
+                    onClick={handleAliceBlueLogin}
+                    disabled={busy}
+                    className="text-[10px] font-sans font-bold px-2 py-1 bg-surface3 hover:bg-surface2 text-primary border border-subtle rounded-lg transition-all"
+                  >
+                    Auto-Login
+                  </button>
+                </div>
               </div>
 
               <div className="p-3 bg-surface3/60 rounded-xl border border-subtle space-y-1">
@@ -502,3 +676,4 @@ export default function SettingsScreen() {
     </div>
   );
 }
+

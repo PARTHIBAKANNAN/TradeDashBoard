@@ -130,6 +130,16 @@ MIN_CONVICTION_SCORE = MIN_MOMENTUM_SCORE
 # DAILY_MAX_RISK_INR: Maximum total risk (capital at stake) across ALL auto
 #   paper trades in a single trading day.  ₹3,400 = total stop loss budget.
 DAILY_MAX_RISK_INR = float(os.getenv("DAILY_MAX_RISK_INR", "3400.0"))
+MAX_RISK_PER_TRADE = float(os.getenv("MAX_RISK_PER_TRADE", "1000.0"))
+MAX_MARGIN_PER_TRADE = float(os.getenv("MAX_MARGIN_PER_TRADE", "25000.0"))
+
+STRATEGY_STATES = {
+    "ORB_BREAKOUT": "RUNNING",
+    "VWAP_RETEST": "RUNNING",
+    "OI_SQUEEZE": "RUNNING",
+    "SECTOR_SYMPATHY": "RUNNING",
+    "MOMENTUM_RUNNER": "RUNNING",
+}
 #
 # MAX_DAILY_AUTO_TRADES: Hard cap on the number of auto paper trades per day (configurable via env).
 #   Risk per trade is dynamically allocated per strategy family via RiskAllocator.
