@@ -15,6 +15,11 @@ import {
   Briefcase,
   Brain,
   LineChart,
+  CandlestickChart,
+  Zap,
+  Bookmark,
+  Layers,
+  SlidersHorizontal,
   MoreHorizontal,
   X,
   LayoutDashboard,
@@ -278,11 +283,7 @@ function Dashboard({ user, onLogout }) {
             {activeTab === "ranking" && (
               <RankingScreen stocks={stocks} nifty={nifty} />
             )}
-            {activeTab === "heatmap" && <HeatmapScreen stocks={stocks} />}
-            {activeTab === "insights" && <InsightsScreen stocks={stocks} />}
-            {activeTab === "watchlist" && (
-              <WatchlistScreen stocks={stocks} nifty={nifty} />
-            )}
+            {activeTab === "smart-money" && <SmartMoneyScreen />}
             {activeTab === "charts" && (
               <ChartsScreen
                 stocks={stocks}
@@ -290,12 +291,23 @@ function Dashboard({ user, onLogout }) {
                 onFocusHandled={() => setChartsFocusSymbol(null)}
               />
             )}
-            {activeTab === "smart-money" && <SmartMoneyScreen />}
             {(activeTab === "positions" || activeTab === "paper-trading") && (
               <PositionsScreen stocks={stocks} />
             )}
-            {activeTab === "dashboard" && (
-              <DashboardScreen stocks={stocks} />
+            {activeTab === "watchlist" && (
+              <WatchlistScreen stocks={stocks} nifty={nifty} />
+            )}
+            {(activeTab === "dashboard" || activeTab === "heatmap" || activeTab === "insights") && (
+              <DashboardScreen
+                stocks={stocks}
+                initialSubTab={
+                  activeTab === "heatmap"
+                    ? "heatmap"
+                    : activeTab === "insights"
+                    ? "insights"
+                    : undefined
+                }
+              />
             )}
             {activeTab === "settings" && (
               <SettingsScreen onOpenBrokerModal={() => setShowBrokerModal(true)} />
@@ -327,194 +339,146 @@ function TopNavbar({
   onOpenBrokerModal,
 }) {
   const openPositionsCount = usePositionsCount();
-  const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
-  const primaryTabs = [
-    { key: "ranking", label: "Ranking", icon: "📊" },
-    { key: "watchlist", label: "Watchlist", icon: "⭐" },
-    { key: "charts", label: "Charts", icon: "📈" },
+  const navTabs = [
+    { key: "ranking", label: "Ranking", icon: TrendingUp },
+    { key: "smart-money", label: "Smart Money", icon: Zap },
+    { key: "charts", label: "Charts", icon: CandlestickChart },
     {
       key: "positions",
-      label:
-        openPositionsCount > 0
-          ? `Positions (${openPositionsCount})`
-          : "Positions",
-      icon: "⚡",
+      label: "Positions",
+      icon: Layers,
+      badge: openPositionsCount > 0 ? openPositionsCount : null,
     },
-    { key: "dashboard", label: "Dashboard", icon: "📑" },
-    { key: "settings", label: "Settings", icon: "⚙️" },
+    { key: "watchlist", label: "Watchlist", icon: Bookmark },
+    { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { key: "settings", label: "Settings", icon: SlidersHorizontal },
   ];
-
-  const secondaryTabs = [
-    { key: "heatmap", label: "Heatmap", icon: "🔥" },
-    { key: "insights", label: "Insights", icon: "💡" },
-    { key: "smart-money", label: "Smart Money", icon: "🧠" },
-  ];
-
-  const isAnalyticsActive = ["heatmap", "insights", "smart-money"].includes(activeTab);
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-subtle bg-surface2/95 backdrop-blur-xl shadow-sm pt-safe flex-shrink-0">
-      <div className="mx-auto max-w-[1920px] w-full px-3 sm:px-6 py-2 flex items-center justify-between gap-2 sm:gap-4">
-        {/* Left: Brand & Market Pulse */}
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <div className="flex items-center gap-2 flex-shrink-0">
+    <nav className="sticky top-0 z-50 h-12 border-b border-[#161d2b] bg-[#080b11]/95 backdrop-blur-md shadow-sm pt-safe flex-shrink-0 flex items-center">
+      <div className="mx-auto max-w-[1920px] w-full px-3 sm:px-5 flex items-center justify-between gap-2 sm:gap-4">
+        {/* Left: Brand & Status Cluster */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <div className="flex items-center gap-2">
             <img
               src="/assets/logo.jpg"
               alt="PulseHunter"
-              className="w-7 h-7 rounded-lg object-cover border border-accent-blue/30 shadow-glow-sm"
+              className="w-6 h-6 rounded-md object-cover border border-blue-500/30 shadow-sm"
             />
-            <h1 className="text-xs font-extrabold tracking-tight bg-gradient-to-r from-accent-blue via-cyan-400 to-accent-violet bg-clip-text text-transparent font-display">
+            <span className="text-xs font-bold tracking-tight text-white font-display">
               PulseHunter
-            </h1>
-            <div className="flex items-center gap-1.5 ml-1 pl-1.5 border-l border-subtle">
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  connected && marketOpen
-                    ? "bg-green-500 animate-pulse"
-                    : "bg-faint"
-                }`}
-              />
-              <span
-                className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
-                  marketOpen
-                    ? "bg-green-950 text-green-400"
-                    : "bg-surface3 text-muted"
-                }`}
-              >
-                {marketOpen ? "Live" : connected ? "Closed" : "Offline"}
-              </span>
-
-              {/* Integrated Compact Broker Indicator */}
-              <button
-                type="button"
-                onClick={onOpenBrokerModal}
-                title={fyersConnected ? "Alice Blue: Session Active" : "Click to connect Alice Blue"}
-                className={`flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase transition-colors ${
-                  fyersConnected
-                    ? "bg-blue-950/60 text-blue-400 border border-blue-500/30"
-                    : "bg-amber-950/60 text-amber-400 border border-amber-500/40 hover:bg-amber-900/40 cursor-pointer"
-                }`}
-              >
-                <span className={`w-1.5 h-1.5 rounded-full ${fyersConnected ? "bg-blue-400" : "bg-amber-400 animate-ping"}`} />
-                <span>{fyersConnected ? "Broker Live" : "Connect Broker"}</span>
-              </button>
-            </div>
+            </span>
           </div>
 
-          {/* Desktop Navigation Tabs: Zero Horizontal Scroll */}
-          <div className="hidden md:flex items-center gap-1 py-0.5 border-l border-subtle pl-2.5">
-            {primaryTabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => {
-                  onTabChange(tab.key);
-                  setAnalyticsOpen(false);
-                }}
-                className={`px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap rounded-lg transition-all ${
-                  activeTab === tab.key
-                    ? "bg-accent-blue/15 text-accent-blue border border-accent-blue/30 shadow-sm"
-                    : "text-muted hover:text-primary hover:bg-surface3/60"
+          <div className="flex items-center gap-1.5 pl-2 border-l border-white/10">
+            {/* Market Status Dot */}
+            <span
+              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                connected && marketOpen
+                  ? "bg-emerald-950/70 text-emerald-400 border border-emerald-800/40"
+                  : "bg-surface3/80 text-muted border border-white/5"
+              }`}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  connected && marketOpen ? "bg-emerald-400 animate-pulse" : "bg-slate-500"
                 }`}
-              >
-                <span className="mr-1">{tab.icon}</span>
-                {tab.label}
-              </button>
-            ))}
+              />
+              <span className="hidden sm:inline">
+                {marketOpen ? "Live" : connected ? "Closed" : "Offline"}
+              </span>
+            </span>
 
-            {/* Analytics Dropdown Menu */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setAnalyticsOpen(!analyticsOpen)}
-                className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap rounded-lg transition-all ${
-                  isAnalyticsActive
-                    ? "bg-accent-violet/15 text-accent-violet border border-accent-violet/30 shadow-sm"
-                    : "text-muted hover:text-primary hover:bg-surface3/60"
+            {/* Broker Status Pill */}
+            <button
+              type="button"
+              onClick={onOpenBrokerModal}
+              title={fyersConnected ? "Alice Blue Active" : "Click to connect broker"}
+              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all ${
+                fyersConnected
+                  ? "bg-blue-950/60 text-blue-400 border border-blue-800/40"
+                  : "bg-amber-950/40 text-amber-400 border border-amber-500/40 hover:bg-amber-900/40 cursor-pointer"
+              }`}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  fyersConnected ? "bg-blue-400" : "bg-amber-400 animate-ping"
                 }`}
-              >
-                <span>📊 Analytics</span>
-                <ChevronDown size={12} className={`transition-transform ${analyticsOpen ? "rotate-180" : ""}`} />
-              </button>
-
-              {analyticsOpen && (
-                <div
-                  className="absolute left-0 mt-1.5 w-44 rounded-xl border border-subtle bg-surface2/95 backdrop-blur-xl shadow-xl py-1 z-50 animate-in fade-in slide-in-from-top-1"
-                  onClick={() => setAnalyticsOpen(false)}
-                >
-                  {secondaryTabs.map((sub) => (
-                    <button
-                      key={sub.key}
-                      onClick={() => onTabChange(sub.key)}
-                      className={`w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2 hover:bg-surface3 transition-colors ${
-                        activeTab === sub.key ? "text-accent-blue font-bold bg-accent-blue/10" : "text-primary"
-                      }`}
-                    >
-                      <span>{sub.icon}</span>
-                      <span>{sub.label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+              />
+              <span className="hidden sm:inline">
+                {fyersConnected ? "Alice Blue" : "Connect"}
+              </span>
+            </button>
           </div>
         </div>
 
-        {/* Right side: Benchmark & Compact Profile */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          {/* NIFTY 50 */}
-          <div className="text-right border-l border-subtle pl-2 sm:pl-3 flex flex-col justify-center">
-            <div className="hidden sm:block text-[8px] sm:text-[9px] text-faint font-bold uppercase tracking-wider leading-tight">
-              NIFTY 50
-            </div>
-            <div className="font-mono text-[11px] sm:text-xs font-bold flex items-center justify-end gap-1 sm:gap-1.5 leading-tight">
-              <span className="sm:hidden text-[9px] text-faint font-semibold uppercase mr-0.5">
-                NIFTY
-              </span>
-              <span className="text-primary font-semibold">
-                {nifty.ltp?.toLocaleString("en-IN", {
-                  minimumFractionDigits: 1,
-                  maximumFractionDigits: 2,
-                }) || "—"}
-              </span>
-              <span className="hidden sm:inline-block">
-                {nifty.change != null && (
-                  <span
-                    className={`text-[9px] sm:text-xs font-bold ${
-                      nifty.change >= 0 ? "text-emerald-400" : "text-rose-400"
-                    }`}
-                  >
-                    {nifty.change >= 0 ? "+" : ""}
-                    {Number(nifty.change).toFixed(2)}
-                  </span>
-                )}
-              </span>
-              <span
-                className={`text-[10px] sm:text-xs font-bold ${
-                  (nifty.pct_change || 0) >= 0
-                    ? "text-emerald-400"
-                    : "text-rose-400"
+        {/* Center: 7 First-Class Pro Tabs */}
+        <div className="hidden lg:flex items-center bg-[#10141e]/90 border border-white/5 p-0.5 rounded-xl gap-0.5 shadow-inner">
+          {navTabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive =
+              activeTab === tab.key ||
+              (tab.key === "dashboard" &&
+                ["dashboard", "heatmap", "insights"].includes(activeTab)) ||
+              (tab.key === "positions" && activeTab === "paper-trading");
+
+            return (
+              <button
+                key={tab.key}
+                onClick={() => onTabChange(tab.key)}
+                className={`relative px-3 py-1.5 text-xs rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                  isActive
+                    ? "bg-blue-600/15 text-blue-400 border border-blue-500/30 shadow-sm font-bold"
+                    : "text-muted hover:text-primary hover:bg-white/5 font-medium"
                 }`}
               >
-                ({(nifty.pct_change || 0) >= 0 ? "+" : ""}
-                {nifty.pct_change || 0}%)
-              </span>
-            </div>
+                <Icon size={13} className={isActive ? "text-blue-400" : "text-muted"} />
+                <span>{tab.label}</span>
+                {tab.badge != null && (
+                  <span className="ml-1 min-w-[15px] h-[15px] px-1 rounded-full bg-emerald-500 text-black text-[9px] font-black flex items-center justify-center shadow-sm">
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right side: Benchmark & Profile Avatar */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          {/* NIFTY 50 1-line Ticker */}
+          <div className="flex items-center gap-1.5 bg-[#101520] border border-white/5 px-2.5 py-1 rounded-lg text-xs font-mono">
+            <span className="text-[10px] text-faint font-bold tracking-wider">NIFTY</span>
+            <span className="text-primary font-semibold tabular-nums">
+              {nifty.ltp?.toLocaleString("en-IN", {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 2,
+              }) || "—"}
+            </span>
+            <span
+              className={`text-[11px] font-bold tabular-nums ${
+                (nifty.pct_change || 0) >= 0 ? "text-emerald-400" : "text-rose-400"
+              }`}
+            >
+              {(nifty.pct_change || 0) >= 0 ? "▲ +" : "▼ "}
+              {Math.abs(nifty.pct_change || 0).toFixed(2)}%
+            </span>
           </div>
 
-          <div className="border-l border-subtle pl-2 sm:pl-3 flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1.5">
             <ThemeToggle />
 
-            {/* Collapsed Profile Avatar Dropdown */}
+            {/* Profile Avatar Dropdown */}
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setProfileOpen(!profileOpen)}
-                className="w-8 h-8 rounded-full bg-surface3 border border-subtle hover:border-accent-blue/50 grid place-items-center text-primary transition-all shadow-sm"
+                className="w-7 h-7 rounded-full bg-[#121824] border border-white/10 hover:border-blue-500/50 grid place-items-center text-primary transition-all shadow-sm cursor-pointer"
                 title={user || "User Profile"}
               >
-                <User size={15} className="text-muted hover:text-accent-blue" />
+                <User size={14} className="text-muted hover:text-blue-400" />
               </button>
 
               {profileOpen && (
@@ -523,7 +487,9 @@ function TopNavbar({
                   onClick={() => setProfileOpen(false)}
                 >
                   <div className="px-3 py-2 border-b border-subtle/70 mb-1">
-                    <p className="text-[10px] uppercase font-bold text-faint tracking-wider">Signed In As</p>
+                    <p className="text-[10px] uppercase font-bold text-faint tracking-wider">
+                      Signed In As
+                    </p>
                     <p className="text-xs font-semibold text-primary truncate" title={user}>
                       {user}
                     </p>
@@ -531,10 +497,13 @@ function TopNavbar({
 
                   <button
                     onClick={onOpenBrokerModal}
-                    className="w-full text-left px-3 py-2 text-xs rounded-lg text-primary hover:bg-surface3 flex items-center justify-between transition-colors"
+                    className="w-full text-left px-3 py-2 text-xs rounded-lg text-primary hover:bg-surface3 flex items-center justify-between transition-colors cursor-pointer"
                   >
                     <span className="flex items-center gap-2">
-                      <Radio size={13} className={fyersConnected ? "text-emerald-400" : "text-amber-400"} />
+                      <Radio
+                        size={13}
+                        className={fyersConnected ? "text-emerald-400" : "text-amber-400"}
+                      />
                       Broker Status
                     </span>
                     <span className="text-[10px] font-bold uppercase text-muted">
@@ -544,17 +513,17 @@ function TopNavbar({
 
                   <button
                     onClick={() => onTabChange("settings")}
-                    className="w-full text-left px-3 py-2 text-xs rounded-lg text-primary hover:bg-surface3 flex items-center gap-2 transition-colors"
+                    className="w-full text-left px-3 py-2 text-xs rounded-lg text-primary hover:bg-surface3 flex items-center gap-2 transition-colors cursor-pointer"
                   >
-                    <Settings size={13} className="text-muted" />
-                    <span>Control Center</span>
+                    <SlidersHorizontal size={13} className="text-muted" />
+                    <span>Settings &amp; Risk</span>
                   </button>
 
                   <div className="border-t border-subtle/70 my-1" />
 
                   <button
                     onClick={onLogout}
-                    className="w-full text-left px-3 py-2 text-xs rounded-lg text-bear hover:bg-bear/10 flex items-center gap-2 transition-colors font-semibold"
+                    className="w-full text-left px-3 py-2 text-xs rounded-lg text-bear hover:bg-bear/10 flex items-center gap-2 transition-colors font-semibold cursor-pointer"
                   >
                     <LogOut size={13} />
                     <span>Sign Out</span>
@@ -574,51 +543,34 @@ function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
 
   const mainTabs = [
-    { key: "ranking", label: "Ranking", icon: BarChart3 },
-    { key: "charts", label: "Charts", icon: LineChart },
+    { key: "ranking", label: "Ranking", icon: TrendingUp },
+    { key: "watchlist", label: "Watchlist", icon: Bookmark },
+    { key: "charts", label: "Charts", icon: CandlestickChart },
     {
       key: "positions",
       label: "Positions",
-      icon: Briefcase,
+      icon: Layers,
       badge: openPositionsCount > 0 ? openPositionsCount : null,
     },
   ];
 
   const moreTabs = [
     {
-      key: "heatmap",
-      label: "Heatmap",
-      icon: Flame,
-      desc: "Market Sector Treemap",
-    },
-    {
-      key: "watchlist",
-      label: "Watchlist",
-      icon: Star,
-      desc: "Pinned Stocks & Radar",
-    },
-    {
-      key: "insights",
-      label: "Insights",
-      icon: Lightbulb,
-      desc: "ORB Breakouts & Drivers",
-    },
-    {
       key: "smart-money",
       label: "Smart Money",
-      icon: Brain,
-      desc: "Institutional Volume Flow",
+      icon: Zap,
+      desc: "Institutional Volume & Flow",
     },
     {
       key: "dashboard",
       label: "Dashboard",
       icon: LayoutDashboard,
-      desc: "Journal, Analytics & Reports",
+      desc: "Analytics, Heatmap & Insights",
     },
     {
       key: "settings",
       label: "Settings",
-      icon: Settings,
+      icon: SlidersHorizontal,
       desc: "Wallet & Trading Controls",
     },
   ];
