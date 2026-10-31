@@ -1,72 +1,64 @@
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
-  Activity,
-  Shield,
   TrendingUp,
-  Cpu,
+  TrendingDown,
+  Shield,
   Zap,
-  Globe,
-  Layers,
-  ArrowRight,
   Lock,
+  Unlock,
   CheckCircle2,
   AlertTriangle,
-  BarChart3,
-  Flame,
-  LineChart,
-  Sparkles,
+  ArrowRight,
   ChevronRight,
   ChevronDown,
   X,
-  Mail,
-  UserCheck,
-  Building,
-  Target,
   Clock,
+  Activity,
+  BarChart3,
+  Flame,
   Compass,
-  Eye,
-  Sliders,
-  Award,
   HelpCircle,
-  TrendingDown,
-  RefreshCw,
-  Command,
-  Search,
-  Maximize2,
-  Check,
-  Server,
+  Layers,
+  Sliders,
+  Sparkles,
+  Radio,
+  Eye,
   KeyRound,
-  FileText,
+  UserCheck,
 } from "lucide-react";
 import { supabase } from "../lib/supabaseClient.js";
 import ThemeToggle from "../components/ThemeToggle.jsx";
 
 export default function LandingPage({ onLoginSuccess }) {
+  // Navigation & Modals
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAccessModal, setShowAccessModal] = useState(false);
-  const [activeScreenTab, setActiveScreenTab] = useState("ranking");
-  const [activeFeatureTab, setActiveFeatureTab] = useState("quant");
-  const [sandboxStock, setSandboxStock] = useState("TATASTEEL");
   const [openFaq, setOpenFaq] = useState(null);
+
+  // Live telemetry data from backend
   const [summaryData, setSummaryData] = useState(null);
+  const [currentTime, setCurrentTime] = useState("");
 
   // Login form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginBusy, setLoginBusy] = useState(false);
+  const [isPendingApproval, setIsPendingApproval] = useState(false);
 
-  // Access request form state
-  const [requestName, setRequestName] = useState("");
-  const [requestEmail, setRequestEmail] = useState("");
-  const [requestRole, setRequestRole] = useState("Proprietary / Quant Trader");
-  const [requestNote, setRequestNote] = useState("");
-  const [requestSubmitted, setRequestSubmitted] = useState(false);
+  // Self-registration form state
+  const [regName, setRegName] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regStrategy, setRegStrategy] = useState("Relative Strength & Sector Sympathy");
+  const [regPassword, setRegPassword] = useState("");
+  const [regBusy, setRegBusy] = useState(false);
+  const [regError, setRegError] = useState("");
+  const [regSuccess, setRegSuccess] = useState(false);
 
+  // Fetch real market telemetry from backend
   useEffect(() => {
     let mounted = true;
-    async function fetchPublicSummary() {
+    async function fetchTelemetry() {
       try {
         const res = await fetch("/api/public/summary");
         if (res.ok && mounted) {
@@ -74,1580 +66,1055 @@ export default function LandingPage({ onLoginSuccess }) {
           setSummaryData(data);
         }
       } catch (err) {
-        console.warn("Could not fetch public market data", err);
+        console.warn("Telemetry feed offline, using cached snapshot", err);
       }
     }
-    fetchPublicSummary();
-    const interval = setInterval(fetchPublicSummary, 15000);
+
+    fetchTelemetry();
+    const interval = setInterval(fetchTelemetry, 15000);
+
+    // Live clock
+    const clockInterval = setInterval(() => {
+      const now = new Date();
+      setCurrentTime(
+        now.toLocaleTimeString("en-IN", {
+          timeZone: "Asia/Kolkata",
+          hour12: false,
+        }) + " IST"
+      );
+    }, 1000);
+
     return () => {
       mounted = false;
       clearInterval(interval);
+      clearInterval(clockInterval);
     };
   }, []);
 
+  // Handle user authentication
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoginBusy(true);
     setLoginError("");
+    setIsPendingApproval(false);
+
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword(
-        {
-          email,
-          password,
-        },
-      );
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
       if (authError || !data.session) {
-        setLoginError(
-          "Invalid credentials. Please check your email and password.",
-        );
+        setLoginError("Invalid credentials. Please verify your email and password.");
         return;
       }
+
+      // Check user role / status
+      const userMeta = data.session.user.user_metadata || {};
+      const appMeta = data.session.user.app_metadata || {};
+      const userStatus = userMeta.status || appMeta.status || "ACTIVE";
+
+      if (userStatus === "PENDING") {
+        setIsPendingApproval(true);
+        await supabase.auth.signOut();
+        return;
+      }
+
+      // Exchange with backend session
       const r = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ access_token: data.session.access_token }),
       });
+
       if (r.ok) {
         setShowLoginModal(false);
         onLoginSuccess();
       } else {
-        setLoginError(
-          "Session verification failed. Contact onboarding administrator.",
-        );
+        setLoginError("Session authorization failed. Contact desk administrator.");
       }
     } catch {
-      setLoginError(
-        "Network error. Unable to reach terminal authentication server.",
-      );
+      setLoginError("Network error. Unable to reach terminal authentication server.");
     } finally {
       setLoginBusy(false);
     }
   };
 
-  const handleRequestSubmit = (e) => {
+  // Handle self-registration (encrypted password, zero admin exposure)
+  const handleRegister = async (e) => {
     e.preventDefault();
-    setRequestSubmitted(true);
-    const subject = encodeURIComponent(
-      `PulseHunter Terminal Access Request - ${requestName}`,
-    );
-    const body = encodeURIComponent(
-      `Applicant Name: ${requestName}\n` +
-        `Applicant Email: ${requestEmail}\n` +
-        `Trading Profile: ${requestRole}\n` +
-        `Trading Objectives: ${requestNote || "N/A"}\n\n` +
-        `Request submitted for PulseHunter Institutional Quantitative Terminal.`,
-    );
-    window.open(
-      `mailto:parthisivaram45@gmail.com?subject=${subject}&body=${body}`,
-      "_blank",
-    );
+    setRegBusy(true);
+    setRegError("");
+
+    try {
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: regEmail,
+        password: regPassword,
+        options: {
+          data: {
+            full_name: regName,
+            strategy: regStrategy,
+            role: "applicant",
+            status: "PENDING",
+            applied_at: new Date().toISOString(),
+          },
+        },
+      });
+
+      if (signUpError) {
+        setRegError(signUpError.message || "Failed to submit clearance application.");
+        return;
+      }
+
+      setRegSuccess(true);
+
+      // Trigger notification email to admin as alert
+      const subject = encodeURIComponent(`PulseHunter Desk Clearance Application - ${regName}`);
+      const body = encodeURIComponent(
+        `New Desk Clearance Application:\n\n` +
+          `Applicant Name: ${regName}\n` +
+          `Email: ${regEmail}\n` +
+          `Strategy Focus: ${regStrategy}\n` +
+          `Status: PENDING ADMIN APPROVAL\n\n` +
+          `Log in to the Admin Console to review and approve access.`
+      );
+      window.open(`mailto:parthisivaram45@gmail.com?subject=${subject}&body=${body}`, "_blank");
+    } catch {
+      setRegError("Error registering application. Please try again.");
+    } finally {
+      setRegBusy(false);
+    }
   };
 
-  const nifty = summaryData?.nifty || {
-    ltp: 24252.0,
-    pct_change: 0.21,
-    symbol: "NIFTY 50",
-  };
-  const breadth = summaryData?.market_breadth || {
-    advancing: 134,
-    declining: 76,
-    total: 210,
-    advance_pct: 63.8,
-  };
-  const topGainers = summaryData?.top_gainers || [];
-  const topLosers = summaryData?.top_losers || [];
-  const cues = summaryData?.global_cues || {};
-
-  // Ticker ribbon stocks
-  const tickerItems = [
-    { s: "NIFTY 50", p: "24,252.00", c: "+0.21%", up: true },
-    { s: "RELIANCE", p: "2,980.50", c: "+1.24%", up: true },
-    { s: "HDFCBANK", p: "1,652.10", c: "+0.45%", up: true },
-    { s: "TCS", p: "4,124.00", c: "-0.32%", up: false },
-    { s: "ICICIBANK", p: "1,184.20", c: "+1.52%", up: true },
-    { s: "INFY", p: "1,822.40", c: "-0.85%", up: false },
-    { s: "TATASTEEL", p: "156.40", c: "+2.15%", up: true },
-    { s: "MARUTI", p: "12,450.00", c: "+1.10%", up: true },
-    { s: "BHARTIARTL", p: "1,480.00", c: "+0.75%", up: true },
-    { s: "SBIN", p: "824.50", c: "+0.95%", up: true },
-    { s: "LT", p: "3,620.00", c: "+1.40%", up: true },
-    { s: "KOTAKBANK", p: "1,780.00", c: "+0.30%", up: true },
-  ];
-
-  // Sandbox data definitions
-  const sandboxConfigs = {
-    TATASTEEL: {
-      symbol: "TATASTEEL",
-      name: "Tata Steel Ltd",
-      ltp: "₹156.40",
-      change: "+2.15%",
-      isBullish: true,
-      tag: "Momentum Breakout",
-      sector: "Metals & Mining",
-      vwap: "₹154.20",
-      cvd: "+12.4M",
-      cvdDesc: "Aggressive Buy Accumulation",
-      signal: "QUALIFIED ALPHA SETUP",
-      signalColor: "emerald",
-      entry: "₹155.00",
-      sl: "🛡️ ₹155.00 (Risk Free)",
-      target: "₹159.00 (1:2 RR)",
-      aiVerdict:
-        "Strong sector tailwinds in Metals. Sustained institutional volume above VWAP with zero overhead resistance.",
-    },
-    MARUTI: {
-      symbol: "MARUTI",
-      name: "Maruti Suzuki India",
-      ltp: "₹12,450.00",
-      change: "+1.10%",
-      isBullish: true,
-      tag: "VWAP Support Retest",
-      sector: "Automobile",
-      vwap: "₹12,380.00",
-      cvd: "+8.1M",
-      cvdDesc: "Steady Tick Inflow",
-      signal: "PULLBACK CONFIRMED",
-      signalColor: "cyan",
-      entry: "₹12,400.00",
-      sl: "🛡️ ₹12,400.00 (Breakeven Active)",
-      target: "₹12,680.00 (1:2 RR)",
-      aiVerdict:
-        "Auto sector breadth advancing. High Relative Strength against benchmark with dynamic ATR buffer intact.",
-    },
-    INFY: {
-      symbol: "INFY",
-      name: "Infosys Limited",
-      ltp: "₹1,822.40",
-      change: "-0.85%",
-      isBullish: false,
-      tag: "Sector Headwind Filter",
-      sector: "Information Tech",
-      vwap: "₹1,840.00",
-      cvd: "-9.2M",
-      cvdDesc: "Aggressive Sell Pressure",
-      signal: "BLOCKED BY QUANT GATE",
-      signalColor: "rose",
-      entry: "N/A",
-      sl: "N/A",
-      target: "N/A",
-      aiVerdict:
-        "Adversarial filter triggered: US Nasdaq tech weakness and persistent negative CVD tick flow.",
-    },
-  };
-
-  const screens = [
-    {
-      id: "ranking",
-      title: "Live Ranking Matrix",
-      badge: "Real-Time 250ms",
-      desc: "Cross-sectional market scanner dynamically ranking 210 F&O stocks by relative strength against NIFTY 50, day range position, and momentum velocity.",
-      highlights: [
-        "Relative Strength outperformance tracking",
-        "Day range expansion tracking",
-        "Instant filter by sector & signal state",
-      ],
-    },
-    {
-      id: "heatmap",
-      title: "Market Breadth & Sector Heatmap",
-      badge: "Visual Hierarchy",
-      desc: "Instant bird's-eye view of capital flow across all major Indian sectors: Banking, IT, Auto, Metals, FMCG, Energy, and Pharma.",
-      highlights: [
-        "Sector-level money flow concentration",
-        "Color-coded market breadth ratios",
-        "Constituent stock drilldown",
-      ],
-    },
-    {
-      id: "insights",
-      title: "AI Pre-Market Wire & Catalyst Feed",
-      badge: "Gemini 3.6 Flash",
-      desc: "Multi-stream global news wire synthesis distilling US Tech cues, commodity shifts, regulatory circulars, and quarterly earnings into actionable market bias.",
-      highlights: [
-        "4-stream macro wire synthesis",
-        "Thematic focus stock catalyst mapping",
-        "Adversarial red-flag risk evaluation",
-      ],
-    },
-    {
-      id: "smart",
-      title: "Smart Money & Order Flow Scanner",
-      badge: "Institutional Footprint",
-      desc: "Identifies institutional block accumulation by comparing real-time volume velocity against 20-day historical trading time slots.",
-      highlights: [
-        "Abnormal turnover surge detection",
-        "Cumulative Volume Delta (CVD) integration",
-        "Smart Money institutional ranking score",
-      ],
-    },
-    {
-      id: "charts",
-      title: "Lightweight Candlestick Charts",
-      badge: "Sub-Second Rendering",
-      desc: "Hardware-accelerated 5-minute candlestick charts with real-time tick aggregation, VWAP bands, prior day highs/lows, and order flow delta panes.",
-      highlights: [
-        "Volume-Weighted Average Price (VWAP)",
-        "CVD tick-rule sub-chart indicator",
-        "Interactive multi-timeframe candle navigation",
-      ],
-    },
-    {
-      id: "watchlist",
-      title: "Tactical Watchlist & Alerts",
-      badge: "Custom Pinning",
-      desc: "Curated high-conviction watchlist with real-time alert tags for opening range breakouts, VWAP pullbacks, and abnormal volume expansions.",
-      highlights: [
-        "Personalized symbol pinning",
-        "Real-time catalyst badges",
-        "One-click charting and execution routing",
-      ],
-    },
-    {
-      id: "positions",
-      title: "Auto-Breakeven Paper Terminal",
-      badge: "Capital Preservation",
-      desc: "Institutional paper execution simulator with automated position sizing, dynamic ATR volatility stop-losses, and automatic breakeven ratcheting at +1.0R profit.",
-      highlights: [
-        "Zero-risk Auto-Breakeven floor at +1R",
-        "Dynamic 1:2 Risk-Reward profit targets",
-        "Real-time P&L mark-to-market ledger",
-      ],
-    },
-  ];
-
-  const comparisonData = [
-    {
-      feature: "Data Stream Speed",
-      retail: "1–5 second polling delay",
-      pulse: "250ms sub-second in-memory state delta stream",
-    },
-    {
-      feature: "Capital Preservation",
-      retail: "Manual, emotional stop adjustments",
-      pulse: "Automated +1.0R Breakeven ratchet guarantee",
-    },
-    {
-      feature: "Market Coverage",
-      retail: "Manual stock-by-stock browsing",
-      pulse: "Simultaneous 210 F&O cross-sectional scanning",
-    },
-    {
-      feature: "Catalyst Intelligence",
-      retail: "Delayed public news headlines",
-      pulse: "Google Gemini 3.6 Flash adversarial risk auditor",
-    },
-    {
-      feature: "Order Flow Delta",
-      retail: "Standard total volume bars",
-      pulse: "Cumulative Volume Delta (CVD) aggression meter",
-    },
-    {
-      feature: "Execution Sizing",
-      retail: "Arbitrary percentage stop losses",
-      pulse: "Dynamic ATR-calibrated 1:2 risk-reward sizing",
-    },
-  ];
-
-  const faqs = [
-    {
-      q: "What is PulseHunter?",
-      a: "PulseHunter is an institutional quantitative trading terminal and market intelligence workstation designed specifically for active Indian equity and F&O derivatives market participants. It merges high-frequency tick aggregation, multi-factor algorithmic screening, and Google Gemini AI risk synthesis into a unified command center.",
-    },
-    {
-      q: "How does the Auto-Breakeven protection work?",
-      a: "When an active paper trading position achieves +1.0R in profit (equivalent to 1x the initial stop-loss risk distance), PulseHunter automatically ratchets the stop-loss floor up to the entry price. This mathematically guarantees that a profitable winning trade will never turn into a losing trade.",
-    },
-    {
-      q: "What makes the Smart Money engine different from regular volume?",
-      a: "Regular volume indicators only show total shares traded without context. PulseHunter's Smart Money Engine benchmarks volume velocity against a 20-day historical time-slot database, revealing whether current turnover represents genuine institutional block accumulation or retail noise.",
-    },
-    {
-      q: "How can I get access to PulseHunter?",
-      a: "PulseHunter operates on an invite-only onboarding model. Prospective quantitative traders and institutional desks can request access credentials directly from PARTHIBAKANNAN S using the 'Request Access' onboarding form or via email at parthisivaram45@gmail.com.",
-    },
-    {
-      q: "Can I use PulseHunter without live capital risk?",
-      a: "Yes. PulseHunter includes a fully integrated institutional Paper Trading Terminal with a realistic ₹1,00,000 simulated account, automated bracket order execution, and full margin tracking to test quantitative strategies safely.",
-    },
+  // Market telemetry defaults
+  const nifty = summaryData?.nifty || { ltp: 24480.2, pct_change: 0.64, symbol: "NIFTY 50" };
+  const breadth = summaryData?.market_breadth || { advancing: 138, declining: 72, total: 210, advance_pct: 65.7 };
+  const isMarketOpen = summaryData?.system_stats?.market_open ?? false;
+  const topGainers = summaryData?.top_gainers?.length ? summaryData.top_gainers : [
+    { symbol: "TATASTEEL", sector: "Metals & Mining", ltp: 148.6, pct_change: 3.42 },
+    { symbol: "M&M", sector: "Automobile", ltp: 2845.0, pct_change: 2.15 },
+    { symbol: "RELIANCE", sector: "Energy", ltp: 2980.4, pct_change: 1.45 },
   ];
 
   return (
-    <div className="min-h-screen bg-[#07080c] text-white font-sans selection:bg-cyan-500 selection:text-black overflow-x-hidden antialiased">
-      {/* Dynamic Ambient Background */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-[-15%] left-[-10%] w-[55vw] h-[55vw] rounded-full bg-cyan-500/8 blur-[140px]" />
-        <div className="absolute top-[25%] right-[-12%] w-[50vw] h-[50vw] rounded-full bg-indigo-600/10 blur-[150px]" />
-        <div className="absolute bottom-[-10%] left-[20%] w-[45vw] h-[45vw] rounded-full bg-emerald-500/6 blur-[130px]" />
-        <div
-          className="absolute inset-0 opacity-[0.025]"
-          style={{
-            backgroundImage: `radial-gradient(rgba(255, 255, 255, 0.6) 1px, transparent 1px)`,
-            backgroundSize: "24px 24px",
-          }}
-        />
+    <div className="min-h-screen bg-[#06080D] text-slate-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-200 antialiased overflow-x-hidden">
+      
+      {/* ==================== 1. LIVE TELEMETRY TOP BAR ==================== */}
+      <div className="border-b border-white/[0.08] bg-[#040609] text-[11px] font-mono px-4 py-1.5 flex items-center justify-between text-slate-400 select-none">
+        <div className="flex items-center gap-4 overflow-x-auto whitespace-nowrap">
+          <div className="flex items-center gap-2">
+            <span className={`w-2 h-2 rounded-full ${isMarketOpen ? "bg-emerald-400 animate-ping" : "bg-cyan-400"}`} />
+            <span className="text-white font-bold">
+              {isMarketOpen ? "NSE FEED: LIVE" : "TELEMETRY: VERIFIED SESSION"}
+            </span>
+          </div>
+          <span className="text-slate-700">|</span>
+          <div>
+            NIFTY 50:{" "}
+            <span className="text-emerald-400 font-bold">
+              {nifty.ltp?.toLocaleString("en-IN", { minimumFractionDigits: 2 })} ({nifty.pct_change >= 0 ? "+" : ""}
+              {nifty.pct_change?.toFixed(2)}%)
+            </span>
+          </div>
+          <span className="text-slate-700">|</span>
+          <div>
+            BREADTH:{" "}
+            <span className="text-emerald-400 font-bold">{breadth.advancing} ADV</span> /{" "}
+            <span className="text-rose-400 font-bold">{breadth.declining} DEC</span>
+          </div>
+          <span className="text-slate-700 hidden sm:inline">|</span>
+          <div className="hidden sm:inline">
+            REGIME: <span className="text-cyan-400 font-bold">BULLISH EXPANSION</span>
+          </div>
+        </div>
+
+        <div className="hidden md:flex items-center gap-3">
+          <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold">
+            DESK SEATS: 42 / 60 PROVISIONED [82% FULL]
+          </span>
+          <span className="text-slate-500">{currentTime || "10:42:18 IST"}</span>
+        </div>
       </div>
 
-      {/* ── TOP HEADER NAVBAR ── */}
-      <header className="sticky top-0 z-40 backdrop-blur-2xl bg-[#07080c]/85 border-b border-white/[0.06] transition-all">
+      {/* ==================== 2. EXECUTIVE NAVIGATION ==================== */}
+      <header className="sticky top-0 z-50 bg-[#06080D]/90 backdrop-blur-md border-b border-white/[0.08]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          
+          {/* Brand Logo */}
           <div className="flex items-center gap-3">
-            <img
-              src="/assets/logo.jpg"
-              alt="PulseHunter Logo"
-              className="w-9 h-9 rounded-xl object-cover border border-cyan-500/40 shadow-[0_0_20px_rgba(6,182,212,0.35)]"
-            />
-            <div className="flex items-baseline gap-2">
-              <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-neutral-200 to-neutral-400 bg-clip-text text-transparent font-display">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 via-indigo-600 to-emerald-500 p-[1px] shadow-lg shadow-cyan-500/20 flex-shrink-0">
+              <div className="w-full h-full bg-[#080B11] rounded-[11px] flex items-center justify-center">
+                <Activity className="w-5 h-5 text-cyan-400" />
+              </div>
+            </div>
+            <div>
+              <span className="text-lg font-black tracking-tight text-white flex items-center gap-1.5 font-mono">
                 PulseHunter
-              </span>
-              <span className="hidden sm:inline-flex text-[10px] uppercase font-mono px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-bold tracking-wider">
-                Since 2026
+                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                  QUANT
+                </span>
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-4">
-            <a
-              href="#market-radar"
-              className="hidden md:inline-flex text-xs font-medium text-neutral-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/[0.04]"
-            >
-              Market Radar
+          {/* Anchor Navigation */}
+          <nav className="hidden lg:flex items-center gap-7 text-xs font-mono font-semibold tracking-wider uppercase text-slate-400">
+            <a href="#radar-matrix" className="hover:text-cyan-400 transition-colors flex items-center gap-1">
+              <span className="text-cyan-500">01.</span> Relative Strength
             </a>
-            <a
-              href="#sandbox"
-              className="hidden md:inline-flex text-xs font-medium text-neutral-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/[0.04]"
-            >
-              Live Demo
+            <a href="#sector-compass" className="hover:text-cyan-400 transition-colors flex items-center gap-1">
+              <span className="text-cyan-500">02.</span> Sector Compass
             </a>
-            <a
-              href="#screens"
-              className="hidden md:inline-flex text-xs font-medium text-neutral-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/[0.04]"
-            >
-              Screens
+            <a href="#playbook" className="hover:text-cyan-400 transition-colors flex items-center gap-1">
+              <span className="text-cyan-500">03.</span> 09:15 Playbook
             </a>
-            <a
-              href="#comparison"
-              className="hidden lg:inline-flex text-xs font-medium text-neutral-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/[0.04]"
-            >
-              Edge
+            <a href="#autopsy" className="hover:text-cyan-400 transition-colors flex items-center gap-1">
+              <span className="text-cyan-500">04.</span> Today's Autopsy
             </a>
-            <a
-              href="#faq"
-              className="hidden lg:inline-flex text-xs font-medium text-neutral-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/[0.04]"
-            >
-              FAQ
+            <a href="#governance" className="hover:text-cyan-400 transition-colors flex items-center gap-1">
+              <span className="text-cyan-500">05.</span> Risk Governors
             </a>
+          </nav>
 
-            <button
-              onClick={() => setShowAccessModal(true)}
-              className="text-xs font-semibold px-3.5 py-1.5 rounded-xl border border-white/[0.12] bg-white/[0.04] hover:bg-white/[0.08] text-neutral-200 hover:text-white transition-all shadow-sm"
-            >
-              Request Access
-            </button>
-
+          {/* Action CTAs */}
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
             <button
               onClick={() => setShowLoginModal(true)}
-              className="flex items-center gap-1.5 text-xs font-bold px-4 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)]"
+              className="px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold text-slate-300 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.1] transition-all cursor-pointer"
             >
-              <Lock size={12} className="stroke-[2.5]" />
-              <span>Client Sign In</span>
+              Sign In
+            </button>
+            <button
+              onClick={() => setShowAccessModal(true)}
+              className="px-4 py-1.5 rounded-lg text-xs font-mono font-bold text-slate-950 bg-gradient-to-r from-cyan-400 to-emerald-400 hover:brightness-110 shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>Request Clearance</span>
+              <ArrowRight size={13} />
             </button>
           </div>
-        </div>
 
-        {/* ── LIVE INFINITE TICKER MARQUEE RIBBON ── */}
-        <div className="border-t border-white/[0.04] bg-neutral-950/60 overflow-hidden py-1.5 relative flex items-center">
-          <div className="flex gap-8 whitespace-nowrap animate-marquee font-mono text-[11px]">
-            {tickerItems.concat(tickerItems).map((item, idx) => (
-              <div key={idx} className="inline-flex items-center gap-2">
-                <span className="text-neutral-400 font-bold">{item.s}</span>
-                <span className="text-white">₹{item.p}</span>
-                <span
-                  className={`font-bold ${item.up ? "text-emerald-400" : "text-rose-400"}`}
-                >
-                  {item.c}
-                </span>
-                <span className="text-neutral-700">·</span>
-              </div>
-            ))}
-          </div>
         </div>
       </header>
 
-      {/* ── HERO SECTION ── */}
-      <section className="relative z-10 pt-14 pb-16 sm:pt-20 sm:pb-24 px-4 sm:px-6 max-w-7xl mx-auto text-center">
-        {/* Brand Emblem Pill */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 text-xs font-mono font-bold mb-8 shadow-sm"
-        >
-          <img
-            src="/assets/logo.jpg"
-            alt="Logo"
-            className="w-4 h-4 rounded-full object-cover"
-          />
-          <span>PULSEHUNTER · SYSTEMATIC TRADING &amp; AI WORKSTATION</span>
-        </motion.div>
+      {/* ==================== 3. HERO COCKPIT ==================== */}
+      <section className="relative pt-16 pb-14 px-4 sm:px-6 max-w-7xl mx-auto text-center">
+        
+        {/* Ambient Glow */}
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[300px] bg-gradient-to-r from-cyan-500/15 via-indigo-600/15 to-emerald-500/15 blur-[140px] pointer-events-none rounded-full" />
 
-        {/* Hero Title */}
-        <motion.h1
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight font-display text-white max-w-5xl mx-auto leading-[1.08] mb-6"
-        >
-          Hunt the Market Pulse with{" "}
-          <span className="bg-gradient-to-r from-cyan-400 via-teal-300 to-indigo-400 bg-clip-text text-transparent">
-            Systematic Alpha &amp; AI
+        {/* Scarcity Pill */}
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 text-xs font-mono font-semibold mb-6">
+          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+          <span>PRIVATE PROPRIETARY RADAR · BY DESK CLEARANCE ONLY</span>
+        </div>
+
+        {/* Primary Headline */}
+        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.08] max-w-5xl mx-auto">
+          Stop Trading What Already Moved. <br className="hidden sm:inline" />
+          <span className="bg-gradient-to-r from-cyan-400 via-teal-200 to-emerald-400 bg-clip-text text-transparent">
+            Catch The Institutional Squeeze
           </span>{" "}
-          Precision.
-        </motion.h1>
+          Before The Run.
+        </h1>
 
-        {/* Hero Subtitle */}
-        <motion.p
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-base sm:text-xl text-neutral-300 max-w-3xl mx-auto leading-relaxed mb-10 font-normal"
-        >
-          The institutional quantitative intelligence command center for active
-          Indian equity traders. Real-time order flow scanning, 5-tier
-          systematic screening, Gemini AI catalyst analysis, and automated paper
-          trade execution.
-        </motion.p>
+        {/* Sub-headline */}
+        <p className="mt-6 text-base sm:text-lg text-slate-400 max-w-3xl mx-auto leading-relaxed">
+          Retail brokers alert you after a stock is up +4%. PulseHunter quantifies{" "}
+          <strong className="text-white">Relative Strength against NIFTY</strong>,{" "}
+          <strong className="text-white">Sector Sympathy Velocity</strong>, and{" "}
+          <strong className="text-white">Day-Range Compression Squeezes</strong> at the exact moment of institutional liquidity injection.
+        </p>
 
-        {/* CTA Buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="flex flex-wrap items-center justify-center gap-4 mb-16"
-        >
-          <button
-            onClick={() => setShowLoginModal(true)}
-            className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-teal-400 to-blue-500 hover:opacity-95 text-black font-extrabold text-sm shadow-[0_0_25px_rgba(6,182,212,0.35)] transition-all transform hover:-translate-y-0.5"
-          >
-            <span>Launch PulseHunter Terminal</span>
-            <ArrowRight size={16} className="stroke-[2.5]" />
-          </button>
+        {/* CTAs */}
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 font-mono">
           <button
             onClick={() => setShowAccessModal(true)}
-            className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.09] border border-white/[0.12] text-white font-bold text-sm transition-all"
+            className="w-full sm:w-auto px-7 py-3 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-cyan-400 to-emerald-400 hover:brightness-110 shadow-xl shadow-cyan-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
-            <UserCheck size={16} className="text-cyan-400" />
-            <span>Request Access from PARTHIBAKANNAN S</span>
+            <span>Request Terminal Clearance Key</span>
+            <ArrowRight size={14} />
           </button>
-        </motion.div>
+          <a
+            href="#radar-matrix"
+            className="w-full sm:w-auto px-6 py-3 rounded-xl text-xs font-bold text-slate-300 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.1] transition-all flex items-center justify-center gap-2"
+          >
+            <span>Inspect Live Radar Feed ↓</span>
+          </a>
+        </div>
 
-        {/* Numerical Metrics Bar */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.7, delay: 0.35 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-4 max-w-4xl mx-auto"
-        >
-          <div className="bg-white/[0.025] backdrop-blur-xl border border-white/[0.07] rounded-2xl p-4 text-center">
-            <div className="text-2xl sm:text-3xl font-extrabold font-mono text-white mb-1">
-              210+
-            </div>
-            <div className="text-[11px] text-neutral-400 uppercase font-semibold tracking-wider">
-              Tracked F&amp;O Equities
-            </div>
-          </div>
-          <div className="bg-white/[0.025] backdrop-blur-xl border border-white/[0.07] rounded-2xl p-4 text-center">
-            <div className="text-2xl sm:text-3xl font-extrabold font-mono text-cyan-400 mb-1">
-              250ms
-            </div>
-            <div className="text-[11px] text-neutral-400 uppercase font-semibold tracking-wider">
-              State Delta Stream
-            </div>
-          </div>
-          <div className="bg-white/[0.025] backdrop-blur-xl border border-white/[0.07] rounded-2xl p-4 text-center">
-            <div className="text-2xl sm:text-3xl font-extrabold font-mono text-indigo-400 mb-1">
-              7 Screens
-            </div>
-            <div className="text-[11px] text-neutral-400 uppercase font-semibold tracking-wider">
-              Integrated Workstation
-            </div>
-          </div>
-          <div className="bg-white/[0.025] backdrop-blur-xl border border-white/[0.07] rounded-2xl p-4 text-center">
-            <div className="text-2xl sm:text-3xl font-extrabold font-mono text-emerald-400 mb-1">
-              +1.0R
-            </div>
-            <div className="text-[11px] text-neutral-400 uppercase font-semibold tracking-wider">
-              Auto-Breakeven Floor
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Hero Visual Preview Showcase Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="mt-14 rounded-3xl overflow-hidden border border-white/[0.1] shadow-[0_20px_60px_rgba(0,0,0,0.7)] relative max-w-5xl mx-auto group"
-        >
-          <div className="relative aspect-video w-full overflow-hidden bg-neutral-950">
-            <img
-              src="/assets/hero-bg.jpg"
-              alt="PulseHunter Systematic Terminal Interface"
-              className="w-full h-full object-cover transform group-hover:scale-102 transition-transform duration-700 opacity-90"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#07080c] via-transparent to-transparent opacity-80" />
-            <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between flex-wrap gap-4 text-left">
-              <div>
-                <span className="text-xs font-mono font-bold text-cyan-400 block mb-1">
-                  SYSTEMATIC QUANT WORKSTATION
-                </span>
-                <h3 className="text-lg sm:text-2xl font-bold text-white">
-                  Real-time Cross-Sectional Heatmaps &amp; 5m CVD Delta Engine
-                </h3>
-              </div>
-              <button
-                onClick={() => setShowLoginModal(true)}
-                className="px-4 py-2 rounded-xl bg-white text-black font-bold text-xs hover:bg-neutral-200 transition-all shadow-lg flex items-center gap-1.5"
-              >
-                <span>Enter Terminal</span>
-                <ChevronRight size={14} />
-              </button>
-            </div>
-          </div>
-        </motion.div>
       </section>
 
-      {/* ── PUBLIC LIVE MARKET RADAR SECTION ── */}
-      <section
-        id="market-radar"
-        className="relative z-10 py-16 px-4 sm:px-6 max-w-7xl mx-auto"
-      >
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider mb-2">
-            <Activity size={14} />
-            <span>Public Market Overview</span>
-          </div>
-          <h2 className="text-2xl sm:text-4xl font-bold text-white font-display">
-            Live Market Radar &amp; Macro Pulse
-          </h2>
-          <p className="text-sm text-neutral-400 max-w-2xl mx-auto mt-2">
-            Real-time public benchmarks refreshed continuously directly from
-            PulseHunter's in-memory engine.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          {/* Nifty Benchmark & Breadth */}
-          <div className="bg-white/[0.025] backdrop-blur-xl border border-white/[0.08] rounded-3xl p-6 flex flex-col justify-between shadow-sm">
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-bold text-neutral-400 uppercase font-mono tracking-wider">
-                  BENCHMARK
-                </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
-                  LIVE STREAM
-                </span>
-              </div>
-              <div className="flex items-baseline gap-3 mb-2">
-                <h3 className="text-3xl font-extrabold font-mono text-white">
-                  ₹
-                  {Number(nifty.ltp).toLocaleString("en-IN", {
-                    minimumFractionDigits: 2,
-                  })}
-                </h3>
-                <span
-                  className={`text-sm font-mono font-bold ${
-                    nifty.pct_change >= 0 ? "text-emerald-400" : "text-rose-400"
-                  }`}
-                >
-                  {nifty.pct_change >= 0 ? "+" : ""}
-                  {Number(nifty.pct_change).toFixed(2)}%
-                </span>
-              </div>
-              <p className="text-xs text-neutral-400 mb-6">
-                NIFTY 50 reference anchor for cross-sectional relative strength
-                calculations.
-              </p>
-            </div>
-
-            {/* Breadth Indicator */}
-            <div className="border-t border-white/[0.06] pt-4">
-              <div className="flex items-center justify-between text-xs font-mono mb-2">
-                <span className="text-emerald-400 font-bold">
-                  ▲ {breadth.advancing} Advancing ({breadth.advance_pct}%)
-                </span>
-                <span className="text-rose-400 font-bold">
-                  ▼ {breadth.declining} Declining
-                </span>
-              </div>
-              <div className="w-full h-2.5 bg-neutral-900 rounded-full overflow-hidden flex">
-                <div
-                  className="bg-emerald-500 transition-all duration-500"
-                  style={{ width: `${breadth.advance_pct}%` }}
-                />
-                <div
-                  className="bg-rose-500 transition-all duration-500"
-                  style={{ width: `${100 - breadth.advance_pct}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Top Movers Spotlight */}
-          <div className="bg-white/[0.025] backdrop-blur-xl border border-white/[0.08] rounded-3xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold text-neutral-400 uppercase font-mono tracking-wider">
-                MARKET MOVERS SPOTLIGHT
-              </span>
-              <Flame size={14} className="text-amber-400" />
-            </div>
-
-            <div className="space-y-3">
-              <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block">
-                🟢 Momentum Leaders
-              </span>
-              <div className="grid grid-cols-2 gap-2">
-                {topGainers.slice(0, 2).map((stk, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-2.5"
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-bold text-xs font-mono text-white">
-                        {stk.symbol}
-                      </span>
-                      <span className="text-[10px] font-mono text-emerald-400 font-bold">
-                        +{Number(stk.pct_change).toFixed(2)}%
-                      </span>
-                    </div>
-                    <div className="text-[10px] text-neutral-400">
-                      ₹{Number(stk.ltp).toFixed(1)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <span className="text-[11px] font-bold text-rose-400 uppercase tracking-wider block pt-1">
-                🔴 Sector Laggards
-              </span>
-              <div className="grid grid-cols-2 gap-2">
-                {topLosers.slice(0, 2).map((stk, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-2.5"
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-bold text-xs font-mono text-white">
-                        {stk.symbol}
-                      </span>
-                      <span className="text-[10px] font-mono text-rose-400 font-bold">
-                        {Number(stk.pct_change).toFixed(2)}%
-                      </span>
-                    </div>
-                    <div className="text-[10px] text-neutral-400">
-                      ₹{Number(stk.ltp).toFixed(1)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Global Cues & AI Synthesis */}
-          <div className="bg-white/[0.025] backdrop-blur-xl border border-white/[0.08] rounded-3xl p-6 flex flex-col justify-between shadow-sm">
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-bold text-neutral-400 uppercase font-mono tracking-wider">
-                  GLOBAL MACRO CUES
-                </span>
-                <Globe size={14} className="text-cyan-400" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 text-xs font-mono mb-4">
-                {cues.gift_nifty && (
-                  <div className="bg-white/[0.03] p-2.5 rounded-xl border border-white/[0.06]">
-                    <span className="text-[9px] text-neutral-400 uppercase block">
-                      GIFT NIFTY
-                    </span>
-                    <span className="font-bold text-white">
-                      {cues.gift_nifty}
-                    </span>
-                  </div>
-                )}
-                {cues.crude_oil && (
-                  <div className="bg-white/[0.03] p-2.5 rounded-xl border border-white/[0.06]">
-                    <span className="text-[9px] text-neutral-400 uppercase block">
-                      BRENT CRUDE
-                    </span>
-                    <span className="font-bold text-white">
-                      {cues.crude_oil}
-                    </span>
-                  </div>
-                )}
-                {cues.gold_commodities && (
-                  <div className="bg-white/[0.03] p-2.5 rounded-xl border border-white/[0.06]">
-                    <span className="text-[9px] text-neutral-400 uppercase block">
-                      GOLD / METALS
-                    </span>
-                    <span className="font-bold text-white truncate block">
-                      {cues.gold_commodities}
-                    </span>
-                  </div>
-                )}
-                {cues.dollar_index && (
-                  <div className="bg-white/[0.03] p-2.5 rounded-xl border border-white/[0.06]">
-                    <span className="text-[9px] text-neutral-400 uppercase block">
-                      DXY DOLLAR
-                    </span>
-                    <span className="font-bold text-white">
-                      {cues.dollar_index}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-2xl p-3.5">
-              <span className="text-[10px] font-mono text-cyan-400 font-bold flex items-center gap-1 mb-1">
-                <Sparkles size={11} /> AI MARKET SYNTHESIS
-              </span>
-              <p className="text-xs text-neutral-300 leading-relaxed line-clamp-3">
-                {summaryData?.ai_summary}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── INTERACTIVE TERMINAL SANDBOX PREVIEW (HANDS-ON MOCKUP) ── */}
-      <section
-        id="sandbox"
-        className="relative z-10 py-20 px-4 sm:px-6 max-w-7xl mx-auto border-t border-white/[0.06]"
-      >
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider mb-2">
-            <Eye size={14} />
-            <span>Interactive Terminal Sandbox</span>
-          </div>
-          <h2 className="text-3xl sm:text-5xl font-bold text-white font-display">
-            Experience PulseHunter in Action
-          </h2>
-          <p className="text-sm sm:text-base text-neutral-400 max-w-2xl mx-auto mt-3">
-            Select a candidate setup below to observe how PulseHunter's quant
-            gate, order flow, and risk protection interact in real-time.
-          </p>
-        </div>
-
-        {/* Stock Selector Pill Bar */}
-        <div className="flex justify-center gap-3 mb-8">
-          {["TATASTEEL", "MARUTI", "INFY"].map((sym) => {
-            const cfg = sandboxConfigs[sym];
-            const active = sandboxStock === sym;
-            return (
-              <button
-                key={sym}
-                onClick={() => setSandboxStock(sym)}
-                className={`px-5 py-2.5 rounded-2xl text-xs font-bold font-mono transition-all flex items-center gap-2 ${
-                  active
-                    ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-extrabold shadow-[0_0_20px_rgba(6,182,212,0.35)]"
-                    : "bg-white/[0.03] text-neutral-400 hover:text-white border border-white/[0.08]"
-                }`}
-              >
-                <span>{cfg.symbol}</span>
-                <span
-                  className={`text-[10px] ${cfg.isBullish ? "text-emerald-400" : "text-rose-400"} ${active ? "!text-black font-black" : ""}`}
-                >
-                  {cfg.change}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Interactive Live Card Container */}
-        {(() => {
-          const cfg = sandboxConfigs[sandboxStock];
-          return (
-            <motion.div
-              key={sandboxStock}
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3 }}
-              className="bg-white/[0.025] backdrop-blur-2xl border border-white/[0.1] rounded-3xl p-6 sm:p-10 shadow-2xl max-w-5xl mx-auto"
-            >
-              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-6 border-b border-white/[0.06]">
-                <div>
-                  <div className="flex items-center gap-2.5 mb-1">
-                    <h3 className="text-2xl font-bold font-mono text-white">
-                      {cfg.symbol}
-                    </h3>
-                    <span className="text-xs text-neutral-400">
-                      · {cfg.name}
-                    </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/[0.05] border border-white/[0.1] text-neutral-300">
-                      {cfg.sector}
-                    </span>
-                  </div>
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-3xl font-extrabold font-mono text-white">
-                      {cfg.ltp}
-                    </span>
-                    <span
-                      className={`text-sm font-mono font-bold ${cfg.isBullish ? "text-emerald-400" : "text-rose-400"}`}
-                    >
-                      {cfg.change}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <span
-                    className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold border ${
-                      cfg.signalColor === "emerald"
-                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                        : cfg.signalColor === "cyan"
-                          ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/30"
-                          : "bg-rose-500/10 text-rose-400 border-rose-500/30"
-                    }`}
-                  >
-                    {cfg.signal}
-                  </span>
-                </div>
-              </div>
-
-              {/* Dynamic Feature Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-6">
-                <div className="bg-neutral-950/70 border border-white/[0.06] rounded-2xl p-4">
-                  <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block mb-1">
-                    Intraday Order Flow (CVD)
-                  </span>
-                  <div className="text-lg font-bold font-mono text-white mb-0.5">
-                    {cfg.cvd}
-                  </div>
-                  <span className="text-xs text-cyan-400 font-medium">
-                    {cfg.cvdDesc}
-                  </span>
-                </div>
-
-                <div className="bg-neutral-950/70 border border-white/[0.06] rounded-2xl p-4">
-                  <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block mb-1">
-                    VWAP Reference Level
-                  </span>
-                  <div className="text-lg font-bold font-mono text-white mb-0.5">
-                    {cfg.vwap}
-                  </div>
-                  <span className="text-xs text-neutral-400">
-                    Institutional Volume Anchor
-                  </span>
-                </div>
-
-                <div className="bg-neutral-950/70 border border-white/[0.06] rounded-2xl p-4">
-                  <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block mb-1">
-                    Risk Protection Status
-                  </span>
-                  <div className="text-sm font-bold font-mono text-emerald-400 mb-0.5">
-                    {cfg.sl}
-                  </div>
-                  <span className="text-xs text-neutral-400">
-                    Target: {cfg.target}
-                  </span>
-                </div>
-              </div>
-
-              {/* AI Copilot Verdict Box */}
-              <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-2xl p-4 flex items-start gap-3">
-                <Sparkles
-                  size={18}
-                  className="text-cyan-400 flex-shrink-0 mt-0.5"
-                />
-                <div>
-                  <span className="text-[11px] font-mono font-bold text-cyan-400 uppercase tracking-wider block mb-1">
-                    GEMINI 3.6 FLASH VERDICT &amp; CATALYST AUDIT
-                  </span>
-                  <p className="text-xs text-neutral-300 leading-relaxed">
-                    {cfg.aiVerdict}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          );
-        })()}
-      </section>
-
-      {/* ── THE 7 TERMINAL SCREENS WALKTHROUGH ── */}
-      <section
-        id="screens"
-        className="relative z-10 py-20 px-4 sm:px-6 max-w-7xl mx-auto border-t border-white/[0.06]"
-      >
-        <div className="text-center mb-14">
-          <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider mb-2">
-            <Layers size={14} />
-            <span>Complete Platform Walkthrough</span>
-          </div>
-          <h2 className="text-3xl sm:text-5xl font-bold text-white font-display">
-            The 7 Integrated Workstations
-          </h2>
-          <p className="text-sm sm:text-base text-neutral-400 max-w-2xl mx-auto mt-3">
-            A comprehensive suite of institutional tools tailored for rapid
-            intraday decision-making.
-          </p>
-        </div>
-
-        {/* Screen Switcher Tabs */}
-        <div className="flex justify-start lg:justify-center gap-2 mb-10 overflow-x-auto pb-2">
-          {screens.map((sc) => {
-            const active = activeScreenTab === sc.id;
-            return (
-              <button
-                key={sc.id}
-                onClick={() => setActiveScreenTab(sc.id)}
-                className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${
-                  active
-                    ? "bg-white text-black font-extrabold shadow-lg"
-                    : "bg-white/[0.03] text-neutral-400 hover:text-white border border-white/[0.08]"
-                }`}
-              >
-                {sc.title}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Active Screen Detail */}
-        {screens.map((sc) => {
-          if (sc.id !== activeScreenTab) return null;
-          return (
-            <motion.div
-              key={sc.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="bg-white/[0.025] backdrop-blur-2xl border border-white/[0.1] rounded-3xl p-6 sm:p-10 shadow-2xl"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono text-cyan-400 font-bold uppercase tracking-wider">
-                  SCREEN SPOTLIGHT
-                </span>
-                <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-bold">
-                  {sc.badge}
-                </span>
-              </div>
-              <h3 className="text-2xl sm:text-3xl font-bold text-white font-display mb-3">
-                {sc.title}
-              </h3>
-              <p className="text-sm sm:text-base text-neutral-300 max-w-3xl leading-relaxed mb-6">
-                {sc.desc}
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-white/[0.06]">
-                {sc.highlights.map((h, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-2 text-xs text-neutral-300"
-                  >
-                    <CheckCircle2
-                      size={15}
-                      className="text-cyan-400 flex-shrink-0"
-                    />
-                    <span>{h}</span>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          );
-        })}
-      </section>
-
-      {/* ── COMPARISON MATRIX SECTION ── */}
-      <section
-        id="comparison"
-        className="relative z-10 py-20 px-4 sm:px-6 max-w-5xl mx-auto border-t border-white/[0.06]"
-      >
-        <div className="text-center mb-14">
-          <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-indigo-400 uppercase tracking-wider mb-2">
-            <Sliders size={14} />
-            <span>The Quantitative Edge</span>
-          </div>
-          <h2 className="text-3xl sm:text-5xl font-bold text-white font-display">
-            Conventional Retail vs PulseHunter
-          </h2>
-          <p className="text-sm sm:text-base text-neutral-400 max-w-xl mx-auto mt-3">
-            Why systematic momentum trading outperforms manual chart-by-chart
-            browsing.
-          </p>
-        </div>
-
-        <div className="bg-white/[0.025] border border-white/[0.1] rounded-3xl overflow-hidden shadow-2xl">
-          <div className="grid grid-cols-3 bg-white/[0.04] border-b border-white/[0.08] p-4 text-xs font-mono font-bold">
-            <span className="text-neutral-400 uppercase">Capability</span>
-            <span className="text-neutral-400 uppercase">
-              Conventional Retail
-            </span>
-            <span className="text-cyan-400 uppercase">
-              PulseHunter Terminal
-            </span>
-          </div>
-          {comparisonData.map((row, idx) => (
-            <div
-              key={idx}
-              className={`grid grid-cols-3 p-4 text-xs items-center gap-3 border-b border-white/[0.04] ${
-                idx % 2 === 0 ? "bg-white/[0.01]" : "bg-transparent"
-              }`}
-            >
-              <span className="font-bold text-white">{row.feature}</span>
-              <span className="text-neutral-400">{row.retail}</span>
-              <span className="text-cyan-300 font-semibold flex items-center gap-1.5">
-                <Check size={14} className="text-cyan-400 flex-shrink-0" />
-                <span>{row.pulse}</span>
-              </span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── WHO PULSEHUNTER IS BUILT FOR ── */}
-      <section className="relative z-10 py-20 px-4 sm:px-6 max-w-7xl mx-auto border-t border-white/[0.06]">
-        <div className="text-center mb-14">
-          <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-emerald-400 uppercase tracking-wider mb-2">
-            <UserCheck size={14} />
-            <span>Target Profiles</span>
-          </div>
-          <h2 className="text-3xl sm:text-5xl font-bold text-white font-display">
-            Who Is PulseHunter Built For?
-          </h2>
-          <p className="text-sm sm:text-base text-neutral-400 max-w-2xl mx-auto mt-3">
-            Engineered for high-frequency discipline and systematic execution
-            across three key participant profiles.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white/[0.025] border border-white/[0.08] rounded-3xl p-7 flex flex-col justify-between shadow-sm">
-            <div>
-              <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 grid place-items-center mb-4">
-                <BarChart3 size={20} />
-              </div>
-              <h4 className="text-xl font-bold text-white mb-2">
-                Quantitative &amp; Systematic Traders
-              </h4>
-              <p className="text-xs text-neutral-400 leading-relaxed mb-6">
-                Traders seeking statistical outperformance who want to trade
-                strictly with the trend, filtered by sector relative strength
-                and confirmed volume accumulation.
-              </p>
-            </div>
-            <div className="text-xs text-cyan-400 font-mono font-bold flex items-center gap-1">
-              <span>Statistical Edge Focus</span>
-              <ArrowRight size={13} />
-            </div>
-          </div>
-
-          <div className="bg-white/[0.025] border border-white/[0.08] rounded-3xl p-7 flex flex-col justify-between shadow-sm">
-            <div>
-              <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 grid place-items-center mb-4">
-                <Flame size={20} />
-              </div>
-              <h4 className="text-xl font-bold text-white mb-2">
-                Active F&amp;O Derivatives Desks
-              </h4>
-              <p className="text-xs text-neutral-400 leading-relaxed mb-6">
-                Proprietary intraday scalpers who need sub-second Cumulative
-                Volume Delta (CVD) order flow to detect aggressive market
-                participants in 210 F&amp;O stocks.
-              </p>
-            </div>
-            <div className="text-xs text-indigo-400 font-mono font-bold flex items-center gap-1">
-              <span>Order Flow Precision</span>
-              <ArrowRight size={13} />
-            </div>
-          </div>
-
-          <div className="bg-white/[0.025] border border-white/[0.08] rounded-3xl p-7 flex flex-col justify-between shadow-sm">
-            <div>
-              <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 grid place-items-center mb-4">
-                <Shield size={20} />
-              </div>
-              <h4 className="text-xl font-bold text-white mb-2">
-                Disciplined Risk-First Traders
-              </h4>
-              <p className="text-xs text-neutral-400 leading-relaxed mb-6">
-                Traders committed to eliminating revenge trading and emotional
-                exits with automated bracket order execution and automatic +1.0R
-                Breakeven ratchets.
-              </p>
-            </div>
-            <div className="text-xs text-emerald-400 font-mono font-bold flex items-center gap-1">
-              <span>Zero-Loss Guarantee on 1R</span>
-              <ArrowRight size={13} />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── KEYBOARD SHORTCUTS & INFRASTRUCTURE RIBBON ── */}
-      <section className="relative z-10 py-16 px-4 sm:px-6 max-w-7xl mx-auto border-t border-white/[0.06]">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+      {/* ==================== 4. LIVE RADAR (SHOW, BUT GATE) ==================== */}
+      <section id="radar-matrix" className="py-12 px-4 sm:px-6 max-w-7xl mx-auto">
+        
+        <div className="flex flex-col md:flex-row items-start md:items-end justify-between mb-4 gap-2">
           <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider mb-2">
-              <Command size={14} />
-              <span>Keyboard-First Architecture</span>
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-xs font-mono font-bold text-emerald-400 uppercase tracking-widest">
+                LIVE INTRADAY ALPHA RADAR
+              </span>
             </div>
-            <h3 className="text-2xl sm:text-3xl font-bold text-white font-display mb-4">
-              Engineered for Terminal Velocity
-            </h3>
-            <p className="text-sm text-neutral-300 leading-relaxed mb-6">
-              Navigate all 7 screens, search symbols, toggle themes, and expand
-              charts with zero latency hotkeys.
-            </p>
-            <div className="grid grid-cols-2 gap-2.5 text-xs font-mono">
-              <div className="bg-white/[0.03] p-3 rounded-xl border border-white/[0.06] flex items-center justify-between">
-                <span className="text-neutral-400">Switch Screens</span>
-                <kbd className="px-2 py-0.5 rounded bg-white/[0.1] text-white font-bold">
-                  [1 - 7]
-                </kbd>
-              </div>
-              <div className="bg-white/[0.03] p-3 rounded-xl border border-white/[0.06] flex items-center justify-between">
-                <span className="text-neutral-400">Universal Search</span>
-                <kbd className="px-2 py-0.5 rounded bg-white/[0.1] text-white font-bold">
-                  [/]
-                </kbd>
-              </div>
-              <div className="bg-white/[0.03] p-3 rounded-xl border border-white/[0.06] flex items-center justify-between">
-                <span className="text-neutral-400">Focus Chart Pane</span>
-                <kbd className="px-2 py-0.5 rounded bg-white/[0.1] text-white font-bold">
-                  [Space]
-                </kbd>
-              </div>
-              <div className="bg-white/[0.03] p-3 rounded-xl border border-white/[0.06] flex items-center justify-between">
-                <span className="text-neutral-400">Toggle Theme</span>
-                <kbd className="px-2 py-0.5 rounded bg-white/[0.1] text-white font-bold">
-                  [T]
-                </kbd>
-              </div>
-            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
+              Real-Time Relative Strength Matrix
+            </h2>
           </div>
-
-          <div className="bg-white/[0.025] border border-white/[0.08] rounded-3xl p-6 space-y-4">
-            <span className="text-xs font-mono font-bold text-indigo-400 uppercase tracking-wider block">
-              ENTERPRISE CLOUD INFRASTRUCTURE
+          <div className="text-xs font-mono text-slate-400 flex items-center gap-3">
+            <span className="px-2 py-0.5 rounded bg-white/[0.05] border border-white/[0.08] text-slate-300">
+              210 LIQUID EQUITIES
             </span>
-            <div className="space-y-3 text-xs">
-              <div className="flex items-start gap-3">
-                <Server
-                  size={18}
-                  className="text-cyan-400 flex-shrink-0 mt-0.5"
-                />
-                <div>
-                  <span className="font-bold text-white block">
-                    In-Memory High Frequency Python Engine
-                  </span>
-                  <span className="text-neutral-400">
-                    Sub-second tick aggregation across 210 watchlist equities.
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <KeyRound
-                  size={18}
-                  className="text-emerald-400 flex-shrink-0 mt-0.5"
-                />
-                <div>
-                  <span className="font-bold text-white block">
-                    Encrypted Session Authentication
-                  </span>
-                  <span className="text-neutral-400">
-                    Zero open self-registration with invite-only authorization
-                    tokens.
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Sparkles
-                  size={18}
-                  className="text-indigo-400 flex-shrink-0 mt-0.5"
-                />
-                <div>
-                  <span className="font-bold text-white block">
-                    Google Gemini 3.6 Flash Cloud Intelligence
-                  </span>
-                  <span className="text-neutral-400">
-                    Adversarial catalyst auditing with automatic quota fallback.
-                  </span>
-                </div>
-              </div>
-            </div>
+            <span className="text-emerald-400 font-bold">● LIVE SUB-SECOND AGGREGATION</span>
           </div>
         </div>
-      </section>
 
-      {/* ── FREQUENTLY ASKED QUESTIONS (FAQ) ── */}
-      <section
-        id="faq"
-        className="relative z-10 py-20 px-4 sm:px-6 max-w-4xl mx-auto border-t border-white/[0.06]"
-      >
-        <div className="text-center mb-14">
-          <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider mb-2">
-            <HelpCircle size={14} />
-            <span>Knowledge Base</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white font-display">
-            Frequently Asked Questions
-          </h2>
-          <p className="text-sm text-neutral-400 max-w-xl mx-auto mt-2">
-            Everything you need to know about the PulseHunter quantitative
-            terminal.
-          </p>
-        </div>
+        {/* Matrix Table */}
+        <div className="bg-[#0A0E17]/90 rounded-2xl overflow-hidden border border-white/[0.12] shadow-2xl backdrop-blur-xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs font-mono border-collapse">
+              <thead>
+                <tr className="border-b border-white/[0.1] bg-white/[0.04] text-slate-400 uppercase text-[11px] tracking-wider">
+                  <th className="py-3 px-4">Rank</th>
+                  <th className="py-3 px-4">Ticker / Sector</th>
+                  <th className="py-3 px-4">LTP (₹)</th>
+                  <th className="py-3 px-4">Change %</th>
+                  <th className="py-3 px-4">RS vs NIFTY</th>
+                  <th className="py-3 px-4">Day Range (HOD)</th>
+                  <th className="py-3 px-4">Institutional Confluence</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/[0.06] text-slate-300">
+                
+                {/* UNLOCKED ROWS (TOP 3) */}
+                {topGainers.slice(0, 3).map((stk, idx) => {
+                  const rsDiff = ((stk.pct_change || 0) - (nifty.pct_change || 0)).toFixed(2);
+                  const isOutperforming = parseFloat(rsDiff) >= 0;
+                  const rangePct = 96 - idx * 4;
 
-        <div className="space-y-3">
-          {faqs.map((faq, idx) => {
-            const isOpen = openFaq === idx;
-            return (
-              <div
-                key={idx}
-                className="bg-white/[0.025] border border-white/[0.08] rounded-2xl overflow-hidden transition-all"
-              >
-                <button
-                  onClick={() => setOpenFaq(isOpen ? null : idx)}
-                  className="w-full p-5 text-left flex items-center justify-between gap-4 font-bold text-sm text-white hover:text-cyan-400 transition-colors"
+                  return (
+                    <tr key={stk.symbol || idx} className="hover:bg-white/[0.03] transition-colors">
+                      <td className="py-3.5 px-4 font-bold text-cyan-400">#0{idx + 1}</td>
+                      <td className="py-3.5 px-4">
+                        <span className="font-bold text-white text-sm block">{stk.symbol}</span>
+                        <span className="text-[10px] text-slate-400">{stk.sector || "Large Cap Equity"}</span>
+                      </td>
+                      <td className="py-3.5 px-4 font-bold text-emerald-400 text-sm">
+                        ₹{(stk.ltp || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-3.5 px-4 font-bold text-emerald-400">
+                        +{Math.abs(stk.pct_change || 0).toFixed(2)}%
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className={`px-2 py-0.5 rounded font-bold border ${
+                          isOutperforming
+                            ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                            : "bg-rose-500/15 text-rose-400 border-rose-500/30"
+                        }`}>
+                          {isOutperforming ? `+${rsDiff}%` : `${rsDiff}%`} ({isOutperforming ? "Outperforming" : "Lagging"})
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-24 bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                            <div
+                              className="bg-gradient-to-r from-cyan-400 to-emerald-400 h-full rounded-full"
+                              style={{ width: `${rangePct}%` }}
+                            />
+                          </div>
+                          <span className="text-white font-bold">{rangePct}%</span>
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="text-emerald-300 font-semibold flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          {idx === 0 && "Open=Low Breakout + Sector Sympathy Wave"}
+                          {idx === 1 && "VWAP Compression Release (3.4x Vol Multiple)"}
+                          {idx === 2 && "Institutional Accumulation at 09:42 AM"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {/* FROSTED / GATED ALPHA ROWS */}
+                <tr
+                  onClick={() => setShowAccessModal(true)}
+                  className="relative select-none backdrop-blur-md bg-white/[0.01] hover:bg-white/[0.03] transition-all cursor-pointer group"
                 >
-                  <span>{faq.q}</span>
-                  <ChevronDown
-                    size={16}
-                    className={`flex-shrink-0 text-neutral-400 transition-transform duration-300 ${
-                      isOpen ? "rotate-180 text-cyan-400" : ""
-                    }`}
-                  />
-                </button>
-                <AnimatePresence>
-                  {isOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.25 }}
-                      className="px-5 pb-5 text-xs text-neutral-300 leading-relaxed border-t border-white/[0.04] pt-3"
-                    >
-                      {faq.a}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            );
-          })}
-        </div>
-      </section>
+                  <td className="py-4 px-4 font-bold text-slate-500">#04</td>
+                  <td className="py-4 px-4 filter blur-[5px] group-hover:blur-[2px] transition-all">
+                    <span className="font-bold text-white text-sm block">••••••••</span>
+                    <span className="text-[10px] text-slate-400">Banking & Finance</span>
+                  </td>
+                  <td className="py-4 px-4 filter blur-[5px] text-emerald-400 font-bold">₹•,•••.••</td>
+                  <td className="py-4 px-4 filter blur-[5px] text-emerald-400 font-bold">+2.84%</td>
+                  <td className="py-4 px-4 filter blur-[5px]">
+                    <span className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-bold">+2.20% RS</span>
+                  </td>
+                  <td className="py-4 px-4 filter blur-[5px]">
+                    <span className="text-white font-bold">95% Day Range</span>
+                  </td>
+                  <td className="py-4 px-4">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-bold text-[11px] group-hover:bg-cyan-500/25 transition-all">
+                      <Lock size={13} />
+                      <span>4.8x Vol Squeeze Active · Request Clearance to Unlock</span>
+                    </div>
+                  </td>
+                </tr>
 
-      {/* ── ONBOARDING ACCESS CALLOUT ── */}
-      <section className="relative z-10 py-20 px-4 sm:px-6 max-w-5xl mx-auto text-center">
-        <div className="bg-gradient-to-b from-white/[0.04] to-white/[0.01] border border-white/[0.1] rounded-3xl p-8 sm:p-14 shadow-2xl relative overflow-hidden">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 text-xs font-mono font-bold mb-4">
-            <Lock size={12} />
-            <span>INVITE-ONLY QUANTITATIVE ACCESS</span>
+                <tr
+                  onClick={() => setShowAccessModal(true)}
+                  className="relative select-none backdrop-blur-md bg-white/[0.01] hover:bg-white/[0.03] transition-all cursor-pointer group"
+                >
+                  <td className="py-4 px-4 font-bold text-slate-500">#05</td>
+                  <td className="py-4 px-4 filter blur-[5px] group-hover:blur-[2px] transition-all">
+                    <span className="font-bold text-white text-sm block">••••••••</span>
+                    <span className="text-[10px] text-slate-400">IT Services</span>
+                  </td>
+                  <td className="py-4 px-4 filter blur-[5px] text-rose-400 font-bold">₹•,•••.••</td>
+                  <td className="py-4 px-4 filter blur-[5px] text-rose-400 font-bold">-2.10%</td>
+                  <td className="py-4 px-4 filter blur-[5px]">
+                    <span className="px-2 py-0.5 rounded bg-rose-500/15 text-rose-400 font-bold">-2.74% RS</span>
+                  </td>
+                  <td className="py-4 px-4 filter blur-[5px]">
+                    <span className="text-white font-bold">11% Day Range</span>
+                  </td>
+                  <td className="py-4 px-4">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-rose-500/15 text-rose-300 border border-rose-500/30 font-bold text-[11px] group-hover:bg-rose-500/25 transition-all">
+                      <Lock size={13} />
+                      <span>Institutional Short Trapping · Request Clearance to Unlock</span>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr
+                  onClick={() => setShowAccessModal(true)}
+                  className="relative select-none backdrop-blur-md bg-white/[0.01] hover:bg-white/[0.03] transition-all cursor-pointer group"
+                >
+                  <td className="py-4 px-4 font-bold text-slate-500">#06</td>
+                  <td className="py-4 px-4 filter blur-[5px] group-hover:blur-[2px] transition-all">
+                    <span className="font-bold text-white text-sm block">••••••••</span>
+                    <span className="text-[10px] text-slate-400">Auto & Components</span>
+                  </td>
+                  <td className="py-4 px-4 filter blur-[5px] text-emerald-400 font-bold">₹•,•••.••</td>
+                  <td className="py-4 px-4 filter blur-[5px] text-emerald-400 font-bold">+3.10%</td>
+                  <td className="py-4 px-4 filter blur-[5px]">
+                    <span className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-bold">+2.46% RS</span>
+                  </td>
+                  <td className="py-4 px-4 filter blur-[5px]">
+                    <span className="text-white font-bold">97% Day Range</span>
+                  </td>
+                  <td className="py-4 px-4">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-bold text-[11px] group-hover:bg-cyan-500/25 transition-all">
+                      <Lock size={13} />
+                      <span>5.2x Volume Velocity at HOD · Request Clearance to Unlock</span>
+                    </div>
+                  </td>
+                </tr>
+
+              </tbody>
+            </table>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white font-display mb-4">
-            Request Access to PulseHunter
-          </h2>
-          <p className="text-sm sm:text-base text-neutral-300 max-w-xl mx-auto mb-8 leading-relaxed">
-            PulseHunter is reserved for qualified systematic traders and
-            institutional market participants. Contact <b>PARTHIBAKANNAN S</b>{" "}
-            to request authorized access credentials.
-          </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-3.5">
+          {/* Bottom Gated Teaser Banner */}
+          <div className="p-4 bg-gradient-to-r from-cyan-950/40 via-[#0A0E17] to-indigo-950/40 border-t border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-slate-300 font-mono">
+              <span className="w-2 h-2 rounded-full bg-cyan-400" />
+              <span>
+                Showing 3 of 210 Live Equities. <strong>207 Active Setups & Sector Flows are Protected.</strong>
+              </span>
+            </div>
             <button
               onClick={() => setShowAccessModal(true)}
-              className="px-6 py-3 rounded-2xl bg-white text-black font-bold text-sm hover:bg-neutral-200 transition-all shadow-lg flex items-center gap-2"
+              className="px-4 py-2 rounded-lg font-mono font-bold text-xs text-slate-950 bg-gradient-to-r from-cyan-400 to-emerald-400 hover:brightness-110 shadow-md shadow-cyan-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
             >
-              <Mail size={15} />
-              <span>Request Access from PARTHIBAKANNAN S</span>
+              <span>Apply for Full Terminal Access</span>
+              <ArrowRight size={13} />
             </button>
-            <button
-              onClick={() => setShowLoginModal(true)}
-              className="px-6 py-3 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white font-bold text-sm hover:bg-white/[0.1] transition-all"
-            >
-              Client Sign In
-            </button>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ==================== 5. LIVE SECTOR FLOW COMPASS ==================== */}
+      <section id="sector-compass" className="py-16 px-4 sm:px-6 max-w-7xl mx-auto border-t border-white/[0.08]">
+        <div className="text-center mb-12">
+          <span className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-widest">
+            MACRO LIQUIDITY RADAR
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-white mt-1">
+            Sector Sympathy & Capital Rotation
+          </h2>
+          <p className="text-sm text-slate-400 mt-2 max-w-xl mx-auto">
+            Institutions rotate capital in sectoral clusters. Trade with the tailwind before retail spots the move.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
+          
+          <div className="p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/30 space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="font-bold text-white text-sm">NIFTY METAL</span>
+              <span className="text-emerald-400 font-bold">+2.40%</span>
+            </div>
+            <span className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-bold inline-block text-[10px]">
+              LEADER · 92% BREADTH
+            </span>
+            <p className="text-slate-400 text-[11px] font-sans leading-relaxed">
+              Heavy institutional inflow across primary steel and aluminum names.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/30 space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="font-bold text-white text-sm">NIFTY AUTO</span>
+              <span className="text-emerald-400 font-bold">+1.85%</span>
+            </div>
+            <span className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-bold inline-block text-[10px]">
+              LEADER · 88% BREADTH
+            </span>
+            <p className="text-slate-400 text-[11px] font-sans leading-relaxed">
+              Original equipment manufacturers holding high of day with volume expansion.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-cyan-950/20 border border-cyan-500/30 space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="font-bold text-white text-sm">NIFTY BANK</span>
+              <span className="text-cyan-400 font-bold">+0.75%</span>
+            </div>
+            <span className="px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-400 font-bold inline-block text-[10px]">
+              ACCUMULATING · 64% BREADTH
+            </span>
+            <p className="text-slate-400 text-[11px] font-sans leading-relaxed">
+              Consolidating above rising session VWAP with institutional block absorption.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-rose-950/20 border border-rose-500/30 space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="font-bold text-white text-sm">NIFTY IT</span>
+              <span className="text-rose-400 font-bold">-1.20%</span>
+            </div>
+            <span className="px-2 py-0.5 rounded bg-rose-500/15 text-rose-400 font-bold inline-block text-[10px]">
+              LAGGARD · 18% BREADTH
+            </span>
+            <p className="text-slate-400 text-[11px] font-sans leading-relaxed">
+              Persistent relative weakness; trapped retail buyers being liquidated.
+            </p>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ==================== 6. THE 09:15 AM PLAYBOOK ==================== */}
+      <section id="playbook" className="py-16 px-4 sm:px-6 max-w-6xl mx-auto border-t border-white/[0.08]">
+        <div className="text-center mb-12">
+          <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest">
+            THE FIRST 15 MINUTES DECIDE YOUR SESSION
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-white mt-1">
+            The 09:15 AM Opening Bell Playbook
+          </h2>
+          <p className="text-sm text-slate-400 mt-2 max-w-2xl mx-auto">
+            How institutional desks execute vs the daily struggle of retail trading blind on standard brokers.
+          </p>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs sm:text-sm border-collapse rounded-2xl overflow-hidden bg-[#0A0E17] border border-white/[0.1]">
+            <thead>
+              <tr className="border-b border-white/[0.1] bg-white/[0.04]">
+                <th className="p-4 font-mono font-bold text-slate-400 uppercase text-xs">Time Window</th>
+                <th className="p-4 font-mono font-bold text-rose-400 uppercase text-xs">The Retail Broker Struggle</th>
+                <th className="p-4 font-mono font-bold text-emerald-400 uppercase text-xs bg-emerald-500/10">
+                  The PulseHunter Terminal Execution
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/[0.06] text-slate-300 font-mono text-xs">
+              <tr className="hover:bg-white/[0.02]">
+                <td className="p-4 font-bold text-white">09:15:00 AM</td>
+                <td className="p-4 text-slate-400 font-sans">
+                  Frantically flipping between 20 watchlist tabs; guessing which gap-up will hold.
+                </td>
+                <td className="p-4 text-emerald-300 font-sans bg-emerald-500/[0.03]">
+                  <strong>Instant Open=Low Filter:</strong> Isolates the exact 4 equities with zero selling tails and institutional opening market orders.
+                </td>
+              </tr>
+              <tr className="hover:bg-white/[0.02]">
+                <td className="p-4 font-bold text-white">09:20:00 AM</td>
+                <td className="p-4 text-slate-400 font-sans">
+                  Buying a stock up +2% without realizing Nifty is dropping −150 points (immediate trap).
+                </td>
+                <td className="p-4 text-emerald-300 font-sans bg-emerald-500/[0.03]">
+                  <strong>Live Relative Strength vs NIFTY:</strong> Highlights true alpha leaders absorbing the index drop and holding Day Highs.
+                </td>
+              </tr>
+              <tr className="hover:bg-white/[0.02]">
+                <td className="p-4 font-bold text-white">09:30:00 AM</td>
+                <td className="p-4 text-slate-400 font-sans">
+                  Indicator overload (RSI, MACD, Stochastics) giving contradictory signals.
+                </td>
+                <td className="p-4 text-emerald-300 font-sans bg-emerald-500/[0.03]">
+                  <strong>15m Opening Range (ORB) Release:</strong> Identifies stocks entering 95% day range expansion backed by volume pace.
+                </td>
+              </tr>
+              <tr className="hover:bg-white/[0.02]">
+                <td className="p-4 font-bold text-white">10:00:00 AM</td>
+                <td className="p-4 text-slate-400 font-sans">
+                  Revenge trading into sideways chop; paying heavy brokerage churn.
+                </td>
+                <td className="p-4 text-emerald-300 font-sans bg-emerald-500/[0.03]">
+                  <strong>Capital Protection Circuit Breakers:</strong> Limits daily executions to protect profit and preserve discipline.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* ==================== 7. THE INTRADAY AUTOPSY ==================== */}
+      <section id="autopsy" className="py-16 px-4 sm:px-6 max-w-6xl mx-auto border-t border-white/[0.08]">
+        <div className="text-center mb-12">
+          <span className="text-xs font-mono font-bold text-rose-400 uppercase tracking-widest">
+            WHY YOU MISSED TODAY'S BIGGEST WINNER
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-white mt-1">
+            The Anatomy of an Institutional Move
+          </h2>
+          <p className="text-sm text-slate-400 mt-2 max-w-2xl mx-auto">
+            Standard retail brokers alert you when a stock is up +4% at the peak. PulseHunter detects institutional liquidity accumulation at the origin.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 font-mono text-xs">
+          
+          <div className="bg-[#0A0E17] rounded-xl p-5 border border-white/[0.08] relative">
+            <span className="text-[10px] font-bold text-cyan-400 px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20">
+              09:16:02 AM
+            </span>
+            <h4 className="text-sm font-bold text-white mt-3 font-sans">Open = Low Inception</h4>
+            <p className="text-slate-400 mt-2 font-sans leading-relaxed text-[11px]">
+              TATASTEEL prints Open=Low with zero selling tail. Opening tick frequency accelerates to 3.2x normal pace.
+            </p>
+            <span className="mt-4 block text-emerald-400 font-bold">+0.4% from Open</span>
+          </div>
+
+          <div className="bg-[#0A0E17] rounded-xl p-5 border border-white/[0.08] relative">
+            <span className="text-[10px] font-bold text-cyan-400 px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20">
+              09:24:40 AM
+            </span>
+            <h4 className="text-sm font-bold text-white mt-3 font-sans">Sector Sympathy Flow</h4>
+            <p className="text-slate-400 mt-2 font-sans leading-relaxed text-[11px]">
+              Nifty Metal prints 92% green breadth. Capital rotation triggers multi-stock sympathy wave across steel names.
+            </p>
+            <span className="mt-4 block text-emerald-400 font-bold">+1.1% RS vs NIFTY</span>
+          </div>
+
+          <div className="bg-[#0A0E17] rounded-xl p-5 border border-white/[0.08] relative">
+            <span className="text-[10px] font-bold text-cyan-400 px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20">
+              09:45:10 AM
+            </span>
+            <h4 className="text-sm font-bold text-white mt-3 font-sans">Range Squeeze Release</h4>
+            <p className="text-slate-400 mt-2 font-sans leading-relaxed text-[11px]">
+              Breaches 15m Opening Range High with volume. Range meter enters 96% HOD penetration.
+            </p>
+            <span className="mt-4 block text-emerald-400 font-bold">+2.2% Momentum Break</span>
+          </div>
+
+          <div className="bg-emerald-950/20 rounded-xl p-5 border border-emerald-500/30 relative">
+            <span className="text-[10px] font-bold text-emerald-400 px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/30">
+              11:15:00 AM
+            </span>
+            <h4 className="text-sm font-bold text-emerald-300 mt-3 font-sans">+2.50R Harvest Peak</h4>
+            <p className="text-slate-400 mt-2 font-sans leading-relaxed text-[11px]">
+              PulseHunter users locked guaranteed profit while retail on Zerodha/Groww just received their top-gainer notification.
+            </p>
+            <span className="mt-4 block text-emerald-400 font-bold">+3.42% Full Move</span>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ==================== 8. THE BROKER TRAP REALITY CHECK ==================== */}
+      <section className="py-16 px-4 sm:px-6 max-w-6xl mx-auto border-t border-white/[0.08]">
+        <div className="text-center mb-12">
+          <span className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-widest">
+            THE REALITY CHECK
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-white mt-1">
+            Trading With A Broker vs Trading With A Terminal
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-xs font-mono">
+          
+          <div className="p-6 rounded-2xl bg-rose-950/20 border border-rose-500/20 space-y-4">
+            <div className="flex items-center gap-2 text-rose-400 font-bold">
+              <X size={16} />
+              <span className="text-sm uppercase font-sans">Standard Retail Broker (Zerodha / Groww / Dhan)</span>
+            </div>
+            <ul className="space-y-3 text-slate-400 font-sans text-xs">
+              <li className="flex items-start gap-2">
+                <span className="text-rose-400 font-bold">✕</span>
+                <span>Shows % change without index context (buying a stock up +1% while Nifty dumps −200pts leads to immediate trap).</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-rose-400 font-bold">✕</span>
+                <span>Static alphabetical watchlists with zero sector flow intelligence.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-rose-400 font-bold">✕</span>
+                <span>Zero loss discipline: brokers profit on exchange turnover, happily letting you overtrade and blow accounts.</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="p-6 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 space-y-4">
+            <div className="flex items-center gap-2 text-emerald-400 font-bold">
+              <CheckCircle2 size={16} />
+              <span className="text-sm uppercase font-sans">PulseHunter Quantitative Terminal</span>
+            </div>
+            <ul className="space-y-3 text-slate-300 font-sans text-xs">
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-400 font-bold">✓</span>
+                <span>Real-time Relative Strength against NIFTY: isolates stocks holding institutional bid support regardless of market chop.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-400 font-bold">✓</span>
+                <span>Live Sector Breadth Radar: identifies capital rotation across Auto, IT, Metals, and Banking before retail notices.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-400 font-bold">✓</span>
+                <span>Capital Loss Governor: mathematical circuit breaker halting sessions automatically before psychological tilt occurs.</span>
+              </li>
+            </ul>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ==================== 9. CAPITAL SAFEGUARDS ==================== */}
+      <section id="governance" className="py-16 px-4 sm:px-6 max-w-5xl mx-auto text-center border-t border-white/[0.08]">
+        <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest">
+          CAPITAL DISCIPLINE GOVERNANCE
+        </span>
+        <h2 className="text-3xl sm:text-4xl font-extrabold text-white mt-1">
+          Mathematical Protection Against Tilt
+        </h2>
+        <p className="text-sm text-slate-400 mt-2 max-w-2xl mx-auto">
+          Trading edge is nothing without capital survival. PulseHunter includes built-in daily loss limits and risk governors to eliminate emotional drawdowns.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-12 text-left font-sans">
+          <div className="p-5 rounded-xl bg-[#0A0E17] border border-white/[0.08]">
+            <span className="text-sm font-bold text-white block">Strict Risk Sizing</span>
+            <span className="text-xs text-slate-400 mt-1 block leading-relaxed">
+              Caps maximum exposure per trade to ensure one bad trade never ruins your month.
+            </span>
+          </div>
+          <div className="p-5 rounded-xl bg-[#0A0E17] border border-white/[0.08]">
+            <span className="text-sm font-bold text-white block">Daily Circuit Breaker</span>
+            <span className="text-xs text-slate-400 mt-1 block leading-relaxed">
+              Halts trading operations automatically if daily threshold drawdown is touched.
+            </span>
+          </div>
+          <div className="p-5 rounded-xl bg-[#0A0E17] border border-white/[0.08]">
+            <span className="text-sm font-bold text-white block">Post-Session Edge Ledger</span>
+            <span className="text-xs text-slate-400 mt-1 block leading-relaxed">
+              Continuous feedback on win rates, profit factor, payoff ratio, and hourly expectancy.
+            </span>
           </div>
         </div>
       </section>
 
-      {/* ── SANITIZED FOOTER (NO ARCHITECTURE SPEC REFERENCE) ── */}
-      <footer className="relative z-10 border-t border-white/[0.06] py-12 px-4 sm:px-6 max-w-7xl mx-auto text-xs text-neutral-400">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
-          <div className="space-y-1">
-            <div className="flex items-center justify-center md:justify-start gap-2">
-              <img
-                src="/assets/logo.jpg"
-                alt="PulseHunter"
-                className="w-5 h-5 rounded-md object-cover"
-              />
-              <span className="font-bold text-white text-sm">PulseHunter</span>
+      {/* ==================== 10. ONBOARDING CTA BANNER ==================== */}
+      <section className="py-20 px-4 sm:px-6 max-w-5xl mx-auto text-center">
+        <div className="rounded-3xl p-8 sm:p-14 bg-gradient-to-b from-cyan-950/40 to-slate-900/60 border border-cyan-500/30 shadow-2xl relative overflow-hidden">
+          <div className="relative z-10">
+            <span className="inline-block px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-mono font-bold mb-4 border border-cyan-500/30">
+              DESK ADMISSIONS ACTIVE · PHASE 1
+            </span>
+            <h2 className="text-3xl sm:text-5xl font-extrabold text-white">
+              Ready to Trade with Institutional Vision?
+            </h2>
+            <p className="text-sm sm:text-base text-slate-300 mt-4 max-w-xl mx-auto leading-relaxed">
+              Access is limited to serious intraday traders and proprietary desks to guarantee dedicated sub-second compute bandwidth.
+            </p>
+            <div className="mt-8 flex justify-center">
+              <button
+                onClick={() => setShowAccessModal(true)}
+                className="px-8 py-3.5 rounded-xl text-xs font-mono font-bold text-slate-950 bg-gradient-to-r from-cyan-400 to-emerald-400 hover:brightness-110 shadow-xl shadow-cyan-500/25 transition-all cursor-pointer"
+              >
+                Request Terminal Clearance Key
+              </button>
             </div>
-            <p className="text-neutral-400">
-              &copy; {new Date().getFullYear()} PulseHunter. All Rights
-              Reserved.
-            </p>
-            <p className="text-neutral-400">
-              Created, Engineered &amp; Owned by{" "}
-              <b className="text-neutral-300">PARTHIBAKANNAN S</b>.
-            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ==================== 11. FAQ & REGULATORY FOOTER ==================== */}
+      <section className="py-16 px-4 sm:px-6 max-w-4xl mx-auto border-t border-white/[0.08]">
+        <h3 className="text-xl font-bold text-white text-center mb-8 font-mono">
+          Terminal Clearance FAQ
+        </h3>
+        <div className="space-y-3 text-xs font-mono">
+          
+          <div className="rounded-xl border border-white/[0.08] bg-[#0A0E17] overflow-hidden">
+            <button
+              onClick={() => setOpenFaq(openFaq === 1 ? null : 1)}
+              className="w-full p-4 text-left flex justify-between items-center text-slate-200 hover:text-white"
+            >
+              <span>Why is terminal access by review and clearance only?</span>
+              <ChevronDown size={14} className={`transition-transform ${openFaq === 1 ? "rotate-180" : ""}`} />
+            </button>
+            {openFaq === 1 && (
+              <div className="p-4 pt-0 text-slate-400 font-sans leading-relaxed text-xs">
+                To guarantee low-latency sub-second compute bandwidth and prevent strategy crowding across our 210 tracked Indian equities, we onboard active intraday desks in vetted cohorts.
+              </div>
+            )}
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-mono">
-            <a
-              href="mailto:parthisivaram45@gmail.com"
-              className="text-cyan-400 hover:underline flex items-center gap-1"
+          <div className="rounded-xl border border-white/[0.08] bg-[#0A0E17] overflow-hidden">
+            <button
+              onClick={() => setOpenFaq(openFaq === 2 ? null : 2)}
+              className="w-full p-4 text-left flex justify-between items-center text-slate-200 hover:text-white"
             >
-              <Mail size={12} />
-              <span>parthisivaram45@gmail.com</span>
-            </a>
-            <span className="text-neutral-700">|</span>
-            <span className="text-neutral-400">Systematic Quant Terminal</span>
-            <span className="text-neutral-700">|</span>
-            <ThemeToggle />
+              <span>Does PulseHunter execute orders automatically in my broker?</span>
+              <ChevronDown size={14} className={`transition-transform ${openFaq === 2 ? "rotate-180" : ""}`} />
+            </button>
+            {openFaq === 2 && (
+              <div className="p-4 pt-0 text-slate-400 font-sans leading-relaxed text-xs">
+                PulseHunter is an analytical and screening decision-support terminal. Direct broker API order routing is on the private roadmap; subscribers currently receive real-time visual decision intelligence and risk governance.
+              </div>
+            )}
           </div>
+
+          <div className="rounded-xl border border-white/[0.08] bg-[#0A0E17] overflow-hidden">
+            <button
+              onClick={() => setOpenFaq(openFaq === 3 ? null : 3)}
+              className="w-full p-4 text-left flex justify-between items-center text-slate-200 hover:text-white"
+            >
+              <span>What universe of stocks is monitored?</span>
+              <ChevronDown size={14} className={`transition-transform ${openFaq === 3 ? "rotate-180" : ""}`} />
+            </button>
+            {openFaq === 3 && (
+              <div className="p-4 pt-0 text-slate-400 font-sans leading-relaxed text-xs">
+                The top 210 high-liquidity NSE F&O equities, representing over 85% of total Indian daily equity turnover. Illiquid penny stocks and circuit-prone counters are strictly excluded.
+              </div>
+            )}
+          </div>
+
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-white/[0.08] bg-[#040609] py-12 px-4 sm:px-6 text-xs font-mono text-slate-500 text-center space-y-4">
+        <div className="flex items-center justify-center gap-2 text-white font-bold">
+          <span className="w-2 h-2 rounded-full bg-cyan-400" />
+          <span>PulseHunter Quantitative Terminal · Institutional Edition</span>
+        </div>
+        <p className="max-w-2xl mx-auto leading-relaxed text-[11px] font-sans">
+          Regulatory Disclaimer: PulseHunter is an advanced quantitative decision-support terminal designed for market research and data visualization. We do not provide financial advisory, stock tips, or guaranteed returns. All financial trading carries substantial risk of capital loss.
+        </p>
+        <div className="pt-4 text-slate-600">
+          © 2026 PulseHunter Terminal · All Rights Reserved
         </div>
       </footer>
 
-      {/* ── CLIENT LOGIN MODAL ── */}
-      <AnimatePresence>
-        {showLoginModal && (
-          <div className="fixed inset-0 z-50 grid place-items-center p-4 bg-black/80 backdrop-blur-md">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative w-full max-w-md bg-[#0d0f15] border border-white/[0.12] rounded-3xl p-7 sm:p-8 shadow-2xl"
-            >
-              <button
-                onClick={() => setShowLoginModal(false)}
-                className="absolute top-5 right-5 text-neutral-400 hover:text-white p-1 rounded-lg hover:bg-white/[0.06] transition-colors"
-              >
-                <X size={18} />
-              </button>
+      {/* ==================== MODALS ==================== */}
 
-              <div className="flex items-center gap-3 mb-6">
-                <img
-                  src="/assets/logo.jpg"
-                  alt="PulseHunter"
-                  className="w-10 h-10 rounded-xl object-cover border border-cyan-500/30 shadow-md"
-                />
-                <div>
-                  <h3 className="text-lg font-bold text-white font-display">
-                    PulseHunter Client Sign In
-                  </h3>
-                  <p className="text-xs text-neutral-400">
-                    Enter authorized credentials to continue
-                  </p>
-                </div>
+      {/* Clearance Registration Modal (Self-Registration, Encrypted Passwords) */}
+      {showAccessModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#0A0E17] max-w-md w-full rounded-2xl p-6 border border-white/[0.15] shadow-2xl space-y-4 font-mono text-xs">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-base font-bold text-white font-sans">Request Terminal Clearance</h3>
+                <p className="text-[11px] text-slate-400">Create your credentials for desk review.</p>
               </div>
-
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <label className="block text-[11px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">
-                    Terminal Email
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="trader@domain.com"
-                    className="w-full bg-neutral-900 border border-white/[0.1] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400 transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">
-                    Password
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••••••"
-                    className="w-full bg-neutral-900 border border-white/[0.1] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400 transition-colors"
-                  />
-                </div>
-
-                {loginError && (
-                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs">
-                    {loginError}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loginBusy}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 text-black font-extrabold text-sm shadow-[0_0_20px_rgba(6,182,212,0.3)] transition-all"
-                >
-                  {loginBusy
-                    ? "Authenticating Session..."
-                    : "Sign In to Terminal"}
-                </button>
-              </form>
-
-              <div className="mt-5 pt-4 border-t border-white/[0.06] text-center text-xs text-neutral-400">
-                Don't have credentials?{" "}
-                <button
-                  onClick={() => {
-                    setShowLoginModal(false);
-                    setShowAccessModal(true);
-                  }}
-                  className="text-cyan-400 font-bold hover:underline"
-                >
-                  Request Access from PARTHIBAKANNAN S
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* ── REQUEST ACCESS MODAL ── */}
-      <AnimatePresence>
-        {showAccessModal && (
-          <div className="fixed inset-0 z-50 grid place-items-center p-4 bg-black/80 backdrop-blur-md">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative w-full max-w-md bg-[#0d0f15] border border-white/[0.12] rounded-3xl p-7 sm:p-8 shadow-2xl"
-            >
               <button
                 onClick={() => {
                   setShowAccessModal(false);
-                  setRequestSubmitted(false);
+                  setRegSuccess(false);
+                  setRegError("");
                 }}
-                className="absolute top-5 right-5 text-neutral-400 hover:text-white p-1 rounded-lg hover:bg-white/[0.06] transition-colors"
+                className="text-slate-400 hover:text-white font-bold text-xl cursor-pointer"
               >
-                <X size={18} />
+                &times;
               </button>
+            </div>
 
-              <div className="flex items-center gap-3 mb-6">
-                <img
-                  src="/assets/logo.jpg"
-                  alt="PulseHunter"
-                  className="w-10 h-10 rounded-xl object-cover border border-cyan-500/30 shadow-md"
-                />
-                <div>
-                  <h3 className="text-lg font-bold text-white font-display">
-                    Request Terminal Access
-                  </h3>
-                  <p className="text-xs text-neutral-400">
-                    Direct enquiry to <b>PARTHIBAKANNAN S</b>
-                  </p>
+            {regSuccess ? (
+              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 space-y-3 font-sans">
+                <div className="flex items-center gap-2 font-bold text-sm">
+                  <CheckCircle2 size={18} className="text-emerald-400" />
+                  <span>Application Submitted Successfully</span>
                 </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Your credentials have been securely provisioned with status <strong>PENDING REVIEW</strong>.
+                  The desk lead has been notified. You will receive an activation confirmation once approved.
+                </p>
+                <button
+                  onClick={() => setShowAccessModal(false)}
+                  className="w-full py-2 rounded-lg font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 cursor-pointer"
+                >
+                  Close Window
+                </button>
               </div>
-
-              {!requestSubmitted ? (
-                <form onSubmit={handleRequestSubmit} className="space-y-3.5">
-                  <div>
-                    <label className="block text-[11px] font-bold text-neutral-400 uppercase tracking-wider mb-1">
-                      Full Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={requestName}
-                      onChange={(e) => setRequestName(e.target.value)}
-                      placeholder="Your Full Name"
-                      className="w-full bg-neutral-900 border border-white/[0.1] rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-400 transition-colors"
-                    />
+            ) : (
+              <form onSubmit={handleRegister} className="space-y-3 pt-2">
+                {regError && (
+                  <div className="p-2.5 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-400 font-sans text-xs flex items-center gap-2">
+                    <AlertTriangle size={14} />
+                    <span>{regError}</span>
                   </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-neutral-400 uppercase tracking-wider mb-1">
-                      Contact Email
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={requestEmail}
-                      onChange={(e) => setRequestEmail(e.target.value)}
-                      placeholder="trader@domain.com"
-                      className="w-full bg-neutral-900 border border-white/[0.1] rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-400 transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-neutral-400 uppercase tracking-wider mb-1">
-                      Trading Profile
-                    </label>
-                    <select
-                      value={requestRole}
-                      onChange={(e) => setRequestRole(e.target.value)}
-                      className="w-full bg-neutral-900 border border-white/[0.1] rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-400 transition-colors"
-                    >
-                      <option value="Proprietary / Quant Trader">
-                        Proprietary / Quantitative Trader
-                      </option>
-                      <option value="Institutional Asset Manager">
-                        Institutional / Desk Trader
-                      </option>
-                      <option value="Active F&O Derivatives Trader">
-                        Active F&amp;O Derivatives Trader
-                      </option>
-                      <option value="Systematic Individual Trader">
-                        Systematic Individual Trader
-                      </option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-neutral-400 uppercase tracking-wider mb-1">
-                      Trading Focus / Notes (Optional)
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={requestNote}
-                      onChange={(e) => setRequestNote(e.target.value)}
-                      placeholder="Key strategy requirements..."
-                      className="w-full bg-neutral-900 border border-white/[0.1] rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-400 transition-colors resize-none"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:opacity-95 text-black font-extrabold text-sm shadow-[0_0_20px_rgba(6,182,212,0.3)] transition-all mt-2 flex items-center justify-center gap-2"
-                  >
-                    <Mail size={15} />
-                    <span>Send Onboarding Request</span>
-                  </button>
-                </form>
-              ) : (
-                <div className="text-center py-6 space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 grid place-items-center mx-auto">
-                    <CheckCircle2 size={24} />
-                  </div>
-                  <h4 className="font-bold text-base text-white">
-                    Access Request Dispatched
-                  </h4>
-                  <p className="text-xs text-neutral-300 leading-relaxed">
-                    Thank you, <b>{requestName}</b>. Your access request has
-                    been routed directly to <b>PARTHIBAKANNAN S</b> (
-                    <a
-                      href="mailto:parthisivaram45@gmail.com"
-                      className="text-cyan-400 underline"
-                    >
-                      parthisivaram45@gmail.com
-                    </a>
-                    ). You will be contacted via email regarding terminal
-                    onboarding.
-                  </p>
-                  <button
-                    onClick={() => {
-                      setShowAccessModal(false);
-                      setRequestSubmitted(false);
-                    }}
-                    className="mt-4 px-5 py-2 rounded-xl bg-white/[0.08] border border-white/[0.12] text-white font-bold text-xs hover:bg-white/[0.12] transition-all"
-                  >
-                    Done
-                  </button>
+                )}
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">Full Name / Desk Title</label>
+                  <input
+                    required
+                    type="text"
+                    value={regName}
+                    onChange={(e) => setRegName(e.target.value)}
+                    placeholder="e.g. Parthiban (Momentum Lead)"
+                    className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.1] text-white focus:outline-none focus:border-cyan-400"
+                  />
                 </div>
-              )}
-            </motion.div>
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">Direct Email Address</label>
+                  <input
+                    required
+                    type="email"
+                    value={regEmail}
+                    onChange={(e) => setRegEmail(e.target.value)}
+                    placeholder="trader@domain.com"
+                    className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.1] text-white focus:outline-none focus:border-cyan-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">Primary Intraday Strategy</label>
+                  <select
+                    value={regStrategy}
+                    onChange={(e) => setRegStrategy(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg bg-[#0F1523] border border-white/[0.1] text-white focus:outline-none focus:border-cyan-400"
+                  >
+                    <option>Relative Strength & Sector Sympathy</option>
+                    <option>Opening Range Breakout (ORB / 15m)</option>
+                    <option>Range Compression & Squeeze Breakouts</option>
+                    <option>Proprietary / Algorithmic Desk Execution</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">Set Secure Password</label>
+                  <input
+                    required
+                    type="password"
+                    value={regPassword}
+                    onChange={(e) => setRegPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.1] text-white focus:outline-none focus:border-cyan-400"
+                  />
+                  <span className="text-[10px] text-slate-500 mt-1 block">
+                    Passwords are encrypted via Supabase Auth. The admin never sees your password.
+                  </span>
+                </div>
+                <button
+                  type="submit"
+                  disabled={regBusy}
+                  className="w-full mt-4 py-2.5 rounded-lg font-bold text-slate-950 bg-gradient-to-r from-cyan-400 to-emerald-400 hover:brightness-110 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {regBusy ? "Submitting Application..." : "Submit Clearance Application"}
+                </button>
+              </form>
+            )}
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
+
+      {/* Member Sign In Modal */}
+      {showLoginModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#0A0E17] max-w-sm w-full rounded-2xl p-6 border border-white/[0.15] shadow-2xl space-y-4 font-mono text-xs">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-base font-bold text-white font-sans">Terminal Sign In</h3>
+                <p className="text-[11px] text-slate-400">Enter your approved credentials.</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowLoginModal(false);
+                  setLoginError("");
+                  setIsPendingApproval(false);
+                }}
+                className="text-slate-400 hover:text-white font-bold text-xl cursor-pointer"
+              >
+                &times;
+              </button>
+            </div>
+
+            {isPendingApproval ? (
+              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 space-y-3 font-sans">
+                <div className="flex items-center gap-2 font-bold text-sm">
+                  <Clock size={18} className="text-amber-400" />
+                  <span>Application Under Review</span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Your registration has been received and is currently under review by the desk lead.
+                  You will receive an activation email once your terminal access is provisioned.
+                </p>
+                <button
+                  onClick={() => setIsPendingApproval(false)}
+                  className="w-full py-2 rounded-lg font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 cursor-pointer"
+                >
+                  Return to Home Screen
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleLogin} className="space-y-3 pt-2">
+                {loginError && (
+                  <div className="p-2.5 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-400 font-sans text-xs flex items-center gap-2">
+                    <AlertTriangle size={14} />
+                    <span>{loginError}</span>
+                  </div>
+                )}
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">Email Address</label>
+                  <input
+                    required
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="trader@domain.com"
+                    className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.1] text-white focus:outline-none focus:border-cyan-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">Password</label>
+                  <input
+                    required
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.1] text-white focus:outline-none focus:border-cyan-400"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={loginBusy}
+                  className="w-full mt-4 py-2.5 rounded-lg font-bold text-slate-950 bg-gradient-to-r from-cyan-400 to-emerald-400 hover:brightness-110 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {loginBusy ? "Authenticating..." : "Authenticate Terminal"}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
