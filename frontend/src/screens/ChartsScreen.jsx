@@ -196,6 +196,32 @@ function ChartRow({ stock, onExpand }) {
 
 // ── ChartRowBody ──────────────────────────────────────────────────────────────
 
+class ChartErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(err) {
+    console.warn("ChartErrorBoundary caught:", err);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div
+          style={{ height: this.props.height || 320 }}
+          className="grid place-items-center text-faint text-xs"
+        >
+          Unable to render chart. Refreshing on next tick…
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function ChartRowBody({ symbol, viewDate }) {
   const { candles, levels, loading, isPreviousDay, candleDate } =
     useSymbolCandles(symbol, viewDate);
@@ -225,15 +251,17 @@ function ChartRowBody({ symbol, viewDate }) {
     );
   }
   return (
-    <CandleChart
-      candles={candles}
-      levels={levels}
-      position={position}
-      height={CHART_HEIGHT}
-      multiDay={false}
-      candleDate={candleDate}
-      isPreviousDay={isPreviousDay}
-    />
+    <ChartErrorBoundary height={CHART_HEIGHT}>
+      <CandleChart
+        candles={candles}
+        levels={levels}
+        position={position}
+        height={CHART_HEIGHT}
+        multiDay={false}
+        candleDate={candleDate}
+        isPreviousDay={isPreviousDay}
+      />
+    </ChartErrorBoundary>
   );
 }
 

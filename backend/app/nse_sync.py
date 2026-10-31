@@ -259,3 +259,4 @@ def run_fno_sync() -> Dict:
         "total_active": data["active_symbols_count"],
         "message": f"Sync verified: {data['active_symbols_count']} stocks aligned with NSE.",
     }
+

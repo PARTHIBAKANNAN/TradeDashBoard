@@ -11,17 +11,25 @@ import { useTheme } from "../contexts/ThemeContext.jsx";
 // Build a UTC timestamp for lightweight-charts from a calendar date + bucket
 function bucketToTimestamp(bucketDate, bucketMinute) {
   let year, month, day;
-  if (bucketDate) {
-    [year, month, day] = bucketDate.split("-").map(Number);
+  if (bucketDate && typeof bucketDate === "string" && bucketDate.includes("-")) {
+    const parts = bucketDate.split("-").map(Number);
+    year = parts[0];
+    month = parts[1];
+    day = parts[2];
   } else {
     const now = new Date();
     year = now.getFullYear();
     month = now.getMonth() + 1;
     day = now.getDate();
   }
-  const hours = Math.floor(bucketMinute / 60);
-  const minutes = bucketMinute % 60;
-  return Math.floor(Date.UTC(year, month - 1, day, hours, minutes, 0) / 1000);
+  const min =
+    typeof bucketMinute === "number" && !isNaN(bucketMinute)
+      ? bucketMinute
+      : 0;
+  const hours = Math.floor(min / 60);
+  const minutes = min % 60;
+  const ts = Math.floor(Date.UTC(year, month - 1, day, hours, minutes, 0) / 1000);
+  return Number.isInteger(ts) && ts > 0 ? ts : Math.floor(Date.now() / 1000);
 }
 
 function formatDelta(value) {
@@ -394,44 +402,64 @@ export default function CandleChart({
   // Candle data
   useEffect(() => {
     if (!seriesRef.current) return;
-    const data = (candles || [])
-      .map((c) => ({
-        time: bucketToTimestamp(c.bucket_date || candleDate, c.bucket_minute),
-        open: c.open,
-        high: c.high,
-        low: c.low,
-        close: c.close,
-      }))
+    const rawData = (candles || [])
+      .map((c) => {
+        const minute =
+          typeof c.bucket_minute === "number"
+            ? c.bucket_minute
+            : typeof c.bucket === "number"
+              ? c.bucket
+              : 0;
+        return {
+          time: bucketToTimestamp(c.bucket_date || candleDate, minute),
+          open: Number(c.open || 0),
+          high: Number(c.high || 0),
+          low: Number(c.low || 0),
+          close: Number(c.close || 0),
+        };
+      })
+      .filter((c) => Number.isInteger(c.time) && c.time > 0 && c.open > 0)
       .sort((a, b) => a.time - b.time);
+
+    // Strict deduplication by timestamp: lightweight-charts crashes if two items share time!
+    const uniqueMap = new Map();
+    for (const item of rawData) {
+      uniqueMap.set(item.time, item);
+    }
+    const data = Array.from(uniqueMap.values());
     if (data.length === 0) return;
 
     const prevLen = prevCandleCountRef.current;
-    if (!candlesInitializedRef.current) {
-      seriesRef.current.setData(data);
-      if (multiDay) {
-        chartRef.current?.timeScale().fitContent();
+    try {
+      if (!candlesInitializedRef.current) {
+        seriesRef.current.setData(data);
+        if (multiDay) {
+          chartRef.current?.timeScale().fitContent();
+        } else {
+          chartRef.current?.timeScale().applyOptions({
+            barSpacing: 8,
+            minBarSpacing: 3,
+            fixLeftEdge: true,
+            rightOffset: 12,
+          });
+          chartRef.current?.timeScale().scrollToPosition(0, false);
+        }
+        candlesInitializedRef.current = true;
+      } else if (data.length === prevLen || data.length === prevLen + 1) {
+        seriesRef.current.update(data[data.length - 1]);
       } else {
-        chartRef.current?.timeScale().applyOptions({
-          barSpacing: 8,
-          minBarSpacing: 3,
-          fixLeftEdge: true,
-          rightOffset: 12,
-        });
-        chartRef.current?.timeScale().scrollToPosition(0, false);
+        seriesRef.current.setData(data);
+        if (!multiDay) {
+          chartRef.current?.timeScale().applyOptions({
+            barSpacing: 8,
+            minBarSpacing: 3,
+            fixLeftEdge: true,
+            rightOffset: 12,
+          });
+        }
       }
-      candlesInitializedRef.current = true;
-    } else if (data.length === prevLen || data.length === prevLen + 1) {
-      seriesRef.current.update(data[data.length - 1]);
-    } else {
-      seriesRef.current.setData(data);
-      if (!multiDay) {
-        chartRef.current?.timeScale().applyOptions({
-          barSpacing: 8,
-          minBarSpacing: 3,
-          fixLeftEdge: true,
-          rightOffset: 12,
-        });
-      }
+    } catch (err) {
+      console.warn("CandleChart setData error caught gracefully:", err);
     }
     prevCandleCountRef.current = data.length;
     setTimeout(updatePositionOverlay, 50);
@@ -443,28 +471,45 @@ export default function CandleChart({
     const up = activeChartPalette.upColor;
     const down = activeChartPalette.downColor;
     let cumulative = 0;
-    const data = (candles || [])
+    const rawDelta = (candles || [])
       .map((c) => {
         cumulative += c.delta || 0;
+        const minute =
+          typeof c.bucket_minute === "number"
+            ? c.bucket_minute
+            : typeof c.bucket === "number"
+              ? c.bucket
+              : 0;
         return {
-          time: bucketToTimestamp(c.bucket_date || candleDate, c.bucket_minute),
+          time: bucketToTimestamp(c.bucket_date || candleDate, minute),
           value: cumulative,
           color: cumulative >= 0 ? up : down,
         };
       })
+      .filter((c) => Number.isInteger(c.time) && c.time > 0)
       .sort((a, b) => a.time - b.time);
+
+    const uniqueDeltaMap = new Map();
+    for (const item of rawDelta) {
+      uniqueDeltaMap.set(item.time, item);
+    }
+    const data = Array.from(uniqueDeltaMap.values());
     setLatestDelta(cumulative);
     deltaDataRef.current = data;
     if (data.length === 0) return;
 
     const prevLen = prevDeltaCountRef.current;
-    if (!deltaInitializedRef.current) {
-      deltaSeriesRef.current.setData(data);
-      deltaInitializedRef.current = true;
-    } else if (data.length === prevLen || data.length === prevLen + 1) {
-      deltaSeriesRef.current.update(data[data.length - 1]);
-    } else {
-      deltaSeriesRef.current.setData(data);
+    try {
+      if (!deltaInitializedRef.current) {
+        deltaSeriesRef.current.setData(data);
+        deltaInitializedRef.current = true;
+      } else if (data.length === prevLen || data.length === prevLen + 1) {
+        deltaSeriesRef.current.update(data[data.length - 1]);
+      } else {
+        deltaSeriesRef.current.setData(data);
+      }
+    } catch (err) {
+      console.warn("CandleChart CVD setData error caught gracefully:", err);
     }
     prevDeltaCountRef.current = data.length;
     applyDeltaMarkers();

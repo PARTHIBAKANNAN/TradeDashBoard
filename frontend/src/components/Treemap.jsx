@@ -63,7 +63,13 @@ const Treemap = React.memo(({ stocks, drilldownSector, onSelectSector }) => {
     if (!el) return;
     const ro = new ResizeObserver((entries) => {
       const { width } = entries[0].contentRect;
-      setSize((prev) => (prev.width === width ? prev : { ...prev, width }));
+      const isMobile = width < 640;
+      const targetHeight = isMobile ? Math.max(500, Math.round(width * 1.35)) : 640;
+      setSize((prev) =>
+        prev.width === width && prev.height === targetHeight
+          ? prev
+          : { width, height: targetHeight }
+      );
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -97,8 +103,8 @@ const Treemap = React.memo(({ stocks, drilldownSector, onSelectSector }) => {
             const h = node.y1 - node.y0;
             if (w <= 0 || h <= 0) return null;
             const pct = node.data.pct_change ?? 0;
-            const showText = w > 44 && h > 28;
-            const showCount = w > 70 && h > 44;
+            const showText = w > 36 && h > 22;
+            const showCount = w > 56 && h > 34;
             const clickable = !drilldownSector;
 
             return (

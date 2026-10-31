@@ -702,9 +702,9 @@ function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
         )}
       </AnimatePresence>
 
-      {/* Primary Mobile Bottom Bar (4 items: Ranking, Charts, Positions, More) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface2/95 backdrop-blur-2xl border-t border-border-subtle pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.3)] transition-colors">
-        <div className="grid grid-cols-5 h-[54px] items-center px-1">
+      {/* Primary Mobile Bottom Bar (Ranking, Watchlist, Charts, Positions, More) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface2/95 backdrop-blur-2xl border-t border-border-subtle pb-[max(env(safe-area-inset-bottom),10px)] shadow-[0_-4px_20px_rgba(0,0,0,0.3)] transition-colors">
+        <div className="grid grid-cols-5 h-[56px] items-center px-1">
           {mainTabs.map((tab) => {
             const isActive = activeTab === tab.key;
             const Icon = tab.icon;
@@ -745,7 +745,7 @@ function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
                 {isActive && (
                   <motion.div
                     layoutId="bottom-nav-active-indicator"
-                    className="absolute top-0 w-8 h-[2px] rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"
+                    className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[2.5px] rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.7)]"
                     transition={{ type: "spring", stiffness: 450, damping: 35 }}
                   />
                 )}
@@ -787,7 +787,7 @@ function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
             {isMoreActive && (
               <motion.div
                 layoutId="bottom-nav-active-indicator"
-                className="absolute top-0 w-8 h-[2px] rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"
+                className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[2.5px] rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.7)]"
                 transition={{ type: "spring", stiffness: 450, damping: 35 }}
               />
             )}

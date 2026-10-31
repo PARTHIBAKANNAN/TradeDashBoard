@@ -24,14 +24,27 @@ export function candleBucket(d) {
 // otherwise opens a fresh candle.
 export function mergeTick(series, ltp, bucket) {
   const prevLast = series[series.length - 1];
-  if (prevLast && prevLast.bucket === bucket) {
+  if (prevLast && (prevLast.bucket === bucket || prevLast.bucket_minute === bucket)) {
     const updatedLast = {
       ...prevLast,
+      bucket_minute: bucket,
       high: Math.max(prevLast.high, ltp),
       low: Math.min(prevLast.low, ltp),
       close: ltp,
     };
     return [...series.slice(0, -1), updatedLast];
   }
-  return [...series, { bucket, open: ltp, high: ltp, low: ltp, close: ltp }];
+  const prevDate = prevLast?.bucket_date || null;
+  return [
+    ...series,
+    {
+      bucket,
+      bucket_minute: bucket,
+      bucket_date: prevDate,
+      open: ltp,
+      high: ltp,
+      low: ltp,
+      close: ltp,
+    },
+  ];
 }

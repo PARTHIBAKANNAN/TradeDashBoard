@@ -36,6 +36,7 @@ const SUB_TABS = [
   {
     key: "risk",
     label: "Risk & Allocation",
+    shortLabel: "Risk",
     sublabel: "Loss limits & capital discipline",
     icon: Shield,
     badge: "Active",
@@ -43,6 +44,7 @@ const SUB_TABS = [
   {
     key: "strategies",
     label: "Trading Strategies",
+    shortLabel: "Strats",
     sublabel: "5 quantitative engines",
     icon: Zap,
     badge: "5 Live",
@@ -50,6 +52,7 @@ const SUB_TABS = [
   {
     key: "copilot",
     label: "AI Copilot & Automation",
+    shortLabel: "Copilot",
     sublabel: "Gemini 3.6 Flash & triggers",
     icon: Bot,
     badge: "Autonomous",
@@ -57,6 +60,7 @@ const SUB_TABS = [
   {
     key: "broker",
     label: "Broker & Data Feed",
+    shortLabel: "Broker",
     sublabel: "AliceBlue & WebSocket feeds",
     icon: Radio,
     badge: null,
@@ -64,6 +68,7 @@ const SUB_TABS = [
   {
     key: "wallet",
     label: "Paper Wallet & Capital",
+    shortLabel: "Capital",
     sublabel: "Virtual balance & margin",
     icon: Wallet,
     badge: null,
@@ -71,6 +76,7 @@ const SUB_TABS = [
   {
     key: "appearance",
     label: "Appearance & Themes",
+    shortLabel: "Theme",
     sublabel: "App palettes & chart styling",
     icon: Palette,
     badge: "New",
@@ -376,13 +382,13 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
           </div>
         )}
 
-        {/* Multi Sub-tabs Layout: Left Sidebar + Right Active Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Vertical Sub-tabs Sidebar */}
-          <div className="lg:col-span-4 xl:col-span-3 space-y-2">
-            <div className="p-2 bg-surface2 rounded-2xl border border-subtle shadow-sm space-y-1">
-              <div className="px-3 py-2 text-[10px] font-mono uppercase tracking-wider text-faint font-bold">
-                Configuration Sections
+        {/* Multi Sub-tabs Layout: 2-Column (30% Left Fixed Tabs / 70% Content) on mobile, 3-col/9-col on lg */}
+        <div className="grid grid-cols-[82px_1fr] sm:grid-cols-[105px_1fr] lg:grid-cols-12 gap-3 sm:gap-4 lg:gap-6 items-start">
+          {/* Left Vertical Sub-tabs Sidebar (Fixed/Sticky on Mobile) */}
+          <div className="lg:col-span-4 xl:col-span-3 sticky top-16 sm:top-20 z-10 space-y-2">
+            <div className="p-1.5 sm:p-2 bg-surface2 rounded-2xl border border-subtle shadow-sm space-y-1">
+              <div className="px-1.5 py-1 text-[9px] font-mono uppercase tracking-wider text-faint font-bold text-center lg:text-left truncate">
+                Sections
               </div>
               {SUB_TABS.map((tab) => {
                 const Icon = tab.icon;
@@ -391,34 +397,35 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                   <button
                     key={tab.key}
                     onClick={() => setActiveSection(tab.key)}
-                    className={`w-full text-left p-3 rounded-xl transition-all cursor-pointer flex items-center justify-between group ${
+                    className={`w-full text-center lg:text-left p-2 sm:p-2.5 lg:p-3 rounded-xl transition-all cursor-pointer flex flex-col lg:flex-row items-center justify-center lg:justify-between group ${
                       isActive
-                        ? "bg-blue-600/15 border border-blue-500/40 text-primary shadow-sm"
+                        ? "bg-blue-600/15 border border-blue-500/40 text-blue-400 shadow-sm"
                         : "hover:bg-surface3/60 text-muted hover:text-primary border border-transparent"
                     }`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-col lg:flex-row items-center gap-1 lg:gap-3 w-full">
                       <span
-                        className={`w-8 h-8 rounded-lg grid place-items-center transition-colors ${
+                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg grid place-items-center transition-colors flex-shrink-0 ${
                           isActive
-                            ? "bg-blue-600/20 text-blue-400"
+                            ? "bg-blue-600/25 text-blue-400"
                             : "bg-surface3/60 text-muted group-hover:text-primary"
                         }`}
                       >
-                        <Icon size={16} />
+                        <Icon size={15} />
                       </span>
-                      <div>
+                      <div className="min-w-0">
                         <div
-                          className={`text-xs font-bold leading-tight ${isActive ? "text-blue-400" : "text-primary"}`}
+                          className={`text-[10px] sm:text-xs font-bold leading-tight truncate ${isActive ? "text-blue-400" : "text-primary"}`}
                         >
-                          {tab.label}
+                          <span className="lg:hidden">{tab.shortLabel || tab.label.split(" ")[0]}</span>
+                          <span className="hidden lg:inline">{tab.label}</span>
                         </div>
-                        <div className="text-[10px] text-faint leading-tight mt-0.5">
+                        <div className="hidden lg:block text-[10px] text-faint leading-tight mt-0.5">
                           {tab.sublabel}
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="hidden lg:flex items-center gap-1.5">
                       {tab.badge && (
                         <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-surface3 text-muted border border-subtle">
                           {tab.badge}
@@ -438,18 +445,18 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
               })}
             </div>
 
-            {/* Quick Status Pill */}
-            <div className="p-3 bg-surface3/40 rounded-xl border border-subtle text-xs font-mono space-y-2">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-muted">Auto-Trading:</span>
+            {/* Quick Status Pill (compact on mobile) */}
+            <div className="p-2 sm:p-3 bg-surface3/40 rounded-xl border border-subtle text-[9px] sm:text-[11px] font-mono space-y-1 sm:space-y-2">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-center sm:text-left">
+                <span className="text-muted text-[8px] sm:text-[11px]">Auto-Trade:</span>
                 <span
                   className={`font-bold ${configData.auto_trading_enabled ? "text-emerald-400" : "text-amber-400"}`}
                 >
                   {configData.auto_trading_enabled ? "ARMED" : "PAUSED"}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-muted">Market Session:</span>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-center sm:text-left">
+                <span className="text-muted text-[8px] sm:text-[11px]">Session:</span>
                 <span
                   className={`font-bold ${brokerStatus?.market_open ? "text-emerald-400" : "text-faint"}`}
                 >

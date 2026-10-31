@@ -237,14 +237,15 @@ export default function RankingScreen({ stocks, nifty }) {
   return (
     <div className="min-h-screen bg-surface">
       <div className="mx-auto max-w-[1920px] w-full px-4 sm:px-6 py-4 flex gap-6">
-        {/* Filters — inline sidebar on lg+, slide-over drawer below lg */}
+        {/* Filters — inline sidebar on lg+, native bottom sheet below lg */}
         {showFilters && (
           <>
             <div
-              className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm lg:hidden"
               onClick={() => setShowFilters(false)}
             />
-            <div className="fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] overflow-y-auto p-4 lg:hidden">
+            <div className="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-3xl bg-surface2 border-t border-subtle p-4 shadow-2xl lg:hidden pb-[max(env(safe-area-inset-bottom),24px)]">
+              <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-3" />
               {filterCard}
             </div>
             <div className="hidden lg:block w-72 flex-shrink-0">
@@ -308,130 +309,139 @@ export default function RankingScreen({ stocks, nifty }) {
             </div>
           </div>
 
-          {/* Quick-Preset Screener Bar & Smart Baskets */}
-          <div className="flex flex-col gap-2.5 mb-4 bg-surface2/40 border border-subtle/80 rounded-xl p-3 backdrop-blur-md">
-            {/* Top row: 4 Advanced Intraday Screeners */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-faint flex-shrink-0 mr-1 hidden sm:inline">
-                Screener:
-              </span>
-              <button
-                onClick={() => setActivePreset("ALL")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                  activePreset === "ALL"
-                    ? "bg-accent-blue text-white shadow-sm font-bold"
-                    : "bg-surface3/80 text-faint hover:text-primary hover:bg-surface3"
-                }`}
-              >
-                All ({counts.all})
-              </button>
-              <button
-                onClick={() => setActivePreset("OPEN_EQ")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                  activePreset === "OPEN_EQ"
-                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-bold"
-                    : "bg-surface3/80 text-faint hover:text-emerald-400 hover:bg-surface3"
-                }`}
-              >
-                <span>⚡ 09:16 O=H / O=L</span>
-                {counts.openEq > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/30 text-emerald-300 font-mono">
-                    {counts.openEq}
-                  </span>
-                )}
-              </button>
-              <button
-                onClick={() => setActivePreset("RVOL")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                  activePreset === "RVOL"
-                    ? "bg-amber-500/20 text-amber-400 border border-amber-500/40 font-bold"
-                    : "bg-surface3/80 text-faint hover:text-amber-400 hover:bg-surface3"
-                }`}
-              >
-                <span>🔥 RVOL Shockers</span>
-                {counts.rvol > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/30 text-amber-300 font-mono">
-                    {counts.rvol}
-                  </span>
-                )}
-              </button>
-              <button
-                onClick={() => setActivePreset("HOD_SQUEEZE")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                  activePreset === "HOD_SQUEEZE"
-                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-bold"
-                    : "bg-surface3/80 text-faint hover:text-emerald-400 hover:bg-surface3"
-                }`}
-              >
-                <span>🎯 HOD Squeeze</span>
-                {counts.hodSqueeze > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/30 text-emerald-300 font-mono">
-                    {counts.hodSqueeze}
-                  </span>
-                )}
-              </button>
-              <button
-                onClick={() => setActivePreset("VWAP_RETEST")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                  activePreset === "VWAP_RETEST"
-                    ? "bg-sky-500/20 text-sky-400 border border-sky-500/40 font-bold"
-                    : "bg-surface3/80 text-faint hover:text-sky-400 hover:bg-surface3"
-                }`}
-              >
-                <span>🌊 VWAP Retest</span>
-                {counts.vwapRetest > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-sky-500/30 text-sky-300 font-mono">
-                    {counts.vwapRetest}
-                  </span>
-                )}
-              </button>
+          {/* Quick-Preset Screener Bar & Smart Baskets — Responsive No-Scroll Grid */}
+          <div className="flex flex-col gap-2 mb-4 bg-surface2/40 border border-subtle/80 rounded-xl p-2.5 backdrop-blur-md">
+            {/* Top row: 4 Advanced Intraday Screeners (2-col grid on mobile, flex on desktop) */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5 px-0.5">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-faint font-semibold">
+                  Intraday Screeners
+                </span>
+                <span className="text-[10px] text-faint md:hidden font-mono">
+                  tap to filter
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:items-center gap-1.5">
+                <button
+                  onClick={() => setActivePreset("ALL")}
+                  className={`col-span-2 sm:col-span-1 md:col-auto px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all text-center ${
+                    activePreset === "ALL"
+                      ? "bg-accent-blue text-white shadow-sm font-bold"
+                      : "bg-surface3/80 text-faint hover:text-primary hover:bg-surface3"
+                  }`}
+                >
+                  All ({counts.all})
+                </button>
+                <button
+                  onClick={() => setActivePreset("OPEN_EQ")}
+                  className={`flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    activePreset === "OPEN_EQ"
+                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-bold"
+                      : "bg-surface3/80 text-faint hover:text-emerald-400 hover:bg-surface3"
+                  }`}
+                >
+                  <span>⚡ 09:16 O=L/H</span>
+                  {counts.openEq > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/30 text-emerald-300 font-mono">
+                      {counts.openEq}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => setActivePreset("RVOL")}
+                  className={`flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    activePreset === "RVOL"
+                      ? "bg-amber-500/20 text-amber-400 border border-amber-500/40 font-bold"
+                      : "bg-surface3/80 text-faint hover:text-amber-400 hover:bg-surface3"
+                  }`}
+                >
+                  <span>🔥 RVOL Surge</span>
+                  {counts.rvol > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/30 text-amber-300 font-mono">
+                      {counts.rvol}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => setActivePreset("HOD_SQUEEZE")}
+                  className={`flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    activePreset === "HOD_SQUEEZE"
+                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-bold"
+                      : "bg-surface3/80 text-faint hover:text-emerald-400 hover:bg-surface3"
+                  }`}
+                >
+                  <span>🎯 HOD Squeeze</span>
+                  {counts.hodSqueeze > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/30 text-emerald-300 font-mono">
+                      {counts.hodSqueeze}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => setActivePreset("VWAP_RETEST")}
+                  className={`flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    activePreset === "VWAP_RETEST"
+                      ? "bg-sky-500/20 text-sky-400 border border-sky-500/40 font-bold"
+                      : "bg-surface3/80 text-faint hover:text-sky-400 hover:bg-surface3"
+                  }`}
+                >
+                  <span>🌊 VWAP Retest</span>
+                  {counts.vwapRetest > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-sky-500/30 text-sky-300 font-mono">
+                      {counts.vwapRetest}
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
 
-            {/* Bottom row: Smart Baskets */}
-            <div className="flex items-center gap-1.5 pt-2 border-t border-subtle/50 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-faint flex-shrink-0 mr-1 hidden sm:inline">
-                Basket:
-              </span>
-              <button
-                onClick={() => setActiveBasket("ALL")}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap transition-all ${
-                  activeBasket === "ALL"
-                    ? "bg-white/10 text-primary font-semibold border border-white/20"
-                    : "text-faint hover:text-primary hover:bg-surface3"
-                }`}
-              >
-                All Universe
-              </button>
-              <button
-                onClick={() => setActiveBasket("NIFTY50")}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap transition-all ${
-                  activeBasket === "NIFTY50"
-                    ? "bg-blue-500/20 text-blue-300 font-semibold border border-blue-500/30"
-                    : "text-faint hover:text-primary hover:bg-surface3"
-                }`}
-              >
-                🏛 Nifty 50 Titans
-              </button>
-              <button
-                onClick={() => setActiveBasket("HIGH_BETA")}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap transition-all ${
-                  activeBasket === "HIGH_BETA"
-                    ? "bg-purple-500/20 text-purple-300 font-semibold border border-purple-500/30"
-                    : "text-faint hover:text-primary hover:bg-surface3"
-                }`}
-              >
-                🚀 High-Beta Midcaps
-              </button>
-              <button
-                onClick={() => setActiveBasket("HIGH_ATR")}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap transition-all ${
-                  activeBasket === "HIGH_ATR"
-                    ? "bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30"
-                    : "text-faint hover:text-primary hover:bg-surface3"
-                }`}
-              >
-                ⚡ High Volatility Leaders
-              </button>
+            {/* Bottom row: Smart Baskets (2x2 grid on mobile, flex on desktop) */}
+            <div className="pt-2 border-t border-subtle/50">
+              <div className="text-[10px] font-mono uppercase tracking-wider text-faint font-semibold mb-1 px-0.5">
+                Focus Basket
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:flex md:items-center gap-1.5">
+                <button
+                  onClick={() => setActiveBasket("ALL")}
+                  className={`px-2 py-1.5 rounded-md text-[11px] font-medium transition-all text-center ${
+                    activeBasket === "ALL"
+                      ? "bg-white/15 text-primary font-semibold border border-white/20"
+                      : "text-faint hover:text-primary hover:bg-surface3"
+                  }`}
+                >
+                  All Universe
+                </button>
+                <button
+                  onClick={() => setActiveBasket("NIFTY50")}
+                  className={`px-2 py-1.5 rounded-md text-[11px] font-medium transition-all text-center ${
+                    activeBasket === "NIFTY50"
+                      ? "bg-blue-500/20 text-blue-300 font-semibold border border-blue-500/30"
+                      : "text-faint hover:text-primary hover:bg-surface3"
+                  }`}
+                >
+                  🏛 Nifty 50 Titans
+                </button>
+                <button
+                  onClick={() => setActiveBasket("HIGH_BETA")}
+                  className={`px-2 py-1.5 rounded-md text-[11px] font-medium transition-all text-center ${
+                    activeBasket === "HIGH_BETA"
+                      ? "bg-purple-500/20 text-purple-300 font-semibold border border-purple-500/30"
+                      : "text-faint hover:text-primary hover:bg-surface3"
+                  }`}
+                >
+                  🚀 High-Beta Midcaps
+                </button>
+                <button
+                  onClick={() => setActiveBasket("HIGH_ATR")}
+                  className={`px-2 py-1.5 rounded-md text-[11px] font-medium transition-all text-center ${
+                    activeBasket === "HIGH_ATR"
+                      ? "bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30"
+                      : "text-faint hover:text-primary hover:bg-surface3"
+                  }`}
+                >
+                  ⚡ High Volatility Leaders
+                </button>
+              </div>
             </div>
           </div>
 
