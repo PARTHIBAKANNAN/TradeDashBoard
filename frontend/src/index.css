@@ -45,7 +45,8 @@ body,
    the same variable names — flipping one class flips the whole palette.
    --------------------------------------------------------------------- */
 :root,
-.dark {
+.dark,
+.theme-obsidian {
   --surface: 6 7 12; /* near-black terminal base */
   --surface2: 13 15 23; /* raised panel */
   --surface3: 20 23 34; /* raised-most / inputs */
@@ -56,19 +57,17 @@ body,
   --text-muted: 148 156 178;
   --text-faint: 96 103 125;
 
-  --accent-violet: 167 139 250; /* violet-400 */
-  --accent-blue: 96 165 250; /* blue-400 */
-  --accent-cyan: 45 212 191; /* teal-400, secondary accent */
-  --accent-amber: 251 191 36; /* amber-400, warning/highlight */
+  --accent-violet: 167 139 250;
+  --accent-blue: 96 165 250;
+  --accent-cyan: 45 212 191;
+  --accent-amber: 251 191 36;
   --glow-violet: 139 92 246;
 
-  --bull: 52 211 153; /* emerald-400 */
+  --bull: 52 211 153;
   --bull-strong: 16 185 129;
-  --bear: 251 113 133; /* rose-400 */
+  --bear: 251 113 133;
   --bear-strong: 244 63 94;
 
-  /* Canvas-only: full color strings (Canvas 2D can't consume channel
-     triplets directly), kept separate from the Tailwind-facing tokens above. */
   --canvas-prev-range: #3a3f52;
   --canvas-today-range-a: #60a5fa;
   --canvas-today-range-b: #a78bfa;
@@ -76,16 +75,47 @@ body,
   --canvas-ltp-glow: rgba(167, 139, 250, 0.55);
 }
 
-.light {
-  --surface: 246 247 250;
-  --surface2: 255 255 255;
-  --surface3: 240 241 246;
-  --surface4: 231 233 240;
-  --border-subtle: 226 228 236;
-  --border-strong: 206 209 222;
-  --text-primary: 17 19 28;
-  --text-muted: 82 88 107;
-  --text-faint: 122 128 145;
+.theme-oled {
+  --surface: 0 0 0; /* Pure pitch black OLED */
+  --surface2: 9 13 22; /* High-contrast OLED dark card */
+  --surface3: 16 22 34;
+  --surface4: 24 30 46;
+  --border-subtle: 26 34 50;
+  --border-strong: 42 52 74;
+  --text-primary: 248 250 252;
+  --text-muted: 148 163 184;
+  --text-faint: 94 108 132;
+
+  --accent-violet: 167 139 250;
+  --accent-blue: 59 130 246;
+  --accent-cyan: 45 212 191;
+  --accent-amber: 251 191 36;
+  --glow-violet: 139 92 246;
+
+  --bull: 52 211 153;
+  --bull-strong: 16 185 129;
+  --bear: 251 113 133;
+  --bear-strong: 244 63 94;
+
+  --canvas-prev-range: #2b3345;
+  --canvas-today-range-a: #3b82f6;
+  --canvas-today-range-b: #8b5cf6;
+  --canvas-ltp-tick: #ffffff;
+  --canvas-ltp-glow: rgba(59, 130, 246, 0.65);
+}
+
+.light,
+.theme-light {
+  /* Glare-Free Soft Slate / Cashmere Matte Light (No blinding #FFFFFF pure-white) */
+  --surface: 237 240 245; /* #EDF0F5 warm matte slate canvas */
+  --surface2: 247 248 250; /* #F7F8FA satin card background */
+  --surface3: 226 230 238; /* #E2E6EE soft controls & chips */
+  --surface4: 218 222 230; /* hover controls */
+  --border-subtle: 209 215 227; /* #D1D7E3 */
+  --border-strong: 186 193 207;
+  --text-primary: 15 23 42; /* #0F172A deep slate text, WCAG AAA */
+  --text-muted: 71 85 105; /* #475569 readable slate */
+  --text-faint: 100 116 139;
 
   --accent-violet: 124 58 237;
   --accent-blue: 37 99 235;
@@ -98,11 +128,41 @@ body,
   --bear: 225 29 72;
   --bear-strong: 190 18 60;
 
-  --canvas-prev-range: #d4d7e0;
+  --canvas-prev-range: #cbd5e1;
   --canvas-today-range-a: #2563eb;
   --canvas-today-range-b: #7c3aed;
-  --canvas-ltp-tick: #11131c;
-  --canvas-ltp-glow: rgba(124, 58, 237, 0.35);
+  --canvas-ltp-tick: #0f172a;
+  --canvas-ltp-glow: rgba(37, 99, 235, 0.35);
+}
+
+.theme-cyber {
+  /* Institutional Matrix Cyber Terminal */
+  --surface: 4 8 7; /* #040807 terminal base */
+  --surface2: 10 18 16; /* #0A1210 */
+  --surface3: 16 28 24;
+  --surface4: 22 38 33;
+  --border-subtle: 19 42 34;
+  --border-strong: 32 68 55;
+  --text-primary: 236 253 245;
+  --text-muted: 110 231 183;
+  --text-faint: 52 144 116;
+
+  --accent-violet: 52 211 153;
+  --accent-blue: 16 185 129;
+  --accent-cyan: 20 184 166;
+  --accent-amber: 234 179 8;
+  --glow-violet: 16 185 129;
+
+  --bull: 52 211 153;
+  --bull-strong: 16 185 129;
+  --bear: 251 113 133;
+  --bear-strong: 244 63 94;
+
+  --canvas-prev-range: #1b382d;
+  --canvas-today-range-a: #10b981;
+  --canvas-today-range-b: #34d399;
+  --canvas-ltp-tick: #ecfdf5;
+  --canvas-ltp-glow: rgba(16, 185, 129, 0.6);
 }
 
 body {

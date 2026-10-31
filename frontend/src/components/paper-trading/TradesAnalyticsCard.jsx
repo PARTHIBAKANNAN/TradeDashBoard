@@ -544,8 +544,8 @@ export default function TradesAnalyticsCard({ orders = [], stocks = [] }) {
       </div>
 
       {/* ── Sub-View Switcher Tabs ── */}
-      <div className="flex items-center justify-between border-b border-subtle pb-2 overflow-x-auto no-scrollbar gap-1">
-        <div className="flex gap-1.5 flex-nowrap">
+      <div className="flex items-center justify-between pb-1 overflow-x-auto no-scrollbar gap-2">
+        <div className="flex gap-1.5 flex-nowrap bg-surface3/60 p-1 rounded-xl border border-subtle shadow-sm">
           <button
             onClick={() => setSelectedView("overview")}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${

@@ -15,7 +15,14 @@ import {
   Cpu,
   Activity,
   Layers,
+  Palette,
+  Sun,
+  Moon,
+  Monitor,
+  Sparkles,
+  Paintbrush,
 } from "lucide-react";
+import { useTheme, CHART_PALETTES } from "../contexts/ThemeContext.jsx";
 import Card from "../components/ui/Card.jsx";
 import {
   usePnlSummary,
@@ -60,11 +67,26 @@ const SUB_TABS = [
     icon: Wallet,
     badge: null,
   },
+  {
+    key: "appearance",
+    label: "Appearance & Themes",
+    sublabel: "App palettes & chart styling",
+    icon: Palette,
+    badge: "New",
+  },
 ];
 
 export default function SettingsScreen({ onOpenBrokerModal }) {
   usePaperTradingSync();
   const summary = usePnlSummary();
+  const {
+    theme,
+    setTheme,
+    chartTheme,
+    setChartTheme,
+    customChartColors,
+    setCustomChartColors,
+  } = useTheme();
 
   const [activeSection, setActiveSection] = useState("risk");
   const [depositAmount, setDepositAmount] = useState("");
@@ -893,6 +915,322 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                 </div>
               </Card>
             )}
+
+            {/* SUB-TAB 6: Appearance & Themes */}
+            {activeSection === "appearance" && (
+              <div className="space-y-6">
+                {/* 1. Application-Level Themes */}
+                <Card
+                  title="Application Color Themes"
+                  subtitle="System appearance across the dashboard, analytics, heatmaps, and tables"
+                  icon={Palette}
+                  className="shadow-sm"
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+                    {/* Obsidian Navy (Default Dark) */}
+                    <button
+                      type="button"
+                      onClick={() => setTheme("obsidian")}
+                      className={`relative p-4 rounded-xl border text-left transition-all cursor-pointer ${
+                        theme === "obsidian" || theme === "dark"
+                          ? "bg-blue-600/10 border-blue-500 shadow-md ring-1 ring-blue-500/30"
+                          : "bg-surface3/40 border-subtle hover:border-strong"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-primary font-display">
+                          Obsidian Navy
+                        </span>
+                        {theme === "obsidian" || theme === "dark" ? (
+                          <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                        ) : null}
+                      </div>
+                      <p className="text-[11px] text-faint mb-3">
+                        Modern fintech blue-slate tone with deep terminal depth.
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-5 h-5 rounded-md bg-[#06070c] border border-white/10" title="Canvas #06070c" />
+                        <span className="w-5 h-5 rounded-md bg-[#0d0f17] border border-white/10" title="Card #0d0f17" />
+                        <span className="w-5 h-5 rounded-md bg-[#3b82f6]" title="Accent Blue" />
+                        <span className="w-5 h-5 rounded-md bg-[#10b981]" title="Bull Emerald" />
+                      </div>
+                    </button>
+
+                    {/* OLED Midnight Black */}
+                    <button
+                      type="button"
+                      onClick={() => setTheme("oled")}
+                      className={`relative p-4 rounded-xl border text-left transition-all cursor-pointer ${
+                        theme === "oled"
+                          ? "bg-blue-600/10 border-blue-500 shadow-md ring-1 ring-blue-500/30"
+                          : "bg-surface3/40 border-subtle hover:border-strong"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-primary font-display">
+                          OLED Midnight Black
+                        </span>
+                        {theme === "oled" && (
+                          <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                        )}
+                      </div>
+                      <p className="text-[11px] text-faint mb-3">
+                        True #000000 pitch black canvas for pure contrast and battery saving.
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-5 h-5 rounded-md bg-[#000000] border border-white/20" title="Canvas #000000" />
+                        <span className="w-5 h-5 rounded-md bg-[#090d16] border border-white/15" title="Card #090d16" />
+                        <span className="w-5 h-5 rounded-md bg-[#3b82f6]" title="Accent Blue" />
+                        <span className="w-5 h-5 rounded-md bg-[#10b981]" title="Bull Emerald" />
+                      </div>
+                    </button>
+
+                    {/* Soft Slate / Cashmere (Glare-Free Light) */}
+                    <button
+                      type="button"
+                      onClick={() => setTheme("light")}
+                      className={`relative p-4 rounded-xl border text-left transition-all cursor-pointer ${
+                        theme === "light"
+                          ? "bg-blue-600/10 border-blue-500 shadow-md ring-1 ring-blue-500/30"
+                          : "bg-surface3/40 border-subtle hover:border-strong"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-primary font-display">
+                          Soft Slate Light
+                        </span>
+                        {theme === "light" && (
+                          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                        )}
+                      </div>
+                      <p className="text-[11px] text-faint mb-3">
+                        Calm cashmere matte slate. No harsh #FFFFFF blinding glare.
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-5 h-5 rounded-md bg-[#edf0f5] border border-slate-300" title="Canvas #edf0f5" />
+                        <span className="w-5 h-5 rounded-md bg-[#f7f8fa] border border-slate-300" title="Card #f7f8fa" />
+                        <span className="w-5 h-5 rounded-md bg-[#2563eb]" title="Accent Blue" />
+                        <span className="w-5 h-5 rounded-md bg-[#059669]" title="Bull Emerald" />
+                      </div>
+                    </button>
+
+                    {/* Cyber Terminal */}
+                    <button
+                      type="button"
+                      onClick={() => setTheme("cyber")}
+                      className={`relative p-4 rounded-xl border text-left transition-all cursor-pointer ${
+                        theme === "cyber"
+                          ? "bg-emerald-600/10 border-emerald-500 shadow-md ring-1 ring-emerald-500/30"
+                          : "bg-surface3/40 border-subtle hover:border-strong"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-primary font-display">
+                          Cyber Terminal
+                        </span>
+                        {theme === "cyber" && (
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                        )}
+                      </div>
+                      <p className="text-[11px] text-faint mb-3">
+                        Institutional Matrix Jade &amp; High-Voltage Emerald glow.
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-5 h-5 rounded-md bg-[#040807] border border-emerald-900/40" title="Canvas #040807" />
+                        <span className="w-5 h-5 rounded-md bg-[#0a1210] border border-emerald-900/40" title="Card #0a1210" />
+                        <span className="w-5 h-5 rounded-md bg-[#10b981]" title="Accent Jade" />
+                        <span className="w-5 h-5 rounded-md bg-[#34d399]" title="Bull Mint" />
+                      </div>
+                    </button>
+                  </div>
+                </Card>
+
+                {/* 2. TradingView Candlestick Chart Palettes */}
+                <Card
+                  title="TradingView Candlestick Color Palettes"
+                  subtitle="Color presets and customizable bull/bear candle styles applied to all charts"
+                  icon={Paintbrush}
+                  className="shadow-sm"
+                >
+                  <div className="space-y-4 pt-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      {Object.values(CHART_PALETTES).map((pal) => (
+                        <button
+                          key={pal.id}
+                          type="button"
+                          onClick={() => setChartTheme(pal.id)}
+                          className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                            chartTheme === pal.id
+                              ? "bg-blue-600/10 border-blue-500 ring-1 ring-blue-500/30"
+                              : "bg-surface3/40 border-subtle hover:border-strong"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-bold text-primary">{pal.name}</span>
+                            {chartTheme === pal.id && (
+                              <span className="w-2 h-2 rounded-full bg-blue-400" />
+                            )}
+                          </div>
+                          <p className="text-[10px] text-faint mb-3">{pal.desc}</p>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
+                              <span
+                                className="w-4 h-6 rounded-sm inline-block shadow-sm"
+                                style={{ backgroundColor: pal.upColor }}
+                              />
+                              <span className="text-[10px] font-mono text-faint">Bull</span>
+                            </div>
+                            <div className="flex items-center gap-1 ml-2">
+                              <span
+                                className="w-4 h-6 rounded-sm inline-block shadow-sm"
+                                style={{ backgroundColor: pal.downColor }}
+                              />
+                              <span className="text-[10px] font-mono text-faint">Bear</span>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+
+                      {/* Custom Palette Option */}
+                      <button
+                        type="button"
+                        onClick={() => setChartTheme("custom")}
+                        className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                          chartTheme === "custom"
+                            ? "bg-blue-600/10 border-blue-500 ring-1 ring-blue-500/30"
+                            : "bg-surface3/40 border-subtle hover:border-strong"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-bold text-primary">Custom Palette</span>
+                          {chartTheme === "custom" && (
+                            <span className="w-2 h-2 rounded-full bg-blue-400" />
+                          )}
+                        </div>
+                        <p className="text-[10px] text-faint mb-3">Define your own candle colors</p>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
+                            <span
+                              className="w-4 h-6 rounded-sm inline-block shadow-sm"
+                              style={{ backgroundColor: customChartColors.upColor }}
+                            />
+                            <span className="text-[10px] font-mono text-faint">Bull</span>
+                          </div>
+                          <div className="flex items-center gap-1 ml-2">
+                            <span
+                              className="w-4 h-6 rounded-sm inline-block shadow-sm"
+                              style={{ backgroundColor: customChartColors.downColor }}
+                            />
+                            <span className="text-[10px] font-mono text-faint">Bear</span>
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+
+                    {/* Custom Color Pickers (when Custom is selected) */}
+                    {chartTheme === "custom" && (
+                      <div className="p-4 bg-surface3/60 rounded-xl border border-subtle space-y-3">
+                        <div className="text-xs font-bold text-primary">
+                          Custom Candlestick Color Controls
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                          <div>
+                            <label className="block text-[10px] uppercase font-bold text-muted mb-1.5">
+                              Bullish Candle (Up)
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="color"
+                                value={customChartColors.upColor}
+                                onChange={(e) =>
+                                  setCustomChartColors((prev) => ({
+                                    ...prev,
+                                    upColor: e.target.value,
+                                  }))
+                                }
+                                className="w-8 h-8 rounded border border-subtle cursor-pointer bg-transparent"
+                              />
+                              <span className="font-mono text-xs text-primary">
+                                {customChartColors.upColor}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] uppercase font-bold text-muted mb-1.5">
+                              Bearish Candle (Down)
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="color"
+                                value={customChartColors.downColor}
+                                onChange={(e) =>
+                                  setCustomChartColors((prev) => ({
+                                    ...prev,
+                                    downColor: e.target.value,
+                                  }))
+                                }
+                                className="w-8 h-8 rounded border border-subtle cursor-pointer bg-transparent"
+                              />
+                              <span className="font-mono text-xs text-primary">
+                                {customChartColors.downColor}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] uppercase font-bold text-muted mb-1.5">
+                              Chart Canvas Base
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="color"
+                                value={
+                                  customChartColors.bgColor === "transparent"
+                                    ? "#090d16"
+                                    : customChartColors.bgColor
+                                }
+                                onChange={(e) =>
+                                  setCustomChartColors((prev) => ({
+                                    ...prev,
+                                    bgColor: e.target.value,
+                                  }))
+                                }
+                                className="w-8 h-8 rounded border border-subtle cursor-pointer bg-transparent"
+                              />
+                              <span className="font-mono text-xs text-primary">
+                                {customChartColors.bgColor}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] uppercase font-bold text-muted mb-1.5">
+                              Reset to Default
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCustomChartColors({
+                                  upColor: "#10b981",
+                                  downColor: "#ef4444",
+                                  bgColor: "#090d16",
+                                  gridColor: "rgba(255, 255, 255, 0.06)",
+                                });
+                              }}
+                              className="px-3 py-1.5 text-xs bg-surface2 hover:bg-surface3 border border-subtle text-primary rounded-lg font-semibold transition-colors"
+                            >
+                              Reset Colors
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              </div>
+            )}
+
           </div>
         </div>
       </div>

@@ -135,6 +135,26 @@ async def get_multi_day_candles(symbol: str, days: int = 21) -> dict:
     ]
     candles = _append_live(candles, symbol, today)
 
+    # If lookback returned zero rows (e.g. extended market holiday or weekend),
+    # fallback to the most recent historical trading session available in the database.
+    if not candles:
+        latest = await candle_history.get_latest_candle_date(symbol)
+        if latest and str(latest) != today_str:
+            lat_date = latest if isinstance(latest, date) else datetime.strptime(str(latest), "%Y-%m-%d").date()
+            from_date = lat_date - timedelta(days=days * 2)
+            rows = await candle_history.get_candles_range(symbol, from_date, lat_date)
+            candles = [
+                _format_row(
+                    r,
+                    (
+                        r["bucket_date"].isoformat()
+                        if hasattr(r["bucket_date"], "isoformat")
+                        else str(r["bucket_date"])
+                    ),
+                )
+                for r in rows
+            ]
+
     is_previous_day = bool(candles) and candles[-1]["bucket_date"] != today_str
     candle_date = candles[-1]["bucket_date"] if candles else today_str
 

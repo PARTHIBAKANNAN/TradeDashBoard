@@ -34,7 +34,7 @@ const DEFAULT_WATCHLISTS = {
 // ── Right Detail Canvas Sub-Component ─────────────────────────────────────────
 function WatchlistChartCanvas({ symbol, onTrade }) {
   const { candles, levels, loading, isPreviousDay, candleDate } =
-    useMultiDayCandles(symbol, 7);
+    useMultiDayCandles(symbol, 21);
   const liveStock = useStock(symbol);
 
   if (!symbol) {

@@ -146,11 +146,28 @@ export default function EquityCurveChart({ closedOrders }) {
     if (!rect) return;
     const mouseX = e.clientX - rect.left;
 
-    // Find nearest point
     let closestIdx = 0;
     let minDist = Infinity;
     coords.forEach((pt, idx) => {
       const dist = Math.abs(pt.x - mouseX);
+      if (dist < minDist) {
+        minDist = dist;
+        closestIdx = idx;
+      }
+    });
+    setHoveredIdx(closestIdx);
+  };
+
+  const handleTouch = (e) => {
+    if (!coords || coords.length === 0) return;
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect || !e.touches || !e.touches[0]) return;
+    const touchX = e.touches[0].clientX - rect.left;
+
+    let closestIdx = 0;
+    let minDist = Infinity;
+    coords.forEach((pt, idx) => {
+      const dist = Math.abs(pt.x - touchX);
       if (dist < minDist) {
         minDist = dist;
         closestIdx = idx;
@@ -193,13 +210,16 @@ export default function EquityCurveChart({ closedOrders }) {
           </div>
         </div>
       }
-      subtitle="Cumulative realized P&L with Catmull-Rom spline smoothing and interactive trade inspection"
+      subtitle="Cumulative realized P&L with Catmull-Rom spline smoothing and interactive trade inspection (Hover or Touch to inspect)"
       icon={LineChartIcon}
     >
       <div
         ref={containerRef}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
+        onTouchStart={handleTouch}
+        onTouchMove={handleTouch}
+        onTouchEnd={() => setHoveredIdx(null)}
         className="relative w-full cursor-crosshair select-none"
         style={{ height: size.height }}
       >
@@ -296,6 +316,7 @@ export default function EquityCurveChart({ closedOrders }) {
               <path
                 d={areaCurve}
                 fill={isPositive ? "url(#equity-grad-bull)" : "url(#equity-grad-bear)"}
+                transition="all 0.3s ease"
               />
             )}
 
@@ -362,7 +383,7 @@ export default function EquityCurveChart({ closedOrders }) {
           </svg>
         )}
 
-        {/* Hover Tooltip (Glassmorphic) */}
+        {/* Hover / Touch Tooltip (Glassmorphic) */}
         {activePoint && hoveredIdx != null && (
           <div
             className="absolute z-20 pointer-events-none transform -translate-y-full transition-all duration-75"
@@ -374,9 +395,9 @@ export default function EquityCurveChart({ closedOrders }) {
               top: Math.max(activePoint.y - 12, 10),
             }}
           >
-            <div className="bg-[#0f172a]/95 backdrop-blur-md border border-white/15 rounded-xl shadow-2xl p-3 w-[220px] text-xs font-sans text-primary">
-              <div className="flex items-center justify-between border-b border-white/10 pb-1.5 mb-1.5">
-                <span className="font-bold font-mono text-[11px] text-blue-400">
+            <div className="bg-surface2/95 backdrop-blur-md border border-subtle rounded-xl shadow-2xl p-3 w-[220px] text-xs font-sans text-primary">
+              <div className="flex items-center justify-between border-b border-subtle pb-1.5 mb-1.5">
+                <span className="font-bold font-mono text-[11px] text-accent-blue">
                   Trade #{activePoint.i + 1}
                 </span>
                 <span className="text-[10px] text-faint flex items-center gap-1">
@@ -424,7 +445,7 @@ export default function EquityCurveChart({ closedOrders }) {
                 </div>
 
                 {activePoint.order.close_reason && (
-                  <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[10px] font-sans">
+                  <div className="flex items-center justify-between pt-1 border-t border-subtle text-[10px] font-sans">
                     <span className="text-faint">Exit Reason:</span>
                     <span className="text-muted font-medium truncate max-w-[110px]" title={activePoint.order.close_reason}>
                       {activePoint.order.close_reason}

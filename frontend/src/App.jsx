@@ -249,7 +249,7 @@ function Dashboard({ user, onLogout }) {
   };
 
   return (
-    <div className="h-screen h-dvh bg-surface text-primary font-sans flex flex-col overflow-hidden pb-16 md:pb-0">
+    <div className="h-screen h-dvh bg-surface text-primary font-sans flex flex-col overflow-hidden">
       <TopNavbar
         user={user}
         onLogout={onLogout}
@@ -278,7 +278,7 @@ function Dashboard({ user, onLogout }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
-            className="pb-24 md:pb-6"
+            className="pb-28 lg:pb-8 min-h-full"
           >
             {activeTab === "ranking" && (
               <RankingScreen stocks={stocks} nifty={nifty} />
@@ -357,7 +357,7 @@ function TopNavbar({
   ];
 
   return (
-    <nav className="sticky top-0 z-50 h-12 border-b border-[#161d2b] bg-[#080b11]/95 backdrop-blur-md shadow-sm pt-safe flex-shrink-0 flex items-center">
+    <nav className="sticky top-0 z-50 h-12 border-b border-border-subtle bg-surface2/95 backdrop-blur-md shadow-sm pt-safe flex-shrink-0 flex items-center transition-colors">
       <div className="mx-auto max-w-[1920px] w-full px-3 sm:px-5 flex items-center justify-between gap-2 sm:gap-4">
         {/* Left: Brand & Status Cluster */}
         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
@@ -448,28 +448,42 @@ function TopNavbar({
 
         {/* Right side: Benchmark & Profile Avatar */}
         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          {/* NIFTY 50 1-line Ticker */}
-          <div className="flex items-center gap-1.5 bg-[#101520] border border-white/5 px-2.5 py-1 rounded-lg text-xs font-mono">
-            <span className="text-[10px] text-faint font-bold tracking-wider">NIFTY</span>
-            <span className="text-primary font-semibold tabular-nums">
-              {nifty.ltp?.toLocaleString("en-IN", {
-                minimumFractionDigits: 1,
-                maximumFractionDigits: 2,
-              }) || "—"}
-            </span>
-            <span
-              className={`text-[11px] font-bold tabular-nums ${
-                (nifty.pct_change || 0) >= 0 ? "text-emerald-400" : "text-rose-400"
-              }`}
-            >
-              {(nifty.pct_change || 0) >= 0 ? "▲ +" : "▼ "}
-              {Math.abs(nifty.pct_change || 0).toFixed(2)}%
-            </span>
-          </div>
+          {/* NIFTY 50 Live Ticker: Spot + Direction + Points Moved + % Moved */}
+          {(() => {
+            const ltp = nifty.ltp || 0;
+            const pts = nifty.change != null && nifty.change !== 0
+              ? nifty.change
+              : (nifty.prev_close && ltp ? ltp - nifty.prev_close : 0);
+            const pct = nifty.pct_change || (nifty.prev_close && pts ? (pts / nifty.prev_close) * 100 : 0);
+            const isPos = pct >= 0;
+
+            return (
+              <div className="flex items-center gap-1.5 sm:gap-2 bg-surface3/80 border border-subtle px-2.5 py-1 rounded-lg text-xs font-mono shadow-sm">
+                <span className="text-[10px] text-faint font-bold tracking-wider hidden sm:inline">NIFTY 50</span>
+                <span className="text-[10px] text-faint font-bold tracking-wider sm:hidden">NIFTY</span>
+                <span className="text-primary font-bold tabular-nums">
+                  {ltp > 0
+                    ? ltp.toLocaleString("en-IN", { minimumFractionDigits: 1, maximumFractionDigits: 2 })
+                    : "—"}
+                </span>
+                <span
+                  className={`text-[11px] font-bold tabular-nums flex items-center gap-0.5 ${
+                    isPos ? "text-bull-strong text-emerald-400" : "text-bear-strong text-rose-400"
+                  }`}
+                >
+                  <span>{isPos ? "▲" : "▼"}</span>
+                  <span className="hidden sm:inline">
+                    {isPos ? "+" : ""}{pts.toFixed(1)}
+                  </span>
+                  <span>
+                    ({isPos ? "+" : ""}{Math.abs(pct).toFixed(2)}%)
+                  </span>
+                </span>
+              </div>
+            );
+          })()}
 
           <div className="flex items-center gap-1.5">
-            <ThemeToggle />
-
             {/* Profile Avatar Dropdown */}
             <div className="relative">
               <button
@@ -595,7 +609,7 @@ function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="md:hidden fixed bottom-[56px] left-0 right-0 z-50 bg-[#0c0e17] border-t border-blue-500/20 rounded-t-2xl p-4 shadow-2xl"
+              className="md:hidden fixed bottom-[56px] left-0 right-0 z-50 bg-surface2/98 border-t border-border-subtle rounded-t-2xl p-4 shadow-2xl backdrop-blur-2xl transition-colors"
             >
               <div className="flex items-center justify-between pb-3 mb-2 border-b border-white/5">
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
@@ -646,7 +660,7 @@ function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
       </AnimatePresence>
 
       {/* Primary Mobile Bottom Bar (4 items: Ranking, Charts, Positions, More) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0c0e17]/95 backdrop-blur-2xl border-t border-border-subtle/80 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface2/95 backdrop-blur-2xl border-t border-border-subtle pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.3)] transition-colors">
         <div className="grid grid-cols-4 h-[54px] items-center px-2">
           {mainTabs.map((tab) => {
             const isActive = activeTab === tab.key;
