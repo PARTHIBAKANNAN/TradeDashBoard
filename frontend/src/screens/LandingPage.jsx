@@ -173,11 +173,11 @@ export default function LandingPage({ onLoginSuccess }) {
       const subject = encodeURIComponent(`PulseHunter Desk Clearance Application - ${regName}`);
       const body = encodeURIComponent(
         `New Desk Clearance Application:\n\n` +
-          `Applicant Name: ${regName}\n` +
-          `Email: ${regEmail}\n` +
-          `Strategy Focus: ${regStrategy}\n` +
-          `Status: PENDING ADMIN APPROVAL\n\n` +
-          `Log in to the Admin Console to review and approve access.`
+        `Applicant Name: ${regName}\n` +
+        `Email: ${regEmail}\n` +
+        `Strategy Focus: ${regStrategy}\n` +
+        `Status: PENDING ADMIN APPROVAL\n\n` +
+        `Log in to the Admin Console to review and approve access.`
       );
       window.open(`mailto:parthisivaram45@gmail.com?subject=${subject}&body=${body}`, "_blank");
     } catch {
@@ -199,41 +199,41 @@ export default function LandingPage({ onLoginSuccess }) {
 
   return (
     <div className="min-h-screen bg-[#06080D] text-slate-100 font-sans selection:bg-cyan-500/30 selection:text-cyan-200 antialiased overflow-x-hidden">
-      
+
       {/* ==================== 1. LIVE TELEMETRY TOP BAR ==================== */}
-      <div className="border-b border-white/[0.08] bg-[#040609] text-[11px] font-mono px-4 py-1.5 flex items-center justify-between text-slate-400 select-none">
+      <div className="border-b border-white/[0.06] bg-[#040609]/80 backdrop-blur-sm text-xs font-sans px-4 sm:px-6 py-2 flex items-center justify-between text-slate-400 select-none">
         <div className="flex items-center gap-4 overflow-x-auto whitespace-nowrap">
           <div className="flex items-center gap-2">
-            <span className={`w-2 h-2 rounded-full ${isMarketOpen ? "bg-emerald-400 animate-ping" : "bg-cyan-400"}`} />
-            <span className="text-white font-bold">
-              {isMarketOpen ? "NSE FEED: LIVE" : "TELEMETRY: VERIFIED SESSION"}
+            <span className={`w-2 h-2 rounded-full ${isMarketOpen ? "bg-emerald-400 animate-ping" : "bg-slate-400"}`} />
+            <span className="text-slate-200 font-semibold text-xs">
+              {isMarketOpen ? "NSE Live Market" : "Last Verified Session"}
             </span>
           </div>
           <span className="text-slate-700">|</span>
-          <div>
-            NIFTY 50:{" "}
-            <span className="text-emerald-400 font-bold">
-              {nifty.ltp?.toLocaleString("en-IN", { minimumFractionDigits: 2 })} ({nifty.pct_change >= 0 ? "+" : ""}
-              {nifty.pct_change?.toFixed(2)}%)
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-400">NIFTY 50:</span>
+            <span className={`font-mono font-bold ${nifty.pct_change >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+              {nifty.ltp?.toLocaleString("en-IN", { minimumFractionDigits: 2 })} ({nifty.pct_change >= 0 ? "+" : ""}{nifty.pct_change?.toFixed(2)}%)
             </span>
           </div>
           <span className="text-slate-700">|</span>
-          <div>
-            BREADTH:{" "}
-            <span className="text-emerald-400 font-bold">{breadth.advancing} ADV</span> /{" "}
-            <span className="text-rose-400 font-bold">{breadth.declining} DEC</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-400">Market Breadth:</span>
+            <span className="font-mono text-emerald-400 font-semibold">{breadth.advancing} Adv</span>
+            <span className="text-slate-600">/</span>
+            <span className="font-mono text-rose-400 font-semibold">{breadth.declining} Dec</span>
           </div>
           <span className="text-slate-700 hidden sm:inline">|</span>
-          <div className="hidden sm:inline">
-            REGIME: <span className="text-cyan-400 font-bold">BULLISH EXPANSION</span>
+          <div className="hidden sm:inline text-slate-400">
+            Regime: <span className="text-cyan-400 font-semibold">Bullish Expansion</span>
           </div>
         </div>
 
-        <div className="hidden md:flex items-center gap-3">
-          <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold">
-            DESK SEATS: 42 / 60 PROVISIONED [82% FULL]
+        <div className="hidden md:flex items-center gap-4 text-xs font-sans">
+          <span className="text-slate-400">
+            Desk Admissions: <strong className="text-slate-200">Phase 1 Active</strong>
           </span>
-          <span className="text-slate-500">{currentTime || "10:42:18 IST"}</span>
+          <span className="text-slate-500 font-mono">{currentTime || "10:42:18 IST"}</span>
         </div>
       </div>
 
@@ -241,56 +241,68 @@ export default function LandingPage({ onLoginSuccess }) {
       <header className="sticky top-0 z-50 bg-[#06080D]/90 backdrop-blur-md border-b border-white/[0.08]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           
-          {/* Brand Logo */}
+          {/* Official Brand Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 via-indigo-600 to-emerald-500 p-[1px] shadow-lg shadow-cyan-500/20 flex-shrink-0">
-              <div className="w-full h-full bg-[#080B11] rounded-[11px] flex items-center justify-center">
-                <Activity className="w-5 h-5 text-cyan-400" />
-              </div>
+            <div className="relative">
+              <img
+                src="/assets/logo.jpg"
+                alt="PulseHunter"
+                className="w-8 h-8 rounded-lg object-cover border border-white/[0.1] shadow-md"
+              />
+              <span
+                className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#06080D] ${
+                  isMarketOpen ? "bg-emerald-400 animate-pulse" : "bg-slate-400"
+                }`}
+                title={isMarketOpen ? "Market Live" : "Market Closed"}
+              />
             </div>
-            <div>
-              <span className="text-lg font-black tracking-tight text-white flex items-center gap-1.5 font-mono">
+            <div className="flex items-center gap-2">
+              <span className="text-base sm:text-lg font-bold tracking-tight text-white font-display">
                 PulseHunter
-                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                  QUANT
-                </span>
+              </span>
+              <span className={`hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${
+                isMarketOpen
+                  ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                  : "bg-slate-500/15 text-slate-400 border-slate-500/30"
+              }`}>
+                {isMarketOpen ? "Market Open" : "Market Closed"}
               </span>
             </div>
           </div>
 
-          {/* Anchor Navigation */}
-          <nav className="hidden lg:flex items-center gap-7 text-xs font-mono font-semibold tracking-wider uppercase text-slate-400">
-            <a href="#radar-matrix" className="hover:text-cyan-400 transition-colors flex items-center gap-1">
-              <span className="text-cyan-500">01.</span> Relative Strength
+          {/* Clean Navigation Links */}
+          <nav className="hidden lg:flex items-center gap-7 text-xs font-sans font-medium text-slate-300">
+            <a href="#radar-matrix" className="hover:text-cyan-400 transition-colors">
+              Relative Strength
             </a>
-            <a href="#sector-compass" className="hover:text-cyan-400 transition-colors flex items-center gap-1">
-              <span className="text-cyan-500">02.</span> Sector Compass
+            <a href="#sector-compass" className="hover:text-cyan-400 transition-colors">
+              Sector Velocity
             </a>
-            <a href="#playbook" className="hover:text-cyan-400 transition-colors flex items-center gap-1">
-              <span className="text-cyan-500">03.</span> 09:15 Playbook
+            <a href="#playbook" className="hover:text-cyan-400 transition-colors">
+              Morning Playbook
             </a>
-            <a href="#autopsy" className="hover:text-cyan-400 transition-colors flex items-center gap-1">
-              <span className="text-cyan-500">04.</span> Today's Autopsy
+            <a href="#autopsy" className="hover:text-cyan-400 transition-colors">
+              Trade Autopsy
             </a>
-            <a href="#governance" className="hover:text-cyan-400 transition-colors flex items-center gap-1">
-              <span className="text-cyan-500">05.</span> Risk Governors
+            <a href="#governance" className="hover:text-cyan-400 transition-colors">
+              Risk Discipline
             </a>
           </nav>
 
           {/* Action CTAs */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <ThemeToggle />
             <button
               onClick={() => setShowLoginModal(true)}
-              className="px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold text-slate-300 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.1] transition-all cursor-pointer"
+              className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/[0.08] transition-all cursor-pointer"
             >
-              Sign In
+              Login
             </button>
             <button
               onClick={() => setShowAccessModal(true)}
-              className="px-4 py-1.5 rounded-lg text-xs font-mono font-bold text-slate-950 bg-gradient-to-r from-cyan-400 to-emerald-400 hover:brightness-110 shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 hover:brightness-110 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
             >
-              <span>Request Clearance</span>
+              <span>Request Access</span>
               <ArrowRight size={13} />
             </button>
           </div>
@@ -300,7 +312,7 @@ export default function LandingPage({ onLoginSuccess }) {
 
       {/* ==================== 3. HERO COCKPIT ==================== */}
       <section className="relative pt-16 pb-14 px-4 sm:px-6 max-w-7xl mx-auto text-center">
-        
+
         {/* Ambient Glow */}
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[300px] bg-gradient-to-r from-cyan-500/15 via-indigo-600/15 to-emerald-500/15 blur-[140px] pointer-events-none rounded-full" />
 
@@ -333,7 +345,7 @@ export default function LandingPage({ onLoginSuccess }) {
             onClick={() => setShowAccessModal(true)}
             className="w-full sm:w-auto px-7 py-3 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-cyan-400 to-emerald-400 hover:brightness-110 shadow-xl shadow-cyan-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
-            <span>Request Terminal Clearance Key</span>
+            <span>Request Terminal Access</span>
             <ArrowRight size={14} />
           </button>
           <a
@@ -348,7 +360,7 @@ export default function LandingPage({ onLoginSuccess }) {
 
       {/* ==================== 4. LIVE RADAR (SHOW, BUT GATE) ==================== */}
       <section id="radar-matrix" className="py-12 px-4 sm:px-6 max-w-7xl mx-auto">
-        
+
         <div className="flex flex-col md:flex-row items-start md:items-end justify-between mb-4 gap-2">
           <div>
             <div className="flex items-center gap-2">
@@ -385,7 +397,7 @@ export default function LandingPage({ onLoginSuccess }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.06] text-slate-300">
-                
+
                 {/* UNLOCKED ROWS (TOP 3) */}
                 {topGainers.slice(0, 3).map((stk, idx) => {
                   const rsDiff = ((stk.pct_change || 0) - (nifty.pct_change || 0)).toFixed(2);
@@ -406,11 +418,10 @@ export default function LandingPage({ onLoginSuccess }) {
                         +{Math.abs(stk.pct_change || 0).toFixed(2)}%
                       </td>
                       <td className="py-3.5 px-4">
-                        <span className={`px-2 py-0.5 rounded font-bold border ${
-                          isOutperforming
+                        <span className={`px-2 py-0.5 rounded font-bold border ${isOutperforming
                             ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
                             : "bg-rose-500/15 text-rose-400 border-rose-500/30"
-                        }`}>
+                          }`}>
                           {isOutperforming ? `+${rsDiff}%` : `${rsDiff}%`} ({isOutperforming ? "Outperforming" : "Lagging"})
                         </span>
                       </td>
@@ -458,7 +469,7 @@ export default function LandingPage({ onLoginSuccess }) {
                   <td className="py-4 px-4">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-bold text-[11px] group-hover:bg-cyan-500/25 transition-all">
                       <Lock size={13} />
-                      <span>4.8x Vol Squeeze Active · Request Clearance to Unlock</span>
+                      <span>4.8x Vol Squeeze Active · Request Access to Unlock</span>
                     </div>
                   </td>
                 </tr>
@@ -483,7 +494,7 @@ export default function LandingPage({ onLoginSuccess }) {
                   <td className="py-4 px-4">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-rose-500/15 text-rose-300 border border-rose-500/30 font-bold text-[11px] group-hover:bg-rose-500/25 transition-all">
                       <Lock size={13} />
-                      <span>Institutional Short Trapping · Request Clearance to Unlock</span>
+                      <span>Institutional Short Trapping · Request Access to Unlock</span>
                     </div>
                   </td>
                 </tr>
@@ -508,7 +519,7 @@ export default function LandingPage({ onLoginSuccess }) {
                   <td className="py-4 px-4">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-bold text-[11px] group-hover:bg-cyan-500/25 transition-all">
                       <Lock size={13} />
-                      <span>5.2x Volume Velocity at HOD · Request Clearance to Unlock</span>
+                      <span>5.2x Volume Velocity at HOD · Request Access to Unlock</span>
                     </div>
                   </td>
                 </tr>
@@ -552,7 +563,7 @@ export default function LandingPage({ onLoginSuccess }) {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
-          
+
           <div className="p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/30 space-y-2">
             <div className="flex justify-between items-center">
               <span className="font-bold text-white text-sm">NIFTY METAL</span>
@@ -690,7 +701,7 @@ export default function LandingPage({ onLoginSuccess }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 font-mono text-xs">
-          
+
           <div className="bg-[#0A0E17] rounded-xl p-5 border border-white/[0.08] relative">
             <span className="text-[10px] font-bold text-cyan-400 px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20">
               09:16:02 AM
@@ -750,7 +761,7 @@ export default function LandingPage({ onLoginSuccess }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-xs font-mono">
-          
+
           <div className="p-6 rounded-2xl bg-rose-950/20 border border-rose-500/20 space-y-4">
             <div className="flex items-center gap-2 text-rose-400 font-bold">
               <X size={16} />
@@ -848,7 +859,7 @@ export default function LandingPage({ onLoginSuccess }) {
                 onClick={() => setShowAccessModal(true)}
                 className="px-8 py-3.5 rounded-xl text-xs font-mono font-bold text-slate-950 bg-gradient-to-r from-cyan-400 to-emerald-400 hover:brightness-110 shadow-xl shadow-cyan-500/25 transition-all cursor-pointer"
               >
-                Request Terminal Clearance Key
+                Request Terminal Access
               </button>
             </div>
           </div>
@@ -861,7 +872,7 @@ export default function LandingPage({ onLoginSuccess }) {
           Terminal Clearance FAQ
         </h3>
         <div className="space-y-3 text-xs font-mono">
-          
+
           <div className="rounded-xl border border-white/[0.08] bg-[#0A0E17] overflow-hidden">
             <button
               onClick={() => setOpenFaq(openFaq === 1 ? null : 1)}
@@ -932,7 +943,7 @@ export default function LandingPage({ onLoginSuccess }) {
           <div className="bg-[#0A0E17] max-w-md w-full rounded-2xl p-6 border border-white/[0.15] shadow-2xl space-y-4 font-mono text-xs">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-base font-bold text-white font-sans">Request Terminal Clearance</h3>
+                <h3 className="text-base font-bold text-white font-sans">Request Desk Access</h3>
                 <p className="text-[11px] text-slate-400">Create your credentials for desk review.</p>
               </div>
               <button
@@ -1034,13 +1045,13 @@ export default function LandingPage({ onLoginSuccess }) {
         </div>
       )}
 
-      {/* Member Sign In Modal */}
+      {/* Member Login Modal */}
       {showLoginModal && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0A0E17] max-w-sm w-full rounded-2xl p-6 border border-white/[0.15] shadow-2xl space-y-4 font-mono text-xs">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-base font-bold text-white font-sans">Terminal Sign In</h3>
+                <h3 className="text-base font-bold text-white font-sans">Member Login</h3>
                 <p className="text-[11px] text-slate-400">Enter your approved credentials.</p>
               </div>
               <button
