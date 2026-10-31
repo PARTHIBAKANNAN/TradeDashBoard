@@ -834,22 +834,33 @@ def execute_auto_trade(
         tsl_value = computed_stops["tsl_value"]
 
         sl_distance = abs(entry - sl_price) if entry and sl_price else 0.0
-        min_notional_floor = getattr(config, "MIN_ORDER_NOTIONAL_INR", 30000.0)
-        min_qty_for_floor = max(1, int(min_notional_floor / entry)) if entry > 0 else 1
+        max_margin_allowed = getattr(config, "MAX_MARGIN_PER_TRADE", 10000.0)
+        max_risk_allowed = min(risk_per_trade, getattr(config, "MAX_RISK_PER_TRADE", 1000.0))
 
-        # Strict ₹1,000 Risk Ceiling Enforcement
-        max_risk_allowed = min(risk_per_trade, 1000.0)
+        # 1. Size by Stop Loss Risk (Max ₹1,000 risk ceiling)
         if sl_distance > 0 and max_risk_allowed > 0:
-            raw_quantity = int(max_risk_allowed / sl_distance)
+            qty_by_risk = max(1, int(max_risk_allowed / sl_distance))
         else:
-            raw_quantity = min_qty_for_floor
+            qty_by_risk = 1
 
-        quantity = max(raw_quantity, min_qty_for_floor)
-        # Ensure hard ceiling of ₹1,000 risk
-        if sl_distance > 0 and (quantity * sl_distance) > 1000.0:
-            capped_qty = int(1000.0 / sl_distance)
-            if capped_qty >= 1:
-                quantity = capped_qty
+        # 2. Size by Cash Margin (Max ₹10,000 cash margin @ 5x leverage = ₹50,000 position exposure)
+        if entry > 0:
+            qty_by_margin = max(1, int((max_margin_allowed * 5.0) / entry))
+        else:
+            qty_by_margin = qty_by_risk
+
+        # Quantity must satisfy BOTH Risk Ceiling (<= ₹1,000) and Cash Margin Ceiling (<= ₹10,000)
+        quantity = min(qty_by_risk, qty_by_margin)
+
+        # Hard clamp guards
+        if sl_distance > 0 and (quantity * sl_distance) > max_risk_allowed:
+            capped_risk_qty = int(max_risk_allowed / sl_distance)
+            if capped_risk_qty >= 1:
+                quantity = min(quantity, capped_risk_qty)
+        if entry > 0 and ((entry * quantity) / 5.0) > max_margin_allowed:
+            capped_margin_qty = int((max_margin_allowed * 5.0) / entry)
+            if capped_margin_qty >= 1:
+                quantity = min(quantity, capped_margin_qty)
 
         # ── Single Order Architecture: exactly 1 unified position per stock ──────
         res = paper_trading.place_auto_paper_order_sync(

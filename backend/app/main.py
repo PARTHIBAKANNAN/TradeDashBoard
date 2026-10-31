@@ -430,13 +430,50 @@ async def ai_analyze_stock(body: dict):
     return ai_copilot.analyze_trade_setup(sym)
 
 
+def _update_env_file(updates: dict[str, str]) -> None:
+    env_paths = [
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"),
+        os.path.join(os.getcwd(), ".env"),
+        os.path.join(os.getcwd(), "backend", ".env"),
+    ]
+    target_env = None
+    for p in env_paths:
+        if os.path.isfile(p):
+            target_env = p
+            break
+    if not target_env:
+        return
+    try:
+        with open(target_env, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+        new_lines = []
+        found_keys = set()
+        for line in lines:
+            stripped = line.strip()
+            if stripped and not stripped.startswith("#") and "=" in stripped:
+                k, _ = stripped.split("=", 1)
+                k = k.strip()
+                if k in updates:
+                    new_lines.append(f"{k}={updates[k]}\n")
+                    found_keys.add(k)
+                    continue
+            new_lines.append(line)
+        for k, v in updates.items():
+            if k not in found_keys:
+                new_lines.append(f"{k}={v}\n")
+        with open(target_env, "w", encoding="utf-8") as f:
+            f.writelines(new_lines)
+    except Exception as e:
+        logger.warning(f"Failed to persist config to .env: {e}")
+
+
 @app.get("/api/config", dependencies=[Depends(require_login)])
 async def get_trading_config():
     return {
         "max_risk_per_trade": getattr(config, "MAX_RISK_PER_TRADE", 1000.0),
-        "max_margin_per_trade": getattr(config, "MAX_MARGIN_PER_TRADE", 25000.0),
-        "daily_max_risk": getattr(config, "DAILY_MAX_RISK_INR", 3400.0),
-        "max_daily_trades": getattr(config, "MAX_DAILY_AUTO_TRADES", 4),
+        "max_margin_per_trade": getattr(config, "MAX_MARGIN_PER_TRADE", 10000.0),
+        "daily_max_risk": getattr(config, "DAILY_MAX_RISK_INR", 5000.0),
+        "max_daily_trades": getattr(config, "MAX_DAILY_AUTO_TRADES", 5),
         "min_ai_confidence": getattr(config, "MIN_AI_CONFIDENCE", 70),
         "auto_trading_enabled": bool(getattr(config, "AUTO_PAPER_USER_ID", "")),
         "telegram_alerts_enabled": getattr(config, "ENABLE_AI_TELEGRAM_ALERTS", True),
@@ -444,7 +481,7 @@ async def get_trading_config():
         "orb_budget_trades": getattr(config, "ORB_BUDGET_TRADES", 1),
         "orb_budget_risk": getattr(config, "ORB_BUDGET_RISK", 1000.0),
         "vwap_budget_trades": getattr(config, "VWAP_BUDGET_TRADES", 1),
-        "vwap_budget_risk": getattr(config, "VWAP_BUDGET_RISK", 800.0),
+        "vwap_budget_risk": getattr(config, "VWAP_BUDGET_RISK", 1000.0),
         "tsl_breakeven_threshold": 0.80,
         "tsl_profit_harvest": 1.50,
         "tsl_runner_buffer": 0.90,
@@ -464,22 +501,33 @@ async def get_trading_config():
 
 @app.post("/api/config", dependencies=[Depends(require_login)])
 async def update_trading_config(body: dict):
+    env_updates: dict[str, str] = {}
     if "daily_max_risk" in body:
         config.DAILY_MAX_RISK_INR = float(body["daily_max_risk"])
+        env_updates["DAILY_MAX_RISK_INR"] = str(config.DAILY_MAX_RISK_INR)
     if "max_risk_per_trade" in body:
         config.MAX_RISK_PER_TRADE = float(body["max_risk_per_trade"])
+        env_updates["MAX_RISK_PER_TRADE"] = str(config.MAX_RISK_PER_TRADE)
     if "max_margin_per_trade" in body:
         config.MAX_MARGIN_PER_TRADE = float(body["max_margin_per_trade"])
+        env_updates["MAX_MARGIN_PER_TRADE"] = str(config.MAX_MARGIN_PER_TRADE)
     if "max_daily_trades" in body:
         config.MAX_DAILY_AUTO_TRADES = int(body["max_daily_trades"])
+        env_updates["MAX_DAILY_AUTO_TRADES"] = str(config.MAX_DAILY_AUTO_TRADES)
     if "min_ai_confidence" in body:
         config.MIN_AI_CONFIDENCE = int(body["min_ai_confidence"])
+        env_updates["MIN_AI_CONFIDENCE"] = str(config.MIN_AI_CONFIDENCE)
     if "telegram_alerts_enabled" in body:
         config.ENABLE_AI_TELEGRAM_ALERTS = bool(body["telegram_alerts_enabled"])
+        env_updates["ENABLE_AI_TELEGRAM_ALERTS"] = "true" if config.ENABLE_AI_TELEGRAM_ALERTS else "false"
     if "strategy_states" in body and isinstance(body["strategy_states"], dict):
         current_states = getattr(config, "STRATEGY_STATES", {}).copy()
         current_states.update(body["strategy_states"])
         config.STRATEGY_STATES = current_states
+
+    if env_updates:
+        _update_env_file(env_updates)
+
     return {"status": "ok", "updated": body}
 
 

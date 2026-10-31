@@ -74,9 +74,9 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
   // Configuration state
   const [configData, setConfigData] = useState({
     max_risk_per_trade: 1000,
-    max_margin_per_trade: 25000,
-    daily_max_risk: 3400,
-    max_daily_trades: 4,
+    max_margin_per_trade: 10000,
+    daily_max_risk: 5000,
+    max_daily_trades: 5,
     min_ai_confidence: 70,
     auto_trading_enabled: true,
     telegram_alerts_enabled: true,
@@ -181,6 +181,14 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
     });
   };
 
+  const handleMarginPerTradeChange = (val) => {
+    const margin = Number(val);
+    saveConfig({
+      ...configData,
+      max_margin_per_trade: margin,
+    });
+  };
+
   const handleStrategyStateChange = (stratKey, newState) => {
     const updatedStates = {
       ...(configData.strategy_states || {}),
@@ -194,10 +202,10 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
 
   const STRATEGIES = [
     { key: "ORB_BREAKOUT", name: "ORB Breakout", defaultRisk: 1000, desc: "Opening 15m/30m high-low breach with 2-sided gate" },
-    { key: "VWAP_RETEST", name: "VWAP Retest", defaultRisk: 800, desc: "Pullback to dynamic session volume-weighted average price" },
-    { key: "OI_SQUEEZE", name: "OI Squeeze", defaultRisk: 800, desc: "Option strike build-up & short covering momentum" },
-    { key: "SECTOR_SYMPATHY", name: "Sector Sympathy", defaultRisk: 800, desc: "Laggard catch-up within surging industry sectors" },
-    { key: "MOMENTUM_RUNNER", name: "Momentum Runner", defaultRisk: 800, desc: "Multi-timeframe trend continuation with ATR trail" },
+    { key: "VWAP_RETEST", name: "VWAP Retest", defaultRisk: 1000, desc: "Pullback to dynamic session volume-weighted average price" },
+    { key: "OI_SQUEEZE", name: "OI Squeeze", defaultRisk: 1000, desc: "Option strike build-up & short covering momentum" },
+    { key: "SECTOR_SYMPATHY", name: "Sector Sympathy", defaultRisk: 1000, desc: "Laggard catch-up within surging industry sectors" },
+    { key: "MOMENTUM_RUNNER", name: "Momentum Runner", defaultRisk: 1000, desc: "Multi-timeframe trend continuation with ATR trail" },
   ];
 
   const handleDeposit = async () => {
@@ -415,7 +423,7 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                     {/* Max Risk Per Trade */}
                     <div className="p-4 bg-surface3/40 rounded-xl border border-subtle space-y-2">
                       <div className="flex justify-between font-sans font-semibold">
-                        <span className="text-primary">Strict Max Risk Per Trade</span>
+                        <span className="text-primary">Strict Max Risk (SL) Per Trade</span>
                         <span className="font-mono font-bold text-accent-blue">
                           ₹{configData.max_risk_per_trade}
                         </span>
@@ -431,7 +439,30 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                         className="w-full accent-accent-blue disabled:opacity-40 cursor-pointer"
                       />
                       <div className="text-[10px] text-faint font-sans">
-                        Enforces stop loss distance vs quantity sizing to cap per-trade risk.
+                        Position sizing hard ceiling: maximum risk never exceeds ₹{configData.max_risk_per_trade} if SL is hit.
+                      </div>
+                    </div>
+
+                    {/* Max Cash Margin Per Trade */}
+                    <div className="p-4 bg-surface3/40 rounded-xl border border-subtle space-y-2">
+                      <div className="flex justify-between font-sans font-semibold">
+                        <span className="text-primary">Max Cash Margin Per Trade</span>
+                        <span className="font-mono font-bold text-accent-cyan">
+                          ₹{(configData.max_margin_per_trade || 10000).toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="5000"
+                        max="25000"
+                        step="1000"
+                        disabled={isMarketOpen}
+                        value={configData.max_margin_per_trade || 10000}
+                        onChange={(e) => handleMarginPerTradeChange(e.target.value)}
+                        className="w-full accent-accent-cyan disabled:opacity-40 cursor-pointer"
+                      />
+                      <div className="text-[10px] text-faint font-sans">
+                        5.0x MIS Leverage allows up to ~₹{((configData.max_margin_per_trade || 10000) * 5).toLocaleString("en-IN")} position exposure per trade.
                       </div>
                     </div>
 
@@ -454,12 +485,12 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                         className="w-full accent-emerald-500 disabled:opacity-40 cursor-pointer"
                       />
                       <div className="text-[10px] text-faint font-sans">
-                        Limits total automated triggers across all strategies to protect focus.
+                        Total daily execution limit across all 5 strategies combined.
                       </div>
                     </div>
 
                     {/* Daily Stop Loss Budget */}
-                    <div className="p-4 bg-surface3/40 rounded-xl border border-subtle space-y-2 md:col-span-2">
+                    <div className="p-4 bg-surface3/40 rounded-xl border border-subtle space-y-2">
                       <div className="flex justify-between font-sans font-semibold">
                         <span className="text-primary">Daily Stop Loss Circuit-Breaker</span>
                         <span className="font-mono font-bold text-accent-amber">
@@ -469,7 +500,7 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                       <input
                         type="range"
                         min={Math.max(1500, configData.max_risk_per_trade * configData.max_daily_trades)}
-                        max="8000"
+                        max="10000"
                         step="100"
                         disabled={isMarketOpen}
                         value={configData.daily_max_risk}
@@ -477,7 +508,7 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                         className="w-full accent-accent-amber disabled:opacity-40 cursor-pointer"
                       />
                       <div className="text-[10px] text-faint font-sans">
-                        If daily realized + unrealized drawdown touches ₹{configData.daily_max_risk}, the system immediately suspends further entries for the session.
+                        If session loss reaches ₹{configData.daily_max_risk}, the automated system immediately halts all further entries.
                       </div>
                     </div>
                   </div>
@@ -538,9 +569,14 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                           </div>
 
                           <div className="pt-2 border-t border-subtle/50 flex items-center justify-between text-xs font-mono">
-                            <span className="text-muted text-[11px]">
-                              Allocation: ₹{strat.defaultRisk}
-                            </span>
+                            <div className="flex flex-col text-[10px] space-y-0.5">
+                              <span className="text-emerald-400 font-bold">
+                                Max SL Risk: ₹{strat.defaultRisk}
+                              </span>
+                              <span className="text-faint">
+                                Margin: ₹{(configData.max_margin_per_trade || 10000).toLocaleString("en-IN")} (5x ~₹{((configData.max_margin_per_trade || 10000) * 5).toLocaleString("en-IN")})
+                              </span>
+                            </div>
                             <div className="flex items-center gap-1.5 font-sans">
                               {state === "RUNNING" ? (
                                 <button

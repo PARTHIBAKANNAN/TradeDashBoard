@@ -33,11 +33,11 @@ class FamilyBudget:
 class RiskAllocator:
     """Portfolio-level daily risk budget with per-strategy-family sub-limits.
 
-    Default allocation (₹3,400 total daily risk):
+    Default allocation (₹5,000 total daily risk):
       ORB_BREAKOUT:    1 trade,  ₹1,000 risk, 1 alert
-      VWAP_RETEST:     1 trade,  ₹800 risk,   1 alert
-      SECTOR_SYMPATHY: 1 trade,  ₹800 risk,   1 alert
-      SQUEEZE:         1 trade,  ₹800 risk,   1 alert
+      VWAP_RETEST:     1 trade,  ₹1,000 risk, 1 alert
+      SECTOR_SYMPATHY: 1 trade,  ₹1,000 risk, 1 alert
+      SQUEEZE:         1 trade,  ₹1,000 risk, 1 alert
 
     Thread-safe: all mutations go through the RLock.
     """
@@ -61,7 +61,7 @@ class RiskAllocator:
         self._total_risk = (
             total_risk_inr
             if total_risk_inr is not None
-            else getattr(_cfg, "DAILY_MAX_RISK_INR", 3400.0)
+            else getattr(_cfg, "DAILY_MAX_RISK_INR", 5000.0)
         )
         self._orb_trades = (
             orb_trades if orb_trades is not None else getattr(_cfg, "ORB_BUDGET_TRADES", 1)
@@ -73,13 +73,13 @@ class RiskAllocator:
             vwap_trades if vwap_trades is not None else getattr(_cfg, "VWAP_BUDGET_TRADES", 1)
         )
         self._vwap_risk = (
-            vwap_risk if vwap_risk is not None else getattr(_cfg, "VWAP_BUDGET_RISK", 800.0)
+            vwap_risk if vwap_risk is not None else getattr(_cfg, "VWAP_BUDGET_RISK", 1000.0)
         )
         self._sector_trades = (
             sector_trades if sector_trades is not None else getattr(_cfg, "SECTOR_BUDGET_TRADES", 1)
         )
         self._sector_risk = (
-            sector_risk if sector_risk is not None else getattr(_cfg, "SECTOR_BUDGET_RISK", 800.0)
+            sector_risk if sector_risk is not None else getattr(_cfg, "SECTOR_BUDGET_RISK", 1000.0)
         )
         self._squeeze_trades = (
             squeeze_trades
@@ -89,7 +89,7 @@ class RiskAllocator:
         self._squeeze_risk = (
             squeeze_risk
             if squeeze_risk is not None
-            else getattr(_cfg, "SQUEEZE_BUDGET_RISK", 800.0)
+            else getattr(_cfg, "SQUEEZE_BUDGET_RISK", 1000.0)
         )
         self._alerts_per_strategy = (
             alerts_per_strategy
