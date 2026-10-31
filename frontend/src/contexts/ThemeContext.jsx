@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+} from "react";
 
 const STORAGE_KEY = "td-theme"; // kept in sync with index.html's inline FOUC script
 const CHART_THEME_KEY = "td-chart-theme";

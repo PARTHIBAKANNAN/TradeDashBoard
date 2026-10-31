@@ -736,6 +736,7 @@ def execute_auto_trade(
     _reset_daily_counters_if_needed(today)
 
     import time
+
     now_ts = time.time()
     with _notified_lock:
         # Expire any in-flight reservations older than 8.0 seconds
@@ -747,7 +748,10 @@ def execute_auto_trade(
             return False, f"Symbol {sym} has already been auto-traded today. Deduplicating."
 
         if sym in _in_flight_evaluations:
-            return False, f"Symbol {sym} is currently in-flight evaluating/executing. Skipping duplicate."
+            return (
+                False,
+                f"Symbol {sym} is currently in-flight evaluating/executing. Skipping duplicate.",
+            )
 
         # Atomically claim in-flight execution mutex
         _in_flight_evaluations[sym] = now_ts
@@ -767,7 +771,10 @@ def execute_auto_trade(
         strat_key = family.name if hasattr(family, "name") else str(family)
         strat_states = getattr(config, "STRATEGY_STATES", {})
         if strat_states.get(strat_key, "RUNNING") != "RUNNING":
-            return False, f"Strategy family {strat_key} is currently {strat_states.get(strat_key)} in Control Center"
+            return (
+                False,
+                f"Strategy family {strat_key} is currently {strat_states.get(strat_key)} in Control Center",
+            )
 
         now_ist = datetime.now(IST)
         if not signal_time:
@@ -898,17 +905,15 @@ def execute_auto_trade(
             rr_str = f"1:{round(tgt_dist / max(0.01, sl_distance), 1)}"
 
             if is_pure_quant:
-                title = (
-                    f"⚡ *QUANT AUTONOMOUS ORDER PLACED ({auto_count}/{config.MAX_DAILY_AUTO_TRADES})*"
-                )
+                title = f"⚡ *QUANT AUTONOMOUS ORDER PLACED ({auto_count}/{config.MAX_DAILY_AUTO_TRADES})*"
                 score_line = f"📐 *Quant Conviction:* {int(score)}/100"
             elif is_fallback:
-                title = (
-                    f"⚡ *QUANT FALLBACK ORDER PLACED ({auto_count}/{config.MAX_DAILY_AUTO_TRADES})*"
-                )
+                title = f"⚡ *QUANT FALLBACK ORDER PLACED ({auto_count}/{config.MAX_DAILY_AUTO_TRADES})*"
                 score_line = f"⚡ *Quant Conviction (AI Bypassed):* {int(score)}/100"
             else:
-                title = f"✅ *AI CONFIRMED ORDER PLACED ({auto_count}/{config.MAX_DAILY_AUTO_TRADES})*"
+                title = (
+                    f"✅ *AI CONFIRMED ORDER PLACED ({auto_count}/{config.MAX_DAILY_AUTO_TRADES})*"
+                )
                 score_line = f"🤖 *AI Confidence:* {int(score)}%"
 
             lines = [
@@ -937,7 +942,6 @@ def execute_auto_trade(
     finally:
         with _notified_lock:
             _in_flight_evaluations.pop(sym, None)
-
 
 
 # ── 5. Main Audit & Notify Entry Point ────────────────────────────────────────

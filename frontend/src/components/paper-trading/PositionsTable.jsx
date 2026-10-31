@@ -154,10 +154,7 @@ export default function PositionsTable({
       )}
 
       {chartSymbol && (
-        <ChartModal
-          symbol={chartSymbol}
-          onClose={() => setChartSymbol(null)}
-        />
+        <ChartModal symbol={chartSymbol} onClose={() => setChartSymbol(null)} />
       )}
 
       {closedOrderForJournal && (

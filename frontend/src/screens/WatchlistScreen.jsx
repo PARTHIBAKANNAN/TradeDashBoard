@@ -28,7 +28,7 @@ import { useStock } from "../hooks/useMarketStream.js";
 const DEFAULT_WATCHLISTS = {
   "Core Focus": ["RELIANCE", "TCS", "HCLTECH", "INFY", "WIPRO"],
   "High Beta": ["HAVELLS", "ANGELONE", "DIXON", "POLYCAB"],
-  "Breakouts": ["360ONE", "ABB", "COFORGE"],
+  Breakouts: ["360ONE", "ABB", "COFORGE"],
 };
 
 // ── Right Detail Canvas Sub-Component ─────────────────────────────────────────
@@ -42,9 +42,12 @@ function WatchlistChartCanvas({ symbol, onTrade }) {
       <div className="h-full min-h-[480px] grid place-items-center text-center p-6 text-faint">
         <div>
           <LineChart size={36} className="mx-auto mb-2 text-faint opacity-50" />
-          <p className="text-sm font-semibold text-primary">Select a stock to view chart & levels</p>
+          <p className="text-sm font-semibold text-primary">
+            Select a stock to view chart & levels
+          </p>
           <p className="text-xs text-faint mt-1">
-            Click any symbol from your watchlist on the left to see live candlesticks, CPR, and ORB levels.
+            Click any symbol from your watchlist on the left to see live
+            candlesticks, CPR, and ORB levels.
           </p>
         </div>
       </div>
@@ -86,7 +89,11 @@ function WatchlistChartCanvas({ symbol, onTrade }) {
                 isPositive ? "text-bull" : "text-bear"
               }`}
             >
-              {isPositive ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
+              {isPositive ? (
+                <ArrowUpRight size={13} />
+              ) : (
+                <ArrowDownRight size={13} />
+              )}
               {isPositive ? "+" : ""}
               {pctChange}%
             </span>
@@ -127,7 +134,7 @@ function WatchlistChartCanvas({ symbol, onTrade }) {
           <p className="font-mono font-bold text-accent-blue mt-0.5 tabular-nums">
             {levels?.opening_range_high
               ? `₹${Number(levels.opening_range_high).toFixed(1)} - ₹${Number(
-                  levels.opening_range_low
+                  levels.opening_range_low,
                 ).toFixed(1)}`
               : "—"}
           </p>
@@ -139,7 +146,7 @@ function WatchlistChartCanvas({ symbol, onTrade }) {
           <p className="font-mono font-bold text-primary mt-0.5 tabular-nums">
             {liveStock?.today_high
               ? `₹${Number(liveStock.today_high).toFixed(1)} / ₹${Number(
-                  liveStock.today_low
+                  liveStock.today_low,
                 ).toFixed(1)}`
               : "—"}
           </p>
@@ -153,15 +160,15 @@ function WatchlistChartCanvas({ symbol, onTrade }) {
               (liveStock?.day_range_pos || 50) >= 70
                 ? "text-bull"
                 : (liveStock?.day_range_pos || 50) <= 30
-                ? "text-bear"
-                : "text-muted"
+                  ? "text-bear"
+                  : "text-muted"
             }`}
           >
             {(liveStock?.day_range_pos || 50) >= 70
               ? "🔥 Near Highs"
               : (liveStock?.day_range_pos || 50) <= 30
-              ? "❄️ Near Lows"
-              : "Mid Range"}
+                ? "❄️ Near Lows"
+                : "Mid Range"}
           </p>
         </div>
       </div>
@@ -235,7 +242,10 @@ export default function WatchlistScreen({ stocks, nifty }) {
 
   // Persist watchlists
   useEffect(() => {
-    localStorage.setItem("pulsehunter_watchlists_v2", JSON.stringify(watchlists));
+    localStorage.setItem(
+      "pulsehunter_watchlists_v2",
+      JSON.stringify(watchlists),
+    );
     const activeSymbols = watchlists[activeListName] || [];
     localStorage.setItem("watchlist", JSON.stringify(activeSymbols));
   }, [watchlists, activeListName]);
@@ -266,7 +276,9 @@ export default function WatchlistScreen({ stocks, nifty }) {
   // Stock objects for currently watched symbols
   const watchedStockObjects = useMemo(() => {
     const map = new Map((stocks || []).map((s) => [s.symbol, s]));
-    return activeSymbols.map((sym) => map.get(sym) || { symbol: sym, ltp: null, pct_change: 0 });
+    return activeSymbols.map(
+      (sym) => map.get(sym) || { symbol: sym, ltp: null, pct_change: 0 },
+    );
   }, [stocks, activeSymbols]);
 
   // Search results across all 210 stocks
@@ -277,7 +289,7 @@ export default function WatchlistScreen({ stocks, nifty }) {
       .filter(
         (s) =>
           s.symbol.toLowerCase().includes(q) ||
-          (s.sector && s.sector.toLowerCase().includes(q))
+          (s.sector && s.sector.toLowerCase().includes(q)),
       )
       .slice(0, 10);
   }, [stocks, searchQuery]);
@@ -334,7 +346,10 @@ export default function WatchlistScreen({ stocks, nifty }) {
                         : "bg-surface3/60 text-muted hover:text-primary hover:bg-surface3 border border-white/5"
                     }`}
                   >
-                    <Bookmark size={12} className={isActive ? "text-blue-400" : "text-muted"} />
+                    <Bookmark
+                      size={12}
+                      className={isActive ? "text-blue-400" : "text-muted"}
+                    />
                     <span>{name}</span>
                     <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-surface4 text-faint">
                       {count}
@@ -360,7 +375,10 @@ export default function WatchlistScreen({ stocks, nifty }) {
 
             {/* Create New List Button */}
             {isAddingList ? (
-              <form onSubmit={handleCreateList} className="flex items-center gap-1">
+              <form
+                onSubmit={handleCreateList}
+                className="flex items-center gap-1"
+              >
                 <input
                   type="text"
                   placeholder="List name..."
@@ -563,9 +581,16 @@ export default function WatchlistScreen({ stocks, nifty }) {
                   })
                 ) : (
                   <div className="py-12 text-center text-xs text-faint space-y-1">
-                    <Bookmark size={24} className="mx-auto text-faint opacity-50" />
-                    <p className="font-semibold text-primary">No stocks in "{activeListName}"</p>
-                    <p className="text-[11px]">Use the search bar above to pin any of the 210 stocks.</p>
+                    <Bookmark
+                      size={24}
+                      className="mx-auto text-faint opacity-50"
+                    />
+                    <p className="font-semibold text-primary">
+                      No stocks in "{activeListName}"
+                    </p>
+                    <p className="text-[11px]">
+                      Use the search bar above to pin any of the 210 stocks.
+                    </p>
                   </div>
                 )}
               </div>
@@ -593,8 +618,12 @@ export default function WatchlistScreen({ stocks, nifty }) {
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-sm font-bold text-primary">{s.symbol}</h4>
-                      <p className="text-[10px] text-faint">{s.sector || "Equity"}</p>
+                      <h4 className="text-sm font-bold text-primary">
+                        {s.symbol}
+                      </h4>
+                      <p className="text-[10px] text-faint">
+                        {s.sector || "Equity"}
+                      </p>
                     </div>
                     <div className="text-right">
                       <div className="font-mono text-sm font-bold text-primary tabular-nums">
@@ -624,7 +653,9 @@ export default function WatchlistScreen({ stocks, nifty }) {
                         <div className="h-1 bg-surface4 rounded-full overflow-hidden">
                           <div
                             className={`h-full ${isPositive ? "bg-emerald-400" : "bg-rose-400"}`}
-                            style={{ width: `${Math.min(100, Math.max(0, s.day_range_pos || 50))}%` }}
+                            style={{
+                              width: `${Math.min(100, Math.max(0, s.day_range_pos || 50))}%`,
+                            }}
                           />
                         </div>
                       </div>

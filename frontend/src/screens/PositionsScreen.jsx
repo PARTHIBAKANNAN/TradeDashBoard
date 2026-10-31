@@ -1,5 +1,13 @@
 import React, { useMemo, useState } from "react";
-import { Rocket, LineChart, TrendingUp, TrendingDown, Layers, Wallet, Lock } from "lucide-react";
+import {
+  Rocket,
+  LineChart,
+  TrendingUp,
+  TrendingDown,
+  Layers,
+  Wallet,
+  Lock,
+} from "lucide-react";
 import Card from "../components/ui/Card.jsx";
 import PlaceOrderForm from "../components/paper-trading/PlaceOrderForm.jsx";
 import PositionsTable from "../components/paper-trading/PositionsTable.jsx";
@@ -21,7 +29,7 @@ export default function PositionsScreen({ stocks }) {
 
   const marginInUse = useMemo(
     () => positions.reduce((sum, o) => sum + (Number(o.margin_locked) || 0), 0),
-    [positions]
+    [positions],
   );
 
   // Filter for orders closed today
@@ -40,7 +48,7 @@ export default function PositionsScreen({ stocks }) {
   const todayNetPnl = useMemo(() => {
     return todayClosedOrders.reduce(
       (sum, o) => sum + (Number(o.net_pnl ?? o.pnl) || 0),
-      0
+      0,
     );
   }, [todayClosedOrders]);
 
@@ -152,4 +160,3 @@ export default function PositionsScreen({ stocks }) {
     </div>
   );
 }
-

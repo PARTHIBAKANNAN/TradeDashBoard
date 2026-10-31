@@ -36,7 +36,10 @@ const SECTIONS = [
   { key: "reports", label: "P&L & Tax Reports", icon: FileBarChart },
 ];
 
-export default function DashboardScreen({ stocks, initialSubTab = "overview" }) {
+export default function DashboardScreen({
+  stocks,
+  initialSubTab = "overview",
+}) {
   usePaperTradingSync();
   const history = useOrderHistory();
 
@@ -87,11 +90,13 @@ export default function DashboardScreen({ stocks, initialSubTab = "overview" }) 
               <h2 className="text-sm sm:text-base font-bold text-primary font-display flex items-center gap-2">
                 <span>Trading Intelligence &amp; Analytics</span>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-surface3 text-muted border border-subtle font-semibold">
-                  {filteredOrders.length} {filteredOrders.length === 1 ? "trade" : "trades"}
+                  {filteredOrders.length}{" "}
+                  {filteredOrders.length === 1 ? "trade" : "trades"}
                 </span>
               </h2>
               <p className="text-[11px] text-faint">
-                Executive performance metrics, market heatmaps, order logs, and tax ledger
+                Executive performance metrics, market heatmaps, order logs, and
+                tax ledger
               </p>
             </div>
           </div>

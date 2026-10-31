@@ -31,9 +31,9 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "account": "",
         "local_database_path": null,
         "safety_version": "3.8.1",
-        "timestamp": "2026-10-30 15:27:38",
+        "timestamp": "2026-10-31 14:55:29",
         "packages_found": 15,
-        "vulnerabilities_found": 17,
+        "vulnerabilities_found": 25,
         "vulnerabilities_ignored": 0,
         "remediations_recommended": 0,
         "telemetry": {
@@ -56,7 +56,7 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "git": {
             "branch": "main",
             "tag": "",
-            "commit": "26d03c74375d8f6ef5d3f00140c1fcf17d5d4b6b",
+            "commit": "50b90f9155f38a9a8ea24671e9fc1c4c11b133b7",
             "dirty": "True",
             "origin": "https://github.com/PARTHIBAKANNAN/TradeDashBoard"
         },
@@ -549,12 +549,12 @@ We highly encourage switching to the new `scan` command which is easier to use, 
                 "2.11.0",
                 "2.12.0",
                 "2.12.1",
-                "2.13.0"
+                "2.13.0",
+                "2.14.0"
             ],
             "secure_versions": [
                 "2.15.1",
-                "2.15.0",
-                "2.14.0"
+                "2.15.0"
             ],
             "latest_version_without_known_vulnerabilities": "2.15.1",
             "latest_version": "2.15.1",
@@ -1093,6 +1093,72 @@ We highly encourage switching to the new `scan` command which is easier to use, 
             "more_info_url": "https://getsafety.com/v/SFTY-20260615-71642/97c"
         },
         {
+            "vulnerability_id": "SFTY-20260929-00418",
+            "package_name": "pyjwt",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                ">=2.4.0,<2.14.0"
+            ],
+            "all_vulnerable_specs": [
+                ">=2.4.0,<2.14.0"
+            ],
+            "analyzed_version": "2.10.1",
+            "analyzed_requirement": {
+                "raw": "pyjwt==2.10.1",
+                "extras": [],
+                "marker": null,
+                "name": "pyjwt",
+                "specifier": "==2.10.1",
+                "url": null,
+                "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
+            },
+            "advisory": "Affected versions of the `PyJWT` package are vulnerable to Improper Verification of Cryptographic Signature due to DER encoded public keys being accepted as HMAC secrets. `HMACAlgorithm.prepare_key` blocks asymmetric keys only by searching for text markers through `is_pem_format` and `is_ssh_key`, so a DER SubjectPublicKeyInfo, DER PKCS#1 key or DER X.509 certificate, which carries neither marker, passes the guard and is used as the HMAC key. An attacker can forge an HS256 token signed with the public key against an application that verifies tokens with an RSA or EC public key held as DER bytes and also allows HS256 with that same key, bypassing signature verification through key confusion.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2026-102271",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://getsafety.com/v/SFTY-20260929-00418/97c"
+        },
+        {
+            "vulnerability_id": "SFTY-20260929-96752",
+            "package_name": "pyjwt",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                ">=2.9.0,<=2.13.0"
+            ],
+            "all_vulnerable_specs": [
+                ">=2.9.0,<=2.13.0"
+            ],
+            "analyzed_version": "2.10.1",
+            "analyzed_requirement": {
+                "raw": "pyjwt==2.10.1",
+                "extras": [],
+                "marker": null,
+                "name": "pyjwt",
+                "specifier": "==2.10.1",
+                "url": null,
+                "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
+            },
+            "advisory": "Affected versions of the `PyJWT` package are vulnerable to Uncaught Exception due to a plain `ValueError` raised while parsing a malformed RSA key escaping the per-key error handling of JWK Set parsing. `PyJWK.__init__` calls `RSAAlgorithm.from_jwk` without catching errors, and when an RSA JWK supplies `d`, `e` and `n` with an incorrect private exponent and no CRT parameters, `rsa_recover_prime_factors` raises a `ValueError` that is not a `PyJWTError` and therefore is not skipped by the `except PyJWTError` guard in `PyJWKSet.__init__`. An attacker who can place one malformed key in a JWK Set that an application parses, for example through `PyJWKSet.from_dict` or `PyJWKClient.get_jwk_set`, can abort parsing of the entire set so that no valid key is loaded, breaking token verification for every key in that set.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2026-102274",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://getsafety.com/v/SFTY-20260929-96752/97c"
+        },
+        {
             "vulnerability_id": "SFTY-20260615-85895",
             "package_name": "pyjwt",
             "ignored": {},
@@ -1157,6 +1223,204 @@ We highly encourage switching to the new `scan` command which is easier to use, 
             "severity": null,
             "affected_versions": [],
             "more_info_url": "https://getsafety.com/v/SFTY-20260615-82927/97c"
+        },
+        {
+            "vulnerability_id": "SFTY-20260929-00157",
+            "package_name": "pyjwt",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                "<=2.13.0"
+            ],
+            "all_vulnerable_specs": [
+                "<=2.13.0"
+            ],
+            "analyzed_version": "2.10.1",
+            "analyzed_requirement": {
+                "raw": "pyjwt==2.10.1",
+                "extras": [],
+                "marker": null,
+                "name": "pyjwt",
+                "specifier": "==2.10.1",
+                "url": null,
+                "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
+            },
+            "advisory": "Affected versions of the `PyJWT` package are vulnerable to Improper Verification of Cryptographic Signature due to an incomplete guard against using an asymmetric public key as an HMAC secret. `HMACAlgorithm.prepare_key` only rejects asymmetric keys when `is_pem_format` or `is_ssh_key` recognizes them, but the `is_pem_format` regular expression rejects PEM forms with whitespace next to the markers, CR-only line terminators or a single folded line that `cryptography` still loads as a valid public key, so such a key is returned unchanged and used as the HMAC secret. When `jwt.decode` is called with an allow-list that mixes an HMAC algorithm with an asymmetric one and the key is passed as raw PEM text in one of these forms, an attacker who knows the public key can sign an `HS256` token with it and forge arbitrary claims that the application accepts as valid.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2026-102268",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://getsafety.com/v/SFTY-20260929-00157/97c"
+        },
+        {
+            "vulnerability_id": "SFTY-20260929-28237",
+            "package_name": "pyjwt",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                "<=2.13.0"
+            ],
+            "all_vulnerable_specs": [
+                "<=2.13.0"
+            ],
+            "analyzed_version": "2.10.1",
+            "analyzed_requirement": {
+                "raw": "pyjwt==2.10.1",
+                "extras": [],
+                "marker": null,
+                "name": "pyjwt",
+                "specifier": "==2.10.1",
+                "url": null,
+                "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
+            },
+            "advisory": "Affected versions of the `PyJWT` package are vulnerable to Incorrect Behavior Order: Validate Before Canonicalize due to permissive decoding of compact JWS signature segments that contain characters outside the Base64URL alphabet. The compact JWS decoder ignores invalid characters such as `!!!!` appended to a valid signature segment, so the decoded signature bytes and verified claims stay the same while the serialized token, and any hash of it, changes. An authenticated user holding a valid token can append such characters after logging out to obtain an alternate serialization that bypasses logout, revocation, replay or rate limiting controls in applications that key that state on the raw token string rather than a semantic identifier such as `jti`.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2026-102269",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://getsafety.com/v/SFTY-20260929-28237/97c"
+        },
+        {
+            "vulnerability_id": "SFTY-20260929-80005",
+            "package_name": "pyjwt",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                "<=2.13.0"
+            ],
+            "all_vulnerable_specs": [
+                "<=2.13.0"
+            ],
+            "analyzed_version": "2.10.1",
+            "analyzed_requirement": {
+                "raw": "pyjwt==2.10.1",
+                "extras": [],
+                "marker": null,
+                "name": "pyjwt",
+                "specifier": "==2.10.1",
+                "url": null,
+                "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
+            },
+            "advisory": "Affected versions of the `PyJWT` package are vulnerable to Allocation of Resources Without Limits or Throttling due to `PyJWKClient` forcing a fresh JWKS fetch for every unknown `kid` value with no rate limit, negative cache or minimum refresh interval. The `get_signing_key` method calls `get_signing_keys(refresh=True)` on any unknown `kid`, which bypasses `jwk_set_cache` and calls `fetch_data()`, and because the `kid` is read from the unverified token header by `get_signing_key_from_jwt`, even a repeated unknown value triggers a new fetch on every call. An unauthenticated attacker can flood an application with tokens carrying arbitrary `kid` values, making the server issue one outbound JWKS request and JSON parse per token, exhausting its CPU and sockets and potentially tripping the identity provider's rate limit, which causes an application-wide authentication outage.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2026-101917",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://getsafety.com/v/SFTY-20260929-80005/97c"
+        },
+        {
+            "vulnerability_id": "SFTY-20260929-63659",
+            "package_name": "pyjwt",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                "<=2.13.0"
+            ],
+            "all_vulnerable_specs": [
+                "<=2.13.0"
+            ],
+            "analyzed_version": "2.10.1",
+            "analyzed_requirement": {
+                "raw": "pyjwt==2.10.1",
+                "extras": [],
+                "marker": null,
+                "name": "pyjwt",
+                "specifier": "==2.10.1",
+                "url": null,
+                "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
+            },
+            "advisory": "Affected versions of the `PyJWT` package are vulnerable to Server-Side Request Forgery (SSRF) due to `PyJWKClient` following HTTP redirects when fetching a JWKS without validating the redirect destination. `PyJWKClient` lets a configured JWKS endpoint redirect the request to a different host, forwarding any caller-supplied request headers there and accepting the redirected response as authoritative key material. An attacker who can influence the configured endpoint's response can redirect the client to a host of their choosing to capture sensitive request headers and poison the cached JWKS, which in affected configurations allows forged JWTs to be accepted.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2026-102267",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://getsafety.com/v/SFTY-20260929-63659/97c"
+        },
+        {
+            "vulnerability_id": "SFTY-20260930-27429",
+            "package_name": "pyjwt",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                "<=2.13.0"
+            ],
+            "all_vulnerable_specs": [
+                "<=2.13.0"
+            ],
+            "analyzed_version": "2.10.1",
+            "analyzed_requirement": {
+                "raw": "pyjwt==2.10.1",
+                "extras": [],
+                "marker": null,
+                "name": "pyjwt",
+                "specifier": "==2.10.1",
+                "url": null,
+                "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
+            },
+            "advisory": "Affected versions of the `PyJWT` package are vulnerable to Regular Expression Denial of Service (ReDoS) due to a backtracking regular expression in PEM format detection. The `is_pem_format` function in `jwt.utils` uses a lazy `.+?` quantifier between the BEGIN and END markers, so input made of many repeated `-----BEGIN CERTIFICATE-----` lines with no END marker forces the regex to rescan the remainder of the string from every line, giving quadratic runtime. An attacker who can supply key or certificate bytes that an application passes to PyJWT's key preparation can submit such a payload to consume excessive CPU and make the service unavailable.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2026-102270",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://getsafety.com/v/SFTY-20260930-27429/97c"
+        },
+        {
+            "vulnerability_id": "SFTY-20260930-08546",
+            "package_name": "pyjwt",
+            "ignored": {},
+            "ignored_reason": null,
+            "ignored_expires": null,
+            "vulnerable_spec": [
+                ">=2.0.0a1,<=2.14.0"
+            ],
+            "all_vulnerable_specs": [
+                ">=2.0.0a1,<=2.14.0"
+            ],
+            "analyzed_version": "2.10.1",
+            "analyzed_requirement": {
+                "raw": "pyjwt==2.10.1",
+                "extras": [],
+                "marker": null,
+                "name": "pyjwt",
+                "specifier": "==2.10.1",
+                "url": null,
+                "found": "/home/runner/work/TradeDashBoard/TradeDashBoard/backend/requirements.txt"
+            },
+            "advisory": "Affected versions of the `PyJWT` package are vulnerable to Uncaught Exception due to the token payload parser catching only `ValueError` around `json.loads`. `PyJWT._decode_payload` in `jwt/api_jwt.py`, and the same parse inline in `PyJWT.decode_complete` in earlier releases, decodes the payload before any signature check when reached through `PyJWKClient.get_signing_key_from_jwt` or `jwt.decode` with `verify_signature` disabled, so deeply nested JSON raises a raw `RecursionError` that bypasses `DecodeError`, `InvalidTokenError` and `PyJWTError` handling. An unauthenticated attacker can send a token of about 50KB with a payload nested roughly 20,000 levels deep, requiring no valid signature, to crash the caller's authentication handler with an HTTP 500 or a dead worker repeatably, resulting in Denial of Service.",
+            "is_transitive": false,
+            "published_date": null,
+            "fixed_versions": [],
+            "closest_versions_without_known_vulnerabilities": [],
+            "resources": [],
+            "CVE": "CVE-2026-101918",
+            "severity": null,
+            "affected_versions": [],
+            "more_info_url": "https://getsafety.com/v/SFTY-20260930-08546/97c"
         },
         {
             "vulnerability_id": "SFTY-20260615-02573",
@@ -1418,7 +1682,7 @@ We highly encourage switching to the new `scan` command which is easier to use, 
         "pyjwt": {
             "requirements": {
                 "==2.10.1": {
-                    "vulnerabilities_found": 6,
+                    "vulnerabilities_found": 14,
                     "version": "2.10.1",
                     "requirement": {
                         "raw": "pyjwt==2.10.1",

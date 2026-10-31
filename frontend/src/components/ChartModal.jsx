@@ -136,7 +136,8 @@ export default function ChartModal({ symbol, stock: stockProp, onClose }) {
                   {stock && (
                     <>
                       <span className="font-mono text-sm sm:text-base font-bold text-primary">
-                        ₹{stock.ltp?.toLocaleString("en-IN", {
+                        ₹
+                        {stock.ltp?.toLocaleString("en-IN", {
                           minimumFractionDigits: 1,
                           maximumFractionDigits: 2,
                         })}
@@ -144,7 +145,9 @@ export default function ChartModal({ symbol, stock: stockProp, onClose }) {
                       {pointChange != null && (
                         <span
                           className={`font-mono text-xs sm:text-sm font-semibold flex items-center gap-0.5 ${
-                            pointChange >= 0 ? "text-emerald-400" : "text-rose-400"
+                            pointChange >= 0
+                              ? "text-emerald-400"
+                              : "text-rose-400"
                           }`}
                         >
                           <span>{pointChange >= 0 ? "▲ +" : "▼ "}</span>
@@ -240,10 +243,14 @@ export default function ChartModal({ symbol, stock: stockProp, onClose }) {
             {/* ── Footer: data info ─────────────────────────────────────── */}
             <div className="flex items-center justify-between px-5 py-2 border-t border-subtle bg-surface2/60 backdrop-blur text-[11px] text-faint flex-shrink-0">
               <span>
-                {aggregated.length} bars · up to 21 trading days · {resolution === 1 ? "1m / 5m base" : `${resolution}m`} resolution
+                {aggregated.length} bars · up to 21 trading days ·{" "}
+                {resolution === 1 ? "1m / 5m base" : `${resolution}m`}{" "}
+                resolution
               </span>
               <span>
-                {position ? `Active Position: ${position.side} ${position.quantity} Qty` : "Free-Flow Cursor · Pinch to Zoom"}
+                {position
+                  ? `Active Position: ${position.side} ${position.quantity} Qty`
+                  : "Free-Flow Cursor · Pinch to Zoom"}
               </span>
             </div>
           </motion.div>

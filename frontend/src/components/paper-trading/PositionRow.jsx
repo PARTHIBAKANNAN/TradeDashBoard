@@ -264,7 +264,10 @@ export default function PositionRow({ order, onOpenChart, onOrderClosed }) {
                   title="Click to view chart with SL/TP levels"
                 >
                   <span>{order.symbol}</span>
-                  <LineChart size={12} className="text-accent-blue opacity-70" />
+                  <LineChart
+                    size={12}
+                    className="text-accent-blue opacity-70"
+                  />
                 </button>
                 <span
                   className={`text-[11px] font-bold uppercase ${

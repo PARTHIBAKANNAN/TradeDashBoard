@@ -1,5 +1,11 @@
 import React from "react";
-import { CheckCircle2, XCircle, ArrowUpRight, ArrowDownRight, Clock } from "lucide-react";
+import {
+  CheckCircle2,
+  XCircle,
+  ArrowUpRight,
+  ArrowDownRight,
+  Clock,
+} from "lucide-react";
 
 function formatTime(isoStr) {
   if (!isoStr) return "—";
@@ -44,14 +50,14 @@ export default function TodayClosedPositions({ orders = [], onOpenChart }) {
   // Calculate day totals
   const totalNetPnl = orders.reduce(
     (sum, o) => sum + (Number(o.net_pnl ?? o.pnl) || 0),
-    0
+    0,
   );
   const totalCharges = orders.reduce(
     (sum, o) => sum + (Number(o.total_charges) || 0),
-    0
+    0,
   );
   const winCount = orders.filter(
-    (o) => (Number(o.net_pnl ?? o.pnl) || 0) > 0
+    (o) => (Number(o.net_pnl ?? o.pnl) || 0) > 0,
   ).length;
 
   return (
@@ -115,22 +121,32 @@ export default function TodayClosedPositions({ orders = [], onOpenChart }) {
               const isBuy = o.side === "BUY";
               const duration = calculateDuration(
                 o.filled_at || o.placed_at || o.created_at,
-                o.closed_at
+                o.closed_at,
               );
 
               // Reason badge style
               const reason = (o.exit_reason || "Manual").toUpperCase();
-              let reasonBadgeClass = "bg-surface3 text-muted border-border-subtle";
+              let reasonBadgeClass =
+                "bg-surface3 text-muted border-border-subtle";
               if (reason.includes("TARGET")) {
-                reasonBadgeClass = "bg-emerald-950/80 text-emerald-400 border-emerald-800/50";
-              } else if (reason.includes("TRAILING") || reason.includes("TSL")) {
-                reasonBadgeClass = "bg-amber-950/80 text-amber-400 border-amber-800/50";
+                reasonBadgeClass =
+                  "bg-emerald-950/80 text-emerald-400 border-emerald-800/50";
+              } else if (
+                reason.includes("TRAILING") ||
+                reason.includes("TSL")
+              ) {
+                reasonBadgeClass =
+                  "bg-amber-950/80 text-amber-400 border-amber-800/50";
               } else if (reason.includes("STOP")) {
-                reasonBadgeClass = "bg-rose-950/80 text-rose-400 border-rose-800/50";
+                reasonBadgeClass =
+                  "bg-rose-950/80 text-rose-400 border-rose-800/50";
               }
 
               return (
-                <tr key={o.id} className="hover:bg-surface3/30 transition-colors">
+                <tr
+                  key={o.id}
+                  className="hover:bg-surface3/30 transition-colors"
+                >
                   <td className="py-2.5 px-3 font-sans font-bold text-primary">
                     <button
                       onClick={() => onOpenChart?.(o.symbol)}
@@ -161,7 +177,9 @@ export default function TodayClosedPositions({ orders = [], onOpenChart }) {
                   </td>
                   <td className="py-2.5 px-3 text-faint text-[11px]">
                     <div className="flex items-center gap-1">
-                      <span>{formatTime(o.filled_at || o.placed_at || o.created_at)}</span>
+                      <span>
+                        {formatTime(o.filled_at || o.placed_at || o.created_at)}
+                      </span>
                       <span>→</span>
                       <span>{formatTime(o.closed_at)}</span>
                     </div>
@@ -211,4 +229,3 @@ export default function TodayClosedPositions({ orders = [], onOpenChart }) {
     </div>
   );
 }
-

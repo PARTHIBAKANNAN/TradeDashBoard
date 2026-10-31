@@ -519,7 +519,9 @@ async def update_trading_config(body: dict):
         env_updates["MIN_AI_CONFIDENCE"] = str(config.MIN_AI_CONFIDENCE)
     if "telegram_alerts_enabled" in body:
         config.ENABLE_AI_TELEGRAM_ALERTS = bool(body["telegram_alerts_enabled"])
-        env_updates["ENABLE_AI_TELEGRAM_ALERTS"] = "true" if config.ENABLE_AI_TELEGRAM_ALERTS else "false"
+        env_updates["ENABLE_AI_TELEGRAM_ALERTS"] = (
+            "true" if config.ENABLE_AI_TELEGRAM_ALERTS else "false"
+        )
     if "strategy_states" in body and isinstance(body["strategy_states"], dict):
         current_states = getattr(config, "STRATEGY_STATES", {}).copy()
         current_states.update(body["strategy_states"])

@@ -297,20 +297,24 @@ function Dashboard({ user, onLogout }) {
             {activeTab === "watchlist" && (
               <WatchlistScreen stocks={stocks} nifty={nifty} />
             )}
-            {(activeTab === "dashboard" || activeTab === "heatmap" || activeTab === "insights") && (
+            {(activeTab === "dashboard" ||
+              activeTab === "heatmap" ||
+              activeTab === "insights") && (
               <DashboardScreen
                 stocks={stocks}
                 initialSubTab={
                   activeTab === "heatmap"
                     ? "heatmap"
                     : activeTab === "insights"
-                    ? "insights"
-                    : undefined
+                      ? "insights"
+                      : undefined
                 }
               />
             )}
             {activeTab === "settings" && (
-              <SettingsScreen onOpenBrokerModal={() => setShowBrokerModal(true)} />
+              <SettingsScreen
+                onOpenBrokerModal={() => setShowBrokerModal(true)}
+              />
             )}
           </motion.div>
         </AnimatePresence>
@@ -370,7 +374,9 @@ function TopNavbar({
               />
               <span
                 className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-surface2 ${
-                  connected && marketOpen ? "bg-emerald-400 animate-pulse" : "bg-slate-400"
+                  connected && marketOpen
+                    ? "bg-emerald-400 animate-pulse"
+                    : "bg-slate-400"
                 }`}
                 title={marketOpen ? "Market Live" : "Market Closed"}
               />
@@ -392,7 +398,9 @@ function TopNavbar({
             >
               <span
                 className={`w-1.5 h-1.5 rounded-full ${
-                  connected && marketOpen ? "bg-emerald-400 animate-pulse" : "bg-slate-400"
+                  connected && marketOpen
+                    ? "bg-emerald-400 animate-pulse"
+                    : "bg-slate-400"
                 }`}
               />
               <span className="hidden sm:inline">
@@ -404,7 +412,9 @@ function TopNavbar({
             <button
               type="button"
               onClick={onOpenBrokerModal}
-              title={fyersConnected ? "Alice Blue Active" : "Click to connect broker"}
+              title={
+                fyersConnected ? "Alice Blue Active" : "Click to connect broker"
+              }
               className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all ${
                 fyersConnected
                   ? "bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30"
@@ -443,7 +453,10 @@ function TopNavbar({
                     : "text-muted hover:text-primary hover:bg-surface/50 font-medium"
                 }`}
               >
-                <Icon size={13} className={isActive ? "text-blue-400" : "text-muted"} />
+                <Icon
+                  size={13}
+                  className={isActive ? "text-blue-400" : "text-muted"}
+                />
                 <span>{tab.label}</span>
                 {tab.badge != null && (
                   <span className="ml-1 min-w-[15px] h-[15px] px-1 rounded-full bg-emerald-500 text-black text-[9px] font-black flex items-center justify-center shadow-sm">
@@ -460,32 +473,48 @@ function TopNavbar({
           {/* NIFTY 50 Live Ticker: Spot + Direction + Points Moved + % Moved */}
           {(() => {
             const ltp = nifty.ltp || 0;
-            const pts = nifty.change != null && nifty.change !== 0
-              ? nifty.change
-              : (nifty.prev_close && ltp ? ltp - nifty.prev_close : 0);
-            const pct = nifty.pct_change || (nifty.prev_close && pts ? (pts / nifty.prev_close) * 100 : 0);
+            const pts =
+              nifty.change != null && nifty.change !== 0
+                ? nifty.change
+                : nifty.prev_close && ltp
+                  ? ltp - nifty.prev_close
+                  : 0;
+            const pct =
+              nifty.pct_change ||
+              (nifty.prev_close && pts ? (pts / nifty.prev_close) * 100 : 0);
             const isPos = pct >= 0;
 
             return (
               <div className="flex items-center gap-1.5 sm:gap-2 bg-surface3/80 border border-subtle px-2.5 py-1 rounded-lg text-xs font-mono shadow-sm">
-                <span className="text-[10px] text-faint font-bold tracking-wider hidden sm:inline">NIFTY 50</span>
-                <span className="text-[10px] text-faint font-bold tracking-wider sm:hidden">NIFTY</span>
+                <span className="text-[10px] text-faint font-bold tracking-wider hidden sm:inline">
+                  NIFTY 50
+                </span>
+                <span className="text-[10px] text-faint font-bold tracking-wider sm:hidden">
+                  NIFTY
+                </span>
                 <span className="text-primary font-bold tabular-nums">
                   {ltp > 0
-                    ? ltp.toLocaleString("en-IN", { minimumFractionDigits: 1, maximumFractionDigits: 2 })
+                    ? ltp.toLocaleString("en-IN", {
+                        minimumFractionDigits: 1,
+                        maximumFractionDigits: 2,
+                      })
                     : "—"}
                 </span>
                 <span
                   className={`text-[11px] font-bold tabular-nums flex items-center gap-0.5 ${
-                    isPos ? "text-bull-strong text-emerald-400" : "text-bear-strong text-rose-400"
+                    isPos
+                      ? "text-bull-strong text-emerald-400"
+                      : "text-bear-strong text-rose-400"
                   }`}
                 >
                   <span>{isPos ? "▲" : "▼"}</span>
                   <span className="hidden sm:inline">
-                    {isPos ? "+" : ""}{pts.toFixed(1)}
+                    {isPos ? "+" : ""}
+                    {pts.toFixed(1)}
                   </span>
                   <span>
-                    ({isPos ? "+" : ""}{Math.abs(pct).toFixed(2)}%)
+                    ({isPos ? "+" : ""}
+                    {Math.abs(pct).toFixed(2)}%)
                   </span>
                 </span>
               </div>
@@ -513,7 +542,10 @@ function TopNavbar({
                     <p className="text-[10px] uppercase font-bold text-faint tracking-wider">
                       Signed In As
                     </p>
-                    <p className="text-xs font-semibold text-primary truncate" title={user}>
+                    <p
+                      className="text-xs font-semibold text-primary truncate"
+                      title={user}
+                    >
                       {user}
                     </p>
                   </div>
@@ -525,7 +557,9 @@ function TopNavbar({
                     <span className="flex items-center gap-2">
                       <Radio
                         size={13}
-                        className={fyersConnected ? "text-emerald-400" : "text-amber-400"}
+                        className={
+                          fyersConnected ? "text-emerald-400" : "text-amber-400"
+                        }
                       />
                       Broker Status
                     </span>

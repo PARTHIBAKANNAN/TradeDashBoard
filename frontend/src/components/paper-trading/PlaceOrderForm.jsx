@@ -214,7 +214,9 @@ export default function PlaceOrderForm({
             {aiResult.rationale && (
               <ul className="text-[10px] text-faint list-disc list-inside space-y-0.5">
                 {aiResult.rationale.slice(0, 2).map((r, idx) => (
-                  <li key={idx} className="truncate">{r}</li>
+                  <li key={idx} className="truncate">
+                    {r}
+                  </li>
                 ))}
               </ul>
             )}
@@ -281,7 +283,11 @@ export default function PlaceOrderForm({
                     : "bg-surface3 border-subtle text-muted hover:text-primary"
                 }`}
               >
-                {s === "BUY" ? <ArrowUpCircle size={12} /> : <ArrowDownCircle size={12} />}
+                {s === "BUY" ? (
+                  <ArrowUpCircle size={12} />
+                ) : (
+                  <ArrowDownCircle size={12} />
+                )}
                 {s}
               </button>
             ))}
@@ -408,16 +414,36 @@ export default function PlaceOrderForm({
         ) : margin ? (
           <>
             <div className="flex justify-between font-mono tabular-nums text-faint">
-              <span>LTP: <strong className="text-primary">₹{margin.ltp}</strong></span>
-              <span>Max: <strong className="text-accent-blue">{margin.max_qty} sh</strong></span>
+              <span>
+                LTP: <strong className="text-primary">₹{margin.ltp}</strong>
+              </span>
+              <span>
+                Max:{" "}
+                <strong className="text-accent-blue">
+                  {margin.max_qty} sh
+                </strong>
+              </span>
             </div>
             <div className="flex justify-between font-mono tabular-nums text-faint">
-              <span>Val: <strong className="text-primary">₹{Math.round(positionValue || 0).toLocaleString("en-IN")}</strong></span>
-              <span>Margin: <strong className={overBudget ? "text-bear" : "text-primary"}>₹{requiredMargin?.toLocaleString("en-IN") || 0}{walletPct != null ? ` (${walletPct.toFixed(0)}%)` : ""}</strong></span>
+              <span>
+                Val:{" "}
+                <strong className="text-primary">
+                  ₹{Math.round(positionValue || 0).toLocaleString("en-IN")}
+                </strong>
+              </span>
+              <span>
+                Margin:{" "}
+                <strong className={overBudget ? "text-bear" : "text-primary"}>
+                  ₹{requiredMargin?.toLocaleString("en-IN") || 0}
+                  {walletPct != null ? ` (${walletPct.toFixed(0)}%)` : ""}
+                </strong>
+              </span>
             </div>
           </>
         ) : (
-          <span className="text-faint text-[10px]">No live price yet for this symbol.</span>
+          <span className="text-faint text-[10px]">
+            No live price yet for this symbol.
+          </span>
         )}
       </div>
 
@@ -432,7 +458,9 @@ export default function PlaceOrderForm({
             </div>
             <div className="flex justify-between font-mono text-[11px] tabular-nums">
               <span className="text-faint">Margin Required:</span>
-              <span className="font-semibold text-primary">₹{requiredMargin?.toLocaleString("en-IN")}</span>
+              <span className="font-semibold text-primary">
+                ₹{requiredMargin?.toLocaleString("en-IN")}
+              </span>
             </div>
             {highRisk && (
               <div className="flex items-start gap-1 rounded bg-accent-amber/10 border border-accent-amber/30 p-1 text-[10px] text-accent-amber">

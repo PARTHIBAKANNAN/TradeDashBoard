@@ -164,7 +164,10 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
         setStatusMsg({ type: "error", text: "Server rejected configuration." });
       }
     } catch {
-      setStatusMsg({ type: "error", text: "Failed to connect to backend configuration API." });
+      setStatusMsg({
+        type: "error",
+        text: "Failed to connect to backend configuration API.",
+      });
     }
   };
 
@@ -224,11 +227,36 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
   };
 
   const STRATEGIES = [
-    { key: "ORB_BREAKOUT", name: "ORB Breakout", defaultRisk: 1000, desc: "Opening 15m/30m high-low breach with 2-sided gate" },
-    { key: "VWAP_RETEST", name: "VWAP Retest", defaultRisk: 1000, desc: "Pullback to dynamic session volume-weighted average price" },
-    { key: "OI_SQUEEZE", name: "OI Squeeze", defaultRisk: 1000, desc: "Option strike build-up & short covering momentum" },
-    { key: "SECTOR_SYMPATHY", name: "Sector Sympathy", defaultRisk: 1000, desc: "Laggard catch-up within surging industry sectors" },
-    { key: "MOMENTUM_RUNNER", name: "Momentum Runner", defaultRisk: 1000, desc: "Multi-timeframe trend continuation with ATR trail" },
+    {
+      key: "ORB_BREAKOUT",
+      name: "ORB Breakout",
+      defaultRisk: 1000,
+      desc: "Opening 15m/30m high-low breach with 2-sided gate",
+    },
+    {
+      key: "VWAP_RETEST",
+      name: "VWAP Retest",
+      defaultRisk: 1000,
+      desc: "Pullback to dynamic session volume-weighted average price",
+    },
+    {
+      key: "OI_SQUEEZE",
+      name: "OI Squeeze",
+      defaultRisk: 1000,
+      desc: "Option strike build-up & short covering momentum",
+    },
+    {
+      key: "SECTOR_SYMPATHY",
+      name: "Sector Sympathy",
+      defaultRisk: 1000,
+      desc: "Laggard catch-up within surging industry sectors",
+    },
+    {
+      key: "MOMENTUM_RUNNER",
+      name: "Momentum Runner",
+      defaultRisk: 1000,
+      desc: "Multi-timeframe trend continuation with ATR trail",
+    },
   ];
 
   const handleDeposit = async () => {
@@ -239,7 +267,10 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
     try {
       await depositToWallet(val);
       setDepositAmount("");
-      setStatusMsg({ type: "success", text: `Successfully added ₹${val.toLocaleString("en-IN")} to paper wallet!` });
+      setStatusMsg({
+        type: "success",
+        text: `Successfully added ₹${val.toLocaleString("en-IN")} to paper wallet!`,
+      });
     } catch {
       setStatusMsg({ type: "error", text: "Failed to deposit funds." });
     } finally {
@@ -248,14 +279,21 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
   };
 
   const handleReset = async () => {
-    if (!window.confirm("Are you sure you want to reset your paper wallet balance to ₹1,00,000? Existing orders will not be touched.")) {
+    if (
+      !window.confirm(
+        "Are you sure you want to reset your paper wallet balance to ₹1,00,000? Existing orders will not be touched.",
+      )
+    ) {
       return;
     }
     setBusy(true);
     setStatusMsg(null);
     try {
       await resetWallet();
-      setStatusMsg({ type: "success", text: "Wallet reset to ₹1,00,000 starting capital." });
+      setStatusMsg({
+        type: "success",
+        text: "Wallet reset to ₹1,00,000 starting capital.",
+      });
     } catch {
       setStatusMsg({ type: "error", text: "Failed to reset wallet." });
     } finally {
@@ -270,10 +308,20 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
       const res = await fetch("/api/aliceblue/auto-login", { method: "POST" });
       const data = await res.json();
       if (res.ok && data.status === "ok") {
-        setStatusMsg({ type: "success", text: "AliceBlue session token generated successfully!" });
-        setBrokerStatus((prev) => ({ ...prev, authenticated: true, connected: true }));
+        setStatusMsg({
+          type: "success",
+          text: "AliceBlue session token generated successfully!",
+        });
+        setBrokerStatus((prev) => ({
+          ...prev,
+          authenticated: true,
+          connected: true,
+        }));
       } else {
-        setStatusMsg({ type: "error", text: data.detail || "Authentication failed." });
+        setStatusMsg({
+          type: "error",
+          text: data.detail || "Authentication failed.",
+        });
       }
     } catch {
       setStatusMsg({ type: "error", text: "Could not trigger broker login." });
@@ -296,7 +344,8 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                 Trading Desk Configuration &amp; Controls
               </h2>
               <p className="text-xs text-faint">
-                Manage risk parameters, autonomous strategies, AI copilot engine, and broker integrations
+                Manage risk parameters, autonomous strategies, AI copilot
+                engine, and broker integrations
               </p>
             </div>
           </div>
@@ -359,7 +408,9 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                         <Icon size={16} />
                       </span>
                       <div>
-                        <div className={`text-xs font-bold leading-tight ${isActive ? "text-blue-400" : "text-primary"}`}>
+                        <div
+                          className={`text-xs font-bold leading-tight ${isActive ? "text-blue-400" : "text-primary"}`}
+                        >
                           {tab.label}
                         </div>
                         <div className="text-[10px] text-faint leading-tight mt-0.5">
@@ -376,7 +427,9 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                       <ChevronRight
                         size={14}
                         className={`transition-transform ${
-                          isActive ? "text-blue-400 translate-x-0.5" : "text-faint opacity-40"
+                          isActive
+                            ? "text-blue-400 translate-x-0.5"
+                            : "text-faint opacity-40"
                         }`}
                       />
                     </div>
@@ -389,13 +442,17 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
             <div className="p-3 bg-surface3/40 rounded-xl border border-subtle text-xs font-mono space-y-2">
               <div className="flex items-center justify-between text-[11px]">
                 <span className="text-muted">Auto-Trading:</span>
-                <span className={`font-bold ${configData.auto_trading_enabled ? "text-emerald-400" : "text-amber-400"}`}>
+                <span
+                  className={`font-bold ${configData.auto_trading_enabled ? "text-emerald-400" : "text-amber-400"}`}
+                >
                   {configData.auto_trading_enabled ? "ARMED" : "PAUSED"}
                 </span>
               </div>
               <div className="flex items-center justify-between text-[11px]">
                 <span className="text-muted">Market Session:</span>
-                <span className={`font-bold ${brokerStatus?.market_open ? "text-emerald-400" : "text-faint"}`}>
+                <span
+                  className={`font-bold ${brokerStatus?.market_open ? "text-emerald-400" : "text-faint"}`}
+                >
                   {brokerStatus?.market_open ? "OPEN" : "CLOSED"}
                 </span>
               </div>
@@ -415,11 +472,18 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                 <div className="space-y-5 text-xs font-mono">
                   {isMarketOpen && (
                     <div className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-400 flex items-start gap-2.5 font-sans">
-                      <AlertTriangle size={16} className="flex-shrink-0 mt-0.5 text-amber-400" />
+                      <AlertTriangle
+                        size={16}
+                        className="flex-shrink-0 mt-0.5 text-amber-400"
+                      />
                       <div>
-                        <div className="font-bold text-xs">Market Hours Freeze Active</div>
+                        <div className="font-bold text-xs">
+                          Market Hours Freeze Active
+                        </div>
                         <div className="text-[11px] leading-tight text-amber-400/90 mt-0.5">
-                          Risk parameters are locked between 09:15 and 15:30 IST to prevent runtime order collisions with live position sizing.
+                          Risk parameters are locked between 09:15 and 15:30 IST
+                          to prevent runtime order collisions with live position
+                          sizing.
                         </div>
                       </div>
                     </div>
@@ -428,14 +492,22 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                   {/* Mathematical Coupling Formula Bar */}
                   <div className="p-3.5 bg-blue-500/10 rounded-xl border border-blue-500/20 text-xs font-sans">
                     <div className="flex items-center justify-between text-muted text-xs">
-                      <span className="font-semibold text-primary">Coupled Risk Budget Formula:</span>
+                      <span className="font-semibold text-primary">
+                        Coupled Risk Budget Formula:
+                      </span>
                       <span className="font-mono text-emerald-400 font-bold">
-                        ✓ {configData.max_daily_trades} Trades × ₹{configData.max_risk_per_trade} = ₹{configData.max_daily_trades * configData.max_risk_per_trade} Min Budget
+                        ✓ {configData.max_daily_trades} Trades × ₹
+                        {configData.max_risk_per_trade} = ₹
+                        {configData.max_daily_trades *
+                          configData.max_risk_per_trade}{" "}
+                        Min Budget
                       </span>
                     </div>
                     <div className="mt-1 text-[11px] text-faint font-mono">
                       Current Daily Loss Limit: ₹{configData.daily_max_risk} (
-                      {configData.daily_max_risk >= configData.max_daily_trades * configData.max_risk_per_trade
+                      {configData.daily_max_risk >=
+                      configData.max_daily_trades *
+                        configData.max_risk_per_trade
                         ? "Safe & Fully Covered"
                         : "Deficit Buffer Warning"}
                       )
@@ -446,7 +518,9 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                     {/* Max Risk Per Trade */}
                     <div className="p-4 bg-surface3/40 rounded-xl border border-subtle space-y-2">
                       <div className="flex justify-between font-sans font-semibold">
-                        <span className="text-primary">Strict Max Risk (SL) Per Trade</span>
+                        <span className="text-primary">
+                          Strict Max Risk (SL) Per Trade
+                        </span>
                         <span className="font-mono font-bold text-accent-blue">
                           ₹{configData.max_risk_per_trade}
                         </span>
@@ -458,20 +532,28 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                         step="50"
                         disabled={isMarketOpen}
                         value={configData.max_risk_per_trade}
-                        onChange={(e) => handleRiskPerTradeChange(e.target.value)}
+                        onChange={(e) =>
+                          handleRiskPerTradeChange(e.target.value)
+                        }
                         className="w-full accent-accent-blue disabled:opacity-40 cursor-pointer"
                       />
                       <div className="text-[10px] text-faint font-sans">
-                        Position sizing hard ceiling: maximum risk never exceeds ₹{configData.max_risk_per_trade} if SL is hit.
+                        Position sizing hard ceiling: maximum risk never exceeds
+                        ₹{configData.max_risk_per_trade} if SL is hit.
                       </div>
                     </div>
 
                     {/* Max Cash Margin Per Trade */}
                     <div className="p-4 bg-surface3/40 rounded-xl border border-subtle space-y-2">
                       <div className="flex justify-between font-sans font-semibold">
-                        <span className="text-primary">Max Cash Margin Per Trade</span>
+                        <span className="text-primary">
+                          Max Cash Margin Per Trade
+                        </span>
                         <span className="font-mono font-bold text-accent-cyan">
-                          ₹{(configData.max_margin_per_trade || 10000).toLocaleString("en-IN")}
+                          ₹
+                          {(
+                            configData.max_margin_per_trade || 10000
+                          ).toLocaleString("en-IN")}
                         </span>
                       </div>
                       <input
@@ -481,18 +563,26 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                         step="1000"
                         disabled={isMarketOpen}
                         value={configData.max_margin_per_trade || 10000}
-                        onChange={(e) => handleMarginPerTradeChange(e.target.value)}
+                        onChange={(e) =>
+                          handleMarginPerTradeChange(e.target.value)
+                        }
                         className="w-full accent-accent-cyan disabled:opacity-40 cursor-pointer"
                       />
                       <div className="text-[10px] text-faint font-sans">
-                        5.0x MIS Leverage allows up to ~₹{((configData.max_margin_per_trade || 10000) * 5).toLocaleString("en-IN")} position exposure per trade.
+                        5.0x MIS Leverage allows up to ~₹
+                        {(
+                          (configData.max_margin_per_trade || 10000) * 5
+                        ).toLocaleString("en-IN")}{" "}
+                        position exposure per trade.
                       </div>
                     </div>
 
                     {/* Max Daily Auto Trades */}
                     <div className="p-4 bg-surface3/40 rounded-xl border border-subtle space-y-2">
                       <div className="flex justify-between font-sans font-semibold">
-                        <span className="text-primary">Max Daily Auto Trades</span>
+                        <span className="text-primary">
+                          Max Daily Auto Trades
+                        </span>
                         <span className="font-mono font-bold text-emerald-400">
                           {configData.max_daily_trades} Trades / Day
                         </span>
@@ -508,30 +598,41 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                         className="w-full accent-emerald-500 disabled:opacity-40 cursor-pointer"
                       />
                       <div className="text-[10px] text-faint font-sans">
-                        Total daily execution limit across all 5 strategies combined.
+                        Total daily execution limit across all 5 strategies
+                        combined.
                       </div>
                     </div>
 
                     {/* Daily Stop Loss Budget */}
                     <div className="p-4 bg-surface3/40 rounded-xl border border-subtle space-y-2">
                       <div className="flex justify-between font-sans font-semibold">
-                        <span className="text-primary">Daily Stop Loss Circuit-Breaker</span>
+                        <span className="text-primary">
+                          Daily Stop Loss Circuit-Breaker
+                        </span>
                         <span className="font-mono font-bold text-accent-amber">
                           ₹{configData.daily_max_risk}
                         </span>
                       </div>
                       <input
                         type="range"
-                        min={Math.max(1500, configData.max_risk_per_trade * configData.max_daily_trades)}
+                        min={Math.max(
+                          1500,
+                          configData.max_risk_per_trade *
+                            configData.max_daily_trades,
+                        )}
                         max="10000"
                         step="100"
                         disabled={isMarketOpen}
                         value={configData.daily_max_risk}
-                        onChange={(e) => handleDailyBudgetChange(e.target.value)}
+                        onChange={(e) =>
+                          handleDailyBudgetChange(e.target.value)
+                        }
                         className="w-full accent-accent-amber disabled:opacity-40 cursor-pointer"
                       />
                       <div className="text-[10px] text-faint font-sans">
-                        If session loss reaches ₹{configData.daily_max_risk}, the automated system immediately halts all further entries.
+                        If session loss reaches ₹{configData.daily_max_risk},
+                        the automated system immediately halts all further
+                        entries.
                       </div>
                     </div>
                   </div>
@@ -549,12 +650,15 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
               >
                 <div className="space-y-4">
                   <div className="text-xs text-faint">
-                    Individually pause, resume, or restart any of the 5 quantitative intraday engines. Pausing releases trade allocations without restarting the backend service.
+                    Individually pause, resume, or restart any of the 5
+                    quantitative intraday engines. Pausing releases trade
+                    allocations without restarting the backend service.
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {STRATEGIES.map((strat) => {
-                      const state = configData.strategy_states?.[strat.key] || "RUNNING";
+                      const state =
+                        configData.strategy_states?.[strat.key] || "RUNNING";
                       return (
                         <div
                           key={strat.key}
@@ -597,14 +701,27 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                                 Max SL Risk: ₹{strat.defaultRisk}
                               </span>
                               <span className="text-faint">
-                                Margin: ₹{(configData.max_margin_per_trade || 10000).toLocaleString("en-IN")} (5x ~₹{((configData.max_margin_per_trade || 10000) * 5).toLocaleString("en-IN")})
+                                Margin: ₹
+                                {(
+                                  configData.max_margin_per_trade || 10000
+                                ).toLocaleString("en-IN")}{" "}
+                                (5x ~₹
+                                {(
+                                  (configData.max_margin_per_trade || 10000) * 5
+                                ).toLocaleString("en-IN")}
+                                )
                               </span>
                             </div>
                             <div className="flex items-center gap-1.5 font-sans">
                               {state === "RUNNING" ? (
                                 <button
                                   type="button"
-                                  onClick={() => handleStrategyStateChange(strat.key, "PAUSED")}
+                                  onClick={() =>
+                                    handleStrategyStateChange(
+                                      strat.key,
+                                      "PAUSED",
+                                    )
+                                  }
                                   className="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-bold text-xs transition-colors cursor-pointer"
                                 >
                                   Pause
@@ -612,7 +729,12 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                               ) : (
                                 <button
                                   type="button"
-                                  onClick={() => handleStrategyStateChange(strat.key, "RUNNING")}
+                                  onClick={() =>
+                                    handleStrategyStateChange(
+                                      strat.key,
+                                      "RUNNING",
+                                    )
+                                  }
                                   className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-bold text-xs transition-colors cursor-pointer"
                                 >
                                   Resume
@@ -661,7 +783,8 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                         <span>Google Gemini 3.6 Flash</span>
                       </div>
                       <div className="text-xs text-faint mt-0.5">
-                        Real-time market sentiment & multi-timeframe trade validation
+                        Real-time market sentiment & multi-timeframe trade
+                        validation
                       </div>
                     </div>
                     <span className="text-xs font-mono px-2.5 py-1 rounded-lg bg-accent-blue/20 text-accent-blue font-bold border border-accent-blue/30">
@@ -671,16 +794,20 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
 
                   <div className="flex items-center justify-between p-4 bg-surface3/50 rounded-xl border border-subtle">
                     <div>
-                      <div className="font-bold text-sm text-primary">Auto-Execution Master Switch</div>
+                      <div className="font-bold text-sm text-primary">
+                        Auto-Execution Master Switch
+                      </div>
                       <div className="text-xs text-faint mt-0.5">
-                        Automatically places paper orders when quantitative strategies fire with high conviction.
+                        Automatically places paper orders when quantitative
+                        strategies fire with high conviction.
                       </div>
                     </div>
                     <button
                       onClick={() =>
                         saveConfig({
                           ...configData,
-                          auto_trading_enabled: !configData.auto_trading_enabled,
+                          auto_trading_enabled:
+                            !configData.auto_trading_enabled,
                         })
                       }
                       className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
@@ -695,7 +822,9 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
 
                   <div className="p-4 bg-surface3/40 rounded-xl border border-subtle space-y-2">
                     <div className="flex justify-between font-semibold">
-                      <span className="text-primary text-xs">Minimum AI / Quant Conviction Threshold</span>
+                      <span className="text-primary text-xs">
+                        Minimum AI / Quant Conviction Threshold
+                      </span>
                       <span className="font-mono font-bold text-accent-blue text-sm">
                         {configData.min_ai_confidence}%
                       </span>
@@ -715,32 +844,45 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                       className="w-full accent-accent-blue cursor-pointer"
                     />
                     <div className="text-[10px] text-faint">
-                      Orders scoring below this threshold require manual user confirmation in the Trade Terminal.
+                      Orders scoring below this threshold require manual user
+                      confirmation in the Trade Terminal.
                     </div>
                   </div>
 
                   <div className="p-4 bg-surface3/40 rounded-xl border border-subtle space-y-2 text-xs">
-                    <div className="font-bold text-primary">Execution Time Cutoffs &amp; Safeguards:</div>
+                    <div className="font-bold text-primary">
+                      Execution Time Cutoffs &amp; Safeguards:
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                       <div className="p-2.5 bg-surface3/60 rounded-lg border border-subtle font-mono">
-                        <div className="text-[10px] text-faint uppercase font-sans">ORB Breakouts</div>
-                        <div className="font-bold text-primary mt-0.5">10:45 AM Cutoff</div>
+                        <div className="text-[10px] text-faint uppercase font-sans">
+                          ORB Breakouts
+                        </div>
+                        <div className="font-bold text-primary mt-0.5">
+                          10:45 AM Cutoff
+                        </div>
                       </div>
                       <div className="p-2.5 bg-surface3/60 rounded-lg border border-subtle font-mono">
-                        <div className="text-[10px] text-faint uppercase font-sans">VWAP Reclaims</div>
-                        <div className="font-bold text-primary mt-0.5">11:00 AM Cutoff</div>
+                        <div className="text-[10px] text-faint uppercase font-sans">
+                          VWAP Reclaims
+                        </div>
+                        <div className="font-bold text-primary mt-0.5">
+                          11:00 AM Cutoff
+                        </div>
                       </div>
                       <div className="p-2.5 bg-surface3/60 rounded-lg border border-subtle font-mono">
-                        <div className="text-[10px] text-faint uppercase font-sans">Scanner Freeze</div>
-                        <div className="font-bold text-primary mt-0.5">11:00 AM Daily</div>
+                        <div className="text-[10px] text-faint uppercase font-sans">
+                          Scanner Freeze
+                        </div>
+                        <div className="font-bold text-primary mt-0.5">
+                          11:00 AM Daily
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </Card>
             )}
-
-
 
             {/* SUB-TAB 4: Broker & Feeds */}
             {activeSection === "broker" && (
@@ -758,7 +900,9 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                     <div className="flex items-center gap-2">
                       <span
                         className={`w-2.5 h-2.5 rounded-full ${
-                          brokerStatus?.authenticated ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
+                          brokerStatus?.authenticated
+                            ? "bg-emerald-500 animate-pulse"
+                            : "bg-rose-500"
                         }`}
                       />
                       <span className="text-primary font-bold">
@@ -766,7 +910,10 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                       </span>
                     </div>
                     <div className="text-[11px] text-faint">
-                      Status: {brokerStatus?.authenticated ? "Token Active" : "Token Expired"}
+                      Status:{" "}
+                      {brokerStatus?.authenticated
+                        ? "Token Active"
+                        : "Token Expired"}
                     </div>
                     <div className="flex items-center gap-2 pt-2">
                       <button
@@ -792,11 +939,15 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                     <div className="flex items-center gap-2">
                       <span
                         className={`w-2.5 h-2.5 rounded-full ${
-                          brokerStatus?.market_open ? "bg-emerald-500 animate-pulse" : "bg-faint"
+                          brokerStatus?.market_open
+                            ? "bg-emerald-500 animate-pulse"
+                            : "bg-faint"
                         }`}
                       />
                       <span className="text-primary font-bold">
-                        {brokerStatus?.market_open ? "Market Open" : "Market Closed"}
+                        {brokerStatus?.market_open
+                          ? "Market Open"
+                          : "Market Closed"}
                       </span>
                     </div>
                     <div className="text-[11px] text-faint">
@@ -814,11 +965,15 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                     <div className="flex items-center gap-2">
                       <span
                         className={`w-2.5 h-2.5 rounded-full ${
-                          configData.telegram_alerts_enabled ? "bg-emerald-500" : "bg-faint"
+                          configData.telegram_alerts_enabled
+                            ? "bg-emerald-500"
+                            : "bg-faint"
                         }`}
                       />
                       <span className="text-primary font-bold">
-                        {configData.telegram_alerts_enabled ? "Active" : "Disabled"}
+                        {configData.telegram_alerts_enabled
+                          ? "Active"
+                          : "Disabled"}
                       </span>
                     </div>
                     <div className="text-[11px] text-faint">
@@ -829,12 +984,15 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                         onClick={() =>
                           saveConfig({
                             ...configData,
-                            telegram_alerts_enabled: !configData.telegram_alerts_enabled,
+                            telegram_alerts_enabled:
+                              !configData.telegram_alerts_enabled,
                           })
                         }
                         className="text-xs font-sans font-semibold text-blue-400 hover:underline cursor-pointer"
                       >
-                        {configData.telegram_alerts_enabled ? "Disable Alerts" : "Enable Alerts"}
+                        {configData.telegram_alerts_enabled
+                          ? "Disable Alerts"
+                          : "Enable Alerts"}
                       </button>
                     </div>
                   </div>
@@ -857,7 +1015,10 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                         Available Cash Balance
                       </span>
                       <div className="text-xl font-bold text-primary tabular-nums mt-1">
-                        ₹{Number(summary?.balance || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                        ₹
+                        {Number(summary?.balance || 0).toLocaleString("en-IN", {
+                          maximumFractionDigits: 2,
+                        })}
                       </div>
                       <div className="text-[10px] text-faint font-sans mt-0.5">
                         Free capital available for new margin allocations
@@ -902,9 +1063,12 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                   {/* Reset wallet */}
                   <div className="p-4 bg-surface3/40 rounded-xl border border-subtle flex items-center justify-between">
                     <div>
-                      <div className="font-sans font-bold text-primary text-xs">Reset Account Balance</div>
+                      <div className="font-sans font-bold text-primary text-xs">
+                        Reset Account Balance
+                      </div>
                       <div className="text-[10px] text-faint font-sans mt-0.5">
-                        Restores starting virtual cash balance to ₹1,00,000. Existing order history will be preserved.
+                        Restores starting virtual cash balance to ₹1,00,000.
+                        Existing order history will be preserved.
                       </div>
                     </div>
                     <button
@@ -952,10 +1116,22 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                         Modern fintech blue-slate tone with deep terminal depth.
                       </p>
                       <div className="flex items-center gap-1.5">
-                        <span className="w-5 h-5 rounded-md bg-[#06070c] border border-white/10" title="Canvas #06070c" />
-                        <span className="w-5 h-5 rounded-md bg-[#0d0f17] border border-white/10" title="Card #0d0f17" />
-                        <span className="w-5 h-5 rounded-md bg-[#3b82f6]" title="Accent Blue" />
-                        <span className="w-5 h-5 rounded-md bg-[#10b981]" title="Bull Emerald" />
+                        <span
+                          className="w-5 h-5 rounded-md bg-[#06070c] border border-white/10"
+                          title="Canvas #06070c"
+                        />
+                        <span
+                          className="w-5 h-5 rounded-md bg-[#0d0f17] border border-white/10"
+                          title="Card #0d0f17"
+                        />
+                        <span
+                          className="w-5 h-5 rounded-md bg-[#3b82f6]"
+                          title="Accent Blue"
+                        />
+                        <span
+                          className="w-5 h-5 rounded-md bg-[#10b981]"
+                          title="Bull Emerald"
+                        />
                       </div>
                     </button>
 
@@ -978,13 +1154,26 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                         )}
                       </div>
                       <p className="text-[11px] text-faint mb-3">
-                        True #000000 pitch black canvas for pure contrast and battery saving.
+                        True #000000 pitch black canvas for pure contrast and
+                        battery saving.
                       </p>
                       <div className="flex items-center gap-1.5">
-                        <span className="w-5 h-5 rounded-md bg-[#000000] border border-white/20" title="Canvas #000000" />
-                        <span className="w-5 h-5 rounded-md bg-[#090d16] border border-white/15" title="Card #090d16" />
-                        <span className="w-5 h-5 rounded-md bg-[#3b82f6]" title="Accent Blue" />
-                        <span className="w-5 h-5 rounded-md bg-[#10b981]" title="Bull Emerald" />
+                        <span
+                          className="w-5 h-5 rounded-md bg-[#000000] border border-white/20"
+                          title="Canvas #000000"
+                        />
+                        <span
+                          className="w-5 h-5 rounded-md bg-[#090d16] border border-white/15"
+                          title="Card #090d16"
+                        />
+                        <span
+                          className="w-5 h-5 rounded-md bg-[#3b82f6]"
+                          title="Accent Blue"
+                        />
+                        <span
+                          className="w-5 h-5 rounded-md bg-[#10b981]"
+                          title="Bull Emerald"
+                        />
                       </div>
                     </button>
 
@@ -1007,13 +1196,26 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                         )}
                       </div>
                       <p className="text-[11px] text-faint mb-3">
-                        Calm cashmere matte slate. No harsh #FFFFFF blinding glare.
+                        Calm cashmere matte slate. No harsh #FFFFFF blinding
+                        glare.
                       </p>
                       <div className="flex items-center gap-1.5">
-                        <span className="w-5 h-5 rounded-md bg-[#edf0f5] border border-slate-300" title="Canvas #edf0f5" />
-                        <span className="w-5 h-5 rounded-md bg-[#f7f8fa] border border-slate-300" title="Card #f7f8fa" />
-                        <span className="w-5 h-5 rounded-md bg-[#2563eb]" title="Accent Blue" />
-                        <span className="w-5 h-5 rounded-md bg-[#059669]" title="Bull Emerald" />
+                        <span
+                          className="w-5 h-5 rounded-md bg-[#edf0f5] border border-slate-300"
+                          title="Canvas #edf0f5"
+                        />
+                        <span
+                          className="w-5 h-5 rounded-md bg-[#f7f8fa] border border-slate-300"
+                          title="Card #f7f8fa"
+                        />
+                        <span
+                          className="w-5 h-5 rounded-md bg-[#2563eb]"
+                          title="Accent Blue"
+                        />
+                        <span
+                          className="w-5 h-5 rounded-md bg-[#059669]"
+                          title="Bull Emerald"
+                        />
                       </div>
                     </button>
 
@@ -1036,13 +1238,26 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                         )}
                       </div>
                       <p className="text-[11px] text-faint mb-3">
-                        Institutional Matrix Jade &amp; High-Voltage Emerald glow.
+                        Institutional Matrix Jade &amp; High-Voltage Emerald
+                        glow.
                       </p>
                       <div className="flex items-center gap-1.5">
-                        <span className="w-5 h-5 rounded-md bg-[#040807] border border-emerald-900/40" title="Canvas #040807" />
-                        <span className="w-5 h-5 rounded-md bg-[#0a1210] border border-emerald-900/40" title="Card #0a1210" />
-                        <span className="w-5 h-5 rounded-md bg-[#10b981]" title="Accent Jade" />
-                        <span className="w-5 h-5 rounded-md bg-[#34d399]" title="Bull Mint" />
+                        <span
+                          className="w-5 h-5 rounded-md bg-[#040807] border border-emerald-900/40"
+                          title="Canvas #040807"
+                        />
+                        <span
+                          className="w-5 h-5 rounded-md bg-[#0a1210] border border-emerald-900/40"
+                          title="Card #0a1210"
+                        />
+                        <span
+                          className="w-5 h-5 rounded-md bg-[#10b981]"
+                          title="Accent Jade"
+                        />
+                        <span
+                          className="w-5 h-5 rounded-md bg-[#34d399]"
+                          title="Bull Mint"
+                        />
                       </div>
                     </button>
                   </div>
@@ -1069,26 +1284,34 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                           }`}
                         >
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-bold text-primary">{pal.name}</span>
+                            <span className="text-xs font-bold text-primary">
+                              {pal.name}
+                            </span>
                             {chartTheme === pal.id && (
                               <span className="w-2 h-2 rounded-full bg-blue-400" />
                             )}
                           </div>
-                          <p className="text-[10px] text-faint mb-3">{pal.desc}</p>
+                          <p className="text-[10px] text-faint mb-3">
+                            {pal.desc}
+                          </p>
                           <div className="flex items-center gap-2">
                             <div className="flex items-center gap-1">
                               <span
                                 className="w-4 h-6 rounded-sm inline-block shadow-sm"
                                 style={{ backgroundColor: pal.upColor }}
                               />
-                              <span className="text-[10px] font-mono text-faint">Bull</span>
+                              <span className="text-[10px] font-mono text-faint">
+                                Bull
+                              </span>
                             </div>
                             <div className="flex items-center gap-1 ml-2">
                               <span
                                 className="w-4 h-6 rounded-sm inline-block shadow-sm"
                                 style={{ backgroundColor: pal.downColor }}
                               />
-                              <span className="text-[10px] font-mono text-faint">Bear</span>
+                              <span className="text-[10px] font-mono text-faint">
+                                Bear
+                              </span>
                             </div>
                           </div>
                         </button>
@@ -1105,26 +1328,38 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                         }`}
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-bold text-primary">Custom Palette</span>
+                          <span className="text-xs font-bold text-primary">
+                            Custom Palette
+                          </span>
                           {chartTheme === "custom" && (
                             <span className="w-2 h-2 rounded-full bg-blue-400" />
                           )}
                         </div>
-                        <p className="text-[10px] text-faint mb-3">Define your own candle colors</p>
+                        <p className="text-[10px] text-faint mb-3">
+                          Define your own candle colors
+                        </p>
                         <div className="flex items-center gap-2">
                           <div className="flex items-center gap-1">
                             <span
                               className="w-4 h-6 rounded-sm inline-block shadow-sm"
-                              style={{ backgroundColor: customChartColors.upColor }}
+                              style={{
+                                backgroundColor: customChartColors.upColor,
+                              }}
                             />
-                            <span className="text-[10px] font-mono text-faint">Bull</span>
+                            <span className="text-[10px] font-mono text-faint">
+                              Bull
+                            </span>
                           </div>
                           <div className="flex items-center gap-1 ml-2">
                             <span
                               className="w-4 h-6 rounded-sm inline-block shadow-sm"
-                              style={{ backgroundColor: customChartColors.downColor }}
+                              style={{
+                                backgroundColor: customChartColors.downColor,
+                              }}
                             />
-                            <span className="text-[10px] font-mono text-faint">Bear</span>
+                            <span className="text-[10px] font-mono text-faint">
+                              Bear
+                            </span>
                           </div>
                         </div>
                       </button>
@@ -1233,7 +1468,6 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                 </Card>
               </div>
             )}
-
           </div>
         </div>
       </div>

@@ -130,8 +130,7 @@ export default function CandleChart({
     const isBuy = position.side === "BUY";
     const riskPts = isBuy ? entry - sl : sl - entry;
     const targetPts = isBuy ? target - entry : entry - target;
-    const rrRatio =
-      riskPts > 0 ? (targetPts / riskPts).toFixed(2) : "2.0";
+    const rrRatio = riskPts > 0 ? (targetPts / riskPts).toFixed(2) : "2.0";
 
     const chartWidth = timeScale.width();
     let x1 = 30;
@@ -238,8 +237,18 @@ export default function CandleChart({
           const h = String(d.getUTCHours()).padStart(2, "0");
           const m = String(d.getUTCMinutes()).padStart(2, "0");
           const months = [
-            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
           ];
           if (tickMarkType === 0) return `${d.getUTCFullYear()}`;
           if (tickMarkType === 1 || tickMarkType === 2) {
@@ -327,7 +336,9 @@ export default function CandleChart({
       updatePositionOverlay();
     };
 
-    chart.timeScale().subscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
+    chart
+      .timeScale()
+      .subscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
 
     chartRef.current = chart;
     seriesRef.current = series;
@@ -502,11 +513,7 @@ export default function CandleChart({
         position.target_price != null ? Number(position.target_price) : null;
 
       const isBreakeven = sl != null && (isBuy ? sl >= entry : sl <= entry);
-      const slTitle = isBreakeven
-        ? `🛡️ Breakeven SL`
-        : isTsl
-          ? `TSL`
-          : `SL`;
+      const slTitle = isBreakeven ? `🛡️ Breakeven SL` : isTsl ? `TSL` : `SL`;
       const slColor = isBreakeven ? "#10b981" : "#ef4444";
 
       const entries = [
@@ -576,25 +583,41 @@ export default function CandleChart({
           <div className="flex items-center gap-1.5">
             <span className="text-faint">O</span>
             <span className="text-primary font-semibold">
-              ₹{displayBar.open.toLocaleString("en-IN", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
+              ₹
+              {displayBar.open.toLocaleString("en-IN", {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 2,
+              })}
             </span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-faint">H</span>
             <span className="text-primary font-semibold">
-              ₹{displayBar.high.toLocaleString("en-IN", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
+              ₹
+              {displayBar.high.toLocaleString("en-IN", {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 2,
+              })}
             </span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-faint">L</span>
             <span className="text-primary font-semibold">
-              ₹{displayBar.low.toLocaleString("en-IN", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
+              ₹
+              {displayBar.low.toLocaleString("en-IN", {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 2,
+              })}
             </span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-faint">C</span>
             <span className="text-primary font-bold">
-              ₹{displayBar.close.toLocaleString("en-IN", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
+              ₹
+              {displayBar.close.toLocaleString("en-IN", {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 2,
+              })}
             </span>
           </div>
           <div
@@ -603,8 +626,14 @@ export default function CandleChart({
             }`}
           >
             <span>{isBarPos ? "▲" : "▼"}</span>
-            <span>{isBarPos ? "+" : ""}{barDiff.toFixed(2)}</span>
-            <span>({isBarPos ? "+" : ""}{barPct.toFixed(2)}%)</span>
+            <span>
+              {isBarPos ? "+" : ""}
+              {barDiff.toFixed(2)}
+            </span>
+            <span>
+              ({isBarPos ? "+" : ""}
+              {barPct.toFixed(2)}%)
+            </span>
           </div>
         </div>
       )}
@@ -642,7 +671,13 @@ export default function CandleChart({
               <stop offset="0%" stopColor="#ef4444" stopOpacity="0.22" />
               <stop offset="100%" stopColor="#ef4444" stopOpacity="0.10" />
             </linearGradient>
-            <linearGradient id="tvBreakevenGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <linearGradient
+              id="tvBreakevenGrad"
+              x1="0%"
+              y1="0%"
+              x2="0%"
+              y2="100%"
+            >
               <stop offset="0%" stopColor="#10b981" stopOpacity="0.26" />
               <stop offset="100%" stopColor="#10b981" stopOpacity="0.15" />
             </linearGradient>
@@ -653,7 +688,10 @@ export default function CandleChart({
             x={positionCoords.x1}
             y={Math.min(positionCoords.yEntry, positionCoords.yTarget)}
             width={positionCoords.width}
-            height={Math.max(Math.abs(positionCoords.yEntry - positionCoords.yTarget), 2)}
+            height={Math.max(
+              Math.abs(positionCoords.yEntry - positionCoords.yTarget),
+              2,
+            )}
             fill="url(#tvProfitGrad)"
             stroke="#10b981"
             strokeWidth="1.5"
@@ -666,8 +704,15 @@ export default function CandleChart({
             x={positionCoords.x1}
             y={Math.min(positionCoords.yEntry, positionCoords.ySl)}
             width={positionCoords.width}
-            height={Math.max(Math.abs(positionCoords.yEntry - positionCoords.ySl), 2)}
-            fill={positionCoords.isBreakeven ? "url(#tvBreakevenGrad)" : "url(#tvRiskGrad)"}
+            height={Math.max(
+              Math.abs(positionCoords.yEntry - positionCoords.ySl),
+              2,
+            )}
+            fill={
+              positionCoords.isBreakeven
+                ? "url(#tvBreakevenGrad)"
+                : "url(#tvRiskGrad)"
+            }
             stroke={positionCoords.isBreakeven ? "#10b981" : "#ef4444"}
             strokeWidth="1.5"
             strokeDasharray="4 2"
@@ -686,30 +731,74 @@ export default function CandleChart({
           />
 
           {/* 4. Target Label Badge */}
-          <g transform={`translate(${positionCoords.x1 + 8}, ${Math.min(positionCoords.yEntry, positionCoords.yTarget) + 15})`}>
-            <rect x="-4" y="-11" width="165" height="18" rx="4" fill="rgba(6, 78, 59, 0.9)" stroke="#10b981" strokeWidth="1" />
-            <text x="4" y="2" fill="#34d399" fontSize="10" fontFamily="monospace" fontWeight="bold">
-              🎯 Target: ₹{positionCoords.target.toFixed(2)} (+{positionCoords.rrRatio}R)
+          <g
+            transform={`translate(${positionCoords.x1 + 8}, ${Math.min(positionCoords.yEntry, positionCoords.yTarget) + 15})`}
+          >
+            <rect
+              x="-4"
+              y="-11"
+              width="165"
+              height="18"
+              rx="4"
+              fill="rgba(6, 78, 59, 0.9)"
+              stroke="#10b981"
+              strokeWidth="1"
+            />
+            <text
+              x="4"
+              y="2"
+              fill="#34d399"
+              fontSize="10"
+              fontFamily="monospace"
+              fontWeight="bold"
+            >
+              🎯 Target: ₹{positionCoords.target.toFixed(2)} (+
+              {positionCoords.rrRatio}R)
             </text>
           </g>
 
           {/* 5. Entry Label Badge */}
-          <g transform={`translate(${positionCoords.x1 + 8}, ${positionCoords.yEntry - 5})`}>
-            <rect x="-4" y="-11" width="155" height="18" rx="4" fill="rgba(30, 58, 138, 0.92)" stroke="#3b82f6" strokeWidth="1" />
-            <text x="4" y="2" fill="#93c5fd" fontSize="10" fontFamily="monospace" fontWeight="bold">
-              {positionCoords.isBuy ? "▲ LONG" : "▼ SHORT"} {positionCoords.quantity} Qty @ ₹{positionCoords.entry.toFixed(2)}
+          <g
+            transform={`translate(${positionCoords.x1 + 8}, ${positionCoords.yEntry - 5})`}
+          >
+            <rect
+              x="-4"
+              y="-11"
+              width="155"
+              height="18"
+              rx="4"
+              fill="rgba(30, 58, 138, 0.92)"
+              stroke="#3b82f6"
+              strokeWidth="1"
+            />
+            <text
+              x="4"
+              y="2"
+              fill="#93c5fd"
+              fontSize="10"
+              fontFamily="monospace"
+              fontWeight="bold"
+            >
+              {positionCoords.isBuy ? "▲ LONG" : "▼ SHORT"}{" "}
+              {positionCoords.quantity} Qty @ ₹{positionCoords.entry.toFixed(2)}
             </text>
           </g>
 
           {/* 6. Stop Loss / TSL Label Badge */}
-          <g transform={`translate(${positionCoords.x1 + 8}, ${Math.max(positionCoords.yEntry, positionCoords.ySl) - 5})`}>
+          <g
+            transform={`translate(${positionCoords.x1 + 8}, ${Math.max(positionCoords.yEntry, positionCoords.ySl) - 5})`}
+          >
             <rect
               x="-4"
               y="-11"
               width="170"
               height="18"
               rx="4"
-              fill={positionCoords.isBreakeven ? "rgba(6, 78, 59, 0.9)" : "rgba(127, 29, 29, 0.9)"}
+              fill={
+                positionCoords.isBreakeven
+                  ? "rgba(6, 78, 59, 0.9)"
+                  : "rgba(127, 29, 29, 0.9)"
+              }
               stroke={positionCoords.isBreakeven ? "#10b981" : "#ef4444"}
               strokeWidth="1"
             />
@@ -725,7 +814,8 @@ export default function CandleChart({
                 ? "🛡️ BE Stop"
                 : positionCoords.tslActive
                   ? "⚡ Trailing SL"
-                  : "🛑 Stop Loss"}: ₹{positionCoords.sl.toFixed(2)}
+                  : "🛑 Stop Loss"}
+              : ₹{positionCoords.sl.toFixed(2)}
             </text>
           </g>
         </svg>

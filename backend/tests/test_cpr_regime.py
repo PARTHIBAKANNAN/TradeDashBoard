@@ -1,5 +1,6 @@
 from app.candle_query import get_cpr_regime, get_levels
 
+
 def test_cpr_regime_calculation():
     # Previous day: High 1020, Low 1000, Close 1010
     stock = {
@@ -18,6 +19,7 @@ def test_cpr_regime_calculation():
     # Width = 0.0 -> Narrow CPR!
     assert cpr["is_narrow"] is True
     assert cpr["is_wide"] is False
+
 
 def test_cpr_wide_chop_detection():
     # Previous day high range: High 1100, Low 1000, Close 1020
@@ -39,6 +41,7 @@ def test_cpr_wide_chop_detection():
     assert cpr["is_wide"] is True
     assert cpr["is_narrow"] is False
 
+
 def test_get_levels_includes_cpr():
     stock = {
         "orb": {"C1": {"high": 1015.0, "low": 1005.0}},
@@ -52,4 +55,3 @@ def test_get_levels_includes_cpr():
     assert "cpr_top" in levels
     assert "cpr_width_pct" in levels
     assert levels["pivot"] == 1010.0
-

@@ -140,7 +140,11 @@ async def get_multi_day_candles(symbol: str, days: int = 21) -> dict:
     if not candles:
         latest = await candle_history.get_latest_candle_date(symbol)
         if latest and str(latest) != today_str:
-            lat_date = latest if isinstance(latest, date) else datetime.strptime(str(latest), "%Y-%m-%d").date()
+            lat_date = (
+                latest
+                if isinstance(latest, date)
+                else datetime.strptime(str(latest), "%Y-%m-%d").date()
+            )
             from_date = lat_date - timedelta(days=days * 2)
             rows = await candle_history.get_candles_range(symbol, from_date, lat_date)
             candles = [
@@ -223,7 +227,6 @@ def get_cpr_regime(stock: dict) -> dict:
         "is_narrow": cpr_width_pct <= 0.30,
         "is_wide": cpr_width_pct >= 0.60,
     }
-
 
 
 async def get_all_mini_candles() -> dict[str, list[dict]]:

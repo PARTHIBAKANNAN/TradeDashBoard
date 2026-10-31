@@ -91,7 +91,11 @@ def trailing_sl_price(
 
     # ── Stage 3: Swing Runner (Beyond +2.0R) or default trailing ─────────────
     offset = peak * (tsl_value / 100.0) if tsl_type == "PERCENT" else tsl_value
-    be_sl = compute_breakeven_sl(side, entry, initial_sl, peak, buffer_pts=buffer_pts) if enable_breakeven else None
+    be_sl = (
+        compute_breakeven_sl(side, entry, initial_sl, peak, buffer_pts=buffer_pts)
+        if enable_breakeven
+        else None
+    )
 
     if side == "BUY":
         if peak <= entry and initial_sl is not None:

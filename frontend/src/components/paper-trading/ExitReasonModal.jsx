@@ -63,7 +63,8 @@ export default function ExitReasonModal({ order, onClose }) {
                   </span>
                 </h3>
                 <p className="text-[11px] text-faint">
-                  Order was closed immediately. Record the exit reason for journal review:
+                  Order was closed immediately. Record the exit reason for
+                  journal review:
                 </p>
               </div>
             </div>
@@ -95,7 +96,9 @@ export default function ExitReasonModal({ order, onClose }) {
                       }`}
                     >
                       <span>{r}</span>
-                      {isSelected && <Check size={14} className="text-accent-blue" />}
+                      {isSelected && (
+                        <Check size={14} className="text-accent-blue" />
+                      )}
                     </button>
                   );
                 })}
@@ -104,7 +107,8 @@ export default function ExitReasonModal({ order, onClose }) {
 
             <div>
               <label className="block text-[10px] font-bold text-muted uppercase tracking-wider mb-1">
-                Additional Trade Notes <span className="text-faint font-normal">(optional)</span>
+                Additional Trade Notes{" "}
+                <span className="text-faint font-normal">(optional)</span>
               </label>
               <textarea
                 value={customNote}
@@ -135,7 +139,6 @@ export default function ExitReasonModal({ order, onClose }) {
         </motion.div>
       </motion.div>
     </AnimatePresence>,
-    document.body
+    document.body,
   );
 }
-

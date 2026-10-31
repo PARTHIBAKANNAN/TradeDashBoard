@@ -37,7 +37,6 @@ def compute_structural_level(candles: list[dict], side: str, lookback: int = 6) 
         return max(c["high"] for c in recent)
 
 
-
 def check_vwap_elasticity_and_exhaustion(
     stock: dict, side: str, entry: float, now_ist=None
 ) -> tuple[bool, str]:
@@ -51,7 +50,9 @@ def check_vwap_elasticity_and_exhaustion(
         return True, "Valid entry"
 
     from datetime import datetime
+
     from .calculations import IST
+
     if now_ist is None:
         now_ist = datetime.now(IST)
 
@@ -82,6 +83,7 @@ def check_vwap_elasticity_and_exhaustion(
                 )
 
     return True, "Clear of exhaustion traps"
+
 
 def check_support_resistance_proximity(
     stock: dict, side: str, entry: float, threshold_pct: float = 0.003

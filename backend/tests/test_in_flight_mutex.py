@@ -1,10 +1,12 @@
 import time
 from datetime import datetime
 from unittest.mock import patch
+
 import pytest
 from app import ai_copilot, config
 from app.config import IST
 from app.state import market_state
+
 
 def test_in_flight_mutex_blocks_concurrent_orders(monkeypatch):
     """

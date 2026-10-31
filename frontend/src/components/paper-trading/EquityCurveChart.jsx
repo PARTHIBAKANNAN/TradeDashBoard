@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { LineChart as LineChartIcon, TrendingUp, TrendingDown, Target, Shield, Clock } from "lucide-react";
+import {
+  LineChart as LineChartIcon,
+  TrendingUp,
+  TrendingDown,
+  Target,
+  Shield,
+  Clock,
+} from "lucide-react";
 import Card from "../ui/Card.jsx";
 
 const PADDING_TOP = 28;
@@ -38,7 +45,8 @@ function formatDateTime(isoString) {
 function getSmoothPath(pts) {
   if (!pts || pts.length === 0) return "";
   if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
-  if (pts.length === 2) return `M ${pts[0].x} ${pts[0].y} L ${pts[1].x} ${pts[1].y}`;
+  if (pts.length === 2)
+    return `M ${pts[0].x} ${pts[0].y} L ${pts[1].x} ${pts[1].y}`;
 
   let d = `M ${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)}`;
   for (let i = 0; i < pts.length - 1; i++) {
@@ -137,8 +145,10 @@ export default function EquityCurveChart({ closedOrders }) {
 
   const currentCum = points.length > 0 ? points[points.length - 1].cum : 0;
   const isPositive = currentCum >= 0;
-  const maxEquity = points.length > 0 ? Math.max(...points.map((p) => p.cum)) : 0;
-  const minEquity = points.length > 0 ? Math.min(...points.map((p) => p.cum)) : 0;
+  const maxEquity =
+    points.length > 0 ? Math.max(...points.map((p) => p.cum)) : 0;
+  const minEquity =
+    points.length > 0 ? Math.min(...points.map((p) => p.cum)) : 0;
 
   const handleMouseMove = (e) => {
     if (!coords || coords.length === 0) return;
@@ -180,14 +190,17 @@ export default function EquityCurveChart({ closedOrders }) {
     setHoveredIdx(null);
   };
 
-  const activePoint = hoveredIdx != null ? coords[hoveredIdx] : coords[coords.length - 1];
+  const activePoint =
+    hoveredIdx != null ? coords[hoveredIdx] : coords[coords.length - 1];
 
   return (
     <Card
       title={
         <div className="flex items-center justify-between w-full flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <span className="text-primary font-bold">Portfolio Equity Trajectory</span>
+            <span className="text-primary font-bold">
+              Portfolio Equity Trajectory
+            </span>
             <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-surface3 text-muted border border-white/5">
               {points.length} closed {points.length === 1 ? "trade" : "trades"}
             </span>
@@ -195,15 +208,21 @@ export default function EquityCurveChart({ closedOrders }) {
           <div className="flex items-center gap-4 text-xs font-mono">
             <div className="flex items-center gap-1.5">
               <span className="text-faint text-[11px]">Peak:</span>
-              <span className="text-emerald-400 font-semibold">{formatCurrency(maxEquity)}</span>
+              <span className="text-emerald-400 font-semibold">
+                {formatCurrency(maxEquity)}
+              </span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="text-faint text-[11px]">Trough:</span>
-              <span className="text-rose-400 font-semibold">{formatCurrency(minEquity)}</span>
+              <span className="text-rose-400 font-semibold">
+                {formatCurrency(minEquity)}
+              </span>
             </div>
             <div className="flex items-center gap-1.5 pl-2 border-l border-white/10">
               <span className="text-faint text-[11px]">Net P&amp;L:</span>
-              <span className={`font-bold ${isPositive ? "text-emerald-400" : "text-rose-400"}`}>
+              <span
+                className={`font-bold ${isPositive ? "text-emerald-400" : "text-rose-400"}`}
+              >
                 {formatCurrency(currentCum)}
               </span>
             </div>
@@ -240,11 +259,23 @@ export default function EquityCurveChart({ closedOrders }) {
                 <stop offset="60%" stopColor="#f43f5e" stopOpacity="0.08" />
                 <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.0" />
               </linearGradient>
-              <filter id="glow-bull" x="-20%" y="-20%" width="140%" height="140%">
+              <filter
+                id="glow-bull"
+                x="-20%"
+                y="-20%"
+                width="140%"
+                height="140%"
+              >
                 <feGaussianBlur stdDeviation="3" result="blur" />
                 <feComposite in="SourceGraphic" in2="blur" operator="over" />
               </filter>
-              <filter id="glow-bear" x="-20%" y="-20%" width="140%" height="140%">
+              <filter
+                id="glow-bear"
+                x="-20%"
+                y="-20%"
+                width="140%"
+                height="140%"
+              >
                 <feGaussianBlur stdDeviation="3" result="blur" />
                 <feComposite in="SourceGraphic" in2="blur" operator="over" />
               </filter>
@@ -315,7 +346,11 @@ export default function EquityCurveChart({ closedOrders }) {
             {coords.length > 1 && (
               <path
                 d={areaCurve}
-                fill={isPositive ? "url(#equity-grad-bull)" : "url(#equity-grad-bear)"}
+                fill={
+                  isPositive
+                    ? "url(#equity-grad-bull)"
+                    : "url(#equity-grad-bear)"
+                }
                 transition="all 0.3s ease"
               />
             )}
@@ -343,7 +378,9 @@ export default function EquityCurveChart({ closedOrders }) {
                   fill={isPtPos ? "#10b981" : "#f43f5e"}
                   stroke="#0b0f19"
                   strokeWidth={1.5}
-                  opacity={hoveredIdx != null && hoveredIdx !== pt.i ? 0.35 : 0.85}
+                  opacity={
+                    hoveredIdx != null && hoveredIdx !== pt.i ? 0.35 : 0.85
+                  }
                 />
               );
             })}
@@ -426,7 +463,9 @@ export default function EquityCurveChart({ closedOrders }) {
                   <span className="text-faint">Trade P&amp;L:</span>
                   <span
                     className={`font-bold ${
-                      activePoint.pnl >= 0 ? "text-emerald-400" : "text-rose-400"
+                      activePoint.pnl >= 0
+                        ? "text-emerald-400"
+                        : "text-rose-400"
                     }`}
                   >
                     {formatCurrency(activePoint.pnl)}
@@ -437,7 +476,9 @@ export default function EquityCurveChart({ closedOrders }) {
                   <span className="text-faint">Cumulative Equity:</span>
                   <span
                     className={`font-bold ${
-                      activePoint.cum >= 0 ? "text-emerald-400" : "text-rose-400"
+                      activePoint.cum >= 0
+                        ? "text-emerald-400"
+                        : "text-rose-400"
                     }`}
                   >
                     {formatCurrency(activePoint.cum)}
@@ -447,7 +488,10 @@ export default function EquityCurveChart({ closedOrders }) {
                 {activePoint.order.close_reason && (
                   <div className="flex items-center justify-between pt-1 border-t border-subtle text-[10px] font-sans">
                     <span className="text-faint">Exit Reason:</span>
-                    <span className="text-muted font-medium truncate max-w-[110px]" title={activePoint.order.close_reason}>
+                    <span
+                      className="text-muted font-medium truncate max-w-[110px]"
+                      title={activePoint.order.close_reason}
+                    >
                       {activePoint.order.close_reason}
                     </span>
                   </div>
