@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   History,
   PieChart,
@@ -7,6 +7,7 @@ import {
   Flame,
   Lightbulb,
   ArrowLeft,
+  Filter,
 } from "lucide-react";
 import {
   useOrderHistory,
@@ -39,13 +40,27 @@ export default function DashboardScreen({ stocks, initialSubTab = "overview" }) 
   usePaperTradingSync();
   const history = useOrderHistory();
   const [activeTab, setActiveTab] = useState(initialSubTab);
-  const [range, setRange] = useState({ key: null, from: null, to: null });
+  const [range, setRange] = useState({ key: "allTime", from: null, to: null });
   const [drilldownSector, setDrilldownSector] = useState(null);
 
   const onRangeChange = (key, { from, to }) => {
     setRange({ key, from, to });
     fetchHistory({ from, to, limit: HISTORY_EXPORT_LIMIT }).catch(() => {});
   };
+
+  // Filter history orders strictly by selected range for immediate and reactive calculations
+  const filteredOrders = useMemo(() => {
+    if (!range.from && !range.to) return history;
+    const fromTime = range.from ? new Date(range.from).getTime() : -Infinity;
+    const toTime = range.to ? new Date(range.to).getTime() : Infinity;
+    return history.filter((o) => {
+      const placed = o.placed_at ? new Date(o.placed_at).getTime() : 0;
+      const closed = o.closed_at ? new Date(o.closed_at).getTime() : 0;
+      const created = o.created_at ? new Date(o.created_at).getTime() : 0;
+      const t = closed || placed || created;
+      return t >= fromTime && t <= toTime;
+    });
+  }, [history, range]);
 
   return (
     <div className="min-h-screen bg-surface">
@@ -57,8 +72,11 @@ export default function DashboardScreen({ stocks, initialSubTab = "overview" }) 
               <LayoutDashboard size={16} />
             </span>
             <div>
-              <h2 className="text-sm sm:text-base font-bold text-primary font-display">
-                Trading Intelligence &amp; Analytics
+              <h2 className="text-sm sm:text-base font-bold text-primary font-display flex items-center gap-2">
+                <span>Trading Intelligence &amp; Analytics</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-surface3 text-muted border border-white/5 font-semibold">
+                  {filteredOrders.length} {filteredOrders.length === 1 ? "trade" : "trades"}
+                </span>
               </h2>
               <p className="text-[11px] text-faint">
                 Comprehensive performance logs, market insights, sector heatmaps, and tax reports
@@ -72,7 +90,7 @@ export default function DashboardScreen({ stocks, initialSubTab = "overview" }) 
               <button
                 key={key}
                 onClick={() => setActiveTab(key)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   activeTab === key
                     ? "bg-blue-600/15 text-blue-400 border border-blue-500/30 shadow-sm font-bold"
                     : "text-muted hover:text-primary hover:bg-white/5"
@@ -89,8 +107,8 @@ export default function DashboardScreen({ stocks, initialSubTab = "overview" }) 
         {activeTab === "overview" && (
           <div className="space-y-4">
             <DateRangeFilter activeKey={range.key} onChange={onRangeChange} />
-            <TradesAnalyticsCard orders={history} stocks={stocks} />
-            <EquityCurveChart closedOrders={history} />
+            <TradesAnalyticsCard orders={filteredOrders} stocks={stocks} />
+            <EquityCurveChart closedOrders={filteredOrders} />
           </div>
         )}
 
@@ -136,7 +154,7 @@ export default function DashboardScreen({ stocks, initialSubTab = "overview" }) 
         {activeTab === "history" && (
           <div className="space-y-4">
             <DateRangeFilter activeKey={range.key} onChange={onRangeChange} />
-            <OrderHistoryTable orders={history} />
+            <OrderHistoryTable orders={filteredOrders} />
           </div>
         )}
 
@@ -145,10 +163,10 @@ export default function DashboardScreen({ stocks, initialSubTab = "overview" }) 
           <div className="space-y-4">
             <DateRangeFilter activeKey={range.key} onChange={onRangeChange} />
             <ChargesSummaryCard
-              orders={history}
+              orders={filteredOrders}
               rangeLabel={formatRangeLabel(range.from, range.to)}
             />
-            <ExportButtons orders={history} range={range} />
+            <ExportButtons orders={filteredOrders} range={range} />
           </div>
         )}
       </div>

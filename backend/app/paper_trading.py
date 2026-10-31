@@ -989,8 +989,18 @@ async def _fetch_history_rows(
     read the exact same date-range-filtered rows via one query, not two."""
     if _pool is None:
         return []
-    from_dt = datetime.fromisoformat(from_ts) if from_ts else None
-    to_dt = datetime.fromisoformat(to_ts) if to_ts else None
+    from_dt = None
+    if from_ts:
+        try:
+            from_dt = datetime.fromisoformat(from_ts.replace("Z", "+00:00"))
+        except Exception:
+            pass
+    to_dt = None
+    if to_ts:
+        try:
+            to_dt = datetime.fromisoformat(to_ts.replace("Z", "+00:00"))
+        except Exception:
+            pass
     async with _pool.acquire() as conn:
         return await conn.fetch(
             "select * from public.paper_orders where user_id=$1 and status in ('CLOSED','CANCELLED') "

@@ -29,6 +29,10 @@ function mondayOf(d) {
   return addDays(r, diff);
 }
 
+export function allTime() {
+  return { from: null, to: null };
+}
+
 export function today() {
   const now = new Date();
   return { from: startOfDay(now), to: now };
@@ -69,6 +73,7 @@ export function lastNDays(n) {
 }
 
 export const PRESETS = [
+  { key: "allTime", label: "All Time", range: allTime },
   { key: "today", label: "Today", range: today },
   { key: "yesterday", label: "Yesterday", range: yesterday },
   { key: "thisWeek", label: "This Week", range: thisWeek },
