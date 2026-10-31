@@ -77,7 +77,7 @@ export default function PositionsScreen({ stocks }) {
 
           <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
             {/* Today Net Realized P&L */}
-            <div className="bg-surface3/60 px-3 py-1.5 rounded-xl border border-border-subtle/60 flex items-center gap-2">
+            <div className="bg-surface3/60 px-3 py-1.5 rounded-xl border border-subtle/60 flex items-center gap-2">
               <span className="text-[10px] text-faint uppercase font-bold">
                 Today Net P&L:
               </span>
@@ -92,7 +92,7 @@ export default function PositionsScreen({ stocks }) {
 
             {/* Live Unrealized */}
             {positions.length > 0 && (
-              <div className="bg-surface3/60 px-3 py-1.5 rounded-xl border border-border-subtle/60 flex items-center gap-2">
+              <div className="bg-surface3/60 px-3 py-1.5 rounded-xl border border-subtle/60 flex items-center gap-2">
                 <span className="text-[10px] text-faint uppercase font-bold">
                   Open Floating:
                 </span>

@@ -241,10 +241,10 @@ export default function RankingScreen({ stocks, nifty }) {
         {showFilters && (
           <>
             <div
-              className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-[65] bg-black/80 backdrop-blur-sm lg:hidden"
               onClick={() => setShowFilters(false)}
             />
-            <div className="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-3xl bg-surface2 border-t border-subtle p-4 shadow-2xl lg:hidden pb-[max(env(safe-area-inset-bottom),24px)]">
+            <div className="fixed inset-x-0 bottom-0 z-[70] max-h-[85vh] overflow-y-auto rounded-t-3xl bg-surface2 border-t border-subtle p-4 shadow-2xl lg:hidden pb-[max(env(safe-area-inset-bottom),24px)]">
               <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-3" />
               {filterCard}
             </div>

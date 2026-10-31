@@ -127,7 +127,7 @@ export default function TodayClosedPositions({ orders = [], onOpenChart }) {
               // Reason badge style
               const reason = (o.exit_reason || "Manual").toUpperCase();
               let reasonBadgeClass =
-                "bg-surface3 text-muted border-border-subtle";
+                "bg-surface3 text-muted border-subtle";
               if (reason.includes("TARGET")) {
                 reasonBadgeClass =
                   "bg-emerald-950/80 text-emerald-400 border-emerald-800/50";

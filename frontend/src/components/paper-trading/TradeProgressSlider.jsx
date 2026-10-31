@@ -89,7 +89,7 @@ export default function TradeProgressSlider({
       </div>
 
       {/* Slider Track */}
-      <div className="relative w-full h-3 bg-surface3 rounded-full overflow-visible my-3 border border-border-subtle/50">
+      <div className="relative w-full h-3 bg-surface3 rounded-full overflow-visible my-3 border border-subtle/50">
         {/* Risk Zone (from SL to Entry) */}
         <div
           className="absolute top-0 bottom-0 bg-bear/15 rounded-l-full"

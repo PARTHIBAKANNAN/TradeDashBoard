@@ -270,7 +270,10 @@ function Dashboard({ user, onLogout }) {
         }}
       />
 
-      <PullToRefresh onRefresh={handleRefresh} className="flex-1 min-h-0">
+      <PullToRefresh
+        onRefresh={handleRefresh}
+        className={`flex-1 min-h-0 ${activeTab === "settings" ? "overflow-hidden" : ""}`}
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -278,7 +281,11 @@ function Dashboard({ user, onLogout }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
-            className="pb-28 lg:pb-8 min-h-full"
+            className={
+              activeTab === "settings"
+                ? "h-full flex flex-col overflow-hidden"
+                : "pb-28 lg:pb-8 min-h-full"
+            }
           >
             {activeTab === "ranking" && (
               <RankingScreen stocks={stocks} nifty={nifty} />
@@ -361,8 +368,13 @@ function TopNavbar({
   ];
 
   return (
-    <nav className="sticky top-0 z-50 h-12 border-b border-border-subtle bg-surface2/95 backdrop-blur-md shadow-sm pt-safe flex-shrink-0 flex items-center transition-colors">
-      <div className="mx-auto max-w-[1920px] w-full px-3 sm:px-5 flex items-center justify-between gap-2 sm:gap-4">
+    <nav
+      className="sticky top-0 z-50 border-b border-subtle bg-surface2 shadow-sm flex-shrink-0 transition-colors"
+      style={{
+        paddingTop: "env(safe-area-inset-top, 0px)",
+      }}
+    >
+      <div className="h-12 sm:h-13 mx-auto max-w-[1920px] w-full px-3 sm:px-5 flex items-center justify-between gap-2 sm:gap-4">
         {/* Left: Brand & Status Cluster */}
         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -652,7 +664,10 @@ function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="md:hidden fixed bottom-[56px] left-0 right-0 z-50 bg-surface2/98 border-t border-border-subtle rounded-t-2xl p-4 shadow-2xl backdrop-blur-2xl transition-colors"
+              className="md:hidden fixed left-0 right-0 z-[60] bg-surface2 border-t border-subtle rounded-t-2xl p-4 shadow-2xl transition-colors max-h-[75vh] overflow-y-auto"
+              style={{
+                bottom: "calc(56px + max(env(safe-area-inset-bottom, 0px), 10px))",
+              }}
             >
               <div className="flex items-center justify-between pb-3 mb-2 border-b border-white/5">
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
@@ -703,7 +718,12 @@ function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
       </AnimatePresence>
 
       {/* Primary Mobile Bottom Bar (Ranking, Watchlist, Charts, Positions, More) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface2/95 backdrop-blur-2xl border-t border-border-subtle pb-[max(env(safe-area-inset-bottom),10px)] shadow-[0_-4px_20px_rgba(0,0,0,0.3)] transition-colors">
+      <div
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface2 border-t border-subtle shadow-[0_-4px_20px_rgba(0,0,0,0.3)] transition-colors"
+        style={{
+          paddingBottom: "max(env(safe-area-inset-bottom, 0px), 10px)",
+        }}
+      >
         <div className="grid grid-cols-5 h-[56px] items-center px-1">
           {mainTabs.map((tab) => {
             const isActive = activeTab === tab.key;
@@ -718,14 +738,14 @@ function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
                 className={`flex flex-col items-center justify-center py-1 transition-all relative ${
                   isActive
                     ? "text-blue-400 font-bold"
-                    : "text-text-muted/80 hover:text-text-primary font-medium"
+                    : "text-muted/80 hover:text-primary font-medium"
                 }`}
               >
                 <div className="relative">
                   <Icon
                     size={19}
                     strokeWidth={isActive ? 2.3 : 1.8}
-                    className={isActive ? "text-blue-400" : "text-text-muted"}
+                    className={isActive ? "text-blue-400" : "text-muted"}
                   />
                   {tab.badge != null && (
                     <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-0.5 rounded-full bg-emerald-500 text-black text-[9px] font-black flex items-center justify-center shadow-sm">
@@ -737,7 +757,7 @@ function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
                   className={`text-[10px] tracking-tight leading-none mt-1 truncate max-w-[65px] ${
                     isActive
                       ? "text-blue-400 font-semibold"
-                      : "text-text-muted/80"
+                      : "text-muted/80"
                   }`}
                 >
                   {tab.label}
@@ -759,7 +779,7 @@ function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
             className={`flex flex-col items-center justify-center py-1 transition-all relative ${
               isMoreActive || isMoreOpen
                 ? "text-blue-400 font-bold"
-                : "text-text-muted/80 hover:text-text-primary font-medium"
+                : "text-muted/80 hover:text-primary font-medium"
             }`}
           >
             <div className="relative">
@@ -769,7 +789,7 @@ function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
                 className={
                   isMoreActive || isMoreOpen
                     ? "text-blue-400"
-                    : "text-text-muted"
+                    : "text-muted"
                 }
               />
             </div>
@@ -777,7 +797,7 @@ function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
               className={`text-[10px] tracking-tight leading-none mt-1 truncate max-w-[65px] ${
                 isMoreActive || isMoreOpen
                   ? "text-blue-400 font-semibold"
-                  : "text-text-muted/80"
+                  : "text-muted/80"
               }`}
             >
               {isMoreActive

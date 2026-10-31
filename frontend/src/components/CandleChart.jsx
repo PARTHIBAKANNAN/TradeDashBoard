@@ -624,7 +624,7 @@ export default function CandleChart({
     <div className="relative w-full h-full">
       {/* Real-time Free-Flow OHLC Header Banner */}
       {displayBar && (
-        <div className="absolute top-2 left-3 z-20 pointer-events-none flex items-center gap-2 sm:gap-3 text-[11px] font-mono bg-surface2/90 border border-border-subtle/80 px-2.5 py-1 rounded-lg backdrop-blur-md shadow-sm">
+        <div className="absolute top-2 left-3 z-20 pointer-events-none flex items-center gap-2 sm:gap-3 text-[11px] font-mono bg-surface2/90 border border-subtle/80 px-2.5 py-1 rounded-lg backdrop-blur-md shadow-sm">
           <div className="flex items-center gap-1.5">
             <span className="text-faint">O</span>
             <span className="text-primary font-semibold">

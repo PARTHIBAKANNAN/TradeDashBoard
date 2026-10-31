@@ -337,25 +337,37 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
   };
 
   return (
-    <div className="min-h-screen bg-surface">
-      <div className="mx-auto max-w-[1400px] w-full px-3 sm:px-6 py-4 space-y-6">
-        {/* Title & Header */}
-        <div className="flex items-center justify-between pb-2 border-b border-subtle">
-          <div className="flex items-center gap-3">
-            <span className="grid place-items-center w-9 h-9 rounded-xl bg-accent-violet/15 text-accent-violet border border-accent-violet/30 shadow-sm">
-              <Settings size={18} />
-            </span>
-            <div>
-              <h2 className="text-base sm:text-lg font-bold text-primary font-display">
-                Trading Desk Configuration &amp; Controls
-              </h2>
-              <p className="text-xs text-faint">
-                Manage risk parameters, autonomous strategies, AI copilot
-                engine, and broker integrations
-              </p>
-            </div>
+    <div className="h-full flex flex-col bg-surface overflow-hidden">
+      {/* Title & Header (Compact & Fixed) */}
+      <div className="px-3 sm:px-6 py-2.5 sm:py-3.5 border-b border-subtle bg-surface2/60 flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <span className="grid place-items-center w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-accent-violet/15 text-accent-violet border border-accent-violet/30 shadow-sm flex-shrink-0">
+            <Settings size={16} />
+          </span>
+          <div className="min-w-0">
+            <h2 className="text-xs sm:text-base font-bold text-primary font-display truncate">
+              Trading Desk Configuration &amp; Controls
+            </h2>
+            <p className="text-[10px] sm:text-xs text-faint truncate hidden sm:block">
+              Manage risk parameters, autonomous strategies, AI copilot engine, and broker integrations
+            </p>
           </div>
         </div>
+
+        {/* Quick Status Pill */}
+        <div className="flex items-center gap-2 flex-shrink-0 font-mono text-[10px]">
+          <span className="hidden sm:inline text-muted">Auto-Trading:</span>
+          <span
+            className={`px-2 py-0.5 rounded-full font-bold ${
+              configData.auto_trading_enabled
+                ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                : "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+            }`}
+          >
+            {configData.auto_trading_enabled ? "ARMED" : "PAUSED"}
+          </span>
+        </div>
+      </div>
 
         {statusMsg && (
           <div
@@ -382,92 +394,92 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
           </div>
         )}
 
-        {/* Multi Sub-tabs Layout: 2-Column (30% Left Fixed Tabs / 70% Content) on mobile, 3-col/9-col on lg */}
-        <div className="grid grid-cols-[82px_1fr] sm:grid-cols-[105px_1fr] lg:grid-cols-12 gap-3 sm:gap-4 lg:gap-6 items-start">
-          {/* Left Vertical Sub-tabs Sidebar (Fixed/Sticky on Mobile) */}
-          <div className="lg:col-span-4 xl:col-span-3 sticky top-16 sm:top-20 z-10 space-y-2">
-            <div className="p-1.5 sm:p-2 bg-surface2 rounded-2xl border border-subtle shadow-sm space-y-1">
-              <div className="px-1.5 py-1 text-[9px] font-mono uppercase tracking-wider text-faint font-bold text-center lg:text-left truncate">
-                Sections
-              </div>
-              {SUB_TABS.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeSection === tab.key;
-                return (
-                  <button
-                    key={tab.key}
-                    onClick={() => setActiveSection(tab.key)}
-                    className={`w-full text-center lg:text-left p-2 sm:p-2.5 lg:p-3 rounded-xl transition-all cursor-pointer flex flex-col lg:flex-row items-center justify-center lg:justify-between group ${
-                      isActive
-                        ? "bg-blue-600/15 border border-blue-500/40 text-blue-400 shadow-sm"
-                        : "hover:bg-surface3/60 text-muted hover:text-primary border border-transparent"
-                    }`}
-                  >
-                    <div className="flex flex-col lg:flex-row items-center gap-1 lg:gap-3 w-full">
-                      <span
-                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg grid place-items-center transition-colors flex-shrink-0 ${
-                          isActive
-                            ? "bg-blue-600/25 text-blue-400"
-                            : "bg-surface3/60 text-muted group-hover:text-primary"
-                        }`}
+      {/* Main 2-Column Split: 30% Left Fixed Tabs / 70% Right Scrollable Pane (Mobile) */}
+      <div className="flex-1 min-h-0 flex flex-row lg:grid lg:grid-cols-12 lg:gap-6 lg:p-6 lg:max-w-[1400px] lg:mx-auto lg:w-full overflow-hidden">
+        {/* Left Vertical Sub-tabs Sidebar (Fixed 30% on Mobile, 4-col on lg) */}
+        <div className="w-[30%] min-w-[78px] max-w-[96px] sm:w-[28%] sm:min-w-[90px] lg:w-auto lg:min-w-0 lg:max-w-none lg:col-span-4 xl:col-span-3 bg-surface2/40 border-r lg:border-none border-subtle flex flex-col p-1.5 sm:p-2 gap-1.5 flex-shrink-0 overflow-y-auto no-scrollbar lg:space-y-2">
+          <div className="lg:p-2 lg:bg-surface2 lg:rounded-2xl lg:border lg:border-subtle lg:shadow-sm space-y-1">
+            <div className="px-1.5 py-1 text-[9px] font-mono uppercase tracking-wider text-faint font-bold text-center lg:text-left truncate">
+              Sections
+            </div>
+            {SUB_TABS.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeSection === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveSection(tab.key)}
+                  className={`w-full p-2 sm:p-2.5 lg:p-3 rounded-xl transition-all cursor-pointer flex flex-col lg:flex-row items-center justify-center lg:justify-between group border ${
+                    isActive
+                      ? "bg-blue-600/20 border-blue-500/50 text-blue-400 shadow-sm"
+                      : "bg-surface2/30 lg:bg-transparent border-transparent text-muted hover:text-primary hover:bg-surface3/50"
+                  }`}
+                >
+                  <div className="flex flex-col lg:flex-row items-center gap-1 lg:gap-3 w-full text-center lg:text-left">
+                    <span
+                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg grid place-items-center transition-colors flex-shrink-0 ${
+                        isActive
+                          ? "bg-blue-600/25 text-blue-400"
+                          : "bg-surface3/60 text-muted group-hover:text-primary"
+                      }`}
+                    >
+                      <Icon size={15} />
+                    </span>
+                    <div className="min-w-0">
+                      <div
+                        className={`text-[10px] sm:text-xs font-bold leading-tight truncate ${isActive ? "text-blue-400" : "text-primary"}`}
                       >
-                        <Icon size={15} />
-                      </span>
-                      <div className="min-w-0">
-                        <div
-                          className={`text-[10px] sm:text-xs font-bold leading-tight truncate ${isActive ? "text-blue-400" : "text-primary"}`}
-                        >
-                          <span className="lg:hidden">{tab.shortLabel || tab.label.split(" ")[0]}</span>
-                          <span className="hidden lg:inline">{tab.label}</span>
-                        </div>
-                        <div className="hidden lg:block text-[10px] text-faint leading-tight mt-0.5">
-                          {tab.sublabel}
-                        </div>
+                        <span className="lg:hidden">{tab.shortLabel || tab.label.split(" ")[0]}</span>
+                        <span className="hidden lg:inline">{tab.label}</span>
+                      </div>
+                      <div className="hidden lg:block text-[10px] text-faint leading-tight mt-0.5">
+                        {tab.sublabel}
                       </div>
                     </div>
-                    <div className="hidden lg:flex items-center gap-1.5">
-                      {tab.badge && (
-                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-surface3 text-muted border border-subtle">
-                          {tab.badge}
-                        </span>
-                      )}
-                      <ChevronRight
-                        size={14}
-                        className={`transition-transform ${
-                          isActive
-                            ? "text-blue-400 translate-x-0.5"
-                            : "text-faint opacity-40"
-                        }`}
-                      />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Quick Status Pill (compact on mobile) */}
-            <div className="p-2 sm:p-3 bg-surface3/40 rounded-xl border border-subtle text-[9px] sm:text-[11px] font-mono space-y-1 sm:space-y-2">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-center sm:text-left">
-                <span className="text-muted text-[8px] sm:text-[11px]">Auto-Trade:</span>
-                <span
-                  className={`font-bold ${configData.auto_trading_enabled ? "text-emerald-400" : "text-amber-400"}`}
-                >
-                  {configData.auto_trading_enabled ? "ARMED" : "PAUSED"}
-                </span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-center sm:text-left">
-                <span className="text-muted text-[8px] sm:text-[11px]">Session:</span>
-                <span
-                  className={`font-bold ${brokerStatus?.market_open ? "text-emerald-400" : "text-faint"}`}
-                >
-                  {brokerStatus?.market_open ? "OPEN" : "CLOSED"}
-                </span>
-              </div>
-            </div>
+                  </div>
+                  <div className="hidden lg:flex items-center gap-1.5">
+                    {tab.badge && (
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-surface3 text-muted border border-subtle">
+                        {tab.badge}
+                      </span>
+                    )}
+                    <ChevronRight
+                      size={14}
+                      className={`transition-transform ${
+                        isActive
+                          ? "text-blue-400 translate-x-0.5"
+                          : "text-faint opacity-40"
+                      }`}
+                    />
+                  </div>
+                </button>
+              );
+            })}
           </div>
 
-          {/* Right Active Configuration Canvas */}
-          <div className="lg:col-span-8 xl:col-span-9 space-y-6">
+          {/* Quick Status Pill (Desktop only) */}
+          <div className="hidden lg:block p-3 bg-surface3/40 rounded-xl border border-subtle text-[11px] font-mono space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-muted">Auto-Trade:</span>
+              <span
+                className={`font-bold ${configData.auto_trading_enabled ? "text-emerald-400" : "text-amber-400"}`}
+              >
+                {configData.auto_trading_enabled ? "ARMED" : "PAUSED"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted">Session:</span>
+              <span
+                className={`font-bold ${brokerStatus?.market_open ? "text-emerald-400" : "text-faint"}`}
+              >
+                {brokerStatus?.market_open ? "OPEN" : "CLOSED"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right 70% Active Configuration Canvas (Scrollable within bounds) */}
+        <div className="flex-1 min-w-0 h-full overflow-y-auto overscroll-contain p-2.5 sm:p-4 lg:p-0 lg:col-span-8 xl:col-span-9 space-y-4 lg:space-y-6 pb-24 lg:pb-8">
             {/* SUB-TAB 1: Risk & Allocation */}
             {activeSection === "risk" && (
               <Card
@@ -1475,7 +1487,6 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                 </Card>
               </div>
             )}
-          </div>
         </div>
       </div>
     </div>
