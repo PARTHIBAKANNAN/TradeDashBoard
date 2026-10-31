@@ -49,6 +49,16 @@ const SORTS = {
   sym: { label: "Symbol A-Z", fn: (a, b) => a.symbol.localeCompare(b.symbol) },
 };
 
+const NIFTY_50_SET = new Set([
+  "RELIANCE", "TCS", "HDFCBANK", "INFY", "ICICIBANK", "HINDUNILVR", "ITC", "SBIN",
+  "BHARTIARTL", "BAJFINANCE", "LICI", "LT", "HCLTECH", "KOTAKBANK", "AXISBANK",
+  "MARUTI", "SUNPHARMA", "TMPV", "TITAN", "ONGC", "NTPC", "TATAMOTORS", "POWERGRID",
+  "ADANIENT", "BAJAJFINSV", "COALINDIA", "TATASTEEL", "ASIANPAINT", "JSWSTEEL",
+  "ADANIPORTS", "GRASIM", "TECHM", "EICHERMOT", "HINDALCO", "BPCL", "DRREDDY",
+  "CIPLA", "BRITANNIA", "TATACONSUM", "NESTLEIND", "DIVISLAB", "APOLLOHOSP",
+  "BAJAJ-AUTO", "WIPRO", "ULTRACEMCO", "SHRIRAMFIN", "M&M", "BEL", "TRENT"
+]);
+
 export default function RankingScreen({ stocks, nifty }) {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedSignal, setSelectedSignal] = useState("All signals");
@@ -56,7 +66,31 @@ export default function RankingScreen({ stocks, nifty }) {
   const [signalTimeIndex, setSignalTimeIndex] = useState(0);
   const [sortKey, setSortKey] = useState("breakout_first");
   const [search, setSearch] = useState("");
+  const [activePreset, setActivePreset] = useState("ALL");
+  const [activeBasket, setActiveBasket] = useState("ALL");
   const recommended = useRecommendedStocks(stocks, nifty?.pct_change || 0);
+
+  const counts = useMemo(() => {
+    let openEq = 0;
+    let rvol = 0;
+    let hodSqueeze = 0;
+    let vwapRetest = 0;
+
+    (stocks || []).forEach((s) => {
+      if (s.open_eq_signal === "OPEN_LOW" || s.open_eq_signal === "OPEN_HIGH") openEq++;
+      if (s.is_rvol_shocker || (s.rvol && s.rvol >= 2.0)) rvol++;
+      if (s.is_hod_squeeze || s.is_lod_breakdown || (s.day_range_pos >= 90 && s.day_range_pos > 0)) hodSqueeze++;
+      if (s.is_vwap_retest || (s.vwap_dist_pct != null && Math.abs(s.vwap_dist_pct) <= 0.40 && Math.abs(s.relative_strength || 0) >= 0.50)) vwapRetest++;
+    });
+
+    return {
+      all: stocks?.length || 210,
+      openEq,
+      rvol,
+      hodSqueeze,
+      vwapRetest,
+    };
+  }, [stocks]);
 
   const sectors = useMemo(() => {
     const set = new Set((stocks || []).map((s) => s.sector));
@@ -82,6 +116,28 @@ export default function RankingScreen({ stocks, nifty }) {
       }
       if (search && !stock.symbol.toUpperCase().includes(search.toUpperCase()))
         return false;
+
+      // 4 Advanced Intraday Screeners Filter
+      if (activePreset === "OPEN_EQ") {
+        if (!stock.open_eq_signal || stock.open_eq_signal === "None") return false;
+      } else if (activePreset === "RVOL") {
+        if (!stock.is_rvol_shocker && (!stock.rvol || stock.rvol < 2.0)) return false;
+      } else if (activePreset === "HOD_SQUEEZE") {
+        if (!stock.is_hod_squeeze && !stock.is_lod_breakdown && (stock.day_range_pos < 90 || stock.day_range_pos <= 0)) return false;
+      } else if (activePreset === "VWAP_RETEST") {
+        const nearVwap = stock.is_vwap_retest || (stock.vwap_dist_pct != null && Math.abs(stock.vwap_dist_pct) <= 0.40);
+        if (!nearVwap) return false;
+      }
+
+      // Smart Basket Filter
+      if (activeBasket === "NIFTY50") {
+        if (!NIFTY_50_SET.has(stock.symbol)) return false;
+      } else if (activeBasket === "HIGH_BETA") {
+        if (NIFTY_50_SET.has(stock.symbol)) return false;
+      } else if (activeBasket === "HIGH_ATR") {
+        if (Math.abs(stock.pct_change || 0) < 1.8 && (stock.day_range_pos < 75)) return false;
+      }
+
       return true;
     });
     return rows.sort(SORTS[sortKey].fn);
@@ -92,6 +148,8 @@ export default function RankingScreen({ stocks, nifty }) {
     signalTimeIndex,
     sortKey,
     search,
+    activePreset,
+    activeBasket,
   ]);
 
   const activeFilterCount =
@@ -104,6 +162,8 @@ export default function RankingScreen({ stocks, nifty }) {
     setSelectedSector("All sectors");
     setSignalTimeIndex(0);
     setSortKey("breakout_first");
+    setActivePreset("ALL");
+    setActiveBasket("ALL");
   };
 
   const filterCard = (
@@ -245,6 +305,133 @@ export default function RankingScreen({ stocks, nifty }) {
                 </span>{" "}
                 stocks
               </div>
+            </div>
+          </div>
+
+          {/* Quick-Preset Screener Bar & Smart Baskets */}
+          <div className="flex flex-col gap-2.5 mb-4 bg-surface2/40 border border-subtle/80 rounded-xl p-3 backdrop-blur-md">
+            {/* Top row: 4 Advanced Intraday Screeners */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-faint flex-shrink-0 mr-1 hidden sm:inline">
+                Screener:
+              </span>
+              <button
+                onClick={() => setActivePreset("ALL")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                  activePreset === "ALL"
+                    ? "bg-accent-blue text-white shadow-sm font-bold"
+                    : "bg-surface3/80 text-faint hover:text-primary hover:bg-surface3"
+                }`}
+              >
+                All ({counts.all})
+              </button>
+              <button
+                onClick={() => setActivePreset("OPEN_EQ")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                  activePreset === "OPEN_EQ"
+                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-bold"
+                    : "bg-surface3/80 text-faint hover:text-emerald-400 hover:bg-surface3"
+                }`}
+              >
+                <span>⚡ 09:16 O=H / O=L</span>
+                {counts.openEq > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/30 text-emerald-300 font-mono">
+                    {counts.openEq}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setActivePreset("RVOL")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                  activePreset === "RVOL"
+                    ? "bg-amber-500/20 text-amber-400 border border-amber-500/40 font-bold"
+                    : "bg-surface3/80 text-faint hover:text-amber-400 hover:bg-surface3"
+                }`}
+              >
+                <span>🔥 RVOL Shockers</span>
+                {counts.rvol > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/30 text-amber-300 font-mono">
+                    {counts.rvol}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setActivePreset("HOD_SQUEEZE")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                  activePreset === "HOD_SQUEEZE"
+                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-bold"
+                    : "bg-surface3/80 text-faint hover:text-emerald-400 hover:bg-surface3"
+                }`}
+              >
+                <span>🎯 HOD Squeeze</span>
+                {counts.hodSqueeze > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/30 text-emerald-300 font-mono">
+                    {counts.hodSqueeze}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setActivePreset("VWAP_RETEST")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                  activePreset === "VWAP_RETEST"
+                    ? "bg-sky-500/20 text-sky-400 border border-sky-500/40 font-bold"
+                    : "bg-surface3/80 text-faint hover:text-sky-400 hover:bg-surface3"
+                }`}
+              >
+                <span>🌊 VWAP Retest</span>
+                {counts.vwapRetest > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-sky-500/30 text-sky-300 font-mono">
+                    {counts.vwapRetest}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Bottom row: Smart Baskets */}
+            <div className="flex items-center gap-1.5 pt-2 border-t border-subtle/50 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-faint flex-shrink-0 mr-1 hidden sm:inline">
+                Basket:
+              </span>
+              <button
+                onClick={() => setActiveBasket("ALL")}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap transition-all ${
+                  activeBasket === "ALL"
+                    ? "bg-white/10 text-primary font-semibold border border-white/20"
+                    : "text-faint hover:text-primary hover:bg-surface3"
+                }`}
+              >
+                All Universe
+              </button>
+              <button
+                onClick={() => setActiveBasket("NIFTY50")}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap transition-all ${
+                  activeBasket === "NIFTY50"
+                    ? "bg-blue-500/20 text-blue-300 font-semibold border border-blue-500/30"
+                    : "text-faint hover:text-primary hover:bg-surface3"
+                }`}
+              >
+                🏛 Nifty 50 Titans
+              </button>
+              <button
+                onClick={() => setActiveBasket("HIGH_BETA")}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap transition-all ${
+                  activeBasket === "HIGH_BETA"
+                    ? "bg-purple-500/20 text-purple-300 font-semibold border border-purple-500/30"
+                    : "text-faint hover:text-primary hover:bg-surface3"
+                }`}
+              >
+                🚀 High-Beta Midcaps
+              </button>
+              <button
+                onClick={() => setActiveBasket("HIGH_ATR")}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap transition-all ${
+                  activeBasket === "HIGH_ATR"
+                    ? "bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30"
+                    : "text-faint hover:text-primary hover:bg-surface3"
+                }`}
+              >
+                ⚡ High Volatility Leaders
+              </button>
             </div>
           </div>
 

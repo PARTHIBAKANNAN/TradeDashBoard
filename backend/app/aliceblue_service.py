@@ -296,6 +296,7 @@ class AliceBlueDataEngine:
         oi = int(_f("oi") or _f("toi"))
         bp1 = _f("bp1")
         sp1 = _f("sp1")
+        open_price = _f("o")
 
         if token == NIFTY_TOKEN or sym == _BENCHMARK_SHORT_SYMBOL:
             market_state.set_nifty(ltp=ltp, prev_close=prev_close or None)
@@ -318,6 +319,7 @@ class AliceBlueDataEngine:
             oi=oi,
             bp1=bp1,
             sp1=sp1,
+            open_price=open_price,
         )
 
     def _run_loop(self):

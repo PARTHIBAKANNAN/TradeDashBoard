@@ -38,6 +38,15 @@ SNAPSHOT_STOCK_FIELDS: tuple[str, ...] = (
     # 0.0 for symbols not on the depth subscription; non-zero only for the
     # top-N active symbols where bid/ask data is available.
     "depth_delta",
+    # 4 Advanced Screeners Telemetry
+    "open",
+    "open_eq_signal",
+    "rvol",
+    "is_rvol_shocker",
+    "is_hod_squeeze",
+    "is_lod_breakdown",
+    "vwap_dist_pct",
+    "is_vwap_retest",
 )
 # Fields whose values are compared to detect a delta (identity fields excluded).
 DIFFABLE_STOCK_FIELDS: tuple[str, ...] = tuple(

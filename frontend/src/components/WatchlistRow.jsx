@@ -100,6 +100,46 @@ const WatchlistRow = React.memo(
               <span className="text-[11px] text-faint font-semibold">
                 {stock.sector}
               </span>
+              {stock.open_eq_signal === "OPEN_LOW" && (
+                <span
+                  title="09:16 Open = Low: Pure Algo Inflow"
+                  className="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                >
+                  ⚡ O=L
+                </span>
+              )}
+              {stock.open_eq_signal === "OPEN_HIGH" && (
+                <span
+                  title="09:16 Open = High: Pure Algo Selling"
+                  className="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-mono font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30"
+                >
+                  ⚡ O=H
+                </span>
+              )}
+              {stock.is_rvol_shocker && (
+                <span
+                  title={`RVOL: ${stock.rvol}x abnormal volume surge`}
+                  className="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                >
+                  🔥 {stock.rvol}x
+                </span>
+              )}
+              {stock.is_hod_squeeze && (
+                <span
+                  title="HOD Squeeze: Pressing session high near 90%+ range"
+                  className="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                >
+                  🎯 HOD
+                </span>
+              )}
+              {stock.is_vwap_retest && (
+                <span
+                  title={`VWAP Retest: ${stock.vwap_dist_pct > 0 ? "+" : ""}${stock.vwap_dist_pct}% from VWAP`}
+                  className="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-mono font-bold bg-sky-500/15 text-sky-400 border border-sky-500/30"
+                >
+                  🌊 VWAP
+                </span>
+              )}
               {stock.cvd != null && stock.cvd !== 0 && (
                 <span
                   title={`Cumulative Volume Delta: ${stock.cvd > 0 ? "Buyer Dominated" : "Seller Dominated"} (${stock.cvd} shares)`}
@@ -259,6 +299,31 @@ const WatchlistRow = React.memo(
                     <span className="text-[11px] text-faint font-semibold">
                       {stock.sector}
                     </span>
+                    {stock.open_eq_signal === "OPEN_LOW" && (
+                      <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[9px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                        ⚡ O=L
+                      </span>
+                    )}
+                    {stock.open_eq_signal === "OPEN_HIGH" && (
+                      <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[9px] font-mono font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                        ⚡ O=H
+                      </span>
+                    )}
+                    {stock.is_rvol_shocker && (
+                      <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[9px] font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                        🔥 {stock.rvol}x
+                      </span>
+                    )}
+                    {stock.is_hod_squeeze && (
+                      <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[9px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                        🎯 HOD
+                      </span>
+                    )}
+                    {stock.is_vwap_retest && (
+                      <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[9px] font-mono font-bold bg-sky-500/15 text-sky-400 border border-sky-500/30">
+                        🌊 VWAP
+                      </span>
+                    )}
                     {stock.cvd != null && stock.cvd !== 0 && (
                       <span
                         className={`inline-flex items-center rounded px-1.5 py-0.2 text-[9px] font-mono font-bold ${

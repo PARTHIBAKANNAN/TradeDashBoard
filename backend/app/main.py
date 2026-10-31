@@ -27,7 +27,7 @@ from .logging_config import configure_logging
 configure_logging()
 
 from . import (aliceblue_auth, aliceblue_service, auth, candle_history, charts,
-               config, paper_trading, security, smart_money)
+               config, nse_sync, paper_trading, security, smart_money)
 from .broadcaster import Broadcaster, build_frame, snapshot_from_state
 from .fyers_service import data_engine
 from .scheduler import (ensure_engine_running, init_scheduler, is_market_open,
@@ -378,18 +378,18 @@ async def public_summary():
             top_gainers
             if top_gainers
             else [
-                {"symbol": "TRENT", "sector": "Consumer", "ltp": 6920.0, "pct_change": 3.85},
-                {"symbol": "MARUTI", "sector": "Auto", "ltp": 12450.0, "pct_change": 2.40},
-                {"symbol": "TATASTEEL", "sector": "Metals", "ltp": 154.20, "pct_change": 1.95},
+                {"symbol": "TRENT", "sector": "Consumer Discretionary", "ltp": 6920.0, "pct_change": 3.85},
+                {"symbol": "MARUTI", "sector": "Automobile", "ltp": 12450.0, "pct_change": 2.40},
+                {"symbol": "TATASTEEL", "sector": "Metals & Mining", "ltp": 154.20, "pct_change": 1.95},
             ]
         ),
         "top_losers": (
             top_losers
             if top_losers
             else [
-                {"symbol": "INFY", "sector": "IT", "ltp": 1820.0, "pct_change": -1.65},
-                {"symbol": "WIPRO", "sector": "IT", "ltp": 542.0, "pct_change": -1.20},
-                {"symbol": "HDFCBANK", "sector": "Banks", "ltp": 1640.0, "pct_change": -0.85},
+                {"symbol": "INFY", "sector": "Information Technology", "ltp": 1820.0, "pct_change": -1.65},
+                {"symbol": "WIPRO", "sector": "Information Technology", "ltp": 542.0, "pct_change": -1.20},
+                {"symbol": "HDFCBANK", "sector": "Banking & Finance", "ltp": 1640.0, "pct_change": -0.85},
             ]
         ),
         "global_cues": briefing.get("global_cues", {}),
@@ -538,6 +538,17 @@ async def health():
     if getattr(config, "BROKER", "aliceblue") == "aliceblue":
         return {"status": "ok", "market_open": is_market_open(), **aliceblue_auth.auth_status()}
     return {"status": "ok", "market_open": is_market_open(), **auth.auth_status()}
+
+
+@app.post("/api/admin/nse-sync", dependencies=[Depends(require_login)])
+async def trigger_nse_sync():
+    """Trigger periodic NSE F&O universe and sector synchronization."""
+    try:
+        res = nse_sync.run_fno_sync()
+        return res
+    except Exception as e:
+        logger.error("NSE sync error: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/snapshot", dependencies=[Depends(require_login)])

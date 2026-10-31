@@ -133,6 +133,7 @@ def process_incoming_tick(
     oi: int = 0,
     bp1: float = 0.0,
     sp1: float = 0.0,
+    open_price: float = 0.0,
 ):
     """
     Update one stock's derived fields from a raw tick. `state` is the
@@ -189,11 +190,62 @@ def process_incoming_tick(
         stock["today_high"] = max(stock["today_high"] or eff_high, eff_high)
         stock["today_low"] = min(stock["today_low"] or eff_low, eff_low)
 
+        if open_price > 0 and not stock.get("open"):
+            stock["open"] = open_price
+        elif not stock.get("open") and ltp > 0:
+            stock["open"] = ltp
+
         stock["pct_change"] = pct_change(ltp, stock["prev_close"])
         stock["day_range_pos"] = day_range_position(ltp, stock["today_low"], stock["today_high"])
         stock["relative_strength"] = intraday_relative_strength(
             stock["pct_change"], state.nifty["pct_change"]
         )
+
+        # ---------- 4 Advanced Intraday Screeners Telemetry ----------
+        # 1. 09:16 AM Open=Low / Open=High Morning Radar
+        open_p = stock.get("open") or 0.0
+        if open_p > 0 and ltp > 0:
+            if stock["today_low"] >= open_p * 0.9995 and ((ltp - open_p) / open_p) * 100 >= 0.20:
+                stock["open_eq_signal"] = "OPEN_LOW"
+            elif stock["today_high"] <= open_p * 1.0005 and ((open_p - ltp) / open_p) * 100 >= 0.20:
+                stock["open_eq_signal"] = "OPEN_HIGH"
+            else:
+                stock["open_eq_signal"] = None
+        else:
+            stock["open_eq_signal"] = None
+
+        # 2. RVOL (Relative Volume) vs recent intraday candles
+        candles = candle_aggregator.get_intraday_candles(short_sym)
+        if len(candles) >= 2:
+            prior_vols = [c["volume"] for c in candles[:-1] if c.get("volume", 0) > 0]
+            avg_vol = (sum(prior_vols) / len(prior_vols)) if prior_vols else 1.0
+            cur_vol = candles[-1].get("volume", 0.0)
+            rvol = round(cur_vol / max(1.0, avg_vol), 2)
+        else:
+            rvol = 1.0
+        stock["rvol"] = rvol
+        stock["is_rvol_shocker"] = bool(rvol >= 2.0)
+
+        # 3. Day-Range Compression & HOD/LOD Squeeze
+        range_pos = stock["day_range_pos"]
+        if ltp > 0 and stock["today_high"] > stock["today_low"]:
+            hod_prox = round(((stock["today_high"] - ltp) / ltp) * 100, 2)
+            lod_prox = round(((ltp - stock["today_low"]) / ltp) * 100, 2)
+            stock["is_hod_squeeze"] = bool(range_pos >= 90.0 and hod_prox <= 0.35)
+            stock["is_lod_breakdown"] = bool(range_pos <= 10.0 and lod_prox <= 0.35)
+        else:
+            stock["is_hod_squeeze"] = False
+            stock["is_lod_breakdown"] = False
+
+        # 4. VWAP Retest & Value Bounce Scanner
+        vwap = stock.get("vwap") or 0.0
+        if vwap > 0 and ltp > 0:
+            vwap_dist = round(((ltp - vwap) / vwap) * 100, 2)
+            stock["vwap_dist_pct"] = vwap_dist
+            stock["is_vwap_retest"] = bool(abs(vwap_dist) <= 0.40 and abs(stock.get("relative_strength", 0.0)) >= 0.50)
+        else:
+            stock["vwap_dist_pct"] = 0.0
+            stock["is_vwap_retest"] = False
 
         now_ist = datetime.now(IST)
         candle_aggregator.on_tick(stock, ltp, now_ist, bp1=bp1, sp1=sp1)

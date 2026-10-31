@@ -21,7 +21,7 @@ from apscheduler.triggers.cron import CronTrigger
 
 from . import (ai_copilot, aliceblue_auth, aliceblue_service, auth,
                candle_aggregator, candle_history, config, depth_manager,
-               momentum_score, order_monitor, paper_trading, telegram_notify)
+               momentum_score, nse_sync, order_monitor, paper_trading, telegram_notify)
 from .config import IST, MARKET_CLOSE, MARKET_OPEN
 from .fyers_service import data_engine
 from .state import market_state
@@ -340,6 +340,13 @@ def init_scheduler():
         _cleanup_old_candles,
         CronTrigger(day_of_week="mon-fri", hour=15, minute=35, timezone=IST),
         id="candle_retention_cleanup",
+        replace_existing=True,
+    )
+    # Monthly/Weekly NSE F&O Universe & Sector Sync (Every Friday at 06:00 AM IST)
+    scheduler.add_job(
+        nse_sync.run_fno_sync,
+        CronTrigger(day_of_week="fri", hour=6, minute=0, timezone=IST),
+        id="fno_universe_sync",
         replace_existing=True,
     )
     scheduler.start()

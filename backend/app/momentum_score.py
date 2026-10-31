@@ -31,6 +31,19 @@ ENTRY_QUALITY_FLOOR = 60
 MAX_PICKS = 3
 
 SECTOR_TO_NIFTY_GROUP = {
+    # 11 Official Consolidated Sectors
+    "Banking & Finance": "NIFTY BANK",
+    "Information Technology": "NIFTY IT",
+    "Automobile": "NIFTY AUTO",
+    "Metals & Mining": "NIFTY METAL",
+    "Energy & Power": "NIFTY ENERGY",
+    "Pharma & Healthcare": "NIFTY PHARMA",
+    "FMCG & Staples": "NIFTY FMCG",
+    "Consumer Discretionary": "NIFTY CONSUMPTION",
+    "Infra & Capital Goods": "NIFTY INFRA",
+    "Real Estate": "NIFTY REALTY",
+    "Cement & Chemicals": "NIFTY CEMENT",
+    # Fine-grained legacy taxonomy
     "Energy": "NIFTY ENERGY",
     "Power": "NIFTY ENERGY",
     "Capital Goods": "NIFTY CAPITAL GOODS",
