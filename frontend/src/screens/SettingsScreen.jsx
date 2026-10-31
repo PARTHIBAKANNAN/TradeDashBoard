@@ -21,8 +21,8 @@ import {
   Monitor,
   Sparkles,
   Paintbrush,
+  Check,
 } from "lucide-react";
-import { useTheme, CHART_PALETTES } from "../contexts/ThemeContext.jsx";
 import Card from "../components/ui/Card.jsx";
 import {
   usePnlSummary,
@@ -30,6 +30,7 @@ import {
   resetWallet,
   usePaperTradingSync,
 } from "../hooks/useOrders.js";
+import { useTheme, CHART_PALETTES } from "../contexts/ThemeContext.jsx";
 
 const SUB_TABS = [
   {
@@ -305,8 +306,8 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
           <div
             className={`p-3 rounded-xl border flex items-center justify-between gap-2 text-xs font-semibold ${
               statusMsg.type === "success"
-                ? "bg-emerald-950/70 border-emerald-800 text-emerald-400"
-                : "bg-rose-950/70 border-rose-800 text-rose-400"
+                ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                : "bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-400"
             }`}
           >
             <div className="flex items-center gap-2">
@@ -330,7 +331,7 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Vertical Sub-tabs Sidebar */}
           <div className="lg:col-span-4 xl:col-span-3 space-y-2">
-            <div className="p-2 bg-[#10141e]/80 rounded-2xl border border-subtle shadow-sm space-y-1">
+            <div className="p-2 bg-surface2 rounded-2xl border border-subtle shadow-sm space-y-1">
               <div className="px-3 py-2 text-[10px] font-mono uppercase tracking-wider text-faint font-bold">
                 Configuration Sections
               </div>
@@ -344,7 +345,7 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                     className={`w-full text-left p-3 rounded-xl transition-all cursor-pointer flex items-center justify-between group ${
                       isActive
                         ? "bg-blue-600/15 border border-blue-500/40 text-primary shadow-sm"
-                        : "hover:bg-white/5 text-muted hover:text-primary border border-transparent"
+                        : "hover:bg-surface3/60 text-muted hover:text-primary border border-transparent"
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -368,7 +369,7 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                     </div>
                     <div className="flex items-center gap-1.5">
                       {tab.badge && (
-                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-surface3 text-muted border border-white/5">
+                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-surface3 text-muted border border-subtle">
                           {tab.badge}
                         </span>
                       )}
@@ -425,7 +426,7 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                   )}
 
                   {/* Mathematical Coupling Formula Bar */}
-                  <div className="p-3.5 bg-gradient-to-r from-blue-950/30 to-emerald-950/20 rounded-xl border border-blue-500/20 text-xs font-sans">
+                  <div className="p-3.5 bg-blue-500/10 rounded-xl border border-blue-500/20 text-xs font-sans">
                     <div className="flex items-center justify-between text-muted text-xs">
                       <span className="font-semibold text-primary">Coupled Risk Budget Formula:</span>
                       <span className="font-mono text-emerald-400 font-bold">
@@ -580,10 +581,10 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                             <span
                               className={`text-[10px] font-mono px-2 py-0.5 rounded-full uppercase font-bold flex-shrink-0 ${
                                 state === "RUNNING"
-                                  ? "bg-emerald-950/80 text-emerald-400 border border-emerald-800"
+                                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
                                   : state === "PAUSED"
-                                    ? "bg-amber-950/80 text-amber-400 border border-amber-800"
-                                    : "bg-rose-950/80 text-rose-400 border border-rose-800"
+                                    ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30"
+                                    : "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30"
                               }`}
                             >
                               {state}
@@ -604,7 +605,7 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                                 <button
                                   type="button"
                                   onClick={() => handleStrategyStateChange(strat.key, "PAUSED")}
-                                  className="px-2.5 py-1 rounded-lg bg-amber-950/40 hover:bg-amber-950/80 text-amber-400 border border-amber-800/60 font-bold text-xs transition-colors cursor-pointer"
+                                  className="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-bold text-xs transition-colors cursor-pointer"
                                 >
                                   Pause
                                 </button>
@@ -612,7 +613,7 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                                 <button
                                   type="button"
                                   onClick={() => handleStrategyStateChange(strat.key, "RUNNING")}
-                                  className="px-2.5 py-1 rounded-lg bg-emerald-950/40 hover:bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 font-bold text-xs transition-colors cursor-pointer"
+                                  className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-bold text-xs transition-colors cursor-pointer"
                                 >
                                   Resume
                                 </button>
@@ -627,8 +628,8 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                                 }
                                 className={`px-2.5 py-1 rounded-lg font-bold text-xs border transition-colors cursor-pointer ${
                                   state === "STOPPED"
-                                    ? "bg-blue-950/40 text-blue-400 border-blue-800/60 hover:bg-blue-950/80"
-                                    : "bg-rose-950/40 text-rose-400 border-rose-800/60 hover:bg-rose-950/80"
+                                    ? "bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 hover:bg-blue-500/25"
+                                    : "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 hover:bg-rose-500/25"
                                 }`}
                               >
                                 {state === "STOPPED" ? "Restart" : "Stop"}
@@ -721,15 +722,15 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                   <div className="p-4 bg-surface3/40 rounded-xl border border-subtle space-y-2 text-xs">
                     <div className="font-bold text-primary">Execution Time Cutoffs &amp; Safeguards:</div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                      <div className="p-2.5 bg-surface3/60 rounded-lg border border-white/5 font-mono">
+                      <div className="p-2.5 bg-surface3/60 rounded-lg border border-subtle font-mono">
                         <div className="text-[10px] text-faint uppercase font-sans">ORB Breakouts</div>
                         <div className="font-bold text-primary mt-0.5">10:45 AM Cutoff</div>
                       </div>
-                      <div className="p-2.5 bg-surface3/60 rounded-lg border border-white/5 font-mono">
+                      <div className="p-2.5 bg-surface3/60 rounded-lg border border-subtle font-mono">
                         <div className="text-[10px] text-faint uppercase font-sans">VWAP Reclaims</div>
                         <div className="font-bold text-primary mt-0.5">11:00 AM Cutoff</div>
                       </div>
-                      <div className="p-2.5 bg-surface3/60 rounded-lg border border-white/5 font-mono">
+                      <div className="p-2.5 bg-surface3/60 rounded-lg border border-subtle font-mono">
                         <div className="text-[10px] text-faint uppercase font-sans">Scanner Freeze</div>
                         <div className="font-bold text-primary mt-0.5">11:00 AM Daily</div>
                       </div>
@@ -738,6 +739,8 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                 </div>
               </Card>
             )}
+
+
 
             {/* SUB-TAB 4: Broker & Feeds */}
             {activeSection === "broker" && (
@@ -907,7 +910,7 @@ export default function SettingsScreen({ onOpenBrokerModal }) {
                     <button
                       onClick={handleReset}
                       disabled={busy}
-                      className="px-3.5 py-2 bg-rose-950/40 hover:bg-rose-950/60 text-rose-400 border border-rose-800/40 rounded-xl font-bold transition-all text-xs flex items-center gap-1.5 cursor-pointer"
+                      className="px-3.5 py-2 bg-rose-500/15 hover:bg-rose-500/25 text-rose-600 dark:text-rose-400 border border-rose-500/30 rounded-xl font-bold transition-all text-xs flex items-center gap-1.5 cursor-pointer"
                     >
                       <RefreshCw size={13} /> Reset Balance
                     </button>

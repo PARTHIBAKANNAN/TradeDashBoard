@@ -396,7 +396,7 @@ export default function WatchlistScreen({ stocks, nifty }) {
           </div>
 
           {/* View Mode Toggle: Split View vs Grid View */}
-          <div className="flex items-center gap-1 bg-[#10141e]/90 p-1 rounded-xl border border-white/5">
+          <div className="flex items-center gap-1 bg-surface3/60 p-1 rounded-xl border border-subtle">
             <button
               onClick={() => setViewMode("split")}
               className={`px-3 py-1 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${

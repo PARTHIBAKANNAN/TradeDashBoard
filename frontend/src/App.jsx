@@ -362,28 +362,37 @@ function TopNavbar({
         {/* Left: Brand & Status Cluster */}
         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <img
-              src="/assets/logo.jpg"
-              alt="PulseHunter"
-              className="w-6 h-6 rounded-md object-cover border border-blue-500/30 shadow-sm"
-            />
-            <span className="text-xs font-bold tracking-tight text-white font-display">
+            <div className="relative">
+              <img
+                src="/assets/logo.jpg"
+                alt="PulseHunter"
+                className="w-6 h-6 rounded-md object-cover border border-subtle shadow-sm"
+              />
+              <span
+                className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-surface2 ${
+                  connected && marketOpen ? "bg-emerald-400 animate-pulse" : "bg-slate-400"
+                }`}
+                title={marketOpen ? "Market Live" : "Market Closed"}
+              />
+            </div>
+            <span className="text-xs font-bold tracking-tight text-primary font-display">
               PulseHunter
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 pl-2 border-l border-white/10">
+          {/* Desktop full badges (hidden on mobile to prevent orphan dots) */}
+          <div className="hidden sm:flex items-center gap-1.5 pl-2 border-l border-subtle">
             {/* Market Status Dot */}
             <span
               className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                 connected && marketOpen
-                  ? "bg-emerald-950/70 text-emerald-400 border border-emerald-800/40"
-                  : "bg-surface3/80 text-muted border border-white/5"
+                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                  : "bg-surface3 text-muted border border-subtle"
               }`}
             >
               <span
                 className={`w-1.5 h-1.5 rounded-full ${
-                  connected && marketOpen ? "bg-emerald-400 animate-pulse" : "bg-slate-500"
+                  connected && marketOpen ? "bg-emerald-400 animate-pulse" : "bg-slate-400"
                 }`}
               />
               <span className="hidden sm:inline">
@@ -398,8 +407,8 @@ function TopNavbar({
               title={fyersConnected ? "Alice Blue Active" : "Click to connect broker"}
               className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all ${
                 fyersConnected
-                  ? "bg-blue-950/60 text-blue-400 border border-blue-800/40"
-                  : "bg-amber-950/40 text-amber-400 border border-amber-500/40 hover:bg-amber-900/40 cursor-pointer"
+                  ? "bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30"
+                  : "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 cursor-pointer"
               }`}
             >
               <span
@@ -415,7 +424,7 @@ function TopNavbar({
         </div>
 
         {/* Center: 7 First-Class Pro Tabs */}
-        <div className="hidden lg:flex items-center bg-[#10141e]/90 border border-white/5 p-0.5 rounded-xl gap-0.5 shadow-inner">
+        <div className="hidden lg:flex items-center bg-surface3/60 border border-subtle p-0.5 rounded-xl gap-0.5 shadow-inner">
           {navTabs.map((tab) => {
             const Icon = tab.icon;
             const isActive =
@@ -431,7 +440,7 @@ function TopNavbar({
                 className={`relative px-3 py-1.5 text-xs rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap ${
                   isActive
                     ? "bg-blue-600/15 text-blue-400 border border-blue-500/30 shadow-sm font-bold"
-                    : "text-muted hover:text-primary hover:bg-white/5 font-medium"
+                    : "text-muted hover:text-primary hover:bg-surface/50 font-medium"
                 }`}
               >
                 <Icon size={13} className={isActive ? "text-blue-400" : "text-muted"} />
@@ -489,7 +498,7 @@ function TopNavbar({
               <button
                 type="button"
                 onClick={() => setProfileOpen(!profileOpen)}
-                className="w-7 h-7 rounded-full bg-[#121824] border border-white/10 hover:border-blue-500/50 grid place-items-center text-primary transition-all shadow-sm cursor-pointer"
+                className="w-7 h-7 rounded-full bg-surface3 border border-subtle hover:border-blue-500/50 grid place-items-center text-primary transition-all shadow-sm cursor-pointer"
                 title={user || "User Profile"}
               >
                 <User size={14} className="text-muted hover:text-blue-400" />
@@ -661,7 +670,7 @@ function MobileBottomBar({ activeTab, onTabChange, openPositionsCount }) {
 
       {/* Primary Mobile Bottom Bar (4 items: Ranking, Charts, Positions, More) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface2/95 backdrop-blur-2xl border-t border-border-subtle pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.3)] transition-colors">
-        <div className="grid grid-cols-4 h-[54px] items-center px-2">
+        <div className="grid grid-cols-5 h-[54px] items-center px-1">
           {mainTabs.map((tab) => {
             const isActive = activeTab === tab.key;
             const Icon = tab.icon;
